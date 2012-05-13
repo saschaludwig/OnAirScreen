@@ -1,11 +1,16 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, time, datetime
 from PyQt4 import QtGui, QtCore
 from mainscreen import Ui_MainScreen
 
-
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
+    LED1 = True
+    LED2 = False
+    LED3 = False
+    LED4 = False
+
     def __init__(self):
         QtGui.QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
@@ -15,6 +20,10 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.showFullScreen()
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self, QtCore.QCoreApplication.instance().quit )
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, QtCore.QCoreApplication.instance().quit )
+
+        self.ctimer = QtCore.QTimer()
+        QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
         
         # some vars
         self.LEDsInactiveColor = '#222'
@@ -24,6 +33,40 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.LED2ActiveColor = '#FF0'
         self.LED3ActiveColor = '#0FF'
         self.LED4ActiveColor = '#F0F'
+
+        # Start the constant timer
+        self.ctimer.start(100)
+
+    def constantUpdate(self):
+        # slot for constant timer timeout
+        self.updateClock()
+        self.updateLEDs()
+        self.updateDate()
+        self.updateBacktimingText()
+
+    def updateClock(self):
+        now = datetime.datetime.now()
+        self.setClock( now.strftime("%H:%M:%S") )
+    
+    def updateDate(self):
+        now = datetime.datetime.now()
+        self.setLeftText( now.strftime("%A, %d. %B %Y") )
+    
+    def updateBacktimingText(self):
+        now = datetime.datetime.now()
+        hour = now.hour
+        minute = now.minute
+        second = now.second
+        remain_min = 60-minute
+        remain_sec = 60-second
+        string = "%d:%02d Minuten vor %d Uhr" % (remain_min, remain_sec, hour+1)
+        self.setRightText( string )
+
+    def updateLEDs(self):
+        self.setLED1(self.LED1)
+        self.setLED2(self.LED2)
+        self.setLED3(self.LED3)
+        self.setLED4(self.LED4)
 
     def toggleFullScreen(self):
         if not self.fullScreen :
@@ -109,18 +152,8 @@ if __name__ == "__main__":
     mainscreen.setLED3Text("DOORBELL")
     mainscreen.setLED4Text("ARI")
 
-    mainscreen.setLED1(False)
-    mainscreen.setLED2(False)
-    mainscreen.setLED3(False)
-    mainscreen.setLED4(False)
-
-    mainscreen.setLED1(True)
-    now = datetime.datetime.now()
-    mainscreen.setClock( now.strftime("%H:%M:%S") )
     mainscreen.setStation("RADIO WLR")
     mainscreen.setSlogan("Hier spielt die Musik")
-    mainscreen.setLeftText( now.strftime("%A, %d. %B %Y") )
-    mainscreen.setRightText("timing")
     mainscreen.setCurrentSongText("The Clash - London Calling")
     mainscreen.setNewsText("hier stehen weitere Nachrichten")
 
