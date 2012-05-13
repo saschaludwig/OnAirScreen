@@ -307,7 +307,7 @@ color: rgb(255, 255, 255);</string>
      <x>10</x>
      <y>660</y>
      <width>361</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="font">
@@ -331,7 +331,7 @@ color: rgb(255, 255, 255);</string>
      <x>390</x>
      <y>660</y>
      <width>361</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="font">
@@ -352,22 +352,22 @@ color: rgb(255, 255, 255);</string>
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QLabel" name="labelTextSong">
+  <widget class="QLabel" name="labelCurrentSong">
    <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>710</y>
+     <y>705</y>
      <width>1001</width>
-     <height>51</height>
+     <height>30</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>FreeSans</family>
-     <pointsize>28</pointsize>
+     <pointsize>20</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
@@ -419,20 +419,36 @@ color: rgb(255, 255, 255);</string>
     </rect>
    </property>
   </widget>
-  <zorder>buttonLED1</zorder>
-  <zorder>buttonLED2</zorder>
-  <zorder>buttonLED3</zorder>
-  <zorder>buttonLED4</zorder>
-  <zorder>labelStation</zorder>
-  <zorder>labelSlogan</zorder>
-  <zorder>labelClock</zorder>
-  <zorder>labelTextLeft</zorder>
-  <zorder>labelTextRight</zorder>
-  <zorder>labelTextSong</zorder>
-  <zorder>labelSeconds</zorder>
-  <zorder>analogClock</zorder>
-  <zorder>progressL</zorder>
-  <zorder>progressR</zorder>
+  <widget class="QLabel" name="labelNews">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>741</y>
+     <width>1001</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>FreeSans</family>
+     <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>labelNews</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
