@@ -15,7 +15,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         QtGui.QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
-       
+
         self.fullScreen = True
         self.showFullScreen()
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
@@ -24,7 +24,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
         self.ctimer = QtCore.QTimer()
         QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
-        
+
         # some vars
         self.LEDsInactiveColor = '#222'
         self.LEDsInactiveTextColor = '#555'
@@ -47,19 +47,23 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def updateClock(self):
         now = datetime.datetime.now()
         self.setClock( now.strftime("%H:%M:%S") )
-    
+
     def updateDate(self):
         now = datetime.datetime.now()
         self.setLeftText( now.strftime("%A, %d. %B %Y") )
-    
+
     def updateBacktimingText(self):
         now = datetime.datetime.now()
         hour = now.hour
         minute = now.minute
         second = now.second
         remain_min = 60-minute
-        remain_sec = 60-second
-        string = "%d:%02d Minuten vor %d Uhr" % (remain_min, remain_sec, hour+1)
+        if hour > 12:
+            hour -= 12
+        if remain_min > 29:
+            string = "%d Minuten vor halb %d" % (remain_min-30, hour+1)
+        else:
+            string = "%d Minuten vor %d" % (remain_min, hour+1)
         self.setRightText( string )
 
     def updateLEDs(self):
@@ -80,7 +84,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.buttonLED1.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED1ActiveColor)
         else:
             self.buttonLED1.setStyleSheet("color: "+self.LEDsInactiveTextColor+"; background-color: " + self.LEDsInactiveColor)
-        
+
     def setLED2(self, action):
         if action:
             self.buttonLED2.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED2ActiveColor)
@@ -92,7 +96,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.buttonLED3.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED3ActiveColor)
         else:
             self.buttonLED3.setStyleSheet("color: "+self.LEDsInactiveTextColor+"; background-color: " + self.LEDsInactiveColor)
- 
+
     def setLED4(self, action):
         if action:
             self.buttonLED4.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED4ActiveColor)
@@ -131,7 +135,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
     def setNewsText(self, text):
         self.labelNews.setText(text)
-    
+
     def setVULeft(self, value):
         self.progressL.setValue(value)
 
@@ -141,12 +145,21 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def setBacktimingSecs(self, value):
         self.labelSeconds.setText( str(value) )
 
+    def showWarning(self, text):
+        self.labelWarning.setText( text )
+        self.labelWarning.show()
+
+    def hideWarning(self, text):
+        self.labelWarning.setText("")
+        self.labelWarning.hide()
+
+
 if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
     mainscreen = MainScreen()
     mainscreen.show()
-  
+
     mainscreen.setLED1Text("ON AIR")
     mainscreen.setLED2Text("PHONE")
     mainscreen.setLED3Text("DOORBELL")
@@ -159,7 +172,10 @@ if __name__ == "__main__":
 
     mainscreen.setVULeft(70)
     mainscreen.setVURight(75)
-    
+
     mainscreen.setBacktimingSecs(15)
+
+    #mainscreen.showWarning("STREAM OFFLINE")
+    mainscreen.hideWarning()
 
     sys.exit(app.exec_())
