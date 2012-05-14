@@ -167,7 +167,7 @@ color: rgb(255, 255, 255);</string>
    <property name="font">
     <font>
      <family>FreeSans</family>
-     <pointsize>18</pointsize>
+     <pointsize>20</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
@@ -192,9 +192,9 @@ color: rgb(255, 255, 255);</string>
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>30</y>
+     <y>40</y>
      <width>1001</width>
-     <height>41</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="font">
@@ -385,8 +385,8 @@ color: rgb(255, 255, 255);</string>
   <widget class="QLabel" name="labelSeconds">
    <property name="geometry">
     <rect>
-     <x>90</x>
-     <y>140</y>
+     <x>170</x>
+     <y>125</y>
      <width>61</width>
      <height>31</height>
     </rect>
@@ -407,16 +407,6 @@ color: rgb(255, 255, 255);</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QWidget" name="analogClock" native="true">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>90</y>
-     <width>470</width>
-     <height>470</height>
-    </rect>
    </property>
   </widget>
   <widget class="QLabel" name="labelNews">
@@ -463,7 +453,10 @@ color: rgb(255, 255, 255);</string>
    </property>
    <property name="font">
     <font>
-     <pointsize>50</pointsize>
+     <family>FreeSans</family>
+     <pointsize>36</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="styleSheet">
@@ -477,6 +470,60 @@ background-color: rgb(255, 0, 0);</string>
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>110</x>
+     <y>490</y>
+     <width>57</width>
+     <height>15</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>TextLabel</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="analogClockPlaceholder">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>90</y>
+     <width>470</width>
+     <height>470</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>18</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>analogClockPlaceholder</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <zorder>buttonLED1</zorder>
+  <zorder>buttonLED2</zorder>
+  <zorder>buttonLED3</zorder>
+  <zorder>buttonLED4</zorder>
+  <zorder>labelStation</zorder>
+  <zorder>labelSlogan</zorder>
+  <zorder>progressR</zorder>
+  <zorder>progressL</zorder>
+  <zorder>labelClock</zorder>
+  <zorder>labelTextLeft</zorder>
+  <zorder>labelTextRight</zorder>
+  <zorder>labelCurrentSong</zorder>
+  <zorder>labelNews</zorder>
+  <zorder>labelWarning</zorder>
+  <zorder>label</zorder>
+  <zorder>analogClockPlaceholder</zorder>
+  <zorder>labelSeconds</zorder>
  </widget>
  <resources/>
  <connections/>

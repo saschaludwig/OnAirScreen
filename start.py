@@ -5,6 +5,7 @@ import sys, time, datetime
 from PyQt4 import QtGui, QtCore
 from mainscreen import Ui_MainScreen
 import udpserver
+import analogclock
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
     LED1 = True
@@ -38,12 +39,16 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         # Start the constant timer
         self.ctimer.start(100)
 
+        #add the analog clock
+        self.addAnalogClock()
+
     def constantUpdate(self):
         # slot for constant timer timeout
         self.updateClock()
         self.updateLEDs()
         self.updateDate()
         self.updateBacktimingText()
+        self.updateBacktimingSeconds()
 
     def updateClock(self):
         now = datetime.datetime.now()
@@ -66,6 +71,12 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         else:
             string = "%d Minuten vor %d" % (remain_min, hour+1)
         self.setRightText( string )
+
+    def updateBacktimingSeconds(self):
+        now = datetime.datetime.now()
+        second = now.second
+        remain_seconds = 60-second
+        self.setBacktimingSecs(remain_seconds)
 
     def updateLEDs(self):
         self.setLED1(self.LED1)
@@ -153,6 +164,14 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def hideWarning(self):
         self.labelWarning.setText("")
         self.labelWarning.hide()
+
+    def addAnalogClock(self):
+        self.analogClockPlaceholder.hide()
+        self.analogClock = analogclock.AnalogClock(self)
+        self.analogClock.setGeometry(QtCore.QRect(170, 90, 470, 470))
+        self.analogClock.setObjectName("analogClock")
+        self.analogClock.show()
+
 
 
 if __name__ == "__main__":
