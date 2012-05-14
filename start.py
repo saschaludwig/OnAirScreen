@@ -149,7 +149,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.labelWarning.setText( text )
         self.labelWarning.show()
 
-    def hideWarning(self, text):
+    def hideWarning(self):
         self.labelWarning.setText("")
         self.labelWarning.hide()
 
