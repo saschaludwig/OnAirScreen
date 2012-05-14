@@ -4,6 +4,7 @@
 import sys, time, datetime
 from PyQt4 import QtGui, QtCore
 from mainscreen import Ui_MainScreen
+import udpserver
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
     LED1 = True
@@ -177,5 +178,8 @@ if __name__ == "__main__":
 
     #mainscreen.showWarning("STREAM OFFLINE")
     mainscreen.hideWarning()
+
+    # start udp server
+    udpserver.udpStartCmdServer('localhost', 3310);
 
     sys.exit(app.exec_())
