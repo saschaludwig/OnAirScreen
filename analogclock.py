@@ -69,6 +69,7 @@ class AnalogClock(QtGui.QWidget):
 
     hourColor = QtGui.QColor(255, 255, 255, 191)
     minuteColor = QtGui.QColor(255, 255, 255, 191)
+    circleColor = QtGui.QColor(255, 255, 255, 255)
 
     def __init__(self, parent=None):
         super(AnalogClock, self).__init__(parent)
@@ -89,9 +90,14 @@ class AnalogClock(QtGui.QWidget):
         painter.setPen(QtCore.Qt.NoPen)
         painter.setBrush(AnalogClock.hourColor)
 
+        # set hour hand length and minute hand length
+        hhl = -65 #-50
+        mhl = -85 #-75
+        # draw hour hand
         painter.save()
         painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
-        painter.drawConvexPolygon(AnalogClock.hourHand)
+        #painter.drawConvexPolygon(AnalogClock.hourHand)
+        painter.drawRoundedRect(-4,4,8,hhl,4,4)
         painter.restore()
 
         painter.setPen(AnalogClock.hourColor)
@@ -104,9 +110,18 @@ class AnalogClock(QtGui.QWidget):
         painter.setPen(QtCore.Qt.NoPen)
         painter.setBrush(AnalogClock.minuteColor)
 
+        #draw minute hand
+        sizefactor = 1.3
         painter.save()
         painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
-        painter.drawConvexPolygon(AnalogClock.minuteHand)
+        #painter.drawConvexPolygon(AnalogClock.minuteHand)
+        painter.drawRoundedRect(-4/sizefactor,4/sizefactor,8/sizefactor,mhl,4/sizefactor,4/sizefactor)
+        painter.restore()
+
+        #draw center circle
+        painter.setBrush(AnalogClock.circleColor)
+        painter.save()
+        painter.drawEllipse(-5,-5,10,10)
         painter.restore()
 
         painter.setPen(AnalogClock.minuteColor)
