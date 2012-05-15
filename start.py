@@ -173,7 +173,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.analogClock.show()
 
 
-
 if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)

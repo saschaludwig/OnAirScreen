@@ -96,14 +96,12 @@ class AnalogClock(QtGui.QWidget):
         # draw hour hand
         painter.save()
         painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
-        #painter.drawConvexPolygon(AnalogClock.hourHand)
         painter.drawRoundedRect(-4,4,8,hhl,4,4)
         painter.restore()
 
         painter.setPen(AnalogClock.hourColor)
 
         for i in range(12):
-            #painter.drawLine(88, 0, 96, 0)
             painter.drawRoundedRect(88,-1,8,2,1,1)
             painter.rotate(30.0)
 
@@ -114,7 +112,6 @@ class AnalogClock(QtGui.QWidget):
         sizefactor = 1.3
         painter.save()
         painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
-        #painter.drawConvexPolygon(AnalogClock.minuteHand)
         painter.drawRoundedRect(-4/sizefactor,4/sizefactor,8/sizefactor,mhl,4/sizefactor,4/sizefactor)
         painter.restore()
 
