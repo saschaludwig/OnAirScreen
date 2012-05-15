@@ -470,19 +470,6 @@ background-color: rgb(255, 0, 0);</string>
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>110</x>
-     <y>490</y>
-     <width>57</width>
-     <height>15</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>TextLabel</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="analogClockPlaceholder">
    <property name="geometry">
     <rect>
@@ -521,7 +508,6 @@ background-color: rgb(255, 0, 0);</string>
   <zorder>labelCurrentSong</zorder>
   <zorder>labelNews</zorder>
   <zorder>labelWarning</zorder>
-  <zorder>label</zorder>
   <zorder>analogClockPlaceholder</zorder>
   <zorder>labelSeconds</zorder>
  </widget>
