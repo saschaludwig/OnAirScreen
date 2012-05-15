@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+#############################################################################
+##
+## OnAirScreen Analog Clock implementation
+## Copyright (C) 2012 Sascha Ludwig
+## All rights reserved.
+##
+## contains code from Riverbank Computing Limited and Nokia Corporation
+## for details: see copyright notice below
+##
 
 #############################################################################
 ##
@@ -88,7 +97,8 @@ class AnalogClock(QtGui.QWidget):
         painter.setPen(AnalogClock.hourColor)
 
         for i in range(12):
-            painter.drawLine(88, 0, 96, 0)
+            #painter.drawLine(88, 0, 96, 0)
+            painter.drawRoundedRect(88,-1,8,2,1,1)
             painter.rotate(30.0)
 
         painter.setPen(QtCore.Qt.NoPen)
@@ -113,5 +123,7 @@ if __name__ == '__main__':
 
     app = QtGui.QApplication(sys.argv)
     clock = AnalogClock()
+    clock.setStyleSheet("background-color:black;")
+    clock.resize(500,500)
     clock.show()
     sys.exit(app.exec_())
