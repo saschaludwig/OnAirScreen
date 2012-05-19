@@ -3,8 +3,10 @@
 
 import sys, time, datetime
 from PyQt4 import QtGui, QtCore
+from PyQt4.QtNetwork import QUdpSocket, QHostAddress
 from mainscreen import Ui_MainScreen
-import udpserver
+
+#import udpserver
 import analogclock
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
@@ -27,6 +29,11 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.ctimer = QtCore.QTimer()
         QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
 
+        # Setup UDP Socket
+        self.sock = QUdpSocket()
+        self.sock.bind(3310, QUdpSocket.ShareAddress)
+        self.sock.readyRead.connect(self.cmdHandler)
+
         # some vars
         self.LEDsInactiveColor = '#222'
         self.LEDsInactiveTextColor = '#555'
@@ -41,6 +48,22 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
         #add the analog clock
         self.addAnalogClock()
+
+    def cmdHandler(self):
+        while self.sock.hasPendingDatagrams():
+            data, host, port = self.sock.readDatagram(self.sock.pendingDatagramSize())
+            print "DATA: "+ data
+            lines = data.splitlines()
+            for line in lines:
+                (command, value) = line.split(':',1)
+                print "command: '" + command +"'" + str(len(command))
+                print "value: '" + value + "'"
+                if command == "NOW":
+                    print "Setting NOW to: " + value
+                    self.setCurrentSongText(value)
+                if command == "NEXT":
+                    print "Setting NEXT to: " + value
+                    self.setNewsText("Next: %s" % value)
 
     def constantUpdate(self):
         # slot for constant timer timeout
@@ -198,6 +221,6 @@ if __name__ == "__main__":
     mainscreen.hideWarning()
 
     # start udp server
-    udpserver.udpStartCmdServer('localhost', 3310);
+    #udpserver.udpStartCmdServer('localhost', 3310, mainscreen);
 
     sys.exit(app.exec_())
