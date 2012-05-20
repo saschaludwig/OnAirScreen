@@ -67,8 +67,8 @@ class AnalogClock(QtGui.QWidget):
         QtCore.QPoint(0, -75)
     ])
 
-    hourColor = QtGui.QColor(255, 255, 255, 191)
-    minuteColor = QtGui.QColor(255, 255, 255, 191)
+    hourColor = QtGui.QColor(191, 191, 191, 255)
+    minuteColor = QtGui.QColor(191, 191, 191, 255)
     circleColor = QtGui.QColor(255, 255, 255, 255)
 
     def __init__(self, parent=None):
