@@ -5,9 +5,97 @@ import sys, time, datetime
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress
 from mainscreen import Ui_MainScreen
-
-#import udpserver
+from settings import Ui_Settings
 import analogclock
+
+class Settings(QtGui.QWidget, Ui_Settings):
+
+    def __init__(self):
+        QtGui.QWidget.__init__(self)
+        Ui_Settings.__init__(self)
+        self.setupUi(self)
+        self._connectSlots()
+        self.hide
+
+    def _connectSlots(self):
+        self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
+        self.connect(self.LED1BGColor, QtCore.SIGNAL("clicked()"), self.setLED1BGColor )
+        self.connect(self.LED1FGColor, QtCore.SIGNAL("clicked()"), self.setLED1FGColor )
+        self.connect(self.LED2BGColor, QtCore.SIGNAL("clicked()"), self.setLED2BGColor )
+        self.connect(self.LED2FGColor, QtCore.SIGNAL("clicked()"), self.setLED2FGColor )
+        self.connect(self.LED3BGColor, QtCore.SIGNAL("clicked()"), self.setLED3BGColor )
+        self.connect(self.LED3FGColor, QtCore.SIGNAL("clicked()"), self.setLED3FGColor )
+        self.connect(self.LED4BGColor, QtCore.SIGNAL("clicked()"), self.setLED4BGColor )
+        self.connect(self.LED4FGColor, QtCore.SIGNAL("clicked()"), self.setLED4FGColor )
+
+    def applySettings(self):
+        print "Apply settings here"
+
+    def setLED1BGColor(self):
+        palette = self.LED1Text.palette()
+        oldcolor = palette.button().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Base, newcolor)
+        self.LED1Text.setPalette(palette)
+
+    def setLED1FGColor(self):
+        palette = self.LED1Text.palette()
+        oldcolor = palette.text().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.LED1Text.setPalette(palette)
+
+    def setLED2BGColor(self):
+        palette = self.LED2Text.palette()
+        oldcolor = palette.button().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Base, newcolor)
+        self.LED2Text.setPalette(palette)
+
+    def setLED2FGColor(self):
+        palette = self.LED2Text.palette()
+        oldcolor = palette.text().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.LED2Text.setPalette(palette)
+
+    def setLED3BGColor(self):
+        palette = self.LED3Text.palette()
+        oldcolor = palette.button().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Base, newcolor)
+        self.LED3Text.setPalette(palette)
+
+    def setLED3FGColor(self):
+        palette = self.LED3Text.palette()
+        oldcolor = palette.text().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.LED3Text.setPalette(palette)
+
+    def setLED4BGColor(self):
+        palette = self.LED4Text.palette()
+        oldcolor = palette.button().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Base, newcolor)
+        self.LED4Text.setPalette(palette)
+
+    def setLED4FGColor(self):
+        palette = self.LED4Text.palette()
+        oldcolor = palette.text().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.LED4Text.setPalette(palette)
+
+
+    def openColorDialog(self, initcolor):
+        colordialog = QtGui.QColorDialog()
+        selectedcolor = colordialog.getColor(initcolor, None, 'Please select a color')
+        if selectedcolor.isValid():
+            return selectedcolor
+        else:
+            return initcolor
+
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
     LED1 = True
@@ -20,14 +108,22 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
 
+        self.settings = Settings()
+
         self.fullScreen = True
         self.showFullScreen()
+
+        # add hotkey bindings
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self, QtCore.QCoreApplication.instance().quit )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, QtCore.QCoreApplication.instance().quit )
+        QtGui.QShortcut(QtGui.QKeySequence("ESC"), self, QtCore.QCoreApplication.instance().quit )
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.show )
 
+        # Setup and start timer
         self.ctimer = QtCore.QTimer()
         QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
+        self.ctimer.start(100)
 
         # Setup UDP Socket
         self.sock = QUdpSocket()
@@ -43,11 +139,9 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.LED3ActiveColor = '#0FF'
         self.LED4ActiveColor = '#F0F'
 
-        # Start the constant timer
-        self.ctimer.start(100)
-
         #add the analog clock
         self.addAnalogClock()
+
 
     def cmdHandler(self):
         while self.sock.hasPendingDatagrams():
@@ -219,8 +313,5 @@ if __name__ == "__main__":
 
     #mainscreen.showWarning("STREAM OFFLINE")
     mainscreen.hideWarning()
-
-    # start udp server
-    #udpserver.udpStartCmdServer('localhost', 3310, mainscreen);
 
     sys.exit(app.exec_())
