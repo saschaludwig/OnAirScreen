@@ -1,0 +1,1517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Settings</class>
+ <widget class="QDialog" name="Settings">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>592</width>
+    <height>574</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="pushButton_3">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Exit OnAirScreen</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="CloseButton">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ApplyButton">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Apply</string>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="0">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab_general">
+      <attribute name="title">
+       <string>General Settings</string>
+      </attribute>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>481</width>
+         <height>118</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Station Name:</string>
+            </property>
+            <property name="buddy">
+             <cstring>StationName</cstring>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLineEdit" name="StationName">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="palette">
+               <palette>
+                <active>
+                 <colorrole role="Text">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>255</red>
+                    <green>170</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>0</red>
+                    <green>0</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </active>
+                <inactive>
+                 <colorrole role="Text">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>255</red>
+                    <green>170</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>0</red>
+                    <green>0</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </inactive>
+                <disabled>
+                 <colorrole role="Text">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>165</red>
+                    <green>164</green>
+                    <blue>164</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>244</red>
+                    <green>244</green>
+                    <blue>244</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </disabled>
+               </palette>
+              </property>
+              <property name="font">
+               <font>
+                <family>FreeSans</family>
+                <pointsize>11</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>StationName</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="StationNameColor">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Color</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Slogan:</string>
+            </property>
+            <property name="buddy">
+             <cstring>Slogan</cstring>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QLineEdit" name="Slogan">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="palette">
+               <palette>
+                <active>
+                 <colorrole role="Text">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>255</red>
+                    <green>170</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>0</red>
+                    <green>0</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </active>
+                <inactive>
+                 <colorrole role="Text">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>255</red>
+                    <green>170</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>0</red>
+                    <green>0</green>
+                    <blue>0</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </inactive>
+                <disabled>
+                 <colorrole role="Text">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>165</red>
+                    <green>164</green>
+                    <blue>164</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                 <colorrole role="Base">
+                  <brush brushstyle="SolidPattern">
+                   <color alpha="255">
+                    <red>244</red>
+                    <green>244</green>
+                    <blue>244</blue>
+                   </color>
+                  </brush>
+                 </colorrole>
+                </disabled>
+               </palette>
+              </property>
+              <property name="font">
+               <font>
+                <family>FreeSans</family>
+                <pointsize>11</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>Slogan</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SloganColor">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Color</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>140</y>
+         <width>311</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QCheckBox" name="checkBox_VU">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Enable VU Meters</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_TooLoud">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Enable &quot;TOO LOUD&quot; Indicator</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_3">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>&quot;TOO LOUD&quot; Message:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="TooLoudText">
+            <property name="text">
+             <string>TooLoudText</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>240</y>
+         <width>553</width>
+         <height>184</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QCheckBox" name="LED1">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Status LED 1:</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="LED1Text">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>0</green>
+                  <blue>0</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>0</green>
+                  <blue>0</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>165</red>
+                  <green>164</green>
+                  <blue>164</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>244</red>
+                  <green>244</green>
+                  <blue>244</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="font">
+             <font>
+              <family>FreeSans</family>
+              <pointsize>11</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>ON AIR</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED1BGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active BG Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED1FGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active Text Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_7">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Autoflash</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_11">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>10sec flash</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="QCheckBox" name="LED2">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Status LED 2:</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="LED2Text">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>220</red>
+                  <green>220</green>
+                  <blue>0</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>220</red>
+                  <green>220</green>
+                  <blue>0</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>165</red>
+                  <green>164</green>
+                  <blue>164</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>244</red>
+                  <green>244</green>
+                  <blue>244</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="font">
+             <font>
+              <family>FreeSans</family>
+              <pointsize>11</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>PHONE</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED2BGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active BG Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED2FGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active Text Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_8">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Autoflash</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_12">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>10sec flash</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <item>
+           <widget class="QCheckBox" name="LED3">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Status LED 3:</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="LED3Text">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>0</red>
+                  <green>200</green>
+                  <blue>200</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>0</red>
+                  <green>200</green>
+                  <blue>200</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>165</red>
+                  <green>164</green>
+                  <blue>164</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>244</red>
+                  <green>244</green>
+                  <blue>244</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="font">
+             <font>
+              <family>FreeSans</family>
+              <pointsize>11</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>DOORBELL</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED3BGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active BG Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED3FGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active Text Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_9">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Autoflash</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_13">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>10sec flash</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QCheckBox" name="LED4">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Status LED 4:</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="LED4Text">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="palette">
+             <palette>
+              <active>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>0</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </active>
+              <inactive>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>255</red>
+                  <green>0</green>
+                  <blue>255</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </inactive>
+              <disabled>
+               <colorrole role="Text">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>165</red>
+                  <green>164</green>
+                  <blue>164</blue>
+                 </color>
+                </brush>
+               </colorrole>
+               <colorrole role="Base">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="255">
+                  <red>244</red>
+                  <green>244</green>
+                  <blue>244</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
+             </palette>
+            </property>
+            <property name="font">
+             <font>
+              <family>FreeSans</family>
+              <pointsize>11</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>ARI</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED4BGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active BG Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LED4FGColor">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Active Text Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_10">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Autoflash</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_14">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>10sec flash</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>UDP Settings</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>UDP Port:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0">
+        <widget class="QTableWidget" name="tableWidget">
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="rowCount">
+          <number>6</number>
+         </property>
+         <property name="columnCount">
+          <number>3</number>
+         </property>
+         <row/>
+         <row/>
+         <row/>
+         <row/>
+         <row/>
+         <row/>
+         <column>
+          <property name="text">
+           <string>Command</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Text format</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Update Item</string>
+          </property>
+         </column>
+         <item row="0" column="0">
+          <property name="text">
+           <string>LED1</string>
+          </property>
+         </item>
+         <item row="1" column="0">
+          <property name="text">
+           <string>LED2</string>
+          </property>
+         </item>
+         <item row="2" column="0">
+          <property name="text">
+           <string>LED3</string>
+          </property>
+         </item>
+         <item row="3" column="0">
+          <property name="text">
+           <string>LED4</string>
+          </property>
+         </item>
+         <item row="4" column="0">
+          <property name="text">
+           <string>NOW</string>
+          </property>
+         </item>
+         <item row="4" column="1">
+          <property name="text">
+           <string>Now playing: %s</string>
+          </property>
+         </item>
+         <item row="5" column="0">
+          <property name="text">
+           <string>NEXT</string>
+          </property>
+         </item>
+         <item row="5" column="1">
+          <property name="text">
+           <string>Next: %s</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_about">
+      <attribute name="title">
+       <string>About</string>
+      </attribute>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>StationName</tabstop>
+  <tabstop>StationNameColor</tabstop>
+  <tabstop>Slogan</tabstop>
+  <tabstop>SloganColor</tabstop>
+  <tabstop>checkBox_VU</tabstop>
+  <tabstop>checkBox_TooLoud</tabstop>
+  <tabstop>CloseButton</tabstop>
+  <tabstop>ApplyButton</tabstop>
+  <tabstop>pushButton_3</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>CloseButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Settings</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>374</x>
+     <y>548</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>201</x>
+     <y>551</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>92</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>88</x>
+     <y>297</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>136</x>
+     <y>266</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>126</x>
+     <y>330</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>66</x>
+     <y>265</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>67</x>
+     <y>361</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_7</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>48</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>52</x>
+     <y>394</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_11</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>142</x>
+     <y>269</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>103</x>
+     <y>421</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>169</x>
+     <y>266</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>170</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>186</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>188</x>
+     <y>333</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>208</x>
+     <y>266</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>208</x>
+     <y>362</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_8</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>226</x>
+     <y>264</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>228</x>
+     <y>393</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_12</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>247</x>
+     <y>264</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>248</x>
+     <y>418</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>310</x>
+     <y>265</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>312</x>
+     <y>298</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>329</x>
+     <y>270</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>332</x>
+     <y>331</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>351</x>
+     <y>265</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>350</x>
+     <y>361</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_9</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>373</x>
+     <y>269</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>371</x>
+     <y>393</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_13</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>389</x>
+     <y>269</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>463</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>449</x>
+     <y>295</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>470</x>
+     <y>264</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>469</x>
+     <y>333</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>485</x>
+     <y>266</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>487</x>
+     <y>365</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_10</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>505</x>
+     <y>265</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>506</x>
+     <y>389</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_14</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>524</x>
+     <y>419</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_TooLoud</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_3</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>33</x>
+     <y>203</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>37</x>
+     <y>228</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
