@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, time, datetime
+import sys, time, datetime, ConfigParser
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress
 from mainscreen import Ui_MainScreen
@@ -16,6 +16,8 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.setupUi(self)
         self._connectSlots()
         self.hide
+        self.createConfigWithDefaults()
+        self.readConfig()
 
     def _connectSlots(self):
         self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
@@ -30,6 +32,19 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
         self.connect(self.StationNameColor, QtCore.SIGNAL("clicked()"), self.setStationNameColor )
         self.connect(self.SloganColor, QtCore.SIGNAL("clicked()"), self.setSloganColor )
+
+    def readConfig(self):
+        self.config = ConfigParser.ConfigParser()
+        self.config.read("onairscreen.ini")
+
+    def createConfigWithDefaults(self):
+        cfgfile = open('onairscreen.ini', 'w')
+        self.config = ConfigParser.ConfigParser()
+        self.config.add_section('general')
+        self.config.set('general', 'stationname', 'RADIO ERIWAN')
+        self.config.set('general', 'slogan', 'You question is our motivation')
+        self.config.write(cfgfile)
+        cfgfile.close()
 
     def applySettings(self):
         print "Apply settings here"
@@ -114,10 +129,10 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
-    LED1 = True
-    LED2 = False
-    LED3 = False
-    LED4 = False
+    #LED1 = False
+    #LED2 = False
+    #LED3 = False
+    #LED4 = False
 
     def __init__(self):
         QtGui.QWidget.__init__(self)
@@ -151,11 +166,11 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         # some vars
         self.LEDsInactiveColor = '#222'
         self.LEDsInactiveTextColor = '#555'
-        self.LEDsActiveTextColor = '#FFF'
-        self.LED1ActiveColor = '#F00'
-        self.LED2ActiveColor = '#FF0'
-        self.LED3ActiveColor = '#0FF'
-        self.LED4ActiveColor = '#F0F'
+        self.LEDsActiveTextColor = '#FFFFFF'
+        self.LED1ActiveColor = '#FF0000'
+        self.LED2ActiveColor = '#DCDC00'
+        self.LED3ActiveColor = '#00C8C8'
+        self.LED4ActiveColor = '#FF00FF'
 
         #add the analog clock
         self.addAnalogClock()
@@ -168,19 +183,43 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             lines = data.splitlines()
             for line in lines:
                 (command, value) = line.split(':',1)
-                print "command: '" + command +"'" + str(len(command))
+                print "command: '" + command +"'"
                 print "value: '" + value + "'"
                 if command == "NOW":
-                    print "Setting NOW to: " + value
                     self.setCurrentSongText(value)
                 if command == "NEXT":
-                    print "Setting NEXT to: " + value
                     self.setNewsText("Next: %s" % value)
+                if command == "LED1":
+                    if value == "ON":
+                        self.setLED1(True)
+                    else:
+                        self.setLED1(False)
+                if command == "LED2":
+                    if value == "ON":
+                        self.setLED2(True)
+                    else:
+                        self.setLED2(False)
+                if command == "LED3":
+                    if value == "ON":
+                        self.setLED3(True)
+                    else:
+                        self.setLED3(False)
+                if command == "LED4":
+                    if value == "ON":
+                        self.setLED4(True)
+                    else:
+                        self.setLED4(False)
+                if command == "WARN":
+                    if value:
+                        self.showWarning(value)
+                    else:
+                        self.hideWarning()
+
 
     def constantUpdate(self):
         # slot for constant timer timeout
         self.updateClock()
-        self.updateLEDs()
+        #self.updateLEDs()
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
@@ -213,11 +252,11 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         remain_seconds = 60-second
         self.setBacktimingSecs(remain_seconds)
 
-    def updateLEDs(self):
-        self.setLED1(self.LED1)
-        self.setLED2(self.LED2)
-        self.setLED3(self.LED3)
-        self.setLED4(self.LED4)
+    #def updateLEDs(self):
+    #    self.setLED1(self.LED1)
+    #    self.setLED2(self.LED2)
+    #    self.setLED3(self.LED3)
+    #    self.setLED4(self.LED4)
 
     def toggleFullScreen(self):
         if not self.fullScreen :
@@ -297,7 +336,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.labelWarning.show()
 
     def hideWarning(self):
-        self.labelWarning.setText("")
+        self.labelWarning.setText( "" )
         self.labelWarning.hide()
 
     def addAnalogClock(self):
@@ -312,7 +351,6 @@ if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
     mainscreen = MainScreen()
-    mainscreen.show()
 
     mainscreen.setLED1Text("ON AIR")
     mainscreen.setLED2Text("PHONE")
@@ -324,12 +362,16 @@ if __name__ == "__main__":
     mainscreen.setCurrentSongText("The Clash - London Calling")
     mainscreen.setNewsText("hier stehen weitere Nachrichten")
 
-    mainscreen.setVULeft(70)
-    mainscreen.setVURight(75)
+    mainscreen.setVULeft(0)
+    mainscreen.setVURight(0)
 
     mainscreen.setBacktimingSecs(15)
 
-    #mainscreen.showWarning("STREAM OFFLINE")
     mainscreen.hideWarning()
+    mainscreen.setLED1(False)
+    mainscreen.setLED2(False)
+    mainscreen.setLED3(False)
+    mainscreen.setLED4(False)
 
+    mainscreen.show()
     sys.exit(app.exec_())
