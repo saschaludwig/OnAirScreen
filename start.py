@@ -28,6 +28,9 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.connect(self.LED4BGColor, QtCore.SIGNAL("clicked()"), self.setLED4BGColor )
         self.connect(self.LED4FGColor, QtCore.SIGNAL("clicked()"), self.setLED4FGColor )
 
+        self.connect(self.StationNameColor, QtCore.SIGNAL("clicked()"), self.setStationNameColor )
+        self.connect(self.SloganColor, QtCore.SIGNAL("clicked()"), self.setSloganColor )
+
     def applySettings(self):
         print "Apply settings here"
 
@@ -87,6 +90,19 @@ class Settings(QtGui.QWidget, Ui_Settings):
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.LED4Text.setPalette(palette)
 
+    def setStationNameColor(self):
+        palette = self.StationName.palette()
+        oldcolor = palette.text().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.StationName.setPalette(palette)
+
+    def setSloganColor(self):
+        palette = self.Slogan.palette()
+        oldcolor = palette.text().color()
+        newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.Slogan.setPalette(palette)
 
     def openColorDialog(self, initcolor):
         colordialog = QtGui.QColorDialog()
@@ -119,6 +135,8 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, QtCore.QCoreApplication.instance().quit )
         QtGui.QShortcut(QtGui.QKeySequence("ESC"), self, QtCore.QCoreApplication.instance().quit )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.show )
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.settings.show )
+
 
         # Setup and start timer
         self.ctimer = QtCore.QTimer()
