@@ -9,4 +9,4 @@ settings.py : settings.ui
 clean cleandir:
 	rm -rf $(CLEANFILES)
 
-CLEANFILES = mainscreen.py settings.py
+CLEANFILES = mainscreen.py settings.py *.pyc
