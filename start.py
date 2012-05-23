@@ -86,27 +86,46 @@ class Settings(QtGui.QWidget, Ui_Settings):
     def applyConfig(self):
         self.StationName.setText(self.config.get('general', 'stationname'))
         self.Slogan.setText(self.config.get('general', 'slogan'))
-        #('general', 'stationcolor')
-        #('general', 'slogancolor')
+        self.setStationNameColor(self.getColorFromName(self.config.get('general', 'stationcolor')))
+        self.setSloganColor(self.getColorFromName(self.config.get('general', 'slogancolor')))
 
         self.checkBox_VU.setChecked(self.config.getboolean('vu', 'vumeters'))
         self.checkBox_TooLoud.setChecked(self.config.getboolean('vu', 'tooloud'))
         self.TooLoudText.setText(self.config.get('vu', 'tooloudtext'))
 
-        self.config.get('leds', 'inactivebgcolor')
-        self.config.get('leds', 'inactivetextcolor')
+        #not implemented in ui
+        #self.config.get('leds', 'inactivebgcolor')
+        #self.config.get('leds', 'inactivetextcolor')
 
         self.LED1.setChecked(self.config.getboolean('led1', 'used'))
         self.LED1Text.setText(self.config.get('led1', 'text'))
-        #self.LED1Text  self.self.config.get('led1', 'activebgcolor')
-        #self.LED1Text  self.config.get('led1', 'activetextcolor')
+        self.setLED1BGColor(self.getColorFromName(self.config.get('led1', 'activebgcolor')))
+        self.setLED1FGColor(self.getColorFromName(self.config.get('led1', 'activetextcolor')))
         self.LED1Autoflash.setChecked(self.config.getboolean('led1', 'autoflash'))
         self.LED1Timedflash.setChecked(self.config.getboolean('led1', 'timedflash'))
 
-        # MORE LEDs here
+        self.LED2.setChecked(self.config.getboolean('led2', 'used'))
+        self.LED2Text.setText(self.config.get('led2', 'text'))
+        self.setLED2BGColor(self.getColorFromName(self.config.get('led2', 'activebgcolor')))
+        self.setLED2FGColor(self.getColorFromName(self.config.get('led2', 'activetextcolor')))
+        self.LED2Autoflash.setChecked(self.config.getboolean('led2', 'autoflash'))
+        self.LED2Timedflash.setChecked(self.config.getboolean('led2', 'timedflash'))
 
+        self.LED3.setChecked(self.config.getboolean('led3', 'used'))
+        self.LED3Text.setText(self.config.get('led3', 'text'))
+        self.setLED3BGColor(self.getColorFromName(self.config.get('led3', 'activebgcolor')))
+        self.setLED3FGColor(self.getColorFromName(self.config.get('led3', 'activetextcolor')))
+        self.LED3Autoflash.setChecked(self.config.getboolean('led3', 'autoflash'))
+        self.LED3Timedflash.setChecked(self.config.getboolean('led3', 'timedflash'))
 
-        self.config.get('network', 'udpport')
+        self.LED4.setChecked(self.config.getboolean('led4', 'used'))
+        self.LED4Text.setText(self.config.get('led4', 'text'))
+        self.setLED4BGColor(self.getColorFromName(self.config.get('led4', 'activebgcolor')))
+        self.setLED4FGColor(self.getColorFromName(self.config.get('led4', 'activetextcolor')))
+        self.LED4Autoflash.setChecked(self.config.getboolean('led4', 'autoflash'))
+        self.LED4Timedflash.setChecked(self.config.getboolean('led4', 'timedflash'))
+
+        self.udpport.setText(self.config.get('network', 'udpport'))
 
     def createOptionWithDefault(self, section, option, default):
         if not self.config.has_section(section):
@@ -209,6 +228,11 @@ class Settings(QtGui.QWidget, Ui_Settings):
             return selectedcolor
         else:
             return initcolor
+
+    def getColorFromName(self, colorname):
+        color = QtGui.QColor()
+        color.setNamedColor( colorname )
+        return color
 
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
@@ -326,10 +350,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.showNormal()
         self.fullScreen = not (self.fullScreen)
 
-    def getColorFromName(self, colorname):
-        color = QtGui.QColor()
-        color.setNamedColor( colorname )
-        return color
 
     def setLED1(self, action):
         if action:
