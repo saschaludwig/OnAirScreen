@@ -98,8 +98,8 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
         self.LED1.setChecked(self.config.getboolean('led1', 'used'))
         self.LED1Text.setText(self.config.get('led1', 'text'))
-        self.config.get('led1', 'activebgcolor')
-        self.config.get('led1', 'activetextcolor')
+        #self.LED1Text  self.self.config.get('led1', 'activebgcolor')
+        #self.LED1Text  self.config.get('led1', 'activetextcolor')
         self.LED1Autoflash.setChecked(self.config.getboolean('led1', 'autoflash'))
         self.LED1Timedflash.setChecked(self.config.getboolean('led1', 'timedflash'))
 
@@ -122,73 +122,83 @@ class Settings(QtGui.QWidget, Ui_Settings):
     def applySettings(self):
         print "Apply settings here"
 
-    def setLED1BGColor(self):
+    def setLED1BGColor(self, newcolor=False):
         palette = self.LED1Text.palette()
         oldcolor = palette.base().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED1Text.setPalette(palette)
 
-    def setLED1FGColor(self):
+    def setLED1FGColor(self, newcolor=False):
         palette = self.LED1Text.palette()
         oldcolor = palette.text().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.LED1Text.setPalette(palette)
 
-    def setLED2BGColor(self):
+    def setLED2BGColor(self, newcolor=False):
         palette = self.LED2Text.palette()
         oldcolor = palette.base().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED2Text.setPalette(palette)
 
-    def setLED2FGColor(self):
+    def setLED2FGColor(self, newcolor=False):
         palette = self.LED2Text.palette()
         oldcolor = palette.text().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.LED2Text.setPalette(palette)
 
-    def setLED3BGColor(self):
+    def setLED3BGColor(self, newcolor=False):
         palette = self.LED3Text.palette()
         oldcolor = palette.base().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED3Text.setPalette(palette)
 
-    def setLED3FGColor(self):
+    def setLED3FGColor(self, newcolor=False):
         palette = self.LED3Text.palette()
         oldcolor = palette.text().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.LED3Text.setPalette(palette)
 
-    def setLED4BGColor(self):
+    def setLED4BGColor(self, newcolor=False):
         palette = self.LED4Text.palette()
         oldcolor = palette.base().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED4Text.setPalette(palette)
 
-    def setLED4FGColor(self):
+    def setLED4FGColor(self, newcolor=False):
         palette = self.LED4Text.palette()
         oldcolor = palette.text().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.LED4Text.setPalette(palette)
 
-    def setStationNameColor(self):
+    def setStationNameColor(self, newcolor=False):
         palette = self.StationName.palette()
         oldcolor = palette.text().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.StationName.setPalette(palette)
 
-    def setSloganColor(self):
+    def setSloganColor(self, newcolor=False):
         palette = self.Slogan.palette()
         oldcolor = palette.text().color()
-        newcolor = self.openColorDialog( oldcolor )
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.Slogan.setPalette(palette)
 
