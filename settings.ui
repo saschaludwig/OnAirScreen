@@ -548,7 +548,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_7">
+            <widget class="QCheckBox" name="LED1Autoflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -558,7 +558,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_11">
+            <widget class="QCheckBox" name="LED1Timedflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -696,7 +696,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_8">
+            <widget class="QCheckBox" name="LED2Autoflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -706,7 +706,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_12">
+            <widget class="QCheckBox" name="LED2Timedflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -844,7 +844,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_9">
+            <widget class="QCheckBox" name="LED3Autoflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -854,7 +854,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_13">
+            <widget class="QCheckBox" name="LED3Timedflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -992,7 +992,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_10">
+            <widget class="QCheckBox" name="LED4Autoflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -1002,7 +1002,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_14">
+            <widget class="QCheckBox" name="LED4Timedflash">
              <property name="enabled">
               <bool>true</bool>
              </property>
@@ -1210,7 +1210,7 @@
   <connection>
    <sender>LED1</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_7</receiver>
+   <receiver>LED1Autoflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1226,7 +1226,7 @@
   <connection>
    <sender>LED1</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_11</receiver>
+   <receiver>LED1Timedflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1290,7 +1290,7 @@
   <connection>
    <sender>LED2</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_8</receiver>
+   <receiver>LED2Autoflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1306,7 +1306,7 @@
   <connection>
    <sender>LED2</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_12</receiver>
+   <receiver>LED2Timedflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1370,7 +1370,7 @@
   <connection>
    <sender>LED3</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_9</receiver>
+   <receiver>LED3Autoflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1386,7 +1386,7 @@
   <connection>
    <sender>LED3</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_13</receiver>
+   <receiver>LED3Timedflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1450,7 +1450,7 @@
   <connection>
    <sender>LED4</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_10</receiver>
+   <receiver>LED4Autoflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1466,7 +1466,7 @@
   <connection>
    <sender>LED4</sender>
    <signal>clicked(bool)</signal>
-   <receiver>checkBox_14</receiver>
+   <receiver>LED4Timedflash</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
