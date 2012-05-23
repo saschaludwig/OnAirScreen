@@ -16,8 +16,11 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.setupUi(self)
         self._connectSlots()
         self.hide
-        self.createConfigWithDefaults()
+        # read the config, add missing values, save config and re-read config
         self.readConfig()
+        self.saveConfig()
+        self.readConfig()
+        self.applyConfig()
 
     def _connectSlots(self):
         self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
@@ -36,13 +39,83 @@ class Settings(QtGui.QWidget, Ui_Settings):
     def readConfig(self):
         self.config = ConfigParser.ConfigParser()
         self.config.read("onairscreen.ini")
+        # test if sections and options exits, else create them with defaults
+        self.createOptionWithDefault('general', 'stationname', 'RADIO ERIWAN')
+        self.createOptionWithDefault('general', 'slogan', 'Your question is our motivation')
+        self.createOptionWithDefault('general', 'stationcolor', '#FFAA00')
+        self.createOptionWithDefault('general', 'slogancolor', '#FFAA00')
 
-    def createConfigWithDefaults(self):
+        self.createOptionWithDefault('vu', 'vumeters', False)
+        self.createOptionWithDefault('vu', 'tooloud', True)
+        self.createOptionWithDefault('vu', 'tooloudtext', "TOO LOUD")
+
+        self.createOptionWithDefault('leds', 'inactivebgcolor', '#222222')
+        self.createOptionWithDefault('leds', 'inactivetextcolor', '#555555')
+
+        self.createOptionWithDefault('led1', 'used', True)
+        self.createOptionWithDefault('led1', 'text', 'ON AIR')
+        self.createOptionWithDefault('led1', 'activebgcolor', '#FF0000')
+        self.createOptionWithDefault('led1', 'activetextcolor', '#FFFFFF')
+        self.createOptionWithDefault('led1', 'autoflash', False)
+        self.createOptionWithDefault('led1', 'timedflash', False)
+
+        self.createOptionWithDefault('led2', 'used', True)
+        self.createOptionWithDefault('led2', 'text', 'PHONE')
+        self.createOptionWithDefault('led2', 'activebgcolor', '#DCDC00')
+        self.createOptionWithDefault('led2', 'activetextcolor', '#FFFFFF')
+        self.createOptionWithDefault('led2', 'autoflash', False)
+        self.createOptionWithDefault('led2', 'timedflash', False)
+
+        self.createOptionWithDefault('led3', 'used', True)
+        self.createOptionWithDefault('led3', 'text', 'DOORBELL')
+        self.createOptionWithDefault('led3', 'activebgcolor', '#00C8C8')
+        self.createOptionWithDefault('led3', 'activetextcolor', '#FFFFFF')
+        self.createOptionWithDefault('led3', 'autoflash', False)
+        self.createOptionWithDefault('led3', 'timedflash', False)
+
+        self.createOptionWithDefault('led4', 'used', True)
+        self.createOptionWithDefault('led4', 'text', 'ARI')
+        self.createOptionWithDefault('led4', 'activebgcolor', '#FF00FF')
+        self.createOptionWithDefault('led4', 'activetextcolor', '#FFFFFF')
+        self.createOptionWithDefault('led4', 'autoflash', False)
+        self.createOptionWithDefault('led4', 'timedflash', False)
+
+        self.createOptionWithDefault('network', 'udpport', '3310')
+
+
+    def applyConfig(self):
+        self.StationName.setText(self.config.get('general', 'stationname'))
+        self.Slogan.setText(self.config.get('general', 'slogan'))
+        #('general', 'stationcolor')
+        #('general', 'slogancolor')
+
+        self.checkBox_VU.setChecked(self.config.getboolean('vu', 'vumeters'))
+        self.checkBox_TooLoud.setChecked(self.config.getboolean('vu', 'tooloud'))
+        self.TooLoudText.setText(self.config.get('vu', 'tooloudtext'))
+
+        self.config.get('leds', 'inactivebgcolor')
+        self.config.get('leds', 'inactivetextcolor')
+
+        self.LED1.setChecked(self.config.getboolean('led1', 'used'))
+        self.LED1Text.setText(self.config.get('led1', 'text'))
+        self.config.get('led1', 'activebgcolor')
+        self.config.get('led1', 'activetextcolor')
+        self.LED1Autoflash.setChecked(self.config.getboolean('led1', 'autoflash'))
+        self.LED1Timedflash.setChecked(self.config.getboolean('led1', 'timedflash'))
+
+        # MORE LEDs here
+
+
+        self.config.get('network', 'udpport')
+
+    def createOptionWithDefault(self, section, option, default):
+        if not self.config.has_section(section):
+            self.config.add_section(section)
+        if not self.config.has_option(section, option):
+            self.config.set(section, option, default)
+
+    def saveConfig(self):
         cfgfile = open('onairscreen.ini', 'w')
-        self.config = ConfigParser.ConfigParser()
-        self.config.add_section('general')
-        self.config.set('general', 'stationname', 'RADIO ERIWAN')
-        self.config.set('general', 'slogan', 'You question is our motivation')
         self.config.write(cfgfile)
         cfgfile.close()
 
@@ -51,7 +124,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def setLED1BGColor(self):
         palette = self.LED1Text.palette()
-        oldcolor = palette.button().color()
+        oldcolor = palette.base().color()
         newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED1Text.setPalette(palette)
@@ -65,7 +138,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def setLED2BGColor(self):
         palette = self.LED2Text.palette()
-        oldcolor = palette.button().color()
+        oldcolor = palette.base().color()
         newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED2Text.setPalette(palette)
@@ -79,7 +152,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def setLED3BGColor(self):
         palette = self.LED3Text.palette()
-        oldcolor = palette.button().color()
+        oldcolor = palette.base().color()
         newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED3Text.setPalette(palette)
@@ -93,7 +166,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def setLED4BGColor(self):
         palette = self.LED4Text.palette()
-        oldcolor = palette.button().color()
+        oldcolor = palette.base().color()
         newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED4Text.setPalette(palette)
@@ -129,11 +202,6 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
 
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
-    #LED1 = False
-    #LED2 = False
-    #LED3 = False
-    #LED4 = False
-
     def __init__(self):
         QtGui.QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
@@ -152,7 +220,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.show )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.settings.show )
 
-
         # Setup and start timer
         self.ctimer = QtCore.QTimer()
         QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
@@ -162,15 +229,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.sock = QUdpSocket()
         self.sock.bind(3310, QUdpSocket.ShareAddress)
         self.sock.readyRead.connect(self.cmdHandler)
-
-        # some vars
-        self.LEDsInactiveColor = '#222'
-        self.LEDsInactiveTextColor = '#555'
-        self.LEDsActiveTextColor = '#FFFFFF'
-        self.LED1ActiveColor = '#FF0000'
-        self.LED2ActiveColor = '#DCDC00'
-        self.LED3ActiveColor = '#00C8C8'
-        self.LED4ActiveColor = '#FF00FF'
 
         #add the analog clock
         self.addAnalogClock()
@@ -219,7 +277,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def constantUpdate(self):
         # slot for constant timer timeout
         self.updateClock()
-        #self.updateLEDs()
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
@@ -252,12 +309,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         remain_seconds = 60-second
         self.setBacktimingSecs(remain_seconds)
 
-    #def updateLEDs(self):
-    #    self.setLED1(self.LED1)
-    #    self.setLED2(self.LED2)
-    #    self.setLED3(self.LED3)
-    #    self.setLED4(self.LED4)
-
     def toggleFullScreen(self):
         if not self.fullScreen :
             self.showFullScreen()
@@ -265,29 +316,34 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.showNormal()
         self.fullScreen = not (self.fullScreen)
 
+    def getColorFromName(self, colorname):
+        color = QtGui.QColor()
+        color.setNamedColor( colorname )
+        return color
+
     def setLED1(self, action):
         if action:
-            self.buttonLED1.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED1ActiveColor)
+            self.buttonLED1.setStyleSheet("color:"+self.settings.config.get('led1','activetextcolor')+";background-color:"+self.settings.config.get('led1', 'activebgcolor'))
         else:
-            self.buttonLED1.setStyleSheet("color: "+self.LEDsInactiveTextColor+"; background-color: " + self.LEDsInactiveColor)
+            self.buttonLED1.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
 
     def setLED2(self, action):
         if action:
-            self.buttonLED2.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED2ActiveColor)
+            self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('led2','activetextcolor')+";background-color:"+self.settings.config.get('led2', 'activebgcolor'))
         else:
-            self.buttonLED2.setStyleSheet("color: "+self.LEDsInactiveTextColor+"; background-color: " + self.LEDsInactiveColor)
+            self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
 
     def setLED3(self, action):
         if action:
-            self.buttonLED3.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED3ActiveColor)
+            self.buttonLED3.setStyleSheet("color:"+self.settings.config.get('led3','activetextcolor')+";background-color:"+self.settings.config.get('led3', 'activebgcolor'))
         else:
-            self.buttonLED3.setStyleSheet("color: "+self.LEDsInactiveTextColor+"; background-color: " + self.LEDsInactiveColor)
+            self.buttonLED3.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
 
     def setLED4(self, action):
         if action:
-            self.buttonLED4.setStyleSheet("color: "+self.LEDsActiveTextColor+"; background-color: " + self.LED4ActiveColor)
+            self.buttonLED4.setStyleSheet("color:"+self.settings.config.get('led4','activetextcolor')+";background-color:"+self.settings.config.get('led4', 'activebgcolor'))
         else:
-            self.buttonLED4.setStyleSheet("color: "+self.LEDsInactiveTextColor+"; background-color: " + self.LEDsInactiveColor)
+            self.buttonLED4.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
 
     def setClock(self, text):
         self.labelClock.setText(text)
@@ -354,18 +410,16 @@ if __name__ == "__main__":
 
     mainscreen.setLED1Text("ON AIR")
     mainscreen.setLED2Text("PHONE")
-    mainscreen.setLED3Text("DOORBELL")
+    mainscreen.setLED3Text("ATTENTION")
     mainscreen.setLED4Text("ARI")
 
-    mainscreen.setStation("RADIO WLR")
-    mainscreen.setSlogan("Hier spielt die Musik")
-    mainscreen.setCurrentSongText("The Clash - London Calling")
-    mainscreen.setNewsText("hier stehen weitere Nachrichten")
+    #mainscreen.setStation("RADIO WLR")
+    #mainscreen.setSlogan("Hier spielt die Musik")
+    mainscreen.setCurrentSongText("-")
+    mainscreen.setNewsText("-")
 
     mainscreen.setVULeft(0)
     mainscreen.setVURight(0)
-
-    mainscreen.setBacktimingSecs(15)
 
     mainscreen.hideWarning()
     mainscreen.setLED1(False)
