@@ -17,13 +17,14 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self._connectSlots()
         self.hide
         # read the config, add missing values, save config and re-read config
-        self.readConfig()
-        self.saveConfig()
-        self.readConfig()
-        self.applyConfig()
+        self.readConfigFromFile()
+        self.saveConfigToFile()
+        self.readConfigFromFile()
+        self.restoreSettingsFromConfig()
 
     def _connectSlots(self):
         self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
+        self.connect(self.CancelButton, QtCore.SIGNAL("clicked()"), self.cancelSettings )
         self.connect(self.LED1BGColor, QtCore.SIGNAL("clicked()"), self.setLED1BGColor )
         self.connect(self.LED1FGColor, QtCore.SIGNAL("clicked()"), self.setLED1FGColor )
         self.connect(self.LED2BGColor, QtCore.SIGNAL("clicked()"), self.setLED2BGColor )
@@ -36,7 +37,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.connect(self.StationNameColor, QtCore.SIGNAL("clicked()"), self.setStationNameColor )
         self.connect(self.SloganColor, QtCore.SIGNAL("clicked()"), self.setSloganColor )
 
-    def readConfig(self):
+    def readConfigFromFile(self):
         self.config = ConfigParser.ConfigParser()
         self.config.read("onairscreen.ini")
         # test if sections and options exits, else create them with defaults
@@ -83,7 +84,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.createOptionWithDefault('network', 'udpport', '3310')
 
 
-    def applyConfig(self):
+    def restoreSettingsFromConfig(self):
         self.StationName.setText(self.config.get('general', 'stationname'))
         self.Slogan.setText(self.config.get('general', 'slogan'))
         self.setStationNameColor(self.getColorFromName(self.config.get('general', 'stationcolor')))
@@ -127,19 +128,70 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
         self.udpport.setText(self.config.get('network', 'udpport'))
 
+    def getSettingsFromDialog(self):
+        #self.config.set(section, option, default)
+
+        self.config.set('general', 'stationname', self.StationName.displayText())
+        self.config.set('general', 'slogan', self.Slogan.displayText())
+        self.config.set('general', 'stationcolor', self.getStationNameColor().name())
+        self.config.set('general', 'slogancolor', self.getSloganColor().name())
+        self.config.set('vu', 'vumeters', self.checkBox_VU.isChecked())
+        self.config.set('vu', 'tooloud', self.checkBox_TooLoud.isChecked())
+        self.config.set('vu', 'tooloudtext', self.TooLoudText.displayText())
+        #not implemented in ui
+        #self.config.set('leds', 'inactivebgcolor')
+        #self.config.set('leds', 'inactivetextcolor')
+
+        self.config.set('led1', 'used', self.LED1.isChecked())
+        self.config.set('led1', 'text', self.LED1Text.displayText())
+        self.config.set('led1', 'activebgcolor', self.getLED1BGColor().name())
+        self.config.set('led1', 'activetextgcolor', self.getLED1FGColor().name())
+        self.config.set('led1', 'autoflash', self.LED1Autoflash.isChecked())
+        self.config.set('led1', 'timedflash', self.LED1Timedflash.isChecked())
+
+        self.config.set('led2', 'used', self.LED2.isChecked())
+        self.config.set('led2', 'text', self.LED2Text.displayText())
+        self.config.set('led2', 'activebgcolor', self.getLED2BGColor().name())
+        self.config.set('led2', 'activetextgcolor', self.getLED2FGColor().name())
+        self.config.set('led2', 'autoflash', self.LED2Autoflash.isChecked())
+        self.config.set('led2', 'timedflash', self.LED2Timedflash.isChecked())
+
+        self.config.set('led3', 'used', self.LED3.isChecked())
+        self.config.set('led3', 'text', self.LED3Text.displayText())
+        self.config.set('led3', 'activebgcolor', self.getLED3BGColor().name())
+        self.config.set('led3', 'activetextgcolor', self.getLED3FGColor().name())
+        self.config.set('led3', 'autoflash', self.LED3Autoflash.isChecked())
+        self.config.set('led3', 'timedflash', self.LED3Timedflash.isChecked())
+
+        self.config.set('led4', 'used', self.LED4.isChecked())
+        self.config.set('led4', 'text', self.LED4Text.displayText())
+        self.config.set('led4', 'activebgcolor', self.getLED4BGColor().name())
+        self.config.set('led4', 'activetextgcolor', self.getLED4FGColor().name())
+        self.config.set('led4', 'autoflash', self.LED4Autoflash.isChecked())
+        self.config.set('led4', 'timedflash', self.LED4Timedflash.isChecked())
+
+        self.config.set('network', 'udpport', self.udpport.displayText())
+
     def createOptionWithDefault(self, section, option, default):
         if not self.config.has_section(section):
             self.config.add_section(section)
         if not self.config.has_option(section, option):
             self.config.set(section, option, default)
 
-    def saveConfig(self):
+    def saveConfigToFile(self):
         cfgfile = open('onairscreen.ini', 'w')
         self.config.write(cfgfile)
         cfgfile.close()
 
     def applySettings(self):
+        #apply settings button pressed
         print "Apply settings here"
+        self.getSettingsFromDialog()
+        self.saveConfigToFile()
+
+    def cancelSettings(self):
+        #cancel settings button pressed
+        self.restoreSettingsFromConfig()
 
     def setLED1BGColor(self, newcolor=False):
         palette = self.LED1Text.palette()
@@ -220,6 +272,57 @@ class Settings(QtGui.QWidget, Ui_Settings):
             newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Text, newcolor)
         self.Slogan.setPalette(palette)
+
+    def getStationNameColor(self):
+        palette = self.StationName.palette()
+        color = palette.text().color()
+        return color
+
+    def getSloganColor(self):
+        palette = self.Slogan.palette()
+        color = palette.text().color()
+        return color
+
+    def getLED1BGColor(self):
+        palette = self.LED1Text.palette()
+        color = palette.base().color()
+        return color
+
+    def getLED2BGColor(self):
+        palette = self.LED2Text.palette()
+        color = palette.base().color()
+        return color
+
+    def getLED3BGColor(self):
+        palette = self.LED3Text.palette()
+        color = palette.base().color()
+        return color
+
+    def getLED4BGColor(self):
+        palette = self.LED4Text.palette()
+        color = palette.base().color()
+        return color
+
+    def getLED1FGColor(self):
+        palette = self.LED1Text.palette()
+        color = palette.text().color()
+        return color
+
+    def getLED2FGColor(self):
+        palette = self.LED2Text.palette()
+        color = palette.text().color()
+        return color
+
+    def getLED3FGColor(self):
+        palette = self.LED3Text.palette()
+        color = palette.text().color()
+        return color
+
+    def getLED4FGColor(self):
+        palette = self.LED4Text.palette()
+        color = palette.text().color()
+        return color
+
 
     def openColorDialog(self, initcolor):
         colordialog = QtGui.QColorDialog()
