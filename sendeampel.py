@@ -9,6 +9,8 @@ class MyForm(QDialog):
     super(MyForm, self).__init__(parent)
     self.setWindowTitle('AstraStudio Sendeampel')
     self.setMinimumSize(300, 100)
+    self.att_laststate = "foo"
+    self.air_laststate = "foo"
     # widgets
     self.DTRlabel, self.RTSlabel = QLabel(), QLabel()
     self.DTRbutton = QPushButton('ATTENTION')
@@ -80,27 +82,44 @@ class MyForm(QDialog):
       self.toggleRTS()
 
   def checkFiles(self):
+    self.checkFileAir()
+    self.checkFileAtt()
+
+  def checkFileAir(self):
     if os.path.isfile("/tmp/rivendell_onair"):
+        if self.air_laststate == True:
+            return
         call ("echo LED1:ON | nc -q0 -u 127.0.0.1 3310 ",shell=True)
         self.RTSlabel.setText("<font size = 5 color = darkred><b>ON</b></font>")
         self.RTSlogic = True
         self.port.setRTS(self.RTSlogic)
+        self.air_laststate = True
     else:
+        if self.air_laststate == False:
+            return
         call ("echo LED1:OFF | nc -q0 -u 127.0.0.1 3310 ",shell=True)
         self.RTSlabel.setText("<font size = 5 color = darkgreen><b>OFF</b></font>")
         self.RTSlogic = False
         self.port.setRTS(self.RTSlogic)
+        self.air_laststate = False
 
+  def checkFileAtt(self):
     if os.path.isfile("/tmp/rivendell_attention"):
+        if self.att_laststate == True:
+            return
         call ("echo LED3:ON | nc -q0 -u 127.0.0.1 3310 ",shell=True)
         self.DTRlabel.setText("<font size = 5 color = darkred><b>ON</b></font>")
         self.DTRlogic = True
         self.port.setDTR(self.DTRlogic)
+        self.att_laststate = True
     else:
+        if self.att_laststate == False:
+            return
         call ("echo LED3:OFF | nc -q0 -u 127.0.0.1 3310 ",shell=True)
         self.DTRlabel.setText("<font size = 5 color = darkgreen><b>OFF</b></font>")
         self.DTRlogic = False
         self.port.setDTR(self.DTRlogic)
+        self.att_laststate = False
 
 if __name__ == '__main__':
   app = QApplication(sys.argv)
