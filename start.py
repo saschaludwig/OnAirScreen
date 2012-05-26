@@ -561,4 +561,7 @@ if __name__ == "__main__":
     mainscreen.setLED4(False)
 
     mainscreen.show()
+    # hide mousecursor
+    app.setOverrideCursor( QtGui.QCursor( 10 ) );
+
     sys.exit(app.exec_())
