@@ -15,16 +15,37 @@ class Settings(QtGui.QWidget, Ui_Settings):
         Ui_Settings.__init__(self)
         self.setupUi(self)
         self._connectSlots()
-        self.hide
+        self.hide()
         # read the config, add missing values, save config and re-read config
         self.readConfigFromFile()
         self.saveConfigToFile()
         self.readConfigFromFile()
         self.restoreSettingsFromConfig()
 
+    def showsettings(self):
+        global app
+        # un-hide mousecursor
+        app.setOverrideCursor( QtGui.QCursor( 0 ) );
+        self.show()
+
+    def hidesettings(self):
+        global app
+        # hide mousecursor
+        app.setOverrideCursor( QtGui.QCursor( 10 ) );
+
+    def closeEvent(self, event):
+        global app
+        # hide mousecursor
+        app.setOverrideCursor( QtGui.QCursor( 10 ) );
+
+    def exitOnAirScreen(self):
+        global app
+        app.exit()
+
     def _connectSlots(self):
         self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
-        self.connect(self.CancelButton, QtCore.SIGNAL("clicked()"), self.cancelSettings )
+        self.connect(self.CloseButton, QtCore.SIGNAL("clicked()"), self.closeSettings )
+        self.connect(self.ExitButton, QtCore.SIGNAL("clicked()"), self.exitOnAirScreen )
         self.connect(self.LED1BGColor, QtCore.SIGNAL("clicked()"), self.setLED1BGColor )
         self.connect(self.LED1FGColor, QtCore.SIGNAL("clicked()"), self.setLED1FGColor )
         self.connect(self.LED2BGColor, QtCore.SIGNAL("clicked()"), self.setLED2BGColor )
@@ -36,6 +57,8 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
         self.connect(self.StationNameColor, QtCore.SIGNAL("clicked()"), self.setStationNameColor )
         self.connect(self.SloganColor, QtCore.SIGNAL("clicked()"), self.setSloganColor )
+
+        self.connect(self, QtCore.SIGNAL("triggered()"), self.closeEvent )
 
     def readConfigFromFile(self):
         self.config = ConfigParser.ConfigParser()
@@ -185,13 +208,14 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def applySettings(self):
         #apply settings button pressed
-        print "Apply settings here"
         self.getSettingsFromDialog()
         self.saveConfigToFile()
+        #self.hidesettings()
 
-    def cancelSettings(self):
-        #cancel settings button pressed
+    def closeSettings(self):
+        #close settings button pressed
         self.restoreSettingsFromConfig()
+        self.hidesettings()
 
     def setLED1BGColor(self, newcolor=False):
         palette = self.LED1Text.palette()
@@ -323,7 +347,6 @@ class Settings(QtGui.QWidget, Ui_Settings):
         color = palette.text().color()
         return color
 
-
     def openColorDialog(self, initcolor):
         colordialog = QtGui.QColorDialog()
         selectedcolor = colordialog.getColor(initcolor, None, 'Please select a color')
@@ -354,8 +377,8 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self, QtCore.QCoreApplication.instance().quit )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, QtCore.QCoreApplication.instance().quit )
         QtGui.QShortcut(QtGui.QKeySequence("ESC"), self, QtCore.QCoreApplication.instance().quit )
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.show )
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.settings.show )
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.showsettings )
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.settings.showsettings )
 
         # Setup and start timer
         self.ctimer = QtCore.QTimer()
