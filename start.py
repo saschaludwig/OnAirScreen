@@ -9,7 +9,6 @@ from settings import Ui_Settings
 import analogclock
 
 class Settings(QtGui.QWidget, Ui_Settings):
-
     def __init__(self):
         QtGui.QWidget.__init__(self)
         Ui_Settings.__init__(self)
@@ -21,6 +20,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.saveConfigToFile()
         self.readConfigFromFile()
         self.restoreSettingsFromConfig()
+        self.configChanged = True
 
     def showsettings(self):
         global app
@@ -210,6 +210,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         #apply settings button pressed
         self.getSettingsFromDialog()
         self.saveConfigToFile()
+        self.configChanged = True
         #self.hidesettings()
 
     def closeSettings(self):
@@ -371,6 +372,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
         self.fullScreen = True
         self.showFullScreen()
+        self.restoreSettingsFromConfig()
 
         # add hotkey bindings
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
@@ -387,7 +389,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
         # Setup UDP Socket
         self.sock = QUdpSocket()
-        self.sock.bind(3310, QUdpSocket.ShareAddress)
+        self.sock.bind(self.settings.config.getint('network', 'udpport'), QUdpSocket.ShareAddress)
         self.sock.readyRead.connect(self.cmdHandler)
 
         #add the analog clock
@@ -433,6 +435,25 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
                     else:
                         self.hideWarning()
 
+    def setStationColor(self, newcolor):
+        palette = self.labelStation.palette()
+        palette.setColor(QtGui.QPalette.WindowText, newcolor)
+        self.labelStation.setPalette(palette)
+
+    def setSloganColor(self, newcolor):
+        palette = self.labelSlogan.palette()
+        palette.setColor(QtGui.QPalette.WindowText, newcolor)
+        self.labelSlogan.setPalette(palette)
+
+    def restoreSettingsFromConfig(self):
+        self.labelStation.setText(self.settings.config.get('general', 'stationname'))
+        self.labelSlogan.setText(self.settings.config.get('general', 'slogan'))
+        self.setStationColor(self.settings.getColorFromName(self.settings.config.get('general', 'stationcolor')))
+        self.setSloganColor(self.settings.getColorFromName(self.settings.config.get('general', 'slogancolor')))
+        self.setLED1Text(self.settings.config.get('led1', 'text'))
+        self.setLED2Text(self.settings.config.get('led2', 'text'))
+        self.setLED3Text(self.settings.config.get('led3', 'text'))
+        self.setLED4Text(self.settings.config.get('led4', 'text'))
 
     def constantUpdate(self):
         # slot for constant timer timeout
@@ -440,6 +461,9 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
+        if self.settings.configChanged == True:
+            self.restoreSettingsFromConfig()
+            self.settings.configChanged = False
 
     def updateClock(self):
         now = datetime.datetime.now()
@@ -564,13 +588,6 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     mainscreen = MainScreen()
 
-    mainscreen.setLED1Text("ON AIR")
-    mainscreen.setLED2Text("PHONE")
-    mainscreen.setLED3Text("ATTENTION")
-    mainscreen.setLED4Text("ARI")
-
-    #mainscreen.setStation("RADIO WLR")
-    #mainscreen.setSlogan("Hier spielt die Musik")
     mainscreen.setCurrentSongText("-")
     mainscreen.setNewsText("-")
 
