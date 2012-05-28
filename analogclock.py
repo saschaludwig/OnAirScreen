@@ -67,9 +67,9 @@ class AnalogClock(QtGui.QWidget):
         QtCore.QPoint(0, -75)
     ])
 
-    hourColor = QtGui.QColor(191, 191, 191, 255)
-    minuteColor = QtGui.QColor(191, 191, 191, 255)
-    circleColor = QtGui.QColor(255, 255, 255, 255)
+    hourColor = QtGui.QColor(200, 200, 200, 255)
+    minuteColor = QtGui.QColor(220, 220, 220, 255)
+    circleColor = QtGui.QColor(220, 220, 220, 255)
 
     def __init__(self, parent=None):
         super(AnalogClock, self).__init__(parent)
@@ -118,7 +118,7 @@ class AnalogClock(QtGui.QWidget):
         #draw center circle
         painter.setBrush(AnalogClock.circleColor)
         painter.save()
-        painter.drawEllipse(-5,-5,10,10)
+        painter.drawEllipse(-6,-6,12,12)
         painter.restore()
 
         painter.setPen(AnalogClock.minuteColor)
