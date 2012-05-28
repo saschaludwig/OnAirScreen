@@ -17,7 +17,7 @@
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="pushButton_3">
+      <widget class="QPushButton" name="ExitButton">
        <property name="enabled">
         <bool>true</bool>
        </property>
@@ -43,12 +43,12 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="CancelButton">
+      <widget class="QPushButton" name="CloseButton">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <property name="text">
-        <string>Cancel</string>
+        <string>Close</string>
        </property>
       </widget>
      </item>
@@ -1140,14 +1140,14 @@
   <tabstop>SloganColor</tabstop>
   <tabstop>checkBox_VU</tabstop>
   <tabstop>checkBox_TooLoud</tabstop>
-  <tabstop>CancelButton</tabstop>
+  <tabstop>CloseButton</tabstop>
   <tabstop>ApplyButton</tabstop>
-  <tabstop>pushButton_3</tabstop>
+  <tabstop>ExitButton</tabstop>
  </tabstops>
  <resources/>
  <connections>
   <connection>
-   <sender>CancelButton</sender>
+   <sender>CloseButton</sender>
    <signal>clicked()</signal>
    <receiver>Settings</receiver>
    <slot>close()</slot>
@@ -1511,22 +1511,6 @@
     <hint type="destinationlabel">
      <x>203</x>
      <y>248</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ApplyButton</sender>
-   <signal>clicked()</signal>
-   <receiver>Settings</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>628</x>
-     <y>495</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>437</x>
-     <y>493</y>
     </hint>
    </hints>
   </connection>
