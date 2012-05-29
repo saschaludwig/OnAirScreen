@@ -482,17 +482,19 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         if hour > 12:
             hour -= 12
 
-        if minute > 0 and minute < 15:
-            string = "%d Minuten nach %d" % (minute, hour)
+        minute = 15
 
-        if minute > 15 and minute < 30:
-            string = "%d Minuten vor halb %d" % (remain_min-30, hour)
+        if minute >= 0 and minute < 15:
+            string = "%d Minute%s nach %d" % (minute, 'n' if minute>1 else '', hour)
 
-        if minute > 30 and minute < 45:
-            string = "%d Minuten nach halb %d" % (30-remain_min, hour)
+        if minute >= 15 and minute < 30:
+            string = "%d Minute%s vor halb %d" % (remain_min-30, 'n' if remain_min-30>1 else '', hour)
 
-        if minute > 45 and minute <= 59:
-            string = "%d Minuten vor %d" % (remain_min, hour+1)
+        if minute >= 30 and minute < 45:
+            string = "%d Minute%s nach halb %d" % (30-remain_min, 'n' if 30-remain_min>1 else '', hour)
+
+        if minute >= 45 and minute <= 59:
+            string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min>1 else '', hour+1)
 
         self.setRightText( string )
 
