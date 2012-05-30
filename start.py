@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, time, datetime, ConfigParser
+import sys, time, datetime, ConfigParser, os
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress
 from mainscreen import Ui_MainScreen
@@ -62,47 +62,48 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def readConfigFromFile(self):
         self.config = ConfigParser.ConfigParser()
-        self.config.read("onairscreen.ini")
+        self.config.read(os.path.expanduser('~/.onairscreen.ini'))
         # test if sections and options exits, else create them with defaults
         self.createOptionWithDefault('general', 'stationname', 'RADIO ERIWAN')
         self.createOptionWithDefault('general', 'slogan', 'Your question is our motivation')
         self.createOptionWithDefault('general', 'stationcolor', '#FFAA00')
         self.createOptionWithDefault('general', 'slogancolor', '#FFAA00')
+        self.createOptionWithDefault('general', 'fullscreen', 'True')
 
-        self.createOptionWithDefault('vu', 'vumeters', False)
-        self.createOptionWithDefault('vu', 'tooloud', True)
+        self.createOptionWithDefault('vu', 'vumeters', 'False')
+        self.createOptionWithDefault('vu', 'tooloud', 'True')
         self.createOptionWithDefault('vu', 'tooloudtext', "TOO LOUD")
 
         self.createOptionWithDefault('leds', 'inactivebgcolor', '#222222')
         self.createOptionWithDefault('leds', 'inactivetextcolor', '#555555')
 
-        self.createOptionWithDefault('led1', 'used', True)
+        self.createOptionWithDefault('led1', 'used', 'True')
         self.createOptionWithDefault('led1', 'text', 'ON AIR')
         self.createOptionWithDefault('led1', 'activebgcolor', '#FF0000')
         self.createOptionWithDefault('led1', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led1', 'autoflash', False)
-        self.createOptionWithDefault('led1', 'timedflash', False)
+        self.createOptionWithDefault('led1', 'autoflash', 'False')
+        self.createOptionWithDefault('led1', 'timedflash', 'False')
 
-        self.createOptionWithDefault('led2', 'used', True)
+        self.createOptionWithDefault('led2', 'used', 'True')
         self.createOptionWithDefault('led2', 'text', 'PHONE')
         self.createOptionWithDefault('led2', 'activebgcolor', '#DCDC00')
         self.createOptionWithDefault('led2', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led2', 'autoflash', False)
-        self.createOptionWithDefault('led2', 'timedflash', False)
+        self.createOptionWithDefault('led2', 'autoflash', 'False')
+        self.createOptionWithDefault('led2', 'timedflash', 'False')
 
-        self.createOptionWithDefault('led3', 'used', True)
+        self.createOptionWithDefault('led3', 'used', 'True')
         self.createOptionWithDefault('led3', 'text', 'DOORBELL')
         self.createOptionWithDefault('led3', 'activebgcolor', '#00C8C8')
         self.createOptionWithDefault('led3', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led3', 'autoflash', False)
-        self.createOptionWithDefault('led3', 'timedflash', False)
+        self.createOptionWithDefault('led3', 'autoflash', 'False')
+        self.createOptionWithDefault('led3', 'timedflash', 'False')
 
-        self.createOptionWithDefault('led4', 'used', True)
+        self.createOptionWithDefault('led4', 'used', 'True')
         self.createOptionWithDefault('led4', 'text', 'ARI')
         self.createOptionWithDefault('led4', 'activebgcolor', '#FF00FF')
         self.createOptionWithDefault('led4', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led4', 'autoflash', False)
-        self.createOptionWithDefault('led4', 'timedflash', False)
+        self.createOptionWithDefault('led4', 'autoflash', 'False')
+        self.createOptionWithDefault('led4', 'timedflash', 'False')
 
         self.createOptionWithDefault('network', 'udpport', '3310')
 
@@ -158,40 +159,40 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.config.set('general', 'slogan', self.Slogan.displayText())
         self.config.set('general', 'stationcolor', self.getStationNameColor().name())
         self.config.set('general', 'slogancolor', self.getSloganColor().name())
-        self.config.set('vu', 'vumeters', self.checkBox_VU.isChecked())
-        self.config.set('vu', 'tooloud', self.checkBox_TooLoud.isChecked())
+        self.config.set('vu', 'vumeters', ('True','False')[not self.checkBox_VU.isChecked()] )
+        self.config.set('vu', 'tooloud', ('True','False')[not self.checkBox_TooLoud.isChecked()])
         self.config.set('vu', 'tooloudtext', self.TooLoudText.displayText())
         #not implemented in ui
         #self.config.set('leds', 'inactivebgcolor')
         #self.config.set('leds', 'inactivetextcolor')
 
-        self.config.set('led1', 'used', self.LED1.isChecked())
+        self.config.set('led1', 'used', ('True','False')[not self.LED1.isChecked()])
         self.config.set('led1', 'text', self.LED1Text.displayText())
         self.config.set('led1', 'activebgcolor', self.getLED1BGColor().name())
         self.config.set('led1', 'activetextgcolor', self.getLED1FGColor().name())
-        self.config.set('led1', 'autoflash', self.LED1Autoflash.isChecked())
-        self.config.set('led1', 'timedflash', self.LED1Timedflash.isChecked())
+        self.config.set('led1', 'autoflash', ('True','False')[not self.LED1Autoflash.isChecked()])
+        self.config.set('led1', 'timedflash', ('True','False')[not self.LED1Timedflash.isChecked()])
 
-        self.config.set('led2', 'used', self.LED2.isChecked())
+        self.config.set('led2', 'used', ('True','False')[not self.LED2.isChecked()])
         self.config.set('led2', 'text', self.LED2Text.displayText())
         self.config.set('led2', 'activebgcolor', self.getLED2BGColor().name())
         self.config.set('led2', 'activetextgcolor', self.getLED2FGColor().name())
-        self.config.set('led2', 'autoflash', self.LED2Autoflash.isChecked())
-        self.config.set('led2', 'timedflash', self.LED2Timedflash.isChecked())
+        self.config.set('led2', 'autoflash', ('True','False')[not self.LED2Autoflash.isChecked()])
+        self.config.set('led2', 'timedflash', ('True','False')[not self.LED2Timedflash.isChecked()])
 
-        self.config.set('led3', 'used', self.LED3.isChecked())
+        self.config.set('led3', 'used', ('True','False')[not self.LED3.isChecked()])
         self.config.set('led3', 'text', self.LED3Text.displayText())
         self.config.set('led3', 'activebgcolor', self.getLED3BGColor().name())
         self.config.set('led3', 'activetextgcolor', self.getLED3FGColor().name())
-        self.config.set('led3', 'autoflash', self.LED3Autoflash.isChecked())
-        self.config.set('led3', 'timedflash', self.LED3Timedflash.isChecked())
+        self.config.set('led3', 'autoflash', ('True','False')[not self.LED3Autoflash.isChecked()])
+        self.config.set('led3', 'timedflash', ('True','False')[not self.LED3Timedflash.isChecked()])
 
-        self.config.set('led4', 'used', self.LED4.isChecked())
+        self.config.set('led4', 'used', ('True','False')[not self.LED4.isChecked()])
         self.config.set('led4', 'text', self.LED4Text.displayText())
         self.config.set('led4', 'activebgcolor', self.getLED4BGColor().name())
         self.config.set('led4', 'activetextgcolor', self.getLED4FGColor().name())
-        self.config.set('led4', 'autoflash', self.LED4Autoflash.isChecked())
-        self.config.set('led4', 'timedflash', self.LED4Timedflash.isChecked())
+        self.config.set('led4', 'autoflash', ('True','False')[not self.LED4Autoflash.isChecked()])
+        self.config.set('led4', 'timedflash', ('True','False')[not self.LED4Timedflash.isChecked()])
 
         self.config.set('network', 'udpport', self.udpport.displayText())
 
@@ -202,7 +203,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
             self.config.set(section, option, default)
 
     def saveConfigToFile(self):
-        cfgfile = open('onairscreen.ini', 'w')
+        cfgfile = open(os.path.expanduser('~/.onairscreen.ini'), 'w')
         self.config.write(cfgfile)
         cfgfile.close()
 
@@ -369,10 +370,10 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.setupUi(self)
 
         self.settings = Settings()
-
-        self.fullScreen = True
-        self.showFullScreen()
         self.restoreSettingsFromConfig()
+
+        if self.settings.config.getboolean('general', 'fullscreen'):
+            self.showFullScreen()
 
         # add hotkey bindings
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
@@ -482,8 +483,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         if hour > 12:
             hour -= 12
 
-        minute = 15
-
         if minute >= 0 and minute < 15:
             string = "%d Minute%s nach %d" % (minute, 'n' if minute>1 else '', hour)
 
@@ -505,12 +504,14 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.setBacktimingSecs(remain_seconds)
 
     def toggleFullScreen(self):
-        if not self.fullScreen :
+        if not self.settings.config.getboolean('general', 'fullscreen'):
             self.showFullScreen()
+            self.settings.config.set('general', 'fullscreen', 'True')
+            self.settings.saveConfigToFile()
         else:
             self.showNormal()
-        self.fullScreen = not (self.fullScreen)
-
+            self.settings.config.set('general', 'fullscreen', 'False')
+            self.settings.saveConfigToFile()
 
     def setLED1(self, action):
         if action:
