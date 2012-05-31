@@ -572,7 +572,8 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.progressR.setValue(value)
 
     def setBacktimingSecs(self, value):
-        self.labelSeconds.setText( str(value) )
+        pass
+        #self.labelSeconds.setText( str(value) )
 
     def showWarning(self, text):
         self.labelWarning.setText( text )
