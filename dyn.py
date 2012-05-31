@@ -4,9 +4,8 @@
 import sys, time, datetime, ConfigParser, os
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress
-from mainscreen import Ui_MainScreen
+from dynscreen import Ui_MainScreen
 from settings import Ui_Settings
-import analogclock
 
 class Settings(QtGui.QWidget, Ui_Settings):
     def __init__(self):
@@ -393,9 +392,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.sock.bind(self.settings.config.getint('network', 'udpport'), QUdpSocket.ShareAddress)
         self.sock.readyRead.connect(self.cmdHandler)
 
-        #add the analog clock
-        self.addAnalogClock()
-
     def cmdHandler(self):
         while self.sock.hasPendingDatagrams():
             data, host, port = self.sock.readDatagram(self.sock.pendingDatagramSize())
@@ -585,14 +581,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def hideWarning(self):
         self.labelWarning.setText( "" )
         self.labelWarning.hide()
-
-    def addAnalogClock(self):
-        self.analogClockPlaceholder.hide()
-        self.analogClock = analogclock.AnalogClock(self)
-        self.analogClock.setGeometry(QtCore.QRect(170, 90, 470, 470))
-        self.analogClock.setObjectName("analogClock")
-        self.analogClock.show()
-
 
 if __name__ == "__main__":
     import sys
