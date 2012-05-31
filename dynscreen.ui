@@ -12,9 +12,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>914</width>
-    <height>793</height>
+    <width>819</width>
+    <height>759</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
   </property>
   <property name="palette">
    <palette>
@@ -87,6 +93,15 @@
    <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout" rowstretch="0,1,0,0,0,0,0,0" columnstretch="2,2,2,4,2">
+   <property name="horizontalSpacing">
+    <number>10</number>
+   </property>
+   <property name="verticalSpacing">
+    <number>7</number>
+   </property>
+   <property name="margin">
+    <number>5</number>
+   </property>
    <item row="0" column="0" colspan="5">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
@@ -489,7 +504,7 @@ background-color: rgb(42, 42, 42);</string>
        </property>
        <property name="minimumSize">
         <size>
-         <width>512</width>
+         <width>530</width>
          <height>0</height>
         </size>
        </property>
