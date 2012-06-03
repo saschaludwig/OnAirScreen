@@ -54,7 +54,7 @@
 from PyQt4 import QtCore, QtGui
 
 
-class OASAnalogClockWidget(QtGui.QWidget):
+class ClockWidget(QtGui.QWidget):
 
     __pyqtSignals__ = ("timeChanged(QTime)", "timeZoneChanged(int)")
 
@@ -77,7 +77,7 @@ class OASAnalogClockWidget(QtGui.QWidget):
     timeZoneOffset = 0
 
     def __init__(self, parent=None):
-        super(OASAnalogClockWidget, self).__init__(parent)
+        super(ClockWidget, self).__init__(parent)
 
         timer = QtCore.QTimer(self)
         self.connect(timer, QtCore.SIGNAL("timeout()"), self, QtCore.SLOT("update()"))
@@ -116,7 +116,7 @@ class OASAnalogClockWidget(QtGui.QWidget):
         painter.scale(side / 200.0, side / 200.0)
 
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(OASAnalogClockWidget.hourColor)
+        painter.setBrush(ClockWidget.hourColor)
 
         # set hour hand length and minute hand length
         hhl = -65 #-50
@@ -127,14 +127,14 @@ class OASAnalogClockWidget(QtGui.QWidget):
         painter.drawRoundedRect(-4,4,8,hhl,4,4)
         painter.restore()
 
-        painter.setPen(OASAnalogClockWidget.hourColor)
+        painter.setPen(ClockWidget.hourColor)
 
         for i in range(12):
             painter.drawRoundedRect(88,-1,8,2,1,1)
             painter.rotate(30.0)
 
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(OASAnalogClockWidget.minuteColor)
+        painter.setBrush(ClockWidget.minuteColor)
 
         #draw minute hand
         sizefactor = 1.3
@@ -144,12 +144,12 @@ class OASAnalogClockWidget(QtGui.QWidget):
         painter.restore()
 
         #draw center circle
-        painter.setBrush(OASAnalogClockWidget.circleColor)
+        painter.setBrush(ClockWidget.circleColor)
         painter.save()
         painter.drawEllipse(-6,-6,12,12)
         painter.restore()
 
-        painter.setPen(OASAnalogClockWidget.minuteColor)
+        painter.setPen(ClockWidget.minuteColor)
 
         for j in range(60):
             if (j % 5) != 0:
@@ -162,7 +162,7 @@ if __name__ == '__main__':
     import sys
 
     app = QtGui.QApplication(sys.argv)
-    widget = OASAnalogClockWidget()
+    widget = ClockWidget()
     widget.setStyleSheet("background-color:black;")
     widget.resize(500,500)
     widget.show()
