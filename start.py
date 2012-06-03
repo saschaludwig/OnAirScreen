@@ -468,7 +468,10 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.setClock( now.strftime("%H:%M:%S") )
 
     def updateDate(self):
-        locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+        try:
+            locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+        except:
+            pass
         now = datetime.datetime.now()
         self.setLeftText( now.strftime("%A, %d. %B %Y") )
 
