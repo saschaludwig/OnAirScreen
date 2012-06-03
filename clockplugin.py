@@ -8,9 +8,9 @@
 ##
 
 from PyQt4 import QtGui, QtDesigner
-from oasanalogclockwidget import OASAnalogClockWidget
+from clockwidget import ClockWidget
 
-class OASAnalogClockPlugin(QtDesigner.QPyDesignerCustomWidgetPlugin):
+class ClockPlugin(QtDesigner.QPyDesignerCustomWidgetPlugin):
 
     def __init__(self, parent = None):
         QtDesigner.QPyDesignerCustomWidgetPlugin.__init__(self)
@@ -25,10 +25,10 @@ class OASAnalogClockPlugin(QtDesigner.QPyDesignerCustomWidgetPlugin):
         return self.initialized
 
     def createWidget(self, parent):
-        return OASAnalogClockWidget(parent)
+        return ClockWidget(parent)
 
     def name(self):
-        return "OASAnalogClockWidget"
+        return "ClockWidget"
 
     # Returns the name of the group in Qt Designer's widget box that this
     # widget belongs to.
@@ -60,12 +60,12 @@ class OASAnalogClockPlugin(QtDesigner.QPyDesignerCustomWidgetPlugin):
     # default values for its properties. Each custom widget created by this
     # plugin will be configured using this description.
     def domXml(self):
-        return '<widget class="OASAnalogClockWidget" name="oasanalogclockWidget" />\n'
+        return '<widget class="ClockWidget" name="clockWidget" />\n'
 
     # Returns the module containing the custom widget class. It may include
     # a module path.
     def includeFile(self):
-        return "oasanalogclockwidget"
+        return "clockwidget"
 
 
 # Define the image used for the icon.
