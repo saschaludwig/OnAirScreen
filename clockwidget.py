@@ -58,18 +58,6 @@ class ClockWidget(QtGui.QWidget):
 
     __pyqtSignals__ = ("timeChanged(QTime)", "timeZoneChanged(int)")
 
-    hourHand = QtGui.QPolygon([
-        QtCore.QPoint(7, 8),
-        QtCore.QPoint(-7, 8),
-        QtCore.QPoint(0, -50)
-    ])
-
-    minuteHand = QtGui.QPolygon([
-        QtCore.QPoint(7, 8),
-        QtCore.QPoint(-7, 8),
-        QtCore.QPoint(0, -75)
-    ])
-
     hourColor = QtGui.QColor(200, 200, 200, 255)
     minuteColor = QtGui.QColor(220, 220, 220, 255)
     circleColor = QtGui.QColor(220, 220, 220, 255)
@@ -82,7 +70,6 @@ class ClockWidget(QtGui.QWidget):
         timer = QtCore.QTimer(self)
         self.connect(timer, QtCore.SIGNAL("timeout()"), self, QtCore.SLOT("update()"))
         self.connect(timer, QtCore.SIGNAL("timeout()"), self.updateTime)
-        #timer.timeout.connect(self.update)
         timer.start(1000)
 
     def updateTime(self):
