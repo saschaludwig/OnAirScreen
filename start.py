@@ -6,6 +6,8 @@ from PyQt4 import QtGui, QtCore
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress
 from mainscreen import Ui_MainScreen
 from settings import Ui_Settings
+import locale
+
 
 class Settings(QtGui.QWidget, Ui_Settings):
     def __init__(self):
@@ -466,6 +468,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.setClock( now.strftime("%H:%M:%S") )
 
     def updateDate(self):
+        locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
         now = datetime.datetime.now()
         self.setLeftText( now.strftime("%A, %d. %B %Y") )
 
@@ -585,6 +588,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
 if __name__ == "__main__":
     import sys
+
     app = QtGui.QApplication(sys.argv)
     mainscreen = MainScreen()
 
