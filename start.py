@@ -170,28 +170,28 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.config.set('led1', 'used', ('True','False')[not self.LED1.isChecked()])
         self.config.set('led1', 'text', self.LED1Text.displayText())
         self.config.set('led1', 'activebgcolor', self.getLED1BGColor().name())
-        self.config.set('led1', 'activetextgcolor', self.getLED1FGColor().name())
+        self.config.set('led1', 'activetextcolor', self.getLED1FGColor().name())
         self.config.set('led1', 'autoflash', ('True','False')[not self.LED1Autoflash.isChecked()])
         self.config.set('led1', 'timedflash', ('True','False')[not self.LED1Timedflash.isChecked()])
 
         self.config.set('led2', 'used', ('True','False')[not self.LED2.isChecked()])
         self.config.set('led2', 'text', self.LED2Text.displayText())
         self.config.set('led2', 'activebgcolor', self.getLED2BGColor().name())
-        self.config.set('led2', 'activetextgcolor', self.getLED2FGColor().name())
+        self.config.set('led2', 'activetextcolor', self.getLED2FGColor().name())
         self.config.set('led2', 'autoflash', ('True','False')[not self.LED2Autoflash.isChecked()])
         self.config.set('led2', 'timedflash', ('True','False')[not self.LED2Timedflash.isChecked()])
 
         self.config.set('led3', 'used', ('True','False')[not self.LED3.isChecked()])
         self.config.set('led3', 'text', self.LED3Text.displayText())
         self.config.set('led3', 'activebgcolor', self.getLED3BGColor().name())
-        self.config.set('led3', 'activetextgcolor', self.getLED3FGColor().name())
+        self.config.set('led3', 'activetextcolor', self.getLED3FGColor().name())
         self.config.set('led3', 'autoflash', ('True','False')[not self.LED3Autoflash.isChecked()])
         self.config.set('led3', 'timedflash', ('True','False')[not self.LED3Timedflash.isChecked()])
 
         self.config.set('led4', 'used', ('True','False')[not self.LED4.isChecked()])
         self.config.set('led4', 'text', self.LED4Text.displayText())
         self.config.set('led4', 'activebgcolor', self.getLED4BGColor().name())
-        self.config.set('led4', 'activetextgcolor', self.getLED4FGColor().name())
+        self.config.set('led4', 'activetextcolor', self.getLED4FGColor().name())
         self.config.set('led4', 'autoflash', ('True','False')[not self.LED4Autoflash.isChecked()])
         self.config.set('led4', 'timedflash', ('True','False')[not self.LED4Timedflash.isChecked()])
 
@@ -522,6 +522,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
     def setLED2(self, action):
         if action:
+            print "Setting LED2 color: " + self.settings.config.get('led2','activetextcolor')
             self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('led2','activetextcolor')+";background-color:"+self.settings.config.get('led2', 'activebgcolor'))
         else:
             self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
