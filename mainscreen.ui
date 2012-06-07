@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>819</width>
-    <height>759</height>
+    <width>1000</width>
+    <height>794</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -240,6 +240,90 @@
      </item>
     </layout>
    </item>
+   <item row="1" column="0" rowspan="5">
+    <widget class="QProgressBar" name="progressL">
+     <property name="styleSheet">
+      <string notr="true">selection-background-color: rgb(0, 255, 0);
+background-color: rgb(42, 42, 42);</string>
+     </property>
+     <property name="maximum">
+      <number>127</number>
+     </property>
+     <property name="value">
+      <number>24</number>
+     </property>
+     <property name="textVisible">
+      <bool>false</bool>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" rowspan="5">
+    <widget class="QProgressBar" name="progressR">
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">selection-background-color: rgb(0, 255, 0);
+background-color: rgb(42, 42, 42);</string>
+     </property>
+     <property name="maximum">
+      <number>127</number>
+     </property>
+     <property name="value">
+      <number>24</number>
+     </property>
+     <property name="textVisible">
+      <bool>false</bool>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2" rowspan="5" colspan="2">
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="ClockWidget" name="clockWidget">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>530</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelClock">
+       <property name="font">
+        <font>
+         <family>FreeSans</family>
+         <pointsize>72</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(255, 255, 0)</string>
+       </property>
+       <property name="text">
+        <string>23:42:05</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
    <item row="1" column="4" rowspan="6">
     <layout class="QVBoxLayout" name="verticalLayout" stretch="10,1,10,1,10,1,10">
      <property name="spacing">
@@ -449,90 +533,6 @@ color: rgb(255, 255, 255);</string>
      </item>
     </layout>
    </item>
-   <item row="1" column="0" rowspan="5">
-    <widget class="QProgressBar" name="progressL">
-     <property name="styleSheet">
-      <string notr="true">selection-background-color: rgb(0, 255, 0);
-background-color: rgb(42, 42, 42);</string>
-     </property>
-     <property name="maximum">
-      <number>127</number>
-     </property>
-     <property name="value">
-      <number>24</number>
-     </property>
-     <property name="textVisible">
-      <bool>false</bool>
-     </property>
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1" rowspan="5">
-    <widget class="QProgressBar" name="progressR">
-     <property name="autoFillBackground">
-      <bool>false</bool>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">selection-background-color: rgb(0, 255, 0);
-background-color: rgb(42, 42, 42);</string>
-     </property>
-     <property name="maximum">
-      <number>127</number>
-     </property>
-     <property name="value">
-      <number>24</number>
-     </property>
-     <property name="textVisible">
-      <bool>false</bool>
-     </property>
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2" rowspan="5" colspan="2">
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <item>
-      <widget class="ClockWidget" name="clockWidget">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>530</width>
-         <height>0</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="labelClock">
-       <property name="font">
-        <font>
-         <family>FreeSans</family>
-         <pointsize>72</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">color: rgb(255, 255, 0)</string>
-       </property>
-       <property name="text">
-        <string>23:42:05</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
    <item row="6" column="0" colspan="4">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -577,7 +577,7 @@ background-color: rgb(42, 42, 42);</string>
     </layout>
    </item>
    <item row="7" column="0" colspan="5">
-    <layout class="QVBoxLayout" name="verticalLayout_4">
+    <layout class="QVBoxLayout" name="LayoutBottom">
      <item>
       <widget class="QLabel" name="labelCurrentSong">
        <property name="enabled">
@@ -620,6 +620,28 @@ background-color: rgb(42, 42, 42);</string>
        </property>
        <property name="text">
         <string>labelNews</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelWarning">
+       <property name="font">
+        <font>
+         <family>FreeSans</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(255, 0, 0); 
+color: rgb(255, 255, 255);</string>
+       </property>
+       <property name="text">
+        <string>labelWarning</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
