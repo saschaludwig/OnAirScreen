@@ -376,6 +376,8 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         if self.settings.config.getboolean('general', 'fullscreen'):
             self.showFullScreen()
 
+        self.labelWarning.hide()
+
         # add hotkey bindings
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self, QtCore.QCoreApplication.instance().quit )
@@ -583,10 +585,18 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         #self.labelSeconds.setText( str(value) )
 
     def showWarning(self, text):
+        self.labelCurrentSong.hide()
+        self.labelNews.hide()
         self.labelWarning.setText( text )
+        font = self.labelWarning.font()
+        font.setPointSize(45)
+        self.labelWarning.setFont(font)
         self.labelWarning.show()
 
     def hideWarning(self):
+        self.labelWarning.hide()
+        self.labelCurrentSong.show()
+        self.labelNews.show()
         self.labelWarning.setText( "" )
         self.labelWarning.hide()
 
