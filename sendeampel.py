@@ -89,7 +89,7 @@ class MyForm(QDialog):
     if os.path.isfile("/tmp/rivendell_onair"):
         if self.air_laststate == True:
             return
-        call ("echo LED1:ON | nc -b -q0 -u 255.255.255.255 3310 ",shell=True)
+        call ("echo LED1:ON | nc -b -q0 -u 192.168.42.255 3310 ",shell=True)
         self.RTSlabel.setText("<font size = 5 color = darkred><b>ON</b></font>")
         self.RTSlogic = True
         self.port.setRTS(self.RTSlogic)
@@ -97,7 +97,7 @@ class MyForm(QDialog):
     else:
         if self.air_laststate == False:
             return
-        call ("echo LED1:OFF | nc -b -q0 -u 255.255.255.255 3310 ",shell=True)
+        call ("echo LED1:OFF | nc -b -q0 -u 192.168.42.255 3310 ",shell=True)
         self.RTSlabel.setText("<font size = 5 color = darkgreen><b>OFF</b></font>")
         self.RTSlogic = False
         self.port.setRTS(self.RTSlogic)
@@ -107,7 +107,7 @@ class MyForm(QDialog):
     if os.path.isfile("/tmp/rivendell_attention"):
         if self.att_laststate == True:
             return
-        call ("echo LED3:ON | nc -b -q0 -u 255.255.255.255 3310 ",shell=True)
+        call ("echo LED3:ON | nc -b -q0 -u 192.168.42.255 3310 ",shell=True)
         self.DTRlabel.setText("<font size = 5 color = darkred><b>ON</b></font>")
         self.DTRlogic = True
         self.port.setDTR(self.DTRlogic)
@@ -115,7 +115,7 @@ class MyForm(QDialog):
     else:
         if self.att_laststate == False:
             return
-        call ("echo LED3:OFF | nc -b -q0 -u 255.255.255.255 3310 ",shell=True)
+        call ("echo LED3:OFF | nc -b -q0 -u 192.168.42.255 3310 ",shell=True)
         self.DTRlabel.setText("<font size = 5 color = darkgreen><b>OFF</b></font>")
         self.DTRlogic = False
         self.port.setDTR(self.DTRlogic)
