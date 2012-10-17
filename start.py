@@ -386,10 +386,19 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.showsettings )
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.settings.showsettings )
 
-        # Setup and start timer
+        # Setup and start timers
         self.ctimer = QtCore.QTimer()
         QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
         self.ctimer.start(100)
+        # LED timers
+        self.timerLED1 = QtCore.QTimer()
+        QtCore.QObject.connect(self.timerLED1, QtCore.SIGNAL("timeout()"), self.toggleLED1)
+        self.timerLED2 = QtCore.QTimer()
+        QtCore.QObject.connect(self.timerLED2, QtCore.SIGNAL("timeout()"), self.toggleLED2)
+        self.timerLED3 = QtCore.QTimer()
+        QtCore.QObject.connect(self.timerLED3, QtCore.SIGNAL("timeout()"), self.toggleLED3)
+        self.timerLED4 = QtCore.QTimer()
+        QtCore.QObject.connect(self.timerLED4, QtCore.SIGNAL("timeout()"), self.toggleLED4)
 
         # Setup UDP Socket
         self.sock = QUdpSocket()
@@ -403,37 +412,112 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             lines = data.splitlines()
             for line in lines:
                 (command, value) = line.split(':',1)
-                print "command: '" + command +"'"
+                print "command: '" + command + "'"
                 print "value: '" + value + "'"
                 if command == "NOW":
                     self.setCurrentSongText(value)
                 if command == "NEXT":
                     self.setNewsText("Next: %s" % value)
                 if command == "LED1":
-                    if value == "ON":
-                        self.setLED1(True)
+                    if value == "OFF":
+                        self.ledLogic(1, False)
                     else:
-                        self.setLED1(False)
+                        self.ledLogic(1, True)
                 if command == "LED2":
-                    if value == "ON":
-                        self.setLED2(True)
+                    if value == "OFF":
+                        self.ledLogic(2, False)
                     else:
-                        self.setLED2(False)
+                        self.ledLogic(2, True)
                 if command == "LED3":
-                    if value == "ON":
-                        self.setLED3(True)
+                    if value == "OFF":
+                        self.ledLogic(3, False)
                     else:
-                        self.setLED3(False)
+                        self.ledLogic(3, True)
                 if command == "LED4":
-                    if value == "ON":
-                        self.setLED4(True)
+                    if value == "OFF":
+                        self.ledLogic(4, False)
                     else:
-                        self.setLED4(False)
+                        self.ledLogic(4, True)
                 if command == "WARN":
                     if value:
                         self.showWarning(value)
                     else:
                         self.hideWarning()
+
+    def toggleLED1(self):
+        if self.statusLED1:
+            self.setLED1(False)
+        else:
+            self.setLED1(True)
+    def toggleLED2(self):
+        if self.statusLED2:
+            self.setLED2(False)
+        else:
+            self.setLED2(True)
+    def toggleLED3(self):
+        if self.statusLED3:
+            self.setLED3(False)
+        else:
+            self.setLED3(True)
+    def toggleLED4(self):
+        if self.statusLED4:
+            self.setLED4(False)
+        else:
+            self.setLED4(True)
+
+    def unsetLED1(self):
+        self.ledLogic(1, False)
+    def unsetLED2(self):
+        self.ledLogic(2, False)
+    def unsetLED3(self):
+        self.ledLogic(3, False)
+    def unsetLED4(self):
+        self.ledLogic(4, False)
+
+    def ledLogic(self, led, state):
+        if state == True:
+            if led == 1:
+                if self.settings.LED1Autoflash.isChecked():
+                    self.timerLED1.start(500)
+                if self.settings.LED1Timedflash.isChecked():
+                    self.timerLED1.start(500)
+                    QtCore.QTimer.singleShot(10000, self.unsetLED1)
+                self.setLED1(state)
+            if led == 2:
+                if self.settings.LED2Autoflash.isChecked():
+                    self.timerLED2.start(500)
+                if self.settings.LED2Timedflash.isChecked():
+                    self.timerLED2.start(500)
+                    QtCore.QTimer.singleShot(10000, self.unsetLED2)
+                self.setLED2(state)
+            if led == 3:
+                if self.settings.LED3Autoflash.isChecked():
+                    self.timerLED3.start(500)
+                if self.settings.LED3Timedflash.isChecked():
+                    self.timerLED3.start(500)
+                    QtCore.QTimer.singleShot(10000, self.unsetLED3)
+                self.setLED3(state)
+            if led == 4:
+                if self.settings.LED4Autoflash.isChecked():
+                    self.timerLED4.start(500)
+                if self.settings.LED4Timedflash.isChecked():
+                    self.timerLED4.start(500)
+                    QtCore.QTimer.singleShot(10000, self.unsetLED4)
+                self.setLED4(state)
+
+        if state == False:
+            if led == 1:
+                self.setLED1(state)
+                self.timerLED1.stop()
+            if led == 2:
+                self.setLED2(state)
+                self.timerLED2.stop()
+            if led == 3:
+                self.setLED3(state)
+                self.timerLED3.stop()
+            if led == 4:
+                self.setLED4(state)
+                self.timerLED4.stop()
 
     def setStationColor(self, newcolor):
         palette = self.labelStation.palette()
@@ -522,27 +606,35 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def setLED1(self, action):
         if action:
             self.buttonLED1.setStyleSheet("color:"+self.settings.config.get('led1','activetextcolor')+";background-color:"+self.settings.config.get('led1', 'activebgcolor'))
+            self.statusLED1 = True
         else:
             self.buttonLED1.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.statusLED1 = False
 
     def setLED2(self, action):
         if action:
             print "Setting LED2 color: " + self.settings.config.get('led2','activetextcolor')
             self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('led2','activetextcolor')+";background-color:"+self.settings.config.get('led2', 'activebgcolor'))
+            self.statusLED2 = True
         else:
             self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.statusLED2 = False
 
     def setLED3(self, action):
         if action:
             self.buttonLED3.setStyleSheet("color:"+self.settings.config.get('led3','activetextcolor')+";background-color:"+self.settings.config.get('led3', 'activebgcolor'))
+            self.statusLED3 = True
         else:
             self.buttonLED3.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.statusLED3 = False
 
     def setLED4(self, action):
         if action:
             self.buttonLED4.setStyleSheet("color:"+self.settings.config.get('led4','activetextcolor')+";background-color:"+self.settings.config.get('led4', 'activebgcolor'))
+            self.statusLED4 = True
         else:
             self.buttonLED4.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.statusLED4 = False
 
     def setClock(self, text):
         self.labelClock.setText(text)
@@ -616,10 +708,8 @@ if __name__ == "__main__":
     mainscreen.setVURight(0)
 
     #mainscreen.hideWarning()
-    mainscreen.setLED1(False)
-    mainscreen.setLED2(False)
-    mainscreen.setLED3(False)
-    mainscreen.setLED4(False)
+    for i in range(1,5):
+        mainscreen.ledLogic(i, False)
 
     mainscreen.show()
     # hide mousecursor
