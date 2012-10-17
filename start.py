@@ -498,6 +498,9 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         if minute >= 45 and minute <= 59:
             string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min>1 else '', hour+1)
 
+        if minute == 30:
+           string = "halb %d" % hour+1
+
         self.setRightText( string )
 
     def updateBacktimingSeconds(self):
