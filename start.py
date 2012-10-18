@@ -3,7 +3,7 @@
 
 import sys, time, datetime, ConfigParser, os
 from PyQt4 import QtGui, QtCore
-from PyQt4.QtNetwork import QUdpSocket, QHostAddress
+from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from settings import Ui_Settings
 import locale
@@ -405,6 +405,21 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.sock.bind(self.settings.config.getint('network', 'udpport'), QUdpSocket.ShareAddress)
         self.sock.readyRead.connect(self.cmdHandler)
 
+        # diplay all host adresses
+        self.displayAllHostaddresses()
+
+    def displayAllHostaddresses(self):
+        v4addrs = list()
+        v6addrs = list()
+        for address in QNetworkInterface().allAddresses():
+            if address.protocol() == 0:
+                v4addrs.append(address.toString())
+            if address.protocol() == 1:
+                v6addrs.append(address.toString())
+
+        self.setCurrentSongText(", ".join(["%s" % (addr) for addr in v4addrs]))
+        self.setNewsText(", ".join(["%s" % (addr) for addr in v6addrs]))
+
     def cmdHandler(self):
         while self.sock.hasPendingDatagrams():
             data, host, port = self.sock.readDatagram(self.sock.pendingDatagramSize())
@@ -701,8 +716,8 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     mainscreen = MainScreen()
 
-    mainscreen.setCurrentSongText("-")
-    mainscreen.setNewsText("-")
+    #mainscreen.setCurrentSongText("-")
+    #mainscreen.setNewsText("-")
 
     mainscreen.setVULeft(0)
     mainscreen.setVURight(0)
