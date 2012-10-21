@@ -458,6 +458,27 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
                         self.showWarning(value)
                     else:
                         self.hideWarning()
+                if command == "CONF":
+                    #split config values and apply them
+                    (param, content) = value.split('=',1)
+                    if param == "LED1TEXT":
+                        self.settings.LED1Text.setText(content)
+                    if param == "LED2TEXT":
+                        self.settings.LED2Text.setText(content)
+                    if param == "LED3TEXT":
+                        self.settings.LED3Text.setText(content)
+                    if param == "LED4TEXT":
+                        self.settings.LED4Text.setText(content)
+                    if param == "STATIONNAME":
+                        self.settings.StationName.setText(content)
+                    if param == "SLOGAN":
+                        self.settings.Slogan.setText(content)
+                    if param == "STATIONNAMECOLOR":
+                        self.settings.setStationNameColor(self.settings.getColorFromName(content))
+                    if param == "SLOGANCOLOR":
+                        self.settings.setSloganColor(self.settings.getColorFromName(content))
+                    # apply and save settings
+                    self.settings.applySettings()
 
     def toggleLED1(self):
         if self.statusLED1:
