@@ -461,14 +461,6 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
                 if command == "CONF":
                     #split config values and apply them
                     (param, content) = value.split('=',1)
-                    if param == "LED1TEXT":
-                        self.settings.LED1Text.setText(content)
-                    if param == "LED2TEXT":
-                        self.settings.LED2Text.setText(content)
-                    if param == "LED3TEXT":
-                        self.settings.LED3Text.setText(content)
-                    if param == "LED4TEXT":
-                        self.settings.LED4Text.setText(content)
                     if param == "STATIONNAME":
                         self.settings.StationName.setText(content)
                     if param == "SLOGAN":
@@ -477,6 +469,59 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
                         self.settings.setStationNameColor(self.settings.getColorFromName(content))
                     if param == "SLOGANCOLOR":
                         self.settings.setSloganColor(self.settings.getColorFromName(content))
+
+                    if param == "LED1USED":
+                        self.settings.LED1.setChecked(content)
+                    if param == "LED1TEXT":
+                        self.settings.LED1Text.setText(content)
+                    if param == "LED1BGCOLOR":
+                        self.settings.setLED1BGColor(self.settings.getColorFromName(content))
+                    if param == "LED1TEXTCOLOR":
+                        self.settings.setLED1FGColor(self.settings.getColorFromName(content))
+                    if param == "LED1AUTOFLASH":
+                        self.settings.LED1Autoflash.setChecked(content)
+                    if param == "LED1TIMEDFLASH":
+                        self.settings.LED1Timedflash.setChecked(content)
+
+                    if param == "LED2USED":
+                        self.settings.LED2.setChecked(content)
+                    if param == "LED2TEXT":
+                        self.settings.LED2Text.setText(content)
+                    if param == "LED2BGCOLOR":
+                        self.settings.setLED2BGColor(self.settings.getColorFromName(content))
+                    if param == "LED2TEXTCOLOR":
+                        self.settings.setLED2FGColor(self.settings.getColorFromName(content))
+                    if param == "LED2AUTOFLASH":
+                        self.settings.LED2Autoflash.setChecked(content)
+                    if param == "LED2TIMEDFLASH":
+                        self.settings.LED2Timedflash.setChecked(content)
+
+                    if param == "LED3USED":
+                        self.settings.LED3.setChecked(content)
+                    if param == "LED3TEXT":
+                        self.settings.LED3Text.setText(content)
+                    if param == "LED3BGCOLOR":
+                        self.settings.setLED3BGColor(self.settings.getColorFromName(content))
+                    if param == "LED3TEXTCOLOR":
+                        self.settings.setLED3FGColor(self.settings.getColorFromName(content))
+                    if param == "LED3AUTOFLASH":
+                        self.settings.LED3Autoflash.setChecked(content)
+                    if param == "LED3TIMEDFLASH":
+                        self.settings.LED3Timedflash.setChecked(content)
+
+                    if param == "LED4USED":
+                        self.settings.LED4.setChecked(content)
+                    if param == "LED4TEXT":
+                        self.settings.LED4Text.setText(content)
+                    if param == "LED4BGCOLOR":
+                        self.settings.setLED4BGColor(self.settings.getColorFromName(content))
+                    if param == "LED4TEXTCOLOR":
+                        self.settings.setLED4FGColor(self.settings.getColorFromName(content))
+                    if param == "LED4AUTOFLASH":
+                        self.settings.LED4Autoflash.setChecked(content)
+                    if param == "LED4TIMEDFLASH":
+                        self.settings.LED4Timedflash.setChecked(content)
+
                     # apply and save settings
                     self.settings.applySettings()
 
