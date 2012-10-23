@@ -63,6 +63,8 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
         self.connect(self.CloseButton, QtCore.SIGNAL("clicked()"), self.closeSettings )
         self.connect(self.ExitButton, QtCore.SIGNAL("clicked()"), self.exitOnAirScreen )
+        self.connect(self.LEDInactiveBGColor, QtCore.SIGNAL("clicked()"), self.setLEDInactiveBGColor )
+        self.connect(self.LEDInactiveFGColor, QtCore.SIGNAL("clicked()"), self.setLEDInactiveFGColor )
         self.connect(self.LED1BGColor, QtCore.SIGNAL("clicked()"), self.setLED1BGColor )
         self.connect(self.LED1FGColor, QtCore.SIGNAL("clicked()"), self.setLED1FGColor )
         self.connect(self.LED2BGColor, QtCore.SIGNAL("clicked()"), self.setLED2BGColor )
@@ -94,9 +96,8 @@ class Settings(QtGui.QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("LEDS")
-        #not implemented in ui
-        #   self.getColorFromName(settings.value('inactivebgcolor', '#222222').toString())
-        #   self.getColorFromName(settings.value('inactivetextcolor', '#555555').toString())
+        self.setLEDInactiveBGColor(self.getColorFromName(settings.value('inactivebgcolor', '#222222').toString()))
+        self.setLEDInactiveFGColor(self.getColorFromName(settings.value('inactivetextcolor', '#555555').toString()))
         settings.endGroup()
 
         settings.beginGroup("LED1")
@@ -155,9 +156,10 @@ class Settings(QtGui.QWidget, Ui_Settings):
         settings.setValue('tooloudtext', self.TooLoudText.displayText())
         settings.endGroup()
 
-        #not implemented in ui
-        #settings.setValue('leds', 'inactivebgcolor')
-        #settings.setValue('leds', 'inactivetextcolor')
+        settings.beginGroup("LEDS")
+        settings.setValue('inactivebgcolor', self.getLEDInactiveBGColor().name())
+        settings.setValue('inactivetextcolor', self.getLEDInactiveFGColor().name())
+        settings.endGroup()
 
         settings.beginGroup("LED1")
         settings.setValue('used', self.LED1.isChecked())
@@ -216,6 +218,22 @@ class Settings(QtGui.QWidget, Ui_Settings):
             newcolor = self.openColorDialog( oldcolor )
         palette.setColor(QtGui.QPalette.Base, newcolor)
         self.LED1Text.setPalette(palette)
+
+    def setLEDInactiveBGColor(self, newcolor=False):
+        palette = self.LEDInactive.palette()
+        oldcolor = palette.base().color()
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Base, newcolor)
+        self.LEDInactive.setPalette(palette)
+
+    def setLEDInactiveFGColor(self, newcolor=False):
+        palette = self.LEDInactive.palette()
+        oldcolor = palette.text().color()
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QtGui.QPalette.Text, newcolor)
+        self.LEDInactive.setPalette(palette)
 
     def setLED1FGColor(self, newcolor=False):
         palette = self.LED1Text.palette()
@@ -296,6 +314,16 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
     def getSloganColor(self):
         palette = self.Slogan.palette()
+        color = palette.text().color()
+        return color
+
+    def getLEDInactiveBGColor(self):
+        palette = self.LEDInactive.palette()
+        color = palette.base().color()
+        return color
+
+    def getLEDInactiveFGColor(self):
+        palette = self.LEDInactive.palette()
         color = palette.text().color()
         return color
 
@@ -697,47 +725,56 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
     def setLED1(self, action):
         settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("LED1")
         if action:
+            settings.beginGroup("LED1")
             self.buttonLED1.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            settings.endGroup()
             self.statusLED1 = True
         else:
+            settings.beginGroup("LEDS")
             self.buttonLED1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
             self.statusLED1 = False
-        settings.endGroup()
 
     def setLED2(self, action):
         settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("LED2")
         if action:
+            settings.beginGroup("LED2")
             self.buttonLED2.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            settings.endGroup()
             self.statusLED2 = True
         else:
+            settings.beginGroup("LEDS")
             self.buttonLED2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
             self.statusLED2 = False
-        settings.endGroup()
 
     def setLED3(self, action):
         settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("LED3")
         if action:
+            settings.beginGroup("LED3")
             self.buttonLED3.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            settings.endGroup()
             self.statusLED3 = True
         else:
+            settings.beginGroup("LEDS")
             self.buttonLED3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
             self.statusLED3 = False
-        settings.endGroup()
 
     def setLED4(self, action):
         settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("LED4")
         if action:
+            settings.beginGroup("LED4")
             self.buttonLED4.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            settings.endGroup()
             self.statusLED4 = True
         else:
+            settings.beginGroup("LEDS")
+            print 'color', settings.value('inactivetextcolor').toString()
             self.buttonLED4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
             self.statusLED4 = False
-        settings.endGroup()
 
     def setClock(self, text):
         self.labelClock.setText(text)
