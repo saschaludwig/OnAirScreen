@@ -1,13 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# OnAirScreen
+# Copyright 2012, Sascha Ludwig <sascha@astrastudio.de>
+# start.py
+#
+#    This file is part of OnAirScreen
+#
+#    OnAirScreen is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    OnAirScreen is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with OnAirScreen.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 import sys, time, datetime, ConfigParser, os
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from settings import Ui_Settings
 import locale
-
 
 class Settings(QtGui.QWidget, Ui_Settings):
     def __init__(self):
@@ -17,9 +36,6 @@ class Settings(QtGui.QWidget, Ui_Settings):
         self._connectSlots()
         self.hide()
         # read the config, add missing values, save config and re-read config
-        self.readConfigFromFile()
-        self.saveConfigToFile()
-        self.readConfigFromFile()
         self.restoreSettingsFromConfig()
         self.configChanged = True
 
@@ -61,159 +77,132 @@ class Settings(QtGui.QWidget, Ui_Settings):
 
         self.connect(self, QtCore.SIGNAL("triggered()"), self.closeEvent )
 
-    def readConfigFromFile(self):
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(os.path.expanduser('~/.onairscreen.ini'))
-        # test if sections and options exits, else create them with defaults
-        self.createOptionWithDefault('general', 'stationname', 'RADIO ERIWAN')
-        self.createOptionWithDefault('general', 'slogan', 'Your question is our motivation')
-        self.createOptionWithDefault('general', 'stationcolor', '#FFAA00')
-        self.createOptionWithDefault('general', 'slogancolor', '#FFAA00')
-        self.createOptionWithDefault('general', 'fullscreen', 'True')
-
-        self.createOptionWithDefault('vu', 'vumeters', 'False')
-        self.createOptionWithDefault('vu', 'tooloud', 'True')
-        self.createOptionWithDefault('vu', 'tooloudtext', "TOO LOUD")
-
-        self.createOptionWithDefault('leds', 'inactivebgcolor', '#222222')
-        self.createOptionWithDefault('leds', 'inactivetextcolor', '#555555')
-
-        self.createOptionWithDefault('led1', 'used', 'True')
-        self.createOptionWithDefault('led1', 'text', 'ON AIR')
-        self.createOptionWithDefault('led1', 'activebgcolor', '#FF0000')
-        self.createOptionWithDefault('led1', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led1', 'autoflash', 'False')
-        self.createOptionWithDefault('led1', 'timedflash', 'False')
-
-        self.createOptionWithDefault('led2', 'used', 'True')
-        self.createOptionWithDefault('led2', 'text', 'PHONE')
-        self.createOptionWithDefault('led2', 'activebgcolor', '#DCDC00')
-        self.createOptionWithDefault('led2', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led2', 'autoflash', 'False')
-        self.createOptionWithDefault('led2', 'timedflash', 'False')
-
-        self.createOptionWithDefault('led3', 'used', 'True')
-        self.createOptionWithDefault('led3', 'text', 'DOORBELL')
-        self.createOptionWithDefault('led3', 'activebgcolor', '#00C8C8')
-        self.createOptionWithDefault('led3', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led3', 'autoflash', 'False')
-        self.createOptionWithDefault('led3', 'timedflash', 'False')
-
-        self.createOptionWithDefault('led4', 'used', 'True')
-        self.createOptionWithDefault('led4', 'text', 'ARI')
-        self.createOptionWithDefault('led4', 'activebgcolor', '#FF00FF')
-        self.createOptionWithDefault('led4', 'activetextcolor', '#FFFFFF')
-        self.createOptionWithDefault('led4', 'autoflash', 'False')
-        self.createOptionWithDefault('led4', 'timedflash', 'False')
-
-        self.createOptionWithDefault('network', 'udpport', '3310')
-
-
     def restoreSettingsFromConfig(self):
-        self.StationName.setText(self.config.get('general', 'stationname'))
-        self.Slogan.setText(self.config.get('general', 'slogan'))
-        self.setStationNameColor(self.getColorFromName(self.config.get('general', 'stationcolor')))
-        self.setSloganColor(self.getColorFromName(self.config.get('general', 'slogancolor')))
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
 
-        self.checkBox_VU.setChecked(self.config.getboolean('vu', 'vumeters'))
-        self.checkBox_TooLoud.setChecked(self.config.getboolean('vu', 'tooloud'))
-        self.TooLoudText.setText(self.config.get('vu', 'tooloudtext'))
+        settings.beginGroup("General")
+        self.StationName.setText(settings.value('stationname', 'Radio Eriwan').toString())
+        self.Slogan.setText(settings.value('slogan', 'Your question is our motivation').toString())
+        self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', '#FFAA00').toString()))
+        self.setSloganColor(self.getColorFromName(settings.value('slogancolor', '#FFAA00').toString()))
+        settings.endGroup()
 
+        settings.beginGroup("VU")
+        self.checkBox_VU.setChecked(settings.value('vumeters', False).toBool())
+        self.checkBox_TooLoud.setChecked(settings.value('tooloud', True).toBool())
+        self.TooLoudText.setText(settings.value('tooloudtext', 'TOO LOUD').toString())
+        settings.endGroup()
+
+        settings.beginGroup("LEDS")
         #not implemented in ui
-        #self.config.get('leds', 'inactivebgcolor')
-        #self.config.get('leds', 'inactivetextcolor')
+        #   self.getColorFromName(settings.value('inactivebgcolor', '#222222').toString())
+        #   self.getColorFromName(settings.value('inactivetextcolor', '#555555').toString())
+        settings.endGroup()
 
-        self.LED1.setChecked(self.config.getboolean('led1', 'used'))
-        self.LED1Text.setText(self.config.get('led1', 'text'))
-        self.setLED1BGColor(self.getColorFromName(self.config.get('led1', 'activebgcolor')))
-        self.setLED1FGColor(self.getColorFromName(self.config.get('led1', 'activetextcolor')))
-        self.LED1Autoflash.setChecked(self.config.getboolean('led1', 'autoflash'))
-        self.LED1Timedflash.setChecked(self.config.getboolean('led1', 'timedflash'))
+        settings.beginGroup("LED1")
+        self.LED1.setChecked(settings.value('used', True).toBool())
+        self.LED1Text.setText(settings.value('text', 'ON AIR').toString())
+        self.setLED1BGColor(self.getColorFromName(settings.value('activebgcolor', '#FF0000').toString()))
+        self.setLED1FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF').toString()))
+        self.LED1Autoflash.setChecked(settings.value('autoflash', False).toBool())
+        self.LED1Timedflash.setChecked(settings.value('timedflash', False).toBool())
+        settings.endGroup()
 
-        self.LED2.setChecked(self.config.getboolean('led2', 'used'))
-        self.LED2Text.setText(self.config.get('led2', 'text'))
-        self.setLED2BGColor(self.getColorFromName(self.config.get('led2', 'activebgcolor')))
-        self.setLED2FGColor(self.getColorFromName(self.config.get('led2', 'activetextcolor')))
-        self.LED2Autoflash.setChecked(self.config.getboolean('led2', 'autoflash'))
-        self.LED2Timedflash.setChecked(self.config.getboolean('led2', 'timedflash'))
+        settings.beginGroup("LED2")
+        self.LED2.setChecked(settings.value('used', True).toBool())
+        self.LED2Text.setText(settings.value('text', 'PHONE').toString())
+        self.setLED2BGColor(self.getColorFromName(settings.value('activebgcolor', '#DCDC00').toString()))
+        self.setLED2FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF').toString()))
+        self.LED2Autoflash.setChecked(settings.value('autoflash', False).toBool())
+        self.LED2Timedflash.setChecked(settings.value('timedflash', False).toBool())
+        settings.endGroup()
 
-        self.LED3.setChecked(self.config.getboolean('led3', 'used'))
-        self.LED3Text.setText(self.config.get('led3', 'text'))
-        self.setLED3BGColor(self.getColorFromName(self.config.get('led3', 'activebgcolor')))
-        self.setLED3FGColor(self.getColorFromName(self.config.get('led3', 'activetextcolor')))
-        self.LED3Autoflash.setChecked(self.config.getboolean('led3', 'autoflash'))
-        self.LED3Timedflash.setChecked(self.config.getboolean('led3', 'timedflash'))
+        settings.beginGroup("LED3")
+        self.LED3.setChecked(settings.value('used', True).toBool())
+        self.LED3Text.setText(settings.value('text', 'DOORBELL').toString())
+        self.setLED3BGColor(self.getColorFromName(settings.value('activebgcolor', '#00C8C8').toString()))
+        self.setLED3FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF').toString()))
+        self.LED3Autoflash.setChecked(settings.value('autoflash', False).toBool())
+        self.LED3Timedflash.setChecked(settings.value('timedflash', False).toBool())
+        settings.endGroup()
 
-        self.LED4.setChecked(self.config.getboolean('led4', 'used'))
-        self.LED4Text.setText(self.config.get('led4', 'text'))
-        self.setLED4BGColor(self.getColorFromName(self.config.get('led4', 'activebgcolor')))
-        self.setLED4FGColor(self.getColorFromName(self.config.get('led4', 'activetextcolor')))
-        self.LED4Autoflash.setChecked(self.config.getboolean('led4', 'autoflash'))
-        self.LED4Timedflash.setChecked(self.config.getboolean('led4', 'timedflash'))
+        settings.beginGroup("LED4")
+        self.LED4.setChecked(settings.value('used', True).toBool())
+        self.LED4Text.setText(settings.value('text', 'ARI').toString())
+        self.setLED4BGColor(self.getColorFromName(settings.value('activebgcolor', '#FF00FF').toString()))
+        self.setLED4FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF').toString()))
+        self.LED4Autoflash.setChecked(settings.value('autoflash', False).toBool())
+        self.LED4Timedflash.setChecked(settings.value('timedflash', False).toBool())
+        settings.endGroup()
 
-        self.udpport.setText(self.config.get('network', 'udpport'))
+        settings.beginGroup("Network")
+        self.udpport.setText(settings.value('udpport', '3310').toString())
+        settings.endGroup()
 
     def getSettingsFromDialog(self):
-        #self.config.set(section, option, default)
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
 
-        self.config.set('general', 'stationname', self.StationName.displayText())
-        self.config.set('general', 'slogan', self.Slogan.displayText())
-        self.config.set('general', 'stationcolor', self.getStationNameColor().name())
-        self.config.set('general', 'slogancolor', self.getSloganColor().name())
-        self.config.set('vu', 'vumeters', ('True','False')[not self.checkBox_VU.isChecked()] )
-        self.config.set('vu', 'tooloud', ('True','False')[not self.checkBox_TooLoud.isChecked()])
-        self.config.set('vu', 'tooloudtext', self.TooLoudText.displayText())
+        settings.beginGroup("General")
+        settings.setValue('stationname', self.StationName.displayText())
+        settings.setValue('slogan', self.Slogan.displayText())
+        settings.setValue('stationcolor', self.getStationNameColor().name())
+        settings.setValue('slogancolor', self.getSloganColor().name())
+        settings.endGroup()
+
+        settings.beginGroup("VU")
+        settings.setValue('vumeters', self.checkBox_VU.isChecked())
+        settings.setValue('tooloud', self.checkBox_TooLoud.isChecked())
+        settings.setValue('tooloudtext', self.TooLoudText.displayText())
+        settings.endGroup()
+
         #not implemented in ui
-        #self.config.set('leds', 'inactivebgcolor')
-        #self.config.set('leds', 'inactivetextcolor')
+        #settings.setValue('leds', 'inactivebgcolor')
+        #settings.setValue('leds', 'inactivetextcolor')
 
-        self.config.set('led1', 'used', ('True','False')[not self.LED1.isChecked()])
-        self.config.set('led1', 'text', self.LED1Text.displayText())
-        self.config.set('led1', 'activebgcolor', self.getLED1BGColor().name())
-        self.config.set('led1', 'activetextcolor', self.getLED1FGColor().name())
-        self.config.set('led1', 'autoflash', ('True','False')[not self.LED1Autoflash.isChecked()])
-        self.config.set('led1', 'timedflash', ('True','False')[not self.LED1Timedflash.isChecked()])
+        settings.beginGroup("LED1")
+        settings.setValue('used', self.LED1.isChecked())
+        settings.setValue('text', self.LED1Text.displayText())
+        settings.setValue('activebgcolor', self.getLED1BGColor().name())
+        settings.setValue('activetextcolor', self.getLED1FGColor().name())
+        settings.setValue('autoflash', self.LED1Autoflash.isChecked())
+        settings.setValue('timedflash', self.LED1Timedflash.isChecked())
+        settings.endGroup()
 
-        self.config.set('led2', 'used', ('True','False')[not self.LED2.isChecked()])
-        self.config.set('led2', 'text', self.LED2Text.displayText())
-        self.config.set('led2', 'activebgcolor', self.getLED2BGColor().name())
-        self.config.set('led2', 'activetextcolor', self.getLED2FGColor().name())
-        self.config.set('led2', 'autoflash', ('True','False')[not self.LED2Autoflash.isChecked()])
-        self.config.set('led2', 'timedflash', ('True','False')[not self.LED2Timedflash.isChecked()])
+        settings.beginGroup("LED2")
+        settings.setValue('used', self.LED2.isChecked())
+        settings.setValue('text', self.LED2Text.displayText())
+        settings.setValue('activebgcolor', self.getLED2BGColor().name())
+        settings.setValue('activetextcolor', self.getLED2FGColor().name())
+        settings.setValue('autoflash', self.LED2Autoflash.isChecked())
+        settings.setValue('timedflash', self.LED2Timedflash.isChecked())
+        settings.endGroup()
 
-        self.config.set('led3', 'used', ('True','False')[not self.LED3.isChecked()])
-        self.config.set('led3', 'text', self.LED3Text.displayText())
-        self.config.set('led3', 'activebgcolor', self.getLED3BGColor().name())
-        self.config.set('led3', 'activetextcolor', self.getLED3FGColor().name())
-        self.config.set('led3', 'autoflash', ('True','False')[not self.LED3Autoflash.isChecked()])
-        self.config.set('led3', 'timedflash', ('True','False')[not self.LED3Timedflash.isChecked()])
+        settings.beginGroup("LED3")
+        settings.setValue('used', self.LED3.isChecked())
+        settings.setValue('text', self.LED3Text.displayText())
+        settings.setValue('activebgcolor', self.getLED3BGColor().name())
+        settings.setValue('activetextcolor', self.getLED3FGColor().name())
+        settings.setValue('autoflash', self.LED3Autoflash.isChecked())
+        settings.setValue('timedflash', self.LED3Timedflash.isChecked())
+        settings.endGroup()
 
-        self.config.set('led4', 'used', ('True','False')[not self.LED4.isChecked()])
-        self.config.set('led4', 'text', self.LED4Text.displayText())
-        self.config.set('led4', 'activebgcolor', self.getLED4BGColor().name())
-        self.config.set('led4', 'activetextcolor', self.getLED4FGColor().name())
-        self.config.set('led4', 'autoflash', ('True','False')[not self.LED4Autoflash.isChecked()])
-        self.config.set('led4', 'timedflash', ('True','False')[not self.LED4Timedflash.isChecked()])
+        settings.beginGroup("LED4")
+        settings.setValue('used', self.LED4.isChecked())
+        settings.setValue('text', self.LED4Text.displayText())
+        settings.setValue('activebgcolor', self.getLED4BGColor().name())
+        settings.setValue('activetextcolor', self.getLED4FGColor().name())
+        settings.setValue('autoflash', self.LED4Autoflash.isChecked())
+        settings.setValue('timedflash', self.LED4Timedflash.isChecked())
+        settings.endGroup()
 
-        self.config.set('network', 'udpport', self.udpport.displayText())
-
-    def createOptionWithDefault(self, section, option, default):
-        if not self.config.has_section(section):
-            self.config.add_section(section)
-        if not self.config.has_option(section, option):
-            self.config.set(section, option, default)
-
-    def saveConfigToFile(self):
-        cfgfile = open(os.path.expanduser('~/.onairscreen.ini'), 'w')
-        self.config.write(cfgfile)
-        cfgfile.close()
+        settings.beginGroup("Network")
+        settings.setValue('udpport', self.udpport.displayText())
+        settings.endGroup()
 
     def applySettings(self):
         #apply settings button pressed
         self.getSettingsFromDialog()
-        self.saveConfigToFile()
         self.configChanged = True
-        #self.hidesettings()
 
     def closeSettings(self):
         #close settings button pressed
@@ -363,7 +352,6 @@ class Settings(QtGui.QWidget, Ui_Settings):
         color.setNamedColor( colorname )
         return color
 
-
 class MainScreen(QtGui.QWidget, Ui_MainScreen):
     def __init__(self):
         QtGui.QWidget.__init__(self)
@@ -373,8 +361,11 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.settings = Settings()
         self.restoreSettingsFromConfig()
 
-        if self.settings.config.getboolean('general', 'fullscreen'):
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        if settings.value('fullscreen', True).toBool():
             self.showFullScreen()
+        settings.endGroup()
 
         self.labelWarning.hide()
 
@@ -402,7 +393,11 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
         # Setup UDP Socket
         self.sock = QUdpSocket()
-        self.sock.bind(self.settings.config.getint('network', 'udpport'), QUdpSocket.ShareAddress)
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Network")
+        (port, foo) = settings.value('udpport', 3310).toInt()
+        settings.endGroup()
+        self.sock.bind(port, QUdpSocket.ShareAddress)
         self.sock.readyRead.connect(self.cmdHandler)
 
         # diplay all host adresses
@@ -611,14 +606,29 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.labelSlogan.setPalette(palette)
 
     def restoreSettingsFromConfig(self):
-        self.labelStation.setText(self.settings.config.get('general', 'stationname'))
-        self.labelSlogan.setText(self.settings.config.get('general', 'slogan'))
-        self.setStationColor(self.settings.getColorFromName(self.settings.config.get('general', 'stationcolor')))
-        self.setSloganColor(self.settings.getColorFromName(self.settings.config.get('general', 'slogancolor')))
-        self.setLED1Text(self.settings.config.get('led1', 'text'))
-        self.setLED2Text(self.settings.config.get('led2', 'text'))
-        self.setLED3Text(self.settings.config.get('led3', 'text'))
-        self.setLED4Text(self.settings.config.get('led4', 'text'))
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan').toString())
+        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation').toString())
+        self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00').toString()))
+        self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00').toString()))
+        settings.endGroup()
+
+        settings.beginGroup("LED1")
+        self.setLED1Text(settings.value('text', 'ON AIR').toString())
+        settings.endGroup()
+
+        settings.beginGroup("LED2")
+        self.setLED2Text(settings.value('text', 'PHONE').toString())
+        settings.endGroup()
+
+        settings.beginGroup("LED3")
+        self.setLED3Text(settings.value('text', 'DOORBELL').toString())
+        settings.endGroup()
+
+        settings.beginGroup("LED4")
+        self.setLED4Text(settings.value('text', 'ARI').toString())
+        settings.endGroup()
 
     def constantUpdate(self):
         # slot for constant timer timeout
@@ -675,47 +685,59 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.setBacktimingSecs(remain_seconds)
 
     def toggleFullScreen(self):
-        if not self.settings.config.getboolean('general', 'fullscreen'):
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        if not settings.value('fullscreen', 'True').toBool():
             self.showFullScreen()
-            self.settings.config.set('general', 'fullscreen', 'True')
-            self.settings.saveConfigToFile()
+            settings.setValue('fullscreen', True)
         else:
             self.showNormal()
-            self.settings.config.set('general', 'fullscreen', 'False')
-            self.settings.saveConfigToFile()
+            settings.setValue('fullscreen', False)
+        settings.endGroup()
 
     def setLED1(self, action):
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("LED1")
         if action:
-            self.buttonLED1.setStyleSheet("color:"+self.settings.config.get('led1','activetextcolor')+";background-color:"+self.settings.config.get('led1', 'activebgcolor'))
+            self.buttonLED1.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
             self.statusLED1 = True
         else:
-            self.buttonLED1.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.buttonLED1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             self.statusLED1 = False
+        settings.endGroup()
 
     def setLED2(self, action):
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("LED2")
         if action:
-            print "Setting LED2 color: " + self.settings.config.get('led2','activetextcolor')
-            self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('led2','activetextcolor')+";background-color:"+self.settings.config.get('led2', 'activebgcolor'))
+            self.buttonLED2.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
             self.statusLED2 = True
         else:
-            self.buttonLED2.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.buttonLED2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             self.statusLED2 = False
+        settings.endGroup()
 
     def setLED3(self, action):
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("LED3")
         if action:
-            self.buttonLED3.setStyleSheet("color:"+self.settings.config.get('led3','activetextcolor')+";background-color:"+self.settings.config.get('led3', 'activebgcolor'))
+            self.buttonLED3.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
             self.statusLED3 = True
         else:
-            self.buttonLED3.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.buttonLED3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             self.statusLED3 = False
+        settings.endGroup()
 
     def setLED4(self, action):
+        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("LED4")
         if action:
-            self.buttonLED4.setStyleSheet("color:"+self.settings.config.get('led4','activetextcolor')+";background-color:"+self.settings.config.get('led4', 'activebgcolor'))
+            self.buttonLED4.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
             self.statusLED4 = True
         else:
-            self.buttonLED4.setStyleSheet("color:"+self.settings.config.get('leds','inactivetextcolor')+";background-color:"+self.settings.config.get('leds', 'inactivebgcolor'))
+            self.buttonLED4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             self.statusLED4 = False
+        settings.endGroup()
 
     def setClock(self, text):
         self.labelClock.setText(text)
@@ -782,13 +804,9 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     mainscreen = MainScreen()
 
-    #mainscreen.setCurrentSongText("-")
-    #mainscreen.setNewsText("-")
-
     mainscreen.setVULeft(0)
     mainscreen.setVURight(0)
 
-    #mainscreen.hideWarning()
     for i in range(1,5):
         mainscreen.ledLogic(i, False)
 
