@@ -21,16 +21,18 @@
 #    along with OnAirScreen.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, time, datetime, ConfigParser, os
-from PyQt4 import QtGui, QtCore
+import os
+from datetime import datetime
+from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence
+from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from settings import Ui_Settings
-import locale
+from locale import LC_TIME, setlocale
 
-class Settings(QtGui.QWidget, Ui_Settings):
+class Settings(QWidget, Ui_Settings):
     def __init__(self):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         Ui_Settings.__init__(self)
         self.setupUi(self)
         self._connectSlots()
@@ -42,45 +44,45 @@ class Settings(QtGui.QWidget, Ui_Settings):
     def showsettings(self):
         global app
         # un-hide mousecursor
-        app.setOverrideCursor( QtGui.QCursor( 0 ) );
+        app.setOverrideCursor( QCursor( 0 ) );
         self.show()
 
     def hidesettings(self):
         global app
         # hide mousecursor
-        app.setOverrideCursor( QtGui.QCursor( 10 ) );
+        app.setOverrideCursor( QCursor( 10 ) );
 
     def closeEvent(self, event):
         global app
         # hide mousecursor
-        app.setOverrideCursor( QtGui.QCursor( 10 ) );
+        app.setOverrideCursor( QCursor( 10 ) );
 
     def exitOnAirScreen(self):
         global app
         app.exit()
 
     def _connectSlots(self):
-        self.connect(self.ApplyButton, QtCore.SIGNAL("clicked()"), self.applySettings )
-        self.connect(self.CloseButton, QtCore.SIGNAL("clicked()"), self.closeSettings )
-        self.connect(self.ExitButton, QtCore.SIGNAL("clicked()"), self.exitOnAirScreen )
-        self.connect(self.LEDInactiveBGColor, QtCore.SIGNAL("clicked()"), self.setLEDInactiveBGColor )
-        self.connect(self.LEDInactiveFGColor, QtCore.SIGNAL("clicked()"), self.setLEDInactiveFGColor )
-        self.connect(self.LED1BGColor, QtCore.SIGNAL("clicked()"), self.setLED1BGColor )
-        self.connect(self.LED1FGColor, QtCore.SIGNAL("clicked()"), self.setLED1FGColor )
-        self.connect(self.LED2BGColor, QtCore.SIGNAL("clicked()"), self.setLED2BGColor )
-        self.connect(self.LED2FGColor, QtCore.SIGNAL("clicked()"), self.setLED2FGColor )
-        self.connect(self.LED3BGColor, QtCore.SIGNAL("clicked()"), self.setLED3BGColor )
-        self.connect(self.LED3FGColor, QtCore.SIGNAL("clicked()"), self.setLED3FGColor )
-        self.connect(self.LED4BGColor, QtCore.SIGNAL("clicked()"), self.setLED4BGColor )
-        self.connect(self.LED4FGColor, QtCore.SIGNAL("clicked()"), self.setLED4FGColor )
+        self.connect(self.ApplyButton, SIGNAL("clicked()"), self.applySettings )
+        self.connect(self.CloseButton, SIGNAL("clicked()"), self.closeSettings )
+        self.connect(self.ExitButton, SIGNAL("clicked()"), self.exitOnAirScreen )
+        self.connect(self.LEDInactiveBGColor, SIGNAL("clicked()"), self.setLEDInactiveBGColor )
+        self.connect(self.LEDInactiveFGColor, SIGNAL("clicked()"), self.setLEDInactiveFGColor )
+        self.connect(self.LED1BGColor, SIGNAL("clicked()"), self.setLED1BGColor )
+        self.connect(self.LED1FGColor, SIGNAL("clicked()"), self.setLED1FGColor )
+        self.connect(self.LED2BGColor, SIGNAL("clicked()"), self.setLED2BGColor )
+        self.connect(self.LED2FGColor, SIGNAL("clicked()"), self.setLED2FGColor )
+        self.connect(self.LED3BGColor, SIGNAL("clicked()"), self.setLED3BGColor )
+        self.connect(self.LED3FGColor, SIGNAL("clicked()"), self.setLED3FGColor )
+        self.connect(self.LED4BGColor, SIGNAL("clicked()"), self.setLED4BGColor )
+        self.connect(self.LED4FGColor, SIGNAL("clicked()"), self.setLED4FGColor )
 
-        self.connect(self.StationNameColor, QtCore.SIGNAL("clicked()"), self.setStationNameColor )
-        self.connect(self.SloganColor, QtCore.SIGNAL("clicked()"), self.setSloganColor )
+        self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor )
+        self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor )
 
-        self.connect(self, QtCore.SIGNAL("triggered()"), self.closeEvent )
+        self.connect(self, SIGNAL("triggered()"), self.closeEvent )
 
     def restoreSettingsFromConfig(self):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         self.StationName.setText(settings.value('stationname', 'Radio Eriwan').toString())
@@ -141,7 +143,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         settings.endGroup()
 
     def getSettingsFromDialog(self):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         settings.setValue('stationname', self.StationName.displayText())
@@ -216,7 +218,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.base().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Base, newcolor)
+        palette.setColor(QPalette.Base, newcolor)
         self.LED1Text.setPalette(palette)
 
     def setLEDInactiveBGColor(self, newcolor=False):
@@ -224,7 +226,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.base().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Base, newcolor)
+        palette.setColor(QPalette.Base, newcolor)
         self.LEDInactive.setPalette(palette)
 
     def setLEDInactiveFGColor(self, newcolor=False):
@@ -232,7 +234,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.LEDInactive.setPalette(palette)
 
     def setLED1FGColor(self, newcolor=False):
@@ -240,7 +242,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.LED1Text.setPalette(palette)
 
     def setLED2BGColor(self, newcolor=False):
@@ -248,7 +250,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.base().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Base, newcolor)
+        palette.setColor(QPalette.Base, newcolor)
         self.LED2Text.setPalette(palette)
 
     def setLED2FGColor(self, newcolor=False):
@@ -256,7 +258,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.LED2Text.setPalette(palette)
 
     def setLED3BGColor(self, newcolor=False):
@@ -264,7 +266,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.base().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Base, newcolor)
+        palette.setColor(QPalette.Base, newcolor)
         self.LED3Text.setPalette(palette)
 
     def setLED3FGColor(self, newcolor=False):
@@ -272,7 +274,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.LED3Text.setPalette(palette)
 
     def setLED4BGColor(self, newcolor=False):
@@ -280,7 +282,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.base().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Base, newcolor)
+        palette.setColor(QPalette.Base, newcolor)
         self.LED4Text.setPalette(palette)
 
     def setLED4FGColor(self, newcolor=False):
@@ -288,7 +290,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.LED4Text.setPalette(palette)
 
     def setStationNameColor(self, newcolor=False):
@@ -296,7 +298,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.StationName.setPalette(palette)
 
     def setSloganColor(self, newcolor=False):
@@ -304,7 +306,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         oldcolor = palette.text().color()
         if not newcolor:
             newcolor = self.openColorDialog( oldcolor )
-        palette.setColor(QtGui.QPalette.Text, newcolor)
+        palette.setColor(QPalette.Text, newcolor)
         self.Slogan.setPalette(palette)
 
     def getStationNameColor(self):
@@ -368,7 +370,7 @@ class Settings(QtGui.QWidget, Ui_Settings):
         return color
 
     def openColorDialog(self, initcolor):
-        colordialog = QtGui.QColorDialog()
+        colordialog = QColorDialog()
         selectedcolor = colordialog.getColor(initcolor, None, 'Please select a color')
         if selectedcolor.isValid():
             return selectedcolor
@@ -376,20 +378,20 @@ class Settings(QtGui.QWidget, Ui_Settings):
             return initcolor
 
     def getColorFromName(self, colorname):
-        color = QtGui.QColor()
+        color = QColor()
         color.setNamedColor( colorname )
         return color
 
-class MainScreen(QtGui.QWidget, Ui_MainScreen):
+class MainScreen(QWidget, Ui_MainScreen):
     def __init__(self):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
 
         self.settings = Settings()
         self.restoreSettingsFromConfig()
 
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         if settings.value('fullscreen', True).toBool():
             self.showFullScreen()
@@ -398,30 +400,30 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.labelWarning.hide()
 
         # add hotkey bindings
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Q"), self, QtCore.QCoreApplication.instance().quit )
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+C"), self, QtCore.QCoreApplication.instance().quit )
-        QtGui.QShortcut(QtGui.QKeySequence("ESC"), self, QtCore.QCoreApplication.instance().quit )
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), self, self.settings.showsettings )
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+,"), self, self.settings.showsettings )
+        QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
+        QShortcut(QKeySequence("Ctrl+Q"), self, QCoreApplication.instance().quit )
+        QShortcut(QKeySequence("Ctrl+C"), self, QCoreApplication.instance().quit )
+        QShortcut(QKeySequence("ESC"), self, QCoreApplication.instance().quit )
+        QShortcut(QKeySequence("Ctrl+S"), self, self.settings.showsettings )
+        QShortcut(QKeySequence("Ctrl+,"), self, self.settings.showsettings )
 
         # Setup and start timers
-        self.ctimer = QtCore.QTimer()
-        QtCore.QObject.connect(self.ctimer, QtCore.SIGNAL("timeout()"), self.constantUpdate)
+        self.ctimer = QTimer()
+        QObject.connect(self.ctimer, SIGNAL("timeout()"), self.constantUpdate)
         self.ctimer.start(100)
         # LED timers
-        self.timerLED1 = QtCore.QTimer()
-        QtCore.QObject.connect(self.timerLED1, QtCore.SIGNAL("timeout()"), self.toggleLED1)
-        self.timerLED2 = QtCore.QTimer()
-        QtCore.QObject.connect(self.timerLED2, QtCore.SIGNAL("timeout()"), self.toggleLED2)
-        self.timerLED3 = QtCore.QTimer()
-        QtCore.QObject.connect(self.timerLED3, QtCore.SIGNAL("timeout()"), self.toggleLED3)
-        self.timerLED4 = QtCore.QTimer()
-        QtCore.QObject.connect(self.timerLED4, QtCore.SIGNAL("timeout()"), self.toggleLED4)
+        self.timerLED1 = QTimer()
+        QObject.connect(self.timerLED1, SIGNAL("timeout()"), self.toggleLED1)
+        self.timerLED2 = QTimer()
+        QObject.connect(self.timerLED2, SIGNAL("timeout()"), self.toggleLED2)
+        self.timerLED3 = QTimer()
+        QObject.connect(self.timerLED3, SIGNAL("timeout()"), self.toggleLED3)
+        self.timerLED4 = QTimer()
+        QObject.connect(self.timerLED4, SIGNAL("timeout()"), self.toggleLED4)
 
         # Setup UDP Socket
         self.sock = QUdpSocket()
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
         (port, foo) = settings.value('udpport', 3310).toInt()
         settings.endGroup()
@@ -585,28 +587,28 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
                     self.timerLED1.start(500)
                 if self.settings.LED1Timedflash.isChecked():
                     self.timerLED1.start(500)
-                    QtCore.QTimer.singleShot(10000, self.unsetLED1)
+                    QTimer.singleShot(10000, self.unsetLED1)
                 self.setLED1(state)
             if led == 2:
                 if self.settings.LED2Autoflash.isChecked():
                     self.timerLED2.start(500)
                 if self.settings.LED2Timedflash.isChecked():
                     self.timerLED2.start(500)
-                    QtCore.QTimer.singleShot(10000, self.unsetLED2)
+                    QTimer.singleShot(10000, self.unsetLED2)
                 self.setLED2(state)
             if led == 3:
                 if self.settings.LED3Autoflash.isChecked():
                     self.timerLED3.start(500)
                 if self.settings.LED3Timedflash.isChecked():
                     self.timerLED3.start(500)
-                    QtCore.QTimer.singleShot(10000, self.unsetLED3)
+                    QTimer.singleShot(10000, self.unsetLED3)
                 self.setLED3(state)
             if led == 4:
                 if self.settings.LED4Autoflash.isChecked():
                     self.timerLED4.start(500)
                 if self.settings.LED4Timedflash.isChecked():
                     self.timerLED4.start(500)
-                    QtCore.QTimer.singleShot(10000, self.unsetLED4)
+                    QTimer.singleShot(10000, self.unsetLED4)
                 self.setLED4(state)
 
         if state == False:
@@ -625,16 +627,16 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
 
     def setStationColor(self, newcolor):
         palette = self.labelStation.palette()
-        palette.setColor(QtGui.QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
         self.labelStation.setPalette(palette)
 
     def setSloganColor(self, newcolor):
         palette = self.labelSlogan.palette()
-        palette.setColor(QtGui.QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
         self.labelSlogan.setPalette(palette)
 
     def restoreSettingsFromConfig(self):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         self.labelStation.setText(settings.value('stationname', 'Radio Eriwan').toString())
         self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation').toString())
@@ -669,19 +671,21 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.settings.configChanged = False
 
     def updateClock(self):
-        now = datetime.datetime.now()
+        now = datetime.now()
         self.setClock( now.strftime("%H:%M:%S") )
 
     def updateDate(self):
+        locale = 'de_DE.UTF-8'
         try:
-            locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+            setlocale(LC_TIME, locale)
         except:
+            print 'error: setting locale %s' % locale
             pass
-        now = datetime.datetime.now()
+        now = datetime.now()
         self.setLeftText( now.strftime("%A, %d. %B %Y") )
 
     def updateBacktimingText(self):
-        now = datetime.datetime.now()
+        now = datetime.now()
         hour = now.hour
         minute = now.minute
         second = now.second
@@ -707,13 +711,13 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.setRightText( string )
 
     def updateBacktimingSeconds(self):
-        now = datetime.datetime.now()
+        now = datetime.now()
         second = now.second
         remain_seconds = 60-second
         self.setBacktimingSecs(remain_seconds)
 
     def toggleFullScreen(self):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         if not settings.value('fullscreen', 'True').toBool():
             self.showFullScreen()
@@ -724,7 +728,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         settings.endGroup()
 
     def setLED1(self, action):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED1")
             self.buttonLED1.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
@@ -737,7 +741,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.statusLED1 = False
 
     def setLED2(self, action):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED2")
             self.buttonLED2.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
@@ -750,7 +754,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.statusLED2 = False
 
     def setLED3(self, action):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED3")
             self.buttonLED3.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
@@ -763,7 +767,7 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
             self.statusLED3 = False
 
     def setLED4(self, action):
-        settings = QtCore.QSettings( QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED4")
             self.buttonLED4.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
@@ -836,9 +840,9 @@ class MainScreen(QtGui.QWidget, Ui_MainScreen):
         self.labelWarning.hide()
 
 if __name__ == "__main__":
-    import sys
+    from sys import argv, exit
 
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(argv)
     mainscreen = MainScreen()
 
     mainscreen.setVULeft(0)
@@ -849,6 +853,6 @@ if __name__ == "__main__":
 
     mainscreen.show()
     # hide mousecursor
-    app.setOverrideCursor( QtGui.QCursor( 10 ) );
+    app.setOverrideCursor( QCursor( 10 ) );
 
-    sys.exit(app.exec_())
+    exit(app.exec_())
