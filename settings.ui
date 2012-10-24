@@ -73,7 +73,7 @@
       <bool>true</bool>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_general">
       <attribute name="title">
@@ -1163,60 +1163,17 @@
         </layout>
        </item>
        <item row="1" column="0">
-        <widget class="QTableWidget" name="tableWidget">
-         <property name="autoFillBackground">
-          <bool>false</bool>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
          </property>
-         <property name="alternatingRowColors">
-          <bool>true</bool>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
          </property>
-         <property name="rowCount">
-          <number>6</number>
-         </property>
-         <property name="columnCount">
-          <number>2</number>
-         </property>
-         <row>
-          <property name="text">
-           <string>LED1</string>
-          </property>
-         </row>
-         <row>
-          <property name="text">
-           <string>LED2</string>
-          </property>
-         </row>
-         <row>
-          <property name="text">
-           <string>LED3</string>
-          </property>
-         </row>
-         <row>
-          <property name="text">
-           <string>LED4</string>
-          </property>
-         </row>
-         <row>
-          <property name="text">
-           <string>NOW</string>
-          </property>
-         </row>
-         <row>
-          <property name="text">
-           <string>NEXT</string>
-          </property>
-         </row>
-         <column>
-          <property name="text">
-           <string>Text format</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Update field</string>
-          </property>
-         </column>
-        </widget>
+        </spacer>
        </item>
       </layout>
      </widget>
