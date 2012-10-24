@@ -30,6 +30,8 @@ from mainscreen import Ui_MainScreen
 from settings import Ui_Settings
 from locale import LC_TIME, setlocale
 
+versionString = "0.4"
+
 class Settings(QWidget, Ui_Settings):
     def __init__(self):
         QWidget.__init__(self)
@@ -40,6 +42,8 @@ class Settings(QWidget, Ui_Settings):
         # read the config, add missing values, save config and re-read config
         self.restoreSettingsFromConfig()
         self.configChanged = True
+        # set version string
+        self.versionLabel.setText("Version %s" % versionString)
 
     def showsettings(self):
         global app

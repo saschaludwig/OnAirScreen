@@ -2,4 +2,5 @@ mainscreen.py
 dynscreen.py
 settings.py
 *.pyc
+*.pyo
 onairscreen.ini
