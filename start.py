@@ -415,6 +415,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.beginGroup("General")
         if settings.value('fullscreen', True).toBool():
             self.showFullScreen()
+            app.setOverrideCursor( QCursor( 10 ) );
         settings.endGroup()
 
         self.labelWarning.hide()
