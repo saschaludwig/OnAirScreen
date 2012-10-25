@@ -111,13 +111,13 @@ class ClockWidget(QtGui.QWidget):
         # draw hour hand
         painter.save()
         painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
-        painter.drawRoundedRect(-4,4,8,hhl,4,4)
+        painter.drawRoundedRect(-4,4,8,hhl,4.0,4.0)
         painter.restore()
 
         painter.setPen(ClockWidget.hourColor)
 
         for i in range(12):
-            painter.drawRoundedRect(88,-1,8,2,1,1)
+            painter.drawRoundedRect(88,-1,8,2,1.0,1.0)
             painter.rotate(30.0)
 
         painter.setPen(QtCore.Qt.NoPen)
@@ -127,7 +127,7 @@ class ClockWidget(QtGui.QWidget):
         sizefactor = 1.3
         painter.save()
         painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
-        painter.drawRoundedRect(-4/sizefactor,4/sizefactor,8/sizefactor,mhl,4/sizefactor,4/sizefactor)
+        painter.drawRoundedRect(-4/sizefactor,4/sizefactor,8/sizefactor,mhl,4.0/sizefactor,4.0/sizefactor)
         painter.restore()
 
         #draw center circle
