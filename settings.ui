@@ -1215,7 +1215,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>oas_icon_256.png</pixmap>
+          <pixmap resource="resources.qrc">:/oas_icon_256/oas_icon_256.png</pixmap>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -1290,7 +1290,9 @@ p, li { white-space: pre-wrap; }
   <tabstop>ApplyButton</tabstop>
   <tabstop>ExitButton</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>CloseButton</sender>
