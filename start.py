@@ -403,6 +403,14 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings = Settings()
         self.restoreSettingsFromConfig()
 
+        # set locale
+        locale = 'de_DE.UTF-8'
+        try:
+            setlocale(LC_TIME, locale)
+        except:
+            print 'error: setting locale %s' % locale
+            pass
+
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         if settings.value('fullscreen', True).toBool():
@@ -687,12 +695,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setClock( now.strftime("%H:%M:%S") )
 
     def updateDate(self):
-        locale = 'de_DE.UTF-8'
-        try:
-            setlocale(LC_TIME, locale)
-        except:
-            print 'error: setting locale %s' % locale
-            pass
         now = datetime.now()
         self.setLeftText( now.strftime("%A, %d. %B %Y") )
 
