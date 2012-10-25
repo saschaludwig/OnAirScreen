@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="oas_icon">
+    <file>oas_icon.png</file>
+  </qresource>
+  <qresource prefix="oas_icon_256">
+    <file>oas_icon_256.png</file>
+  </qresource>
+</RCC>
