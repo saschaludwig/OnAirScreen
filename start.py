@@ -53,13 +53,21 @@ class Settings(QWidget, Ui_Settings):
 
     def hidesettings(self):
         global app
-        # hide mousecursor
-        app.setOverrideCursor( QCursor( 10 ) );
+        # hide mousecursor if in fullscreen mode
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        if settings.value('fullscreen', 'True').toBool():
+            app.setOverrideCursor( QCursor( 10 ) );
+        settings.endGroup()
 
     def closeEvent(self, event):
         global app
-        # hide mousecursor
-        app.setOverrideCursor( QCursor( 10 ) );
+        # hide mousecursor if in fullscreen mode
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        if settings.value('fullscreen', 'True').toBool():
+            app.setOverrideCursor( QCursor( 10 ) );
+        settings.endGroup()
 
     def exitOnAirScreen(self):
         global app
@@ -721,13 +729,16 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setBacktimingSecs(remain_seconds)
 
     def toggleFullScreen(self):
+        global app
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         if not settings.value('fullscreen', 'True').toBool():
             self.showFullScreen()
+            app.setOverrideCursor( QCursor( 10 ) );
             settings.setValue('fullscreen', True)
         else:
             self.showNormal()
+            app.setOverrideCursor( QCursor( 0 ) );
             settings.setValue('fullscreen', False)
         settings.endGroup()
 
@@ -779,7 +790,6 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.statusLED4 = True
         else:
             settings.beginGroup("LEDS")
-            print 'color', settings.value('inactivetextcolor').toString()
             self.buttonLED4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             settings.endGroup()
             self.statusLED4 = False
@@ -856,7 +866,5 @@ if __name__ == "__main__":
         mainscreen.ledLogic(i, False)
 
     mainscreen.show()
-    # hide mousecursor
-    app.setOverrideCursor( QCursor( 10 ) );
 
     exit(app.exec_())
