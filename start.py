@@ -460,8 +460,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         for address in QNetworkInterface().allAddresses():
             if address.protocol() == 0:
                 v4addrs.append(address.toString())
-            if address.protocol() == 1:
-                v6addrs.append(address.toString())
+            #if address.protocol() == 1:
+            #    v6addrs.append(address.toString())
 
         self.setCurrentSongText(", ".join(["%s" % (addr) for addr in v4addrs]))
         self.setNewsText(", ".join(["%s" % (addr) for addr in v6addrs]))
