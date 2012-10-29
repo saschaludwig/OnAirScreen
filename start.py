@@ -469,7 +469,7 @@ class MainScreen(QWidget, Ui_MainScreen):
     def cmdHandler(self):
         while self.sock.hasPendingDatagrams():
             data, host, port = self.sock.readDatagram(self.sock.pendingDatagramSize())
-            print "DATA: "+ data
+            print "DATA: ", data
             lines = data.splitlines()
             for line in lines:
                 (command, value) = line.split(':',1)
@@ -574,6 +574,18 @@ class MainScreen(QWidget, Ui_MainScreen):
                             self.settings.LED4Autoflash.setChecked(QVariant(content).toBool())
                         if param == "timedflash":
                             self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
+
+                    if group == "VU":
+                        if param == "vumeters":
+                            self.settings.checkBox_VU.setChecked(QVariant(content).toBool())
+                        if param == "tooloudtext":
+                            self.settings.TooLoudText.setText(content)
+                        if param == "tooloud":
+                            self.settings.checkBox_TooLoud.setChecked(QVariant(content).toBool())
+
+                    if group == "Network":
+                        if param == "udpport":
+                            self.settings.udpport.setText(content)
 
                     # apply and save settings
                     self.settings.applySettings()
