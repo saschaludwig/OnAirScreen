@@ -22,6 +22,7 @@
 #
 
 import os
+import sys
 from datetime import datetime
 from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence
 from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant
@@ -29,6 +30,7 @@ from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterfa
 from mainscreen import Ui_MainScreen
 from settings import Ui_Settings
 from locale import LC_TIME, setlocale
+import signal
 
 versionString = "0.4"
 
@@ -875,10 +877,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelWarning.setText( "" )
         self.labelWarning.hide()
 
-if __name__ == "__main__":
-    from sys import argv, exit
+###################################
+## App SIGINT handler
+###################################
+def sigint_handler(*args):
+    # Handler for SIGINT signal
+    sys.stderr.write("\n")
+    QApplication.quit()
 
-    app = QApplication(argv)
+###################################
+## App Init
+###################################
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, sigint_handler)
+    app = QApplication(sys.argv)
+    timer = QTimer()
+    timer.start(100)
+    timer.timeout.connect(lambda: None)
+
     mainscreen = MainScreen()
 
     mainscreen.setVULeft(0)
