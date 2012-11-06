@@ -152,6 +152,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310').toString())
+        self.tcpport.setText(settings.value('tcpport', '3310').toString())
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -213,6 +214,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         settings.setValue('udpport', self.udpport.displayText())
+        settings.setValue('tcpport', self.tcpport.displayText())
         settings.endGroup()
 
     def applySettings(self):
@@ -443,13 +445,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         QObject.connect(self.timerLED4, SIGNAL("timeout()"), self.toggleLED4)
 
         # Setup UDP Socket
-        self.sock = QUdpSocket()
+        self.udpsock = QUdpSocket()
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
         (port, foo) = settings.value('udpport', 3310).toInt()
         settings.endGroup()
-        self.sock.bind(port, QUdpSocket.ShareAddress)
-        self.sock.readyRead.connect(self.cmdHandler)
+        self.udpsock.bind(port, QUdpSocket.ShareAddress)
+        self.udpsock.readyRead.connect(self.cmdHandler)
 
         # diplay all host adresses
         self.displayAllHostaddresses()
@@ -467,8 +469,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setNewsText(", ".join(["%s" % (addr) for addr in v6addrs]))
 
     def cmdHandler(self):
-        while self.sock.hasPendingDatagrams():
-            data, host, port = self.sock.readDatagram(self.sock.pendingDatagramSize())
+        while self.udpsock.hasPendingDatagrams():
+            data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
             print "DATA: ", data
             lines = data.splitlines()
             for line in lines:
@@ -586,6 +588,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if group == "Network":
                         if param == "udpport":
                             self.settings.udpport.setText(content)
+                        if param == "tcpport":
+                            self.settings.tcpport.setText(content)
 
                     # apply and save settings
                     self.settings.applySettings()
