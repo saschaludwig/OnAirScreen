@@ -21,6 +21,7 @@
 #    along with OnAirScreen.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import atexit
 import os
 import sys
 from datetime import datetime
@@ -909,4 +910,4 @@ if __name__ == "__main__":
 
     mainscreen.show()
 
-    exit(app.exec_())
+    sys.exit(app.exec_())
