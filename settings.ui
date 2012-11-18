@@ -441,22 +441,6 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <widget class="QCheckBox" name="checkBox_VU">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Enable VU Meters</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QCheckBox" name="checkBox_TooLoud">
              <property name="enabled">
               <bool>true</bool>
@@ -1297,7 +1281,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>StationNameColor</tabstop>
   <tabstop>Slogan</tabstop>
   <tabstop>SloganColor</tabstop>
-  <tabstop>checkBox_VU</tabstop>
   <tabstop>checkBox_TooLoud</tabstop>
   <tabstop>CloseButton</tabstop>
   <tabstop>ApplyButton</tabstop>

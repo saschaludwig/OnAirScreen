@@ -107,7 +107,6 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("VU")
-        self.checkBox_VU.setChecked(settings.value('vumeters', False).toBool())
         self.checkBox_TooLoud.setChecked(settings.value('tooloud', True).toBool())
         self.TooLoudText.setText(settings.value('tooloudtext', 'TOO LOUD').toString())
         settings.endGroup()
@@ -169,7 +168,6 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("VU")
-        settings.setValue('vumeters', self.checkBox_VU.isChecked())
         settings.setValue('tooloud', self.checkBox_TooLoud.isChecked())
         settings.setValue('tooloudtext', self.TooLoudText.displayText())
         settings.endGroup()
@@ -581,8 +579,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                             self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
 
                     if group == "VU":
-                        if param == "vumeters":
-                            self.settings.checkBox_VU.setChecked(QVariant(content).toBool())
                         if param == "tooloudtext":
                             self.settings.TooLoudText.setText(content)
                         if param == "tooloud":
@@ -856,12 +852,6 @@ class MainScreen(QWidget, Ui_MainScreen):
     def setNewsText(self, text):
         self.labelNews.setText(text)
 
-    def setVULeft(self, value):
-        self.progressL.setValue(value)
-
-    def setVURight(self, value):
-        self.progressR.setValue(value)
-
     def setBacktimingSecs(self, value):
         pass
         #self.labelSeconds.setText( str(value) )
@@ -902,8 +892,6 @@ if __name__ == "__main__":
 
     mainscreen = MainScreen()
 
-    mainscreen.setVULeft(0)
-    mainscreen.setVURight(0)
 
     for i in range(1,5):
         mainscreen.ledLogic(i, False)
