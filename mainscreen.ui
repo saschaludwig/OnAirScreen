@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>979</width>
-    <height>872</height>
+    <width>995</width>
+    <height>793</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -276,7 +276,7 @@
          <bool>false</bool>
         </property>
         <property name="margin">
-         <number>3</number>
+         <number>5</number>
         </property>
        </widget>
       </item>
