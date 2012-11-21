@@ -72,10 +72,10 @@ class ClockWidget(QtGui.QWidget):
     # astrastudio color scheme
     digiHourColor = QtGui.QColor(50, 50, 255, 255)
     digiSecondColor = QtGui.QColor(255, 153, 0, 255)
-
+    digiDigitsColor = QtGui.QColor(255, 153, 0, 255)
 
     timeZoneOffset = 0
-    clockMode = 0
+    clockMode = 1
 
     def __init__(self, parent=None):
         super(ClockWidget, self).__init__(parent)
@@ -114,94 +114,91 @@ class ClockWidget(QtGui.QWidget):
 
     def paintEvent(self, event):
         side = min(self.width(), self.height())
-        time = QtCore.QTime.currentTime()
+        self.time = QtCore.QTime.currentTime()
+        time = self.time
 
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.translate(self.width() / 2, self.height() / 2)
         painter.scale(side / 200.0, side / 200.0)
 
-
         if self.clockMode == 0:
-            # analog clock mode
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.setBrush(ClockWidget.hourColor)
-            # set hour hand length and minute hand length
-            hhl = -65 #-50
-            mhl = -85 #-75
-            # draw hour hand
-            painter.save()
-            painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
-            painter.drawRoundedRect(-4,4,8,hhl,4.0,4.0)
-            painter.restore()
+            self.paintAnalog(painter)
+        else:
+            self.paintDigital(painter)
 
-            painter.setPen(ClockWidget.hourColor)
+    def paintAnalog(self, painter):
+        time = self.time
+        # analog clock mode
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(ClockWidget.hourColor)
+        # set hour hand length and minute hand length
+        hhl = -65 #-50
+        mhl = -85 #-75
+        # draw hour hand
+        painter.save()
+        painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
+        painter.drawRoundedRect(-4,4,8,hhl,4.0,4.0)
+        painter.restore()
 
-            for i in range(12):
-                painter.drawRoundedRect(88,-1,8,2,1.0,1.0)
-                painter.rotate(30.0)
+        painter.setPen(ClockWidget.hourColor)
 
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.setBrush(ClockWidget.minuteColor)
+        for i in range(12):
+            painter.drawRoundedRect(88,-1,8,2,1.0,1.0)
+            painter.rotate(30.0)
 
-            #draw minute hand
-            sizefactor = 1.3
-            painter.save()
-            painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
-            painter.drawRoundedRect(-4/sizefactor,4/sizefactor,8/sizefactor,mhl,4.0/sizefactor,4.0/sizefactor)
-            painter.restore()
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(ClockWidget.minuteColor)
 
-            #draw center circle
-            painter.setBrush(ClockWidget.circleColor)
-            painter.save()
-            painter.drawEllipse(-6,-6,12,12)
-            painter.restore()
+        #draw minute hand
+        sizefactor = 1.3
+        painter.save()
+        painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
+        painter.drawRoundedRect(-4/sizefactor,4/sizefactor,8/sizefactor,mhl,4.0/sizefactor,4.0/sizefactor)
+        painter.restore()
 
-            painter.setPen(ClockWidget.minuteColor)
+        #draw center circle
+        painter.setBrush(ClockWidget.circleColor)
+        painter.save()
+        painter.drawEllipse(-6,-6,12,12)
+        painter.restore()
 
-            for j in range(60):
-                if (j % 5) != 0:
-                    painter.drawLine(92, 0, 96, 0)
-                painter.rotate(6.0)
-            # end analog clock mode
+        painter.setPen(ClockWidget.minuteColor)
 
-        if self.clockMode == 1:
-            # digital clock mode
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.setBrush(ClockWidget.digiHourColor)
-            # set hour hand length and minute hand length
-            #hhl = -65 #-50
-            #mhl = -85 #-75
-            # draw hour hand
-            painter.save()
-            #painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
-            #painter.drawRoundedRect(-4,4,8,hhl,4.0,4.0)
-            painter.restore()
+        for j in range(60):
+            if (j % 5) != 0:
+                painter.drawLine(92, 0, 96, 0)
+            painter.rotate(6.0)
+        # end analog clock mode
 
-            painter.setPen(ClockWidget.digiHourColor)
+    def paintDigital(self, painter):
+        time = self.time
+        # digital clock mode
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(ClockWidget.digiHourColor)
+        painter.setPen(ClockWidget.digiHourColor)
 
-            # set painter to 12 o'clock position
-            painter.rotate(-90.0)
+        # set painter to 12 o'clock position
+        painter.rotate(-90.0)
 
-            # draw hour marks
-            painter.save()
-            for i in range(12):
-                painter.drawEllipse(QtCore.QPointF(95,0), 1.5, 1.5)
-                painter.rotate(30.0)
-            painter.restore()
+        # draw hour marks
+        painter.save()
+        for i in range(12):
+            painter.drawEllipse(QtCore.QPointF(95,0), 1.5, 1.5)
+            painter.rotate(30.0)
+        painter.restore()
 
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.setBrush(ClockWidget.digiSecondColor)
-            painter.setPen(ClockWidget.digiSecondColor)
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(ClockWidget.digiSecondColor)
+        painter.setPen(ClockWidget.digiSecondColor)
 
-            # draw seconds
-            painter.save()
-            for j in range(time.second()+1):
-                painter.drawEllipse(QtCore.QPointF(88,0), 1.5, 1.5)
-                painter.rotate(6.0)
-            painter.restore()
-            # end digital clock mode
-
+        # draw seconds
+        painter.save()
+        for j in range(time.second()+1):
+            painter.drawEllipse(QtCore.QPointF(88,0), 1.5, 1.5)
+            painter.rotate(6.0)
+        painter.restore()
+        # end digital clock mode
 
 
 if __name__ == '__main__':
