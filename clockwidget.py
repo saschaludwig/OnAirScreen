@@ -76,6 +76,7 @@ class ClockWidget(QtGui.QWidget):
 
     timeZoneOffset = 0
     clockMode = 1
+    counter = 0
 
     def __init__(self, parent=None):
         super(ClockWidget, self).__init__(parent)
@@ -213,17 +214,18 @@ class ClockWidget(QtGui.QWidget):
         painter.restore()
         # end digital clock mode
 
-
     def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
-        #colon
-        dotSize = 1.5
-        dotOffset = 3.8          # spacing between the dots
-        dotSlant = dotOffset/19  # horizontal slant of each row
-        currentRow = +1.5
-        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotSlant*2*currentRow), digitStartPosY-(dotOffset*currentRow)), dotSize, dotSize)
-        currentRow = -1.2
-        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotSlant*2*currentRow), digitStartPosY-(dotOffset*currentRow)), dotSize, dotSize)
-
+        #paint colon only half a second
+        msec = "%03d" % self.time.msec()
+        if int(msec[0:1]) < 5:
+            #colon
+            dotSize = 1.5
+            dotOffset = 3.8          # spacing between the dots
+            dotSlant = dotOffset/19  # horizontal slant of each row
+            currentRow = +1.5
+            painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotSlant*2*currentRow), digitStartPosY-(dotOffset*currentRow)), dotSize, dotSize)
+            currentRow = -1.2
+            painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotSlant*2*currentRow), digitStartPosY-(dotOffset*currentRow)), dotSize, dotSize)
 
     def drawDigit(self, painter, digitStartPosX=0, digitStartPosY=0, value=8):
         value = int(value)
