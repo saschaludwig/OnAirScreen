@@ -13,7 +13,7 @@
     <x>0</x>
     <y>0</y>
     <width>995</width>
-    <height>793</height>
+    <height>872</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -338,27 +338,6 @@
          <width>530</width>
          <height>0</height>
         </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="labelClock">
-       <property name="font">
-        <font>
-         <family>FreeSans</family>
-         <pointsize>72</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">color: rgb(255, 255, 0)</string>
-       </property>
-       <property name="text">
-        <string>23:42:05</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>

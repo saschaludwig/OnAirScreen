@@ -52,7 +52,7 @@
 
 
 from PyQt4 import QtCore, QtGui
-
+import time as pytime
 
 class ClockWidget(QtGui.QWidget):
 
@@ -84,7 +84,10 @@ class ClockWidget(QtGui.QWidget):
         timer = QtCore.QTimer(self)
         self.connect(timer, QtCore.SIGNAL("timeout()"), self, QtCore.SLOT("update()"))
         self.connect(timer, QtCore.SIGNAL("timeout()"), self.updateTime)
-        timer.start(100)
+        # sync local timer with system clock
+        while QtCore.QTime.currentTime().msec() > 5:
+            pytime.sleep(0.005)
+        timer.start(500)
 
     def updateTime(self):
         self.emit(QtCore.SIGNAL("timeChanged(QTime)"), QtCore.QTime.currentTime())
