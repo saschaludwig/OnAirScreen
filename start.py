@@ -820,7 +820,8 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.statusLED4 = False
 
     def setClock(self, text):
-        self.labelClock.setText(text)
+        pass
+        #self.labelClock.setText(text)
 
     def setStation(self, text):
         self.labelStation.setText(text)
