@@ -2,7 +2,7 @@
 
 #############################################################################
 ##
-## OnAirScreen Analog Clock implementation
+## OnAirScreen Analog / Digital Clock implementation
 ## Copyright (C) 2012 Sascha Ludwig
 ## All rights reserved.
 ##
@@ -50,7 +50,6 @@
 ##
 #############################################################################
 
-
 from PyQt4 import QtCore, QtGui
 import time as pytime
 
@@ -86,7 +85,7 @@ class ClockWidget(QtGui.QWidget):
         self.connect(timer, QtCore.SIGNAL("timeout()"), self.updateTime)
         # sync local timer with system clock
         while QtCore.QTime.currentTime().msec() > 5:
-            pytime.sleep(0.005)
+            pytime.sleep(0.001)
         timer.start(500)
 
     def updateTime(self):
