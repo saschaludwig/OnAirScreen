@@ -178,6 +178,51 @@ class ClockWidget(QtGui.QWidget):
         painter.setBrush(ClockWidget.digiHourColor)
         painter.setPen(ClockWidget.digiHourColor)
 
+
+        # draw 7segment dots
+
+        dotSize = 1.5
+        dotOffset = 3.8          # spacing between the dots
+        dotSlant = dotOffset/18  # horizontal slant of each row
+        digitStartPosX = 0.0     # test X position, center of digit
+        digitStartPosY = 0.0     # test Y position, center of digit
+
+        # horizontal segment with 4 dots
+
+        #       a
+        #    * * * *
+        #   *       *
+        # f *       * b
+        #   *   g   *
+        #    * * * *
+        #   *       *
+        # e *       * c
+        #   *       *
+        #    * * * *
+        #       d
+
+        #segment g
+        currentRow = 0 #center row
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX-(dotOffset*1.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX-(dotOffset*0.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotOffset*0.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotOffset*1.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+
+        #segment a
+        currentRow = 9 #top row
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX-(dotOffset*1.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX-(dotOffset*0.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotOffset*0.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotOffset*1.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+
+        #segment d
+        currentRow = -9 #top row
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX-(dotOffset*1.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX-(dotOffset*0.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotOffset*0.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+        painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotOffset*1.5)+(dotSlant*currentRow), digitStartPosY-(dotOffset/2*currentRow)), dotSize, dotSize)
+
+
         # set painter to 12 o'clock position
         painter.rotate(-90.0)
 
