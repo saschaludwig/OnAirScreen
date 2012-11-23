@@ -33,7 +33,7 @@ from settings import Ui_Settings
 from locale import LC_TIME, setlocale
 import signal
 
-versionString = "0.4"
+versionString = "0.5"
 
 class Settings(QWidget, Ui_Settings):
     def __init__(self):
@@ -152,6 +152,11 @@ class Settings(QWidget, Ui_Settings):
         self.LED4Timedflash.setChecked(settings.value('timedflash', False).toBool())
         settings.endGroup()
 
+        settings.beginGroup("Clock")
+        self.clockDigital.setChecked(settings.value('digital', True).toBool())
+        self.clockAnalog.setChecked(settings.value('analog', False).toBool())
+        settings.endGroup()
+
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310').toString())
         self.tcpport.setText(settings.value('tcpport', '3310').toString())
@@ -211,6 +216,11 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('activetextcolor', self.getLED4FGColor().name())
         settings.setValue('autoflash', self.LED4Autoflash.isChecked())
         settings.setValue('timedflash', self.LED4Timedflash.isChecked())
+        settings.endGroup()
+
+        settings.beginGroup("Clock")
+        settings.setValue('digital', self.clockDigital.isChecked())
+        settings.setValue('analog', self.clockAnalog.isChecked())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -583,6 +593,14 @@ class MainScreen(QWidget, Ui_MainScreen):
                             self.settings.TooLoudText.setText(content)
                         if param == "tooloud":
                             self.settings.checkBox_TooLoud.setChecked(QVariant(content).toBool())
+
+                    if group == "Clock":
+                        if param == "digital":
+                            self.settings.clockDigital.setChecked(QVariant(content).toBool())
+                            self.settings.clockAnalog.setChecked(not QVariant(content).toBool())
+                        if param == "analog":
+                            self.settings.clockAnalog.setChecked(QVariant(content).toBool())
+                            self.settings.clockDigital.setChecked(not QVariant(content).toBool())
 
                     if group == "Network":
                         if param == "udpport":
