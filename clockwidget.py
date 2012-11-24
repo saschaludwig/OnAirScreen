@@ -218,8 +218,7 @@ class ClockWidget(QtGui.QWidget):
 
     def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
         #paint colon only half a second
-        msec = "%03d" % self.time.msec()
-        if int(msec[0:1]) < 5:
+        if self.time.msec() < 500:
             #colon
             dotSize = 1.5
             dotOffset = 3.8          # spacing between the dots
