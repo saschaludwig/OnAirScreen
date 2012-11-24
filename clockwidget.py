@@ -57,28 +57,26 @@ class ClockWidget(QtGui.QWidget):
 
     __pyqtSignals__ = ("timeChanged(QTime)", "timeZoneChanged(int)")
 
-    # analog mode colors
-    hourColor = QtGui.QColor(200, 200, 200, 255)
-    minuteColor = QtGui.QColor(220, 220, 220, 255)
-    circleColor = QtGui.QColor(220, 220, 220, 255)
-
-    # digital mode colors
-
     # default color scheme
     #digiHourColor = QtGui.QColor(255, 0, 0, 255)
     #digiSecondColor = QtGui.QColor(255, 0, 0, 255)
 
-    # astrastudio color scheme
-    digiHourColor = QtGui.QColor(50, 50, 255, 255)
-    digiSecondColor = QtGui.QColor(255, 153, 0, 255)
-    digiDigitsColor = QtGui.QColor(255, 153, 0, 255)
-
-    timeZoneOffset = 0
-    clockMode = 1
-    counter = 0
-
     def __init__(self, parent=None):
         super(ClockWidget, self).__init__(parent)
+
+        # astrastudio color scheme
+        self.digiHourColor = QtGui.QColor(50, 50, 255, 255)
+        self.digiSecondColor = QtGui.QColor(255, 153, 0, 255)
+        self.digiDigitsColor = QtGui.QColor(255, 153, 0, 255)
+
+        # analog mode colors
+        self.hourColor = QtGui.QColor(200, 200, 200, 255)
+        self.minuteColor = QtGui.QColor(220, 220, 220, 255)
+        self.circleColor = QtGui.QColor(220, 220, 220, 255)
+
+        self.timeZoneOffset = 0
+        self.clockMode = 1
+        self.counter = 0
 
         timer = QtCore.QTimer(self)
         self.connect(timer, QtCore.SIGNAL("timeout()"), self, QtCore.SLOT("update()"))
@@ -91,29 +89,61 @@ class ClockWidget(QtGui.QWidget):
     def updateTime(self):
         self.emit(QtCore.SIGNAL("timeChanged(QTime)"), QtCore.QTime.currentTime())
 
-    def getTimeZone(self):
-        return self.timeZoneOffset
 
     @QtCore.pyqtSignature("setTimeZone(int)")
+    def getTimeZone(self):
+        return self.timeZoneOffset
     def setTimeZone(self, value):
         if value != self.timeZoneOffset:
             self.timeZoneOffset = value
             self.emit(QtCore.SIGNAL("timeZoneChanged(int)"), value)
             self.update()
-
     def resetTimeZone(self):
         if self.timeZoneOffset != 0:
             self.timeZoneOffset = 0
             self.emit(QtCore.SIGNAL("timeZoneChanged(int)"), 0)
             self.update()
-
     timeZone = QtCore.pyqtProperty("int", getTimeZone, setTimeZone, resetTimeZone)
 
+    @QtCore.pyqtSignature("setClockMode(int)")
     def setClockMode(self, mode):
         if mode == 1:
             self.clockMode = 1
         else:
             self.clockMode = 0
+    def resetClockMode(self):
+        self.clockMode = 1
+    def getClockMode(self):
+        return self.clockMode
+    clockType = QtCore.pyqtProperty("int", getClockMode, setClockMode, resetClockMode)
+
+    @QtCore.pyqtSignature("setDigiHourColor(QColor)")
+    def setDigiHourColor(self, color=QtGui.QColor(50, 50, 255, 255) ):
+        self.digiHourColor = color
+    def resetDigiHourColor(self):
+        self.digiHourColor = QtGui.QColor(50, 50, 255, 255)
+    def getDigiHourColor(self):
+        return self.digiHourColor
+    colorDigiHour = QtCore.pyqtProperty(QtGui.QColor, getDigiHourColor, setDigiHourColor, resetDigiHourColor)
+
+    @QtCore.pyqtSignature("setDigiSecondColor(QColor)")
+    def setDigiSecondColor(self, color=QtGui.QColor(50, 50, 255, 255) ):
+        self.digiSecondColor = color
+    def resetDigiSecondColor(self):
+        self.digiSecondColor = QtGui.QColor(50, 50, 255, 255)
+    def getDigiSecondColor(self):
+        return self.digiSecondColor
+    colorDigiSecond = QtCore.pyqtProperty(QtGui.QColor, getDigiSecondColor, setDigiSecondColor, resetDigiSecondColor)
+
+    @QtCore.pyqtSignature("setDigiDigitsColor(QColor)")
+    def setDigiDigitsColor(self, color=QtGui.QColor(50, 50, 255, 255) ):
+        self.digiDigitsColor = color
+    def resetDigiDigitsColor(self):
+        self.digiDigitsColor = QtGui.QColor(50, 50, 255, 255)
+    def getDigiDigitsColor(self):
+        return self.digiDigitsColor
+    colorDigiDigits = QtCore.pyqtProperty(QtGui.QColor, getDigiDigitsColor, setDigiDigitsColor, resetDigiDigitsColor)
+
 
     def paintEvent(self, event):
         side = min(self.width(), self.height())
@@ -134,7 +164,7 @@ class ClockWidget(QtGui.QWidget):
         time = self.time
         # analog clock mode
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(ClockWidget.hourColor)
+        painter.setBrush(self.hourColor)
         # set hour hand length and minute hand length
         hhl = -65 #-50
         mhl = -85 #-75
@@ -144,14 +174,14 @@ class ClockWidget(QtGui.QWidget):
         painter.drawRoundedRect(-4,4,8,hhl,4.0,4.0)
         painter.restore()
 
-        painter.setPen(ClockWidget.hourColor)
+        painter.setPen(self.hourColor)
 
         for i in range(12):
             painter.drawRoundedRect(88,-1,8,2,1.0,1.0)
             painter.rotate(30.0)
 
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(ClockWidget.minuteColor)
+        painter.setBrush(self.minuteColor)
 
         #draw minute hand
         sizefactor = 1.3
@@ -161,12 +191,12 @@ class ClockWidget(QtGui.QWidget):
         painter.restore()
 
         #draw center circle
-        painter.setBrush(ClockWidget.circleColor)
+        painter.setBrush(self.circleColor)
         painter.save()
         painter.drawEllipse(-6,-6,12,12)
         painter.restore()
 
-        painter.setPen(ClockWidget.minuteColor)
+        painter.setPen(self.minuteColor)
 
         for j in range(60):
             if (j % 5) != 0:
@@ -178,8 +208,8 @@ class ClockWidget(QtGui.QWidget):
         time = self.time
         # digital clock mode
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(ClockWidget.digiHourColor)
-        painter.setPen(ClockWidget.digiHourColor)
+        painter.setBrush(self.digiHourColor)
+        painter.setPen(self.digiHourColor)
 
         digitSpacing = 25
 
@@ -205,8 +235,8 @@ class ClockWidget(QtGui.QWidget):
         painter.restore()
 
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(ClockWidget.digiSecondColor)
-        painter.setPen(ClockWidget.digiSecondColor)
+        painter.setBrush(self.digiSecondColor)
+        painter.setPen(self.digiSecondColor)
 
         # draw seconds
         painter.save()
@@ -219,7 +249,6 @@ class ClockWidget(QtGui.QWidget):
     def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
         #paint colon only half a second
         if self.time.msec() < 500:
-            #colon
             dotSize = 1.5
             dotOffset = 3.8          # spacing between the dots
             dotSlant = dotOffset/19  # horizontal slant of each row
