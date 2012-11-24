@@ -518,6 +518,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                     else:
                         self.hideWarning()
 
+                if command == "AIR1":
+                    if value == "OFF":
+                        self.setAIR1(False)
+                    else:
+                        self.setAIR1(True)
+
                 if command == "CONF":
                     #split group, config and values and apply them
                     (group, paramvalue) = value.split(':',1)
@@ -785,6 +791,20 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.setValue('fullscreen', False)
         settings.endGroup()
 
+    def setAIR1(self, action):
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if action:
+            self.AirLabel_1.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirLabel_1.setText("Mic 1\n0:00")
+            self.AirIcon_1.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.statusAIR1 = True
+        else:
+            settings.beginGroup("LEDS")
+            self.AirIcon_1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirLabel_1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
+            self.statusAIR1 = False
+
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
@@ -914,6 +934,8 @@ if __name__ == "__main__":
 
     for i in range(1,5):
         mainscreen.ledLogic(i, False)
+
+    mainscreen.setAIR1(False)
 
     mainscreen.show()
 
