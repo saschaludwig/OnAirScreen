@@ -455,6 +455,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerLED4 = QTimer()
         QObject.connect(self.timerLED4, SIGNAL("timeout()"), self.toggleLED4)
 
+        # Setup OnAir Timers
+        self.timerAIR1 = QTimer()
+        QObject.connect(self.timerAIR1, SIGNAL("timeout()"), self.updateAIR1Seconds)
+        self.Air1Seconds = 0
+
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -794,16 +799,24 @@ class MainScreen(QWidget, Ui_MainScreen):
     def setAIR1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
+            self.Air1Seconds = 0
             self.AirLabel_1.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_1.setText("Mic 1\n0:00")
             self.AirIcon_1.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirLabel_1.setText("Mic 1\n0:%02d" % self.Air1Seconds)
             self.statusAIR1 = True
+            # AIR1 timer
+            self.timerAIR1.start(1000)
         else:
             settings.beginGroup("LEDS")
             self.AirIcon_1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             self.AirLabel_1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             settings.endGroup()
             self.statusAIR1 = False
+            self.timerAIR1.stop()
+
+    def updateAIR1Seconds(self):
+        self.Air1Seconds += 1
+        self.AirLabel_1.setText("Mic 1\n0:%02d" % self.Air1Seconds)
 
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
