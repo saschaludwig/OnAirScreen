@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>981</width>
-    <height>779</height>
+    <width>967</width>
+    <height>856</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -331,8 +331,11 @@
    </item>
    <item row="1" column="1" rowspan="2">
     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="margin">
+      <number>2</number>
+     </property>
      <item>
-      <widget class="ClockWidget" name="clockWidget" native="true">
+      <widget class="ClockWidget" name="clockWidget">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>0</horstretch>

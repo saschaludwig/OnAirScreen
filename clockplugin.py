@@ -42,12 +42,12 @@ class ClockPlugin(QtDesigner.QPyDesignerCustomWidgetPlugin):
 
     # Returns a short description of the custom widget for use in a tool tip.
     def toolTip(self):
-        return "Tooltip: OAS Analog Clock"
+        return "Tooltip: OAS Clock"
 
     # Returns a short description of the custom widget for use in a "What's
     # This?" help message for the widget.
     def whatsThis(self):
-        return "What's this: OAS Analog Clock"
+        return "What's this: OAS Clock"
 
     # Returns True if the custom widget acts as a container for other widgets;
     # otherwise returns False. Note that plugins for custom containers also
