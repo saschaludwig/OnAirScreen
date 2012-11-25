@@ -802,7 +802,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.Air1Seconds = 0
             self.AirLabel_1.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_1.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_1.setText("Mic 1\n0:%02d" % self.Air1Seconds)
+            self.AirLabel_1.setText("Mic\n0:%02d" % self.Air1Seconds)
             self.statusAIR1 = True
             # AIR1 timer
             self.timerAIR1.start(1000)
@@ -816,7 +816,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def updateAIR1Seconds(self):
         self.Air1Seconds += 1
-        self.AirLabel_1.setText("Mic 1\n0:%02d" % self.Air1Seconds)
+        self.AirLabel_1.setText("Mic\n0:%02d" % self.Air1Seconds)
 
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
