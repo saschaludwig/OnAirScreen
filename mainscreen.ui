@@ -318,7 +318,7 @@
          <string notr="true">background-color: rgb(255, 0, 0);</string>
         </property>
         <property name="text">
-         <string>Mic 1
+         <string>Mic
 0:00</string>
         </property>
         <property name="alignment">
@@ -347,6 +347,9 @@
          <width>530</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="clockType" stdset="0">
+        <number>1</number>
        </property>
       </widget>
      </item>
@@ -576,6 +579,12 @@ color: rgb(255, 255, 255);</string>
    </item>
    <item row="3" column="0" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
      <item>
       <widget class="QLabel" name="labelTextLeft">
        <property name="font">
