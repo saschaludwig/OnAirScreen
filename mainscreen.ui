@@ -12,7 +12,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>967</width>
+    <width>969</width>
     <height>856</height>
    </rect>
   </property>
@@ -319,7 +319,7 @@
         </property>
         <property name="text">
          <string>Mic 1
-0:23</string>
+0:00</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -335,7 +335,7 @@
       <number>2</number>
      </property>
      <item>
-      <widget class="ClockWidget" name="clockWidget" native="true">
+      <widget class="ClockWidget" name="clockWidget">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>0</horstretch>
