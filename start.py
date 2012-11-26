@@ -459,6 +459,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerAIR1 = QTimer()
         QObject.connect(self.timerAIR1, SIGNAL("timeout()"), self.updateAIR1Seconds)
         self.Air1Seconds = 0
+        
+        self.timerAIR2 = QTimer()
+        QObject.connect(self.timerAIR2, SIGNAL("timeout()"), self.updateAIR2Seconds)
+        self.Air2Seconds = 0
 
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
@@ -528,6 +532,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                         self.setAIR1(False)
                     else:
                         self.setAIR1(True)
+
+                if command == "AIR2":
+                    if value == "OFF":
+                        self.setAIR2(False)
+                    else:
+                        self.setAIR2(True)
 
                 if command == "CONF":
                     #split group, config and values and apply them
@@ -818,6 +828,28 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.Air1Seconds += 1
         self.AirLabel_1.setText("Mic\n0:%02d" % self.Air1Seconds)
 
+    def setAIR2(self, action):
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if action:
+            self.Air2Seconds = 0
+            self.AirLabel_2.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirIcon_2.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirLabel_2.setText("Phone\n0:%02d" % self.Air2Seconds)
+            self.statusAIR2 = True
+            # AIR2 timer
+            self.timerAIR2.start(1000)
+        else:
+            settings.beginGroup("LEDS")
+            self.AirIcon_2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirLabel_2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
+            self.statusAIR2 = False
+            self.timerAIR2.stop()
+
+    def updateAIR2Seconds(self):
+        self.Air2Seconds += 1
+        self.AirLabel_2.setText("Phone\n0:%02d" % self.Air2Seconds)
+
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
@@ -949,6 +981,7 @@ if __name__ == "__main__":
         mainscreen.ledLogic(i, False)
 
     mainscreen.setAIR1(False)
+    mainscreen.setAIR2(False)
 
     mainscreen.show()
 
