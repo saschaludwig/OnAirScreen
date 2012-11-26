@@ -5,3 +5,4 @@ resources_rc.py
 *.pyc
 *.pyo
 onairscreen.ini
+.DS_Store
