@@ -91,6 +91,10 @@ class Settings(QWidget, Ui_Settings):
         self.connect(self.LED4BGColor, SIGNAL("clicked()"), self.setLED4BGColor )
         self.connect(self.LED4FGColor, SIGNAL("clicked()"), self.setLED4FGColor )
 
+        self.connect(self.DigitalHourColorButton, SIGNAL("clicked()"), self.setDigitalHourColor )
+        self.connect(self.DigitalSecondColorButton, SIGNAL("clicked()"), self.setDigitalSecondColor )
+        self.connect(self.DigitalDigitColorButton, SIGNAL("clicked()"), self.setDigitalDigitColor )
+
         self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor )
         self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor )
 
@@ -155,6 +159,9 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Clock")
         self.clockDigital.setChecked(settings.value('digital', True).toBool())
         self.clockAnalog.setChecked(settings.value('analog', False).toBool())
+        self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
+        self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
+        self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -221,6 +228,9 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Clock")
         settings.setValue('digital', self.clockDigital.isChecked())
         settings.setValue('analog', self.clockAnalog.isChecked())
+        settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
+        settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
+        settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -394,6 +404,45 @@ class Settings(QWidget, Ui_Settings):
         color = palette.text().color()
         return color
 
+    def getDigitalHourColor(self):
+        palette = self.DigitalHourColor.palette()
+        color = palette.window().color()
+        return color
+
+    def getDigitalSecondColor(self):
+        palette = self.DigitalSecondColor.palette()
+        color = palette.window().color()
+        return color
+
+    def getDigitalDigitColor(self):
+        palette = self.DigitalDigitColor.palette()
+        color = palette.window().color()
+        return color
+
+    def setDigitalHourColor(self, newcolor=False):
+        palette = self.DigitalHourColor.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QPalette.Window, newcolor)
+        self.DigitalHourColor.setPalette(palette)
+
+    def setDigitalSecondColor(self, newcolor=False):
+        palette = self.DigitalSecondColor.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QPalette.Window, newcolor)
+        self.DigitalSecondColor.setPalette(palette)
+
+    def setDigitalDigitColor(self, newcolor=False):
+        palette = self.DigitalDigitColor.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog( oldcolor )
+        palette.setColor(QPalette.Window, newcolor)
+        self.DigitalDigitColor.setPalette(palette)
+
     def openColorDialog(self, initcolor):
         colordialog = QColorDialog()
         selectedcolor = colordialog.getColor(initcolor, None, 'Please select a color')
@@ -459,7 +508,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerAIR1 = QTimer()
         QObject.connect(self.timerAIR1, SIGNAL("timeout()"), self.updateAIR1Seconds)
         self.Air1Seconds = 0
-        
+
         self.timerAIR2 = QTimer()
         QObject.connect(self.timerAIR2, SIGNAL("timeout()"), self.updateAIR2Seconds)
         self.Air2Seconds = 0
@@ -741,6 +790,16 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.beginGroup("LED4")
         self.setLED4Text(settings.value('text', 'ARI').toString())
         settings.endGroup()
+
+        settings.beginGroup("Clock")
+        #self.clockDigital.setChecked(settings.value('digital', True).toBool())
+        #self.clockAnalog.setChecked(settings.value('analog', False).toBool())
+
+        self.clockWidget.setDigiHourColor(self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
+        self.clockWidget.setDigiSecondColor(self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
+        self.clockWidget.setDigiDigitColor(self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
+        settings.endGroup()
+
 
     def constantUpdate(self):
         # slot for constant timer timeout

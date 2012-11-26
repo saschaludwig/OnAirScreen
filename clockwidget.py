@@ -67,7 +67,7 @@ class ClockWidget(QtGui.QWidget):
         # astrastudio color scheme
         self.digiHourColor = QtGui.QColor(50, 50, 255, 255)
         self.digiSecondColor = QtGui.QColor(255, 153, 0, 255)
-        self.digiDigitsColor = QtGui.QColor(255, 153, 0, 255)
+        self.digiDigitColor = QtGui.QColor(50, 50, 255, 255)
 
         # analog mode colors
         self.hourColor = QtGui.QColor(200, 200, 200, 255)
@@ -135,14 +135,14 @@ class ClockWidget(QtGui.QWidget):
         return self.digiSecondColor
     colorDigiSecond = QtCore.pyqtProperty(QtGui.QColor, getDigiSecondColor, setDigiSecondColor, resetDigiSecondColor)
 
-    @QtCore.pyqtSignature("setDigiDigitsColor(QColor)")
-    def setDigiDigitsColor(self, color=QtGui.QColor(50, 50, 255, 255) ):
-        self.digiDigitsColor = color
-    def resetDigiDigitsColor(self):
-        self.digiDigitsColor = QtGui.QColor(50, 50, 255, 255)
-    def getDigiDigitsColor(self):
-        return self.digiDigitsColor
-    colorDigiDigits = QtCore.pyqtProperty(QtGui.QColor, getDigiDigitsColor, setDigiDigitsColor, resetDigiDigitsColor)
+    @QtCore.pyqtSignature("setDigiDigitColor(QColor)")
+    def setDigiDigitColor(self, color=QtGui.QColor(50, 50, 255, 255) ):
+        self.digiDigitColor = color
+    def resetDigiDigitColor(self):
+        self.digiDigitColor = QtGui.QColor(50, 50, 255, 255)
+    def getDigiDigitColor(self):
+        return self.digiDigitColor
+    colorDigiDigit = QtCore.pyqtProperty(QtGui.QColor, getDigiDigitColor, setDigiDigitColor, resetDigiDigitColor)
 
 
     def paintEvent(self, event):
@@ -205,11 +205,13 @@ class ClockWidget(QtGui.QWidget):
         # end analog clock mode
 
     def paintDigital(self, painter):
-        time = self.time
         # digital clock mode
+        time = self.time
+
+        # draw digits and colon
         painter.setPen(QtCore.Qt.NoPen)
-        painter.setBrush(self.digiHourColor)
-        painter.setPen(self.digiHourColor)
+        painter.setBrush(self.digiDigitColor)
+        painter.setPen(self.digiDigitColor)
 
         digitSpacing = 25
 
@@ -226,6 +228,9 @@ class ClockWidget(QtGui.QWidget):
 
         # set painter to 12 o'clock position
         painter.rotate(-90.0)
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(self.digiHourColor)
+        painter.setPen(self.digiHourColor)
 
         # draw hour marks
         painter.save()
