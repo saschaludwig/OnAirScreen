@@ -158,7 +158,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Clock")
         self.clockDigital.setChecked(settings.value('digital', True).toBool())
-        self.clockAnalog.setChecked(settings.value('analog', False).toBool())
+        self.clockAnalog.setChecked(not settings.value('digital', True).toBool())
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
@@ -227,7 +227,6 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Clock")
         settings.setValue('digital', self.clockDigital.isChecked())
-        settings.setValue('analog', self.clockAnalog.isChecked())
         settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
         settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
         settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
@@ -668,7 +667,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                         if param == "digital":
                             self.settings.clockDigital.setChecked(QVariant(content).toBool())
                             self.settings.clockAnalog.setChecked(not QVariant(content).toBool())
-                        if param == "analog":
+                        else:
                             self.settings.clockAnalog.setChecked(QVariant(content).toBool())
                             self.settings.clockDigital.setChecked(not QVariant(content).toBool())
 
@@ -792,8 +791,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("Clock")
-        #self.clockDigital.setChecked(settings.value('digital', True).toBool())
-        #self.clockAnalog.setChecked(settings.value('analog', False).toBool())
+        self.clockWidget.setClockMode( settings.value('digital', True).toBool() )
 
         self.clockWidget.setDigiHourColor(self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.clockWidget.setDigiSecondColor(self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
