@@ -207,13 +207,14 @@ class ClockWidget(QtGui.QWidget):
     def paintDigital(self, painter):
         # digital clock mode
         time = self.time
+        dotSize = 1.6
 
         # draw digits and colon
         painter.setPen(QtCore.Qt.NoPen)
         painter.setBrush(self.digiDigitColor)
         painter.setPen(self.digiDigitColor)
 
-        digitSpacing = 25
+        digitSpacing = 28
 
         hourStr = "%02d" % time.hour()
         self.drawDigit(painter, digitSpacing*-2, 0, hourStr[0:1] )
@@ -235,7 +236,7 @@ class ClockWidget(QtGui.QWidget):
         # draw hour marks
         painter.save()
         for i in range(12):
-            painter.drawEllipse(QtCore.QPointF(95,0), 1.5, 1.5)
+            painter.drawEllipse(QtCore.QPointF(95,0), dotSize, dotSize)
             painter.rotate(30.0)
         painter.restore()
 
@@ -246,7 +247,7 @@ class ClockWidget(QtGui.QWidget):
         # draw seconds
         painter.save()
         for j in range(time.second()+1):
-            painter.drawEllipse(QtCore.QPointF(88,0), 1.5, 1.5)
+            painter.drawEllipse(QtCore.QPointF(88,0), dotSize, dotSize)
             painter.rotate(6.0)
         painter.restore()
         # end digital clock mode
@@ -254,9 +255,9 @@ class ClockWidget(QtGui.QWidget):
     def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
         #paint colon only half a second
         if self.time.msec() < 500:
-            dotSize = 1.5
-            dotOffset = 3.8          # spacing between the dots
-            dotSlant = dotOffset/19  # horizontal slant of each row
+            dotSize = 1.6
+            dotOffset = 4.5          # spacing between the dots
+            dotSlant = dotOffset/15  # horizontal slant of each row
             currentRow = +1.5
             painter.drawEllipse(QtCore.QPointF(digitStartPosX+(dotSlant*2*currentRow), digitStartPosY-(dotOffset*currentRow)), dotSize, dotSize)
             currentRow = -1.2
@@ -265,8 +266,8 @@ class ClockWidget(QtGui.QWidget):
     def drawDigit(self, painter, digitStartPosX=0, digitStartPosY=0, value=8):
         value = int(value)
         # draw dots from one 7segment digit
-        dotSize = 1.5
-        dotOffset = 3.8          # spacing between the dots
+        dotSize = 1.6
+        dotOffset = 4.5          # spacing between the dots
         dotSlant = dotOffset/19  # horizontal slant of each row
 
         # decimal to segment conversion table
