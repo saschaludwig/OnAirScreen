@@ -591,6 +591,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     #split group, config and values and apply them
                     (group, paramvalue) = value.split(':',1)
                     (param, content) = paramvalue.split('=',1)
+                    print "CONF:", param, content
                     if group == "General":
                         if param == "stationname":
                             self.settings.StationName.setText(content)
@@ -665,11 +666,18 @@ class MainScreen(QWidget, Ui_MainScreen):
 
                     if group == "Clock":
                         if param == "digital":
-                            self.settings.clockDigital.setChecked(QVariant(content).toBool())
-                            self.settings.clockAnalog.setChecked(not QVariant(content).toBool())
-                        else:
-                            self.settings.clockAnalog.setChecked(QVariant(content).toBool())
-                            self.settings.clockDigital.setChecked(not QVariant(content).toBool())
+                            if content == "True":
+                                self.settings.clockDigital.setChecked(QVariant(content).toBool())
+                                self.settings.clockAnalog.setChecked(not QVariant(content).toBool())
+                            if content == "False":
+                                self.settings.clockAnalog.setChecked(QVariant(content).toBool())
+                                self.settings.clockDigital.setChecked(not QVariant(content).toBool())
+                        if param == "digitalhourcolor":
+                            self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
+                        if param == "digitalsecondcolor":
+                            self.settings.setDigitalSecondColor(self.settings.getColorFromName(content))
+                        if param == "digitaldigitcolor":
+                            self.settings.setDigitalDigitColor(self.settings.getColorFromName(content))
 
                     if group == "Network":
                         if param == "udpport":
