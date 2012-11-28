@@ -246,7 +246,12 @@ class ClockWidget(QtGui.QWidget):
 
         # draw seconds
         painter.save()
-        for j in range(time.second()+1):
+        # draw zero second
+        #painter.drawEllipse(QtCore.QPointF(88,0), dotSize, dotSize)
+        #painter.rotate(6.0)
+        second = time.second()
+        if second == 0: second=60
+        for j in range(0, second):
             painter.drawEllipse(QtCore.QPointF(88,0), dotSize, dotSize)
             painter.rotate(6.0)
         painter.restore()
