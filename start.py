@@ -46,12 +46,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigConfigFinished.connect(self.configFinished)
 
         # set locale
-        locale = 'de_DE.UTF-8'
         try:
+            locale = 'de_DE.UTF-8'
             setlocale(LC_TIME, locale)
         except:
-            print 'error: setting locale %s' % locale
-            pass
+            try:
+                locale = 'deu'
+                setlocale(LC_TIME, locale)
+            except:
+                print 'error: setting locale %s' % locale
 
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
