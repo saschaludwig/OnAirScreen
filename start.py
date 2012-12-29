@@ -30,7 +30,9 @@ from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, Q
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from locale import LC_TIME, setlocale
+import ntplib
 import signal
+import socket
 from settings_functions import Settings
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -96,6 +98,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         QObject.connect(self.timerAIR2, SIGNAL("timeout()"), self.updateAIR2Seconds)
         self.Air2Seconds = 0
 
+        # Setup check NTP Timer
+        self.timerNTP = QTimer()
+        QObject.connect(self.timerNTP, SIGNAL("timeout()"), self.checkNTPOffset)
+        # initial check
+        self.timerNTP.start(1000)
+
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -107,6 +115,9 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # diplay all host adresses
         self.displayAllHostaddresses()
+
+        # set NTP warning
+        self.showWarning("Clock not NTP synchronized")
 
     def showsettings(self):
         global app
@@ -504,6 +515,24 @@ class MainScreen(QWidget, Ui_MainScreen):
     def updateAIR2Seconds(self):
         self.Air2Seconds += 1
         self.AirLabel_2.setText("Phone\n0:%02d" % self.Air2Seconds)
+
+    def checkNTPOffset(self):
+        self.timerNTP.stop()
+        max_deviation = 0.1
+        c = ntplib.NTPClient()
+        try:
+            response = c.request('ptbtime1.ptb.de', version=3)
+            if response.offset > max_deviation or response.offset < -max_deviation:
+                print "offset too big: %f" % response.offset
+                self.showWarning("Clock not NTP synchronized: offset too big")
+            else:
+                self.hideWarning()
+        except socket.timeout:
+            print "timeout checking NTP"
+            self.showWarning("Clock not NTP synchronized")
+        self.timerNTP.start(60000)
+
+
 
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
