@@ -530,6 +530,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         except socket.timeout:
             print "timeout checking NTP"
             self.showWarning("Clock not NTP synchronized")
+        except socket.gaierror:
+            print "error checking NTP"
+            self.showWarning("Clock not NTP synchronized")
         self.timerNTP.start(60000)
 
 
