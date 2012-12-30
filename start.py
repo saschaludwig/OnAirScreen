@@ -102,7 +102,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerNTP = QTimer()
         QObject.connect(self.timerNTP, SIGNAL("timeout()"), self.checkNTPOffset)
         # initial check
-        self.timerNTP.start(1000)
+        self.timerNTP.start(5000)
 
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
@@ -533,9 +533,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         except socket.gaierror:
             print "error checking NTP"
             self.showWarning("Clock not NTP synchronized")
-        self.timerNTP.start(60000)
-
-
+        except:
+            print "general error checking NTP"
+            self.showWarning("Clock not NTP synchronized")
+        self.timerNTP.start(30000)
 
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
