@@ -25,7 +25,7 @@ from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, Q
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from settings import Ui_Settings
 
-versionString = "0.5"
+versionString = "0.6"
 
 class Settings(QWidget, Ui_Settings):
     sigConfigChanged = pyqtSignal(int, unicode)
@@ -92,6 +92,11 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("VU")
         self.checkBox_TooLoud.setChecked(settings.value('tooloud', True).toBool())
         self.TooLoudText.setText(settings.value('tooloudtext', 'TOO LOUD').toString())
+        settings.endGroup()
+
+        settings.beginGroup("NTP")
+        self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', True).toBool())
+        self.NTPCheckServer.setText(settings.value('ntpcheckserver', 'ptbtime1.ptb.de').toString())
         settings.endGroup()
 
         settings.beginGroup("LEDS")
@@ -161,6 +166,11 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("VU")
         settings.setValue('tooloud', self.checkBox_TooLoud.isChecked())
         settings.setValue('tooloudtext', self.TooLoudText.displayText())
+        settings.endGroup()
+
+        settings.beginGroup("NTP")
+        settings.setValue('ntpcheck', self.checkBox_NTPCheck.isChecked())
+        settings.setValue('ntpcheckserver', self.NTPCheckServer.displayText())
         settings.endGroup()
 
         settings.beginGroup("LEDS")
