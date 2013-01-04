@@ -117,7 +117,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.displayAllHostaddresses()
 
         # set NTP warning
-        self.showWarning("Clock not NTP synchronized")
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("NTP")
+        if settings.value('ntpcheck', True).toBool():
+            self.showWarning("Clock not NTP synchronized")
+        settings.endGroup()
 
     def showsettings(self):
         global app
@@ -517,6 +521,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.AirLabel_2.setText("Phone\n0:%02d" % self.Air2Seconds)
 
     def checkNTPOffset(self):
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("NTP")
+        ntpcheck = settings.value('ntpcheck', True).toBool()
+        settings.endGroup()
+        if not ntpcheck:
+            return
         self.timerNTP.stop()
         max_deviation = 0.1
         c = ntplib.NTPClient()
