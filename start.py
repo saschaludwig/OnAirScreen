@@ -80,6 +80,14 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("S"), self, self.radioTimerSet )
         QShortcut(QKeySequence("R"), self, self.radioTimerReset )
 
+        QShortcut(QKeySequence("1"), self, self.toggleLED1 )
+        QShortcut(QKeySequence("2"), self, self.toggleLED2 )
+        QShortcut(QKeySequence("3"), self, self.toggleLED3 )
+        QShortcut(QKeySequence("4"), self, self.toggleLED4 )
+        QShortcut(QKeySequence("M"), self, self.toggleAIR1 )
+        QShortcut(QKeySequence("P"), self, self.toggleAIR2 )
+
+
         # Setup and start timers
         self.ctimer = QTimer()
         QObject.connect(self.ctimer, SIGNAL("timeout()"), self.constantUpdate)
@@ -335,6 +343,18 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.setLED4(False)
         else:
             self.setLED4(True)
+
+    def toggleAIR1(self):
+        if self.statusAIR1:
+            self.setAIR1(False)
+        else:
+            self.setAIR1(True)
+
+    def toggleAIR2(self):
+        if self.statusAIR2:
+            self.setAIR2(False)
+        else:
+            self.setAIR2(True)
 
     def unsetLED1(self):
         self.ledLogic(1, False)
