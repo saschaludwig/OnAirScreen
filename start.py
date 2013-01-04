@@ -69,11 +69,16 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # add hotkey bindings
         QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
+        QShortcut(QKeySequence("F"), self, self.toggleFullScreen )
         QShortcut(QKeySequence("Ctrl+Q"), self, QCoreApplication.instance().quit )
+        QShortcut(QKeySequence("Q"), self, QCoreApplication.instance().quit )
         QShortcut(QKeySequence("Ctrl+C"), self, QCoreApplication.instance().quit )
         QShortcut(QKeySequence("ESC"), self, QCoreApplication.instance().quit )
         QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings )
         QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings )
+        QShortcut(QKeySequence(" "), self, self.radioTimerStartStop )
+        QShortcut(QKeySequence("S"), self, self.radioTimerSet )
+        QShortcut(QKeySequence("R"), self, self.radioTimerReset )
 
         # Setup and start timers
         self.ctimer = QTimer()
@@ -93,10 +98,17 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerAIR1 = QTimer()
         QObject.connect(self.timerAIR1, SIGNAL("timeout()"), self.updateAIR1Seconds)
         self.Air1Seconds = 0
+        self.statusAIR1 = False
 
         self.timerAIR2 = QTimer()
         QObject.connect(self.timerAIR2, SIGNAL("timeout()"), self.updateAIR2Seconds)
         self.Air2Seconds = 0
+        self.statusAIR2 = False
+
+        self.timerAIR3 = QTimer()
+        QObject.connect(self.timerAIR3, SIGNAL("timeout()"), self.updateAIR3Seconds)
+        self.Air3Seconds = 0
+        self.statusAIR3 = False
 
         # Setup check NTP Timer
         self.timerNTP = QTimer()
@@ -122,6 +134,16 @@ class MainScreen(QWidget, Ui_MainScreen):
         if settings.value('ntpcheck', True).toBool():
             self.showWarning("Clock not NTP synchronized")
         settings.endGroup()
+
+    def radioTimerStartStop(self):
+        self.startStopAIR3()
+
+    def radioTimerReset(self):
+        self.resetAIR3()
+
+    def radioTimerSet(self):
+        self.Air3Seconds = 321
+        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
 
     def showsettings(self):
         global app
@@ -482,7 +504,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.Air1Seconds = 0
             self.AirLabel_1.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_1.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_1.setText("Mic\n0:%02d" % self.Air1Seconds)
+            self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds/60, self.Air1Seconds%60) )
             self.statusAIR1 = True
             # AIR1 timer
             self.timerAIR1.start(1000)
@@ -496,7 +518,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def updateAIR1Seconds(self):
         self.Air1Seconds += 1
-        self.AirLabel_1.setText("Mic\n0:%02d" % self.Air1Seconds)
+        self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds/60, self.Air1Seconds%60) )
 
     def setAIR2(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -504,7 +526,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.Air2Seconds = 0
             self.AirLabel_2.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_2.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_2.setText("Phone\n0:%02d" % self.Air2Seconds)
+            self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds/60, self.Air2Seconds%60) )
             self.statusAIR2 = True
             # AIR2 timer
             self.timerAIR2.start(1000)
@@ -518,7 +540,52 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def updateAIR2Seconds(self):
         self.Air2Seconds += 1
-        self.AirLabel_2.setText("Phone\n0:%02d" % self.Air2Seconds)
+        self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds/60, self.Air2Seconds%60) )
+
+    def resetAIR3(self):
+        self.timerAIR3.stop()
+        self.Air3Seconds = 0
+        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+        if self.statusAIR3 == True:
+            self.timerAIR3.start(1000)
+
+    def setAIR3(self, action):
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if action:
+            self.AirLabel_3.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirIcon_3.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+            self.statusAIR3 = True
+            # AIR3 timer
+            self.timerAIR3.start(1000)
+        else:
+            settings.beginGroup("LEDS")
+            self.AirIcon_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirLabel_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
+            self.statusAIR3 = False
+            self.timerAIR3.stop()
+
+    def startStopAIR3(self):
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if self.statusAIR3 == False:
+            self.AirLabel_3.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirIcon_3.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+            self.statusAIR3 = True
+            # AIR3 timer
+            self.timerAIR3.start(1000)
+        else:
+            settings.beginGroup("LEDS")
+            self.AirIcon_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirLabel_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
+            self.statusAIR3 = False
+            self.timerAIR3.stop()
+
+    def updateAIR3Seconds(self):
+        self.Air3Seconds += 1
+        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
 
     def checkNTPOffset(self):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -693,6 +760,7 @@ if __name__ == "__main__":
 
     mainscreen.setAIR1(False)
     mainscreen.setAIR2(False)
+    mainscreen.setAIR3(False)
 
     mainscreen.show()
 
