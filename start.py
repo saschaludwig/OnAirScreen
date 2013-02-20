@@ -78,18 +78,17 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings )
         QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings )
         QShortcut(QKeySequence(" "), self, self.radioTimerStartStop )
+        QShortcut(QKeySequence("0"), self, self.radioTimerStartStop )
         QShortcut(QKeySequence("R"), self, self.radioTimerReset )
-
         QShortcut(QKeySequence("1"), self, self.toggleLED1 )
         QShortcut(QKeySequence("2"), self, self.toggleLED2 )
         QShortcut(QKeySequence("3"), self, self.toggleLED3 )
         QShortcut(QKeySequence("4"), self, self.toggleLED4 )
         QShortcut(QKeySequence("M"), self, self.toggleAIR1 )
+        QShortcut(QKeySequence("/"), self, self.toggleAIR1 )
         QShortcut(QKeySequence("P"), self, self.toggleAIR2 )
-
+        QShortcut(QKeySequence("*"), self, self.toggleAIR2 )
         QShortcut(QKeySequence("Enter"), self, self.getTimerDialog )
-
-
 
         # Setup and start timers
         self.ctimer = QTimer()
@@ -184,6 +183,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         text = str(self.sender().text())
         if re.match('^[0-9]*,[0-9]*$', text):
             (minutes, seconds) = text.split(",")
+            minutes = int(minutes)
+            seconds = int(seconds)
+        elif re.match('^[0-9]*\.[0-9]*$', text):
+            (minutes, seconds) = text.split(".")
             minutes = int(minutes)
             seconds = int(seconds)
         elif re.match('^[0-9]*$', text):
