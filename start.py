@@ -24,8 +24,9 @@
 import atexit
 import os
 import sys
+import re
 from datetime import datetime
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence
+from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel
 from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
@@ -77,7 +78,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings )
         QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings )
         QShortcut(QKeySequence(" "), self, self.radioTimerStartStop )
-        QShortcut(QKeySequence("S"), self, self.radioTimerSet )
         QShortcut(QKeySequence("R"), self, self.radioTimerReset )
 
         QShortcut(QKeySequence("1"), self, self.toggleLED1 )
@@ -86,6 +86,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("4"), self, self.toggleLED4 )
         QShortcut(QKeySequence("M"), self, self.toggleAIR1 )
         QShortcut(QKeySequence("P"), self, self.toggleAIR2 )
+
+        QShortcut(QKeySequence("Enter"), self, self.getTimerDialog )
+
 
 
         # Setup and start timers
@@ -141,7 +144,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
         if settings.value('ntpcheck', True).toBool():
-            self.showWarning("Clock not NTP synchronized")
+            self.showWarning("Clock NTP status unknown")
         settings.endGroup()
 
     def radioTimerStartStop(self):
@@ -151,10 +154,42 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.resetAIR3()
         self.radioTimerMode = 0 #count up mode
 
-    def radioTimerSet(self):
-        self.Air3Seconds = 5
+    def radioTimerSet(self, seconds):
+        self.Air3Seconds = seconds
         self.radioTimerMode = 1 #count down mode
         self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+
+    def getTimerDialog(self):
+        # generate and display timer input window
+        self.getTimeWindow = QDialog()
+        self.getTimeWindow.resize(200,100)
+        self.getTimeWindow.setWindowTitle("Please enter timer")
+        self.getTimeWindow.timeEdit = QLineEdit("Enter timer here")
+        self.getTimeWindow.timeEdit.selectAll()
+        self.getTimeWindow.infoLabel = QLabel("Examples:\nenter 2,10 for 2:10 minutes\nenter 30 for 30 seconds")
+        layout = QVBoxLayout()
+        layout.addWidget(self.getTimeWindow.infoLabel)
+        layout.addWidget(self.getTimeWindow.timeEdit)
+        self.getTimeWindow.setLayout(layout)
+        self.getTimeWindow.timeEdit.setFocus()
+        self.getTimeWindow.timeEdit.returnPressed.connect(self.parseTimerInput)
+        self.getTimeWindow.show()
+
+    def parseTimerInput(self):
+        minutes = 0
+        seconds = 0
+        # hide input window
+        self.sender().parent().hide()
+        # get timestring
+        text = str(self.sender().text())
+        if re.match('^[0-9]*,[0-9]*$', text):
+            (minutes, seconds) = text.split(",")
+            minutes = int(minutes)
+            seconds = int(seconds)
+        elif re.match('^[0-9]*$', text):
+            seconds = int(text)
+        seconds = (minutes*60)+seconds
+        self.radioTimerSet(seconds)
 
     def showsettings(self):
         global app
@@ -579,6 +614,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.AirIcon_3.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
             self.statusAIR3 = True
+            # substract initial second on countdown with display update
+            if self.radioTimerMode == 1 and self.Air3Seconds > 1:
+                self.updateAIR3Seconds()
             # AIR3 timer
             self.timerAIR3.start(1000)
         else:
@@ -596,21 +634,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.stopAIR3()
 
     def startAIR3(self):
-        self.AirLabel_3.setStyleSheet("color: #000000; background-color: #FF0000")
-        self.AirIcon_3.setStyleSheet("color: #000000; background-color: #FF0000")
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
-        self.statusAIR3 = True
-        # AIR3 timer
-        self.timerAIR3.start(1000)
+        self.setAIR3(True)
 
     def stopAIR3(self):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("LEDS")
-        self.AirIcon_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
-        self.AirLabel_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
-        settings.endGroup()
-        self.statusAIR3 = False
-        self.timerAIR3.stop()
+        self.setAIR3(False)
 
     def updateAIR3Seconds(self):
         if self.radioTimerMode == 0: #count up mode
@@ -630,7 +657,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         if not ntpcheck:
             return
         self.timerNTP.stop()
-        max_deviation = 0.1
+        max_deviation = 0.2
         c = ntplib.NTPClient()
         try:
             response = c.request('ptbtime1.ptb.de', version=3)
