@@ -79,6 +79,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings )
         QShortcut(QKeySequence(" "), self, self.radioTimerStartStop )
         QShortcut(QKeySequence("0"), self, self.radioTimerStartStop )
+        QShortcut(QKeySequence("."), self, self.radioTimerReset )
+        QShortcut(QKeySequence(","), self, self.radioTimerReset )
         QShortcut(QKeySequence("R"), self, self.radioTimerReset )
         QShortcut(QKeySequence("1"), self, self.toggleLED1 )
         QShortcut(QKeySequence("2"), self, self.toggleLED2 )
