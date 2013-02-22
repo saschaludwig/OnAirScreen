@@ -213,7 +213,7 @@ class ClockWidget(QtGui.QWidget):
             painter.rotate(6.0)
         # end analog clock mode
 
-    @QtCore.pyqtSignature("setLogo(string)")
+    @QtCore.pyqtSignature("setLogo(str)")
     def setLogo(self, logofile = ""):
         self.imagepath = logofile
         self.image = QtGui.QImage(logofile)
