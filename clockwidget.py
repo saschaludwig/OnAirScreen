@@ -214,7 +214,7 @@ class ClockWidget(QtGui.QWidget):
         # end analog clock mode
 
     @QtCore.pyqtSignature("setLogo(string)")
-    def setLogo(self, logofile = "astrastudio_transparent.png"):
+    def setLogo(self, logofile = ""):
         self.imagepath = logofile
         self.image = QtGui.QImage(logofile)
     def getLogo(self):

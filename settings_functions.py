@@ -20,7 +20,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with OnAirScreen.  If not, see <http://www.gnu.org/licenses/>.
 #
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence
+from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QFileDialog
 from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from settings import Ui_Settings
@@ -73,6 +73,7 @@ class Settings(QWidget, Ui_Settings):
         self.connect(self.DigitalHourColorButton, SIGNAL("clicked()"), self.setDigitalHourColor )
         self.connect(self.DigitalSecondColorButton, SIGNAL("clicked()"), self.setDigitalSecondColor )
         self.connect(self.DigitalDigitColorButton, SIGNAL("clicked()"), self.setDigitalDigitColor )
+        self.connect(self.logoButton, SIGNAL("clicked()"), self.openLogoPathSelector )
 
         self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor )
         self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor )
@@ -146,6 +147,7 @@ class Settings(QWidget, Ui_Settings):
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
+        self.logoPath.setText(settings.value('logopath', 'astrastudio_transparent.png').toString())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -219,6 +221,7 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
         settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
         settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
+        settings.setValue('logopath', self.logoPath.text())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -442,4 +445,10 @@ class Settings(QWidget, Ui_Settings):
         color = QColor()
         color.setNamedColor( colorname )
         return color
+
+    def openLogoPathSelector(self):
+        print "openlogo"
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)" )
+        if filename:
+            self.logoPath.setText(filename)
 

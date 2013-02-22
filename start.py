@@ -494,6 +494,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.clockWidget.setDigiHourColor(self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.clockWidget.setDigiSecondColor(self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
         self.clockWidget.setDigiDigitColor(self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
+
+        self.clockWidget.setLogo( settings.value('logopath', 'astrastudio_transparent.png').toString() )
         settings.endGroup()
 
 
