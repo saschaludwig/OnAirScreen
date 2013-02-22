@@ -74,17 +74,26 @@ class ClockWidget(QtGui.QWidget):
         self.minuteColor = QtGui.QColor(220, 220, 220, 255)
         self.circleColor = QtGui.QColor(220, 220, 220, 255)
 
+        self.imagepath = ""
+
+        self.setLogo()
+
         self.timeZoneOffset = 0
         self.clockMode = 1
         self.counter = 0
 
-        timer = QtCore.QTimer(self)
-        self.connect(timer, QtCore.SIGNAL("timeout()"), self, QtCore.SLOT("update()"))
-        self.connect(timer, QtCore.SIGNAL("timeout()"), self.updateTime)
+        self.timer = QtCore.QTimer(self)
+        self.connect(self.timer, QtCore.SIGNAL("timeout()"), self, QtCore.SLOT("update()"))
+        self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.updateTime)
+
+        self.resyncTime()
+
+
+    def resyncTime(self):
         # sync local timer with system clock
         while QtCore.QTime.currentTime().msec() > 5:
             pytime.sleep(0.001)
-        timer.start(500)
+        self.timer.start(500)
 
     def updateTime(self):
         self.emit(QtCore.SIGNAL("timeChanged(QTime)"), QtCore.QTime.currentTime())
@@ -151,7 +160,7 @@ class ClockWidget(QtGui.QWidget):
         time = self.time
 
         painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHints( QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform )
         painter.translate(self.width() / 2, self.height() / 2)
         painter.scale(side / 200.0, side / 200.0)
 
@@ -204,6 +213,17 @@ class ClockWidget(QtGui.QWidget):
             painter.rotate(6.0)
         # end analog clock mode
 
+    @QtCore.pyqtSignature("setLogo(string)")
+    def setLogo(self, logofile = "astrastudio_transparent.png"):
+        self.imagepath = logofile
+        self.image = QtGui.QImage(logofile)
+    def getLogo(self):
+        return self.imagepath
+    def resetLogo(self):
+        self.setLogo()
+    logoFile = QtCore.pyqtProperty(QtCore.QString, getLogo, setLogo, resetLogo)
+
+
     def paintDigital(self, painter):
         # digital clock mode
         time = self.time
@@ -255,6 +275,27 @@ class ClockWidget(QtGui.QWidget):
             painter.drawEllipse(QtCore.QPointF(88,0), dotSize, dotSize)
             painter.rotate(6.0)
         painter.restore()
+
+
+        # add logo
+        image = self.image
+        image_w = image.width()
+        image_h = image.height()
+        if image_w > 0 and image_h > 1:
+            painter.save()
+            painter.rotate(90)
+
+            # logo position and with
+            paint_x = 0
+            paint_y = 50
+            paint_w = 100
+
+            #calculate height from aspect ratio
+            paint_h = ( float(image_h) / float(image_w) ) * paint_w
+
+            painter.drawImage(QtCore.QRectF(paint_x-(paint_w/2), paint_y-(paint_h/2), paint_w, paint_h), image)
+            painter.restore()
+
         # end digital clock mode
 
     def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
