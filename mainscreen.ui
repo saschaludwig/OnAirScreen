@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>959</width>
-    <height>760</height>
+    <width>1024</width>
+    <height>768</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -237,7 +237,7 @@ color: rgb(255, 255, 255);</string>
        </property>
        <property name="minimumSize">
         <size>
-         <width>220</width>
+         <width>230</width>
          <height>120</height>
         </size>
        </property>
@@ -287,7 +287,7 @@ color: rgb(255, 255, 255);</string>
        </property>
        <property name="minimumSize">
         <size>
-         <width>220</width>
+         <width>230</width>
          <height>120</height>
         </size>
        </property>
@@ -337,7 +337,7 @@ color: rgb(255, 255, 255);</string>
        </property>
        <property name="minimumSize">
         <size>
-         <width>220</width>
+         <width>230</width>
          <height>120</height>
         </size>
        </property>
@@ -381,7 +381,7 @@ color: rgb(255, 255, 255);</string>
       <widget class="QLabel" name="buttonLED4">
        <property name="minimumSize">
         <size>
-         <width>220</width>
+         <width>230</width>
          <height>120</height>
         </size>
        </property>
