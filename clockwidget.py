@@ -177,10 +177,17 @@ class ClockWidget(QtGui.QWidget):
         # set hour hand length and minute hand length
         hhl = -65 #-50
         mhl = -85 #-75
+        shl = -85 #-75
         # draw hour hand
         painter.save()
         painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)))
         painter.drawRoundedRect(-4,4,8,hhl,4.0,4.0)
+        painter.restore()
+
+        # draw second hand
+        painter.save()
+        painter.rotate(6.0 * time.second())
+        painter.drawRoundedRect(-1,1,2,shl,1.0,1.0)
         painter.restore()
 
         painter.setPen(self.hourColor)
