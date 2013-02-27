@@ -2,6 +2,9 @@
   <qresource prefix="oas_icon">
     <file>oas_icon.png</file>
   </qresource>
+  <qresource prefix="timer_icon">
+    <file>timer_icon.png</file>
+  </qresource>
   <qresource prefix="phone_icon">
     <file>phone_icon.png</file>
   </qresource>
