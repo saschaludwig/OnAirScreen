@@ -795,7 +795,7 @@ color: rgb(255, 255, 255);</string>
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="resources.qrc">:/mic_icon.png/mic_icon.png</pixmap>
+         <pixmap resource="resources.qrc">:/timer_icon/timer_icon.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
