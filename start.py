@@ -279,6 +279,14 @@ class MainScreen(QWidget, Ui_MainScreen):
                     else:
                         self.setAIR2(True)
 
+                if command == "REBOOT":
+                        if value == "TRUE":
+                            self.reboot_system()
+
+                if command == "SHUTDOWN":
+                        if value == "TRUE":
+                            self.shutdown_system()
+
                 if command == "CONF":
                     #split group, config and values and apply them
                     (group, paramvalue) = value.split(':',1)
@@ -816,6 +824,21 @@ class MainScreen(QWidget, Ui_MainScreen):
         if settings.value('fullscreen', 'True').toBool():
             app.setOverrideCursor( QCursor( 10 ) );
         settings.endGroup()
+
+    def reboot_system(self):
+        if os.name == "posix":
+            cmd = "sudo reboot"
+            os.system(cmd)
+        if os.name == "nt":
+            pass
+
+    def shutdown_system(self):
+        if os.name == "posix":
+            cmd = "sudo halt"
+            os.system(cmd)
+        if os.name == "nt":
+            pass
+
 
 ###################################
 ## App SIGINT handler
