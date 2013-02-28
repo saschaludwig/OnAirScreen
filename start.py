@@ -284,6 +284,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                             self.reboot_system()
                         if value == "SHUTDOWN":
                             self.shutdown_system()
+                        if value == "QUIT":
+                            QApplication.quit()
 
                 if command == "CONF":
                     #split group, config and values and apply them
