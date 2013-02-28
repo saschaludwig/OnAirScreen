@@ -279,12 +279,10 @@ class MainScreen(QWidget, Ui_MainScreen):
                     else:
                         self.setAIR2(True)
 
-                if command == "REBOOT":
-                        if value == "TRUE":
+                if command == "CMD":
+                        if value == "REBOOT":
                             self.reboot_system()
-
-                if command == "SHUTDOWN":
-                        if value == "TRUE":
+                        if value == "SHUTDOWN":
                             self.shutdown_system()
 
                 if command == "CONF":
