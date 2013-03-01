@@ -41,7 +41,7 @@ import sys
 import re
 from datetime import datetime
 from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel
-from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant
+from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from locale import LC_TIME, setlocale
@@ -537,7 +537,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def updateDate(self):
         now = datetime.now()
-        self.setLeftText( now.strftime("%A, %d. %B %Y") )
+        self.setLeftText( QDate.currentDate().toString("dddd, dd. MMMM yyyy") )
 
     def updateBacktimingText(self):
         now = datetime.now()
