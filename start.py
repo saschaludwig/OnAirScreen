@@ -347,12 +347,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                         if param == "timedflash":
                             self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
 
-                    if group == "VU":
-                        if param == "tooloudtext":
-                            self.settings.TooLoudText.setText(content)
-                        if param == "tooloud":
-                            self.settings.checkBox_TooLoud.setChecked(QVariant(content).toBool())
-
                     if group == "Clock":
                         if param == "digital":
                             if content == "True":
