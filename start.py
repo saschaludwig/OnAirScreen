@@ -62,17 +62,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigExitOAS.connect(self.exitOAS)
         self.settings.sigConfigFinished.connect(self.configFinished)
 
-        # set locale
-        try:
-            locale = 'de_DE.UTF-8'
-            setlocale(LC_TIME, locale)
-        except:
-            try:
-                locale = 'deu'
-                setlocale(LC_TIME, locale)
-            except:
-                print 'error: setting locale %s' % locale
-
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         if settings.value('fullscreen', True).toBool():
@@ -523,17 +512,12 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def constantUpdate(self):
         # slot for constant timer timeout
-        self.updateClock()
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
         if self.settings.configChanged == True:
             self.restoreSettingsFromConfig()
             self.settings.configChanged = False
-
-    def updateClock(self):
-        now = datetime.now()
-        self.setClock( now.strftime("%H:%M:%S") )
 
     def updateDate(self):
         now = datetime.now()
@@ -757,10 +741,6 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.buttonLED4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
             settings.endGroup()
             self.statusLED4 = False
-
-    def setClock(self, text):
-        pass
-        #self.labelClock.setText(text)
 
     def setStation(self, text):
         self.labelStation.setText(text)
