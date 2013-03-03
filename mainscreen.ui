@@ -89,6 +89,10 @@
   <property name="windowTitle">
    <string>OnAirScreen</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/oas_icon/oas_icon.png</normaloff>:/oas_icon/oas_icon.png</iconset>
+  </property>
   <property name="autoFillBackground">
    <bool>false</bool>
   </property>

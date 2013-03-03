@@ -40,7 +40,7 @@ import os
 import sys
 import re
 from datetime import datetime
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel, QIcon
+from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel, QIcon, QPixmap
 from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
@@ -828,11 +828,16 @@ def sigint_handler(*args):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, sigint_handler)
     app = QApplication(sys.argv)
+    icon = QIcon()
+    icon.addPixmap(QPixmap(":/oas_icon/oas_icon.png"), QIcon.Normal, QIcon.Off)
+    app.setWindowIcon(icon)
+
     timer = QTimer()
     timer.start(100)
     timer.timeout.connect(lambda: None)
 
     mainscreen = MainScreen()
+    mainscreen.setWindowIcon(icon)
 
 
     for i in range(1,5):
@@ -843,7 +848,5 @@ if __name__ == "__main__":
     mainscreen.setAIR3(False)
 
     mainscreen.show()
-    app.setWindowIcon(QIcon('oas_icon.png'))
-    mainscreen.setWindowIcon(QIcon('oas_icon.png'))
 
     sys.exit(app.exec_())
