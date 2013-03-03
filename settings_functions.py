@@ -45,6 +45,8 @@ versionString = "0.7"
 class Settings(QWidget, Ui_Settings):
     sigConfigChanged = pyqtSignal(int, unicode)
     sigExitOAS = pyqtSignal()
+    sigRebootHost = pyqtSignal()
+    sigShutdownHost = pyqtSignal()
     sigConfigFinished = pyqtSignal()
     def __init__(self):
         self.row = -1
@@ -70,10 +72,20 @@ class Settings(QWidget, Ui_Settings):
         #emit app close signal
         self.sigExitOAS.emit()
 
+    def rebootHost(self):
+        #emit reboot host signal
+        self.sigRebootHost.emit()
+
+    def shutdownHost(self):
+        #emit shutdown host signal
+        self.sigShutdownHost.emit()
+
     def _connectSlots(self):
         self.connect(self.ApplyButton, SIGNAL("clicked()"), self.applySettings )
         self.connect(self.CloseButton, SIGNAL("clicked()"), self.closeSettings )
         self.connect(self.ExitButton, SIGNAL("clicked()"), self.exitOnAirScreen )
+        self.connect(self.RebootButton, SIGNAL("clicked()"), self.rebootHost )
+        self.connect(self.ShutdownButton, SIGNAL("clicked()"), self.shutdownHost )
         self.connect(self.LEDInactiveBGColor, SIGNAL("clicked()"), self.setLEDInactiveBGColor )
         self.connect(self.LEDInactiveFGColor, SIGNAL("clicked()"), self.setLEDInactiveFGColor )
         self.connect(self.LED1BGColor, SIGNAL("clicked()"), self.setLED1BGColor )

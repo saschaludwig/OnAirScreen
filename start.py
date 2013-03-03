@@ -60,6 +60,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.restoreSettingsFromConfig()
         # quit app from settings window
         self.settings.sigExitOAS.connect(self.exitOAS)
+        self.settings.sigRebootHost.connect(self.reboot_host)
+        self.settings.sigShutdownHost.connect(self.shutdown_host)
         self.settings.sigConfigFinished.connect(self.configFinished)
 
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -270,9 +272,9 @@ class MainScreen(QWidget, Ui_MainScreen):
 
                 if command == "CMD":
                         if value == "REBOOT":
-                            self.reboot_system()
+                            self.reboot_host()
                         if value == "SHUTDOWN":
-                            self.shutdown_system()
+                            self.shutdown_host()
                         if value == "QUIT":
                             QApplication.quit()
 
@@ -798,18 +800,20 @@ class MainScreen(QWidget, Ui_MainScreen):
             app.setOverrideCursor( QCursor( 10 ) );
         settings.endGroup()
 
-    def reboot_system(self):
+    def reboot_host(self):
         if os.name == "posix":
             cmd = "sudo reboot"
             os.system(cmd)
         if os.name == "nt":
+            cmd = "shutdown -f -r -t 0"
             pass
 
-    def shutdown_system(self):
+    def shutdown_host(self):
         if os.name == "posix":
             cmd = "sudo halt"
             os.system(cmd)
         if os.name == "nt":
+            cmd = "shutdown -f -t 0"
             pass
 
 
