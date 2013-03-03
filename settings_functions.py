@@ -105,11 +105,6 @@ class Settings(QWidget, Ui_Settings):
         self.setSloganColor(self.getColorFromName(settings.value('slogancolor', '#FFAA00').toString()))
         settings.endGroup()
 
-        settings.beginGroup("VU")
-        self.checkBox_TooLoud.setChecked(settings.value('tooloud', True).toBool())
-        self.TooLoudText.setText(settings.value('tooloudtext', 'TOO LOUD').toString())
-        settings.endGroup()
-
         settings.beginGroup("NTP")
         self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', True).toBool())
         self.NTPCheckServer.setText(settings.value('ntpcheckserver', 'ptbtime1.ptb.de').toString())
@@ -178,11 +173,6 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('slogan', self.Slogan.displayText())
         settings.setValue('stationcolor', self.getStationNameColor().name())
         settings.setValue('slogancolor', self.getSloganColor().name())
-        settings.endGroup()
-
-        settings.beginGroup("VU")
-        settings.setValue('tooloud', self.checkBox_TooLoud.isChecked())
-        settings.setValue('tooloudtext', self.TooLoudText.displayText())
         settings.endGroup()
 
         settings.beginGroup("NTP")
