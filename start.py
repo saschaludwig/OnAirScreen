@@ -40,7 +40,7 @@ import os
 import sys
 import re
 from datetime import datetime
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel
+from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel, QIcon
 from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
@@ -846,5 +846,7 @@ if __name__ == "__main__":
     mainscreen.setAIR3(False)
 
     mainscreen.show()
+    app.setWindowIcon(QIcon('oas_icon.png'))
+    mainscreen.setWindowIcon(QIcon('oas_icon.png'))
 
     sys.exit(app.exec_())
