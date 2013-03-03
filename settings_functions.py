@@ -157,7 +157,7 @@ class Settings(QWidget, Ui_Settings):
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
-        self.logoPath.setText(settings.value('logopath', 'astrastudio_transparent.png').toString())
+        self.logoPath.setText(settings.value('logopath', ':/astrastudio_logo/astrastudio_transparent.png').toString())
         settings.endGroup()
 
         settings.beginGroup("Network")

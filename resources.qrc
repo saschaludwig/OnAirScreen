@@ -2,6 +2,9 @@
   <qresource prefix="oas_icon">
     <file>oas_icon.png</file>
   </qresource>
+  <qresource prefix="astrastudio_logo">
+    <file>astrastudio_transparent.png</file>
+  </qresource>
   <qresource prefix="timer_icon">
     <file>timer_icon.png</file>
   </qresource>
