@@ -41,7 +41,7 @@ import sys
 import re
 from datetime import datetime
 from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel, QIcon
-from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant
+from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from locale import LC_TIME, setlocale
@@ -61,17 +61,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         # quit app from settings window
         self.settings.sigExitOAS.connect(self.exitOAS)
         self.settings.sigConfigFinished.connect(self.configFinished)
-
-        # set locale
-        try:
-            locale = 'de_DE.UTF-8'
-            setlocale(LC_TIME, locale)
-        except:
-            try:
-                locale = 'deu'
-                setlocale(LC_TIME, locale)
-            except:
-                print 'error: setting locale %s' % locale
 
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
@@ -279,6 +268,14 @@ class MainScreen(QWidget, Ui_MainScreen):
                     else:
                         self.setAIR2(True)
 
+                if command == "CMD":
+                        if value == "REBOOT":
+                            self.reboot_system()
+                        if value == "SHUTDOWN":
+                            self.shutdown_system()
+                        if value == "QUIT":
+                            QApplication.quit()
+
                 if command == "CONF":
                     #split group, config and values and apply them
                     (group, paramvalue) = value.split(':',1)
@@ -349,12 +346,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                             self.settings.LED4Autoflash.setChecked(QVariant(content).toBool())
                         if param == "timedflash":
                             self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
-
-                    if group == "VU":
-                        if param == "tooloudtext":
-                            self.settings.TooLoudText.setText(content)
-                        if param == "tooloud":
-                            self.settings.checkBox_TooLoud.setChecked(QVariant(content).toBool())
 
                     if group == "Clock":
                         if param == "digital":
@@ -515,7 +506,6 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def constantUpdate(self):
         # slot for constant timer timeout
-        self.updateClock()
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
@@ -523,13 +513,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.restoreSettingsFromConfig()
             self.settings.configChanged = False
 
-    def updateClock(self):
-        now = datetime.now()
-        self.setClock( now.strftime("%H:%M:%S") )
-
     def updateDate(self):
         now = datetime.now()
-        self.setLeftText( now.strftime("%A, %d. %B %Y") )
+        self.setLeftText( QDate.currentDate().toString("dddd, dd. MMMM yyyy") )
 
     def updateBacktimingText(self):
         now = datetime.now()
@@ -750,10 +736,6 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.endGroup()
             self.statusLED4 = False
 
-    def setClock(self, text):
-        pass
-        #self.labelClock.setText(text)
-
     def setStation(self, text):
         self.labelStation.setText(text)
 
@@ -816,6 +798,21 @@ class MainScreen(QWidget, Ui_MainScreen):
         if settings.value('fullscreen', 'True').toBool():
             app.setOverrideCursor( QCursor( 10 ) );
         settings.endGroup()
+
+    def reboot_system(self):
+        if os.name == "posix":
+            cmd = "sudo reboot"
+            os.system(cmd)
+        if os.name == "nt":
+            pass
+
+    def shutdown_system(self):
+        if os.name == "posix":
+            cmd = "sudo halt"
+            os.system(cmd)
+        if os.name == "nt":
+            pass
+
 
 ###################################
 ## App SIGINT handler
