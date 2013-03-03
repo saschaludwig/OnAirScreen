@@ -28,7 +28,21 @@
         <bool>true</bool>
        </property>
        <property name="text">
-        <string>Exit OnAirScreen</string>
+        <string>Quit</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="RebootButton">
+       <property name="text">
+        <string>Reboot</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ShutdownButton">
+       <property name="text">
+        <string>Shutdown</string>
        </property>
       </widget>
      </item>
