@@ -96,6 +96,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("P"), self, self.toggleAIR2 )
         QShortcut(QKeySequence("*"), self, self.toggleAIR2 )
         QShortcut(QKeySequence("Enter"), self, self.getTimerDialog )
+        QShortcut(QKeySequence("Return"), self, self.getTimerDialog )
 
         # Setup and start timers
         self.ctimer = QTimer()
