@@ -9,6 +9,7 @@ class myWin(QLineEdit):
      def __init__(self, parent=None):
          QWidget.__init__(self, parent)
          self.setText("    KEYCODE    ")
+         self.setReadOnly(True)
 
 
      def keyPressEvent(self, event):
