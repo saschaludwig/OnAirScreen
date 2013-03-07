@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 ##
-## OnAirScreen Analog
+## OnAirScreen
 ## Copyright (C) 2013 Sascha Ludwig
 ## All rights reserved.
 ##
