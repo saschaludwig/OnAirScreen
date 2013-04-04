@@ -664,29 +664,30 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
         ntpcheck = settings.value('ntpcheck', True).toBool()
+        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org').toString())
         settings.endGroup()
         if not ntpcheck:
             return
         self.timerNTP.stop()
-        max_deviation = 0.2
+        max_deviation = 0.3
         c = ntplib.NTPClient()
         try:
-            response = c.request('ptbtime1.ptb.de', version=3)
+            response = c.request(ntpserver)
             if response.offset > max_deviation or response.offset < -max_deviation:
-                print "offset too big: %f" % response.offset
+                print "offset too big: %f while checking %s" % (response.offset, ntpserver)
                 self.showWarning("Clock not NTP synchronized: offset too big")
             else:
                 self.hideWarning()
         except socket.timeout:
-            print "timeout checking NTP"
+            print "timeout checking NTP %s" % ntpserver
             self.showWarning("Clock not NTP synchronized")
         except socket.gaierror:
-            print "error checking NTP"
+            print "error checking NTP %s" % ntpserver
             self.showWarning("Clock not NTP synchronized")
         except:
-            print "general error checking NTP"
+            print "general error checking NTP %s" % ntpserver
             self.showWarning("Clock not NTP synchronized")
-        self.timerNTP.start(30000)
+        self.timerNTP.start(60000)
 
     def setLED1(self, action):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
