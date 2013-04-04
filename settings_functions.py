@@ -119,7 +119,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("NTP")
         self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', True).toBool())
-        self.NTPCheckServer.setText(settings.value('ntpcheckserver', 'ptbtime1.ptb.de').toString())
+        self.NTPCheckServer.setText(settings.value('ntpcheckserver', 'pool.ntp.org').toString())
         settings.endGroup()
 
         settings.beginGroup("LEDS")
