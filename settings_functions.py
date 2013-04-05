@@ -73,6 +73,9 @@ class Settings(QWidget, Ui_Settings):
     sigRebootHost = pyqtSignal()
     sigShutdownHost = pyqtSignal()
     sigConfigFinished = pyqtSignal()
+    sigExitRemoteOAS = pyqtSignal(int)
+    sigRebootRemoteHost = pyqtSignal(int)
+    sigShutdownRemoteHost = pyqtSignal(int)
     def __init__(self, oacmode=False):
         self.row = -1
         QWidget.__init__(self)
@@ -88,8 +91,7 @@ class Settings(QWidget, Ui_Settings):
             # read the config, add missing values, save config and re-read config
             self.restoreSettingsFromConfig()
             self.sigConfigFinished.emit()
-        else:
-            print "OAP Settings in OAC Mode"
+
         # set version string
         self.versionLabel.setText("Version %s" % versionString)
 
@@ -101,16 +103,25 @@ class Settings(QWidget, Ui_Settings):
         self.sigConfigFinished.emit()
 
     def exitOnAirScreen(self):
-        #emit app close signal
-        self.sigExitOAS.emit()
+        if self.oacmode == False:
+            #emit app close signal
+            self.sigExitOAS.emit()
+        else:
+            self.sigExitRemoteOAS.emit(self.row)
 
     def rebootHost(self):
-        #emit reboot host signal
-        self.sigRebootHost.emit()
+        if self.oacmode == False:
+            #emit reboot host signal
+            self.sigRebootHost.emit()
+        else:
+            self.sigRebootRemoteHost.emit(self.row)
 
     def shutdownHost(self):
-        #emit shutdown host signal
-        self.sigShutdownHost.emit()
+        if self.oacmode == False:
+            #emit shutdown host signal
+            self.sigShutdownHost.emit()
+        else:
+            self.sigShutdownRemoteHost.emit(self.row)
 
     def _connectSlots(self):
         self.connect(self.ApplyButton, SIGNAL("clicked()"), self.applySettings )
@@ -142,6 +153,7 @@ class Settings(QWidget, Ui_Settings):
     # special OAS Settings from OAC functions
 
     def readConfigFromJson(self, row, config):
+        #remember which row we are
         self.row = row
         confdict = json.loads(unicode(config))
         for group, content in confdict.items():
@@ -299,6 +311,11 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('udpport', self.udpport.displayText())
         settings.setValue('tcpport', self.tcpport.displayText())
         settings.endGroup()
+
+        if self.oacmode == True:
+            # send oac a signal the the config has changed
+            self.sigConfigChanged.emit(self.row, self.readJsonFromConfig())
+
 
     def applySettings(self):
         #apply settings button pressed
@@ -518,7 +535,7 @@ class Settings(QWidget, Ui_Settings):
         return color
 
     def openLogoPathSelector(self):
-        print "openlogo"
+        #print "openlogo"
         filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)" )
         if filename:
             self.logoPath.setText(filename)
