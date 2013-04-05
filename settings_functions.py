@@ -63,9 +63,9 @@ class OASSettings():
 
     def value(self, name, default=None):
         try:
-            return QtCore.QVariant(self.config[self.currentgroup][name])
+            return QVariant(self.config[self.currentgroup][name])
         except KeyError:
-            return QtCore.QVariant(default)
+            return QVariant(default)
 
 class Settings(QWidget, Ui_Settings):
     sigConfigChanged = pyqtSignal(int, unicode)
@@ -73,7 +73,7 @@ class Settings(QWidget, Ui_Settings):
     sigRebootHost = pyqtSignal()
     sigShutdownHost = pyqtSignal()
     sigConfigFinished = pyqtSignal()
-    def __init__(self):
+    def __init__(self, oacmode=False):
         self.row = -1
         QWidget.__init__(self)
         Ui_Settings.__init__(self)
@@ -82,12 +82,14 @@ class Settings(QWidget, Ui_Settings):
         self.hide()
         # create settings object for use with OAC
         self.settings = OASSettings()
-        self.oacmode = False
+        self.oacmode = oacmode
 
         if self.oacmode == False:
             # read the config, add missing values, save config and re-read config
             self.restoreSettingsFromConfig()
-            self.configChanged = True
+            self.sigConfigFinished.emit()
+        else:
+            print "OAP Settings in OAC Mode"
         # set version string
         self.versionLabel.setText("Version %s" % versionString)
 
@@ -301,7 +303,7 @@ class Settings(QWidget, Ui_Settings):
     def applySettings(self):
         #apply settings button pressed
         self.getSettingsFromDialog()
-        self.configChanged = True
+        self.sigConfigFinished.emit()
 
     def closeSettings(self):
         #close settings button pressed
