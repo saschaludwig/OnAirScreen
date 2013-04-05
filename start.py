@@ -513,9 +513,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
-        if self.settings.configChanged == True:
-            self.restoreSettingsFromConfig()
-            self.settings.configChanged = False
 
     def updateDate(self):
         now = datetime.now()
@@ -796,6 +793,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         app.exit()
 
     def configFinished(self):
+        self.restoreSettingsFromConfig()
         global app
         # hide mousecursor if in fullscreen mode
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
