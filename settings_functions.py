@@ -39,8 +39,33 @@ from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, 
 from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
 from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from settings import Ui_Settings
+from collections import defaultdict
+import json
 
 versionString = "0.7"
+
+# class OASSettings for use from OAC
+class OASSettings():
+    def __init__(self):
+        self.config = defaultdict(dict)
+        self.currentgroup = None
+
+    def beginGroup(self, group):
+        self.currentgroup = group
+
+    def endGroup(self):
+        self.currentgroup = None
+
+    def setValue(self, name, value):
+        if self.currentgroup:
+            self.config[self.currentgroup][name] = unicode(value)
+        pass
+
+    def value(self, name, default=None):
+        try:
+            return QtCore.QVariant(self.config[self.currentgroup][name])
+        except KeyError:
+            return QtCore.QVariant(default)
 
 class Settings(QWidget, Ui_Settings):
     sigConfigChanged = pyqtSignal(int, unicode)
@@ -55,9 +80,14 @@ class Settings(QWidget, Ui_Settings):
         self.setupUi(self)
         self._connectSlots()
         self.hide()
-        # read the config, add missing values, save config and re-read config
-        self.restoreSettingsFromConfig()
-        self.configChanged = True
+        # create settings object for use with OAC
+        self.settings = OASSettings()
+        self.oacmode = False
+
+        if self.oacmode == False:
+            # read the config, add missing values, save config and re-read config
+            self.restoreSettingsFromConfig()
+            self.configChanged = True
         # set version string
         self.versionLabel.setText("Version %s" % versionString)
 
@@ -107,8 +137,27 @@ class Settings(QWidget, Ui_Settings):
 
         self.connect(self, SIGNAL("triggered()"), self.closeEvent )
 
+    # special OAS Settings from OAC functions
+
+    def readConfigFromJson(self, row, config):
+        self.row = row
+        confdict = json.loads(unicode(config))
+        for group, content in confdict.items():
+            self.settings.beginGroup(group)
+            for key, value in content.items():
+                self.settings.setValue(key, value)
+            self.settings.endGroup()
+        self.restoreSettingsFromConfig()
+
+    def readJsonFromConfig(self):
+        #return json representation of config
+        return json.dumps(self.settings.config)
+
     def restoreSettingsFromConfig(self):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if self.oacmode == True:
+            settings = self.settings
+        else:
+            settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         self.StationName.setText(settings.value('stationname', 'Radio Eriwan').toString())
@@ -178,7 +227,10 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
     def getSettingsFromDialog(self):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if self.oacmode == True:
+            settings = self.settings
+        else:
+            settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         settings.setValue('stationname', self.StationName.displayText())
