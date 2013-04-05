@@ -3,6 +3,7 @@
     <file>oas_icon.png</file>
   </qresource>
   <qresource prefix="thirdparty">
+    <file>pyqt.png</file>
     <file>pyinstaller.png</file>
   </qresource>
   <qresource prefix="astrastudio_logo">
