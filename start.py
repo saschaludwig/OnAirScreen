@@ -527,10 +527,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         if hour > 12:
             hour -= 12
 
-        if minute >= 0 and minute < 15:
+        if minute > 0 and minute < 25:
             string = "%d Minute%s nach %d" % (minute, 'n' if minute>1 else '', hour)
 
-        if minute >= 15 and minute < 30:
+        if minute >= 25 and minute < 30:
             string = "%d Minute%s vor halb %d" % (remain_min-30, 'n' if remain_min-30>1 else '', hour+1)
 
         if minute >= 30 and minute <= 39:
@@ -541,6 +541,9 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         if minute == 30:
            string = "halb %d" % (hour+1)
+
+        if minute == 0:
+            string = "%d" % hour
 
         self.setRightText( string )
 
