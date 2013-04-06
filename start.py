@@ -533,10 +533,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         if minute >= 15 and minute < 30:
             string = "%d Minute%s vor halb %d" % (remain_min-30, 'n' if remain_min-30>1 else '', hour+1)
 
-        if minute >= 30 and minute < 45:
+        if minute >= 30 and minute <= 39:
             string = "%d Minute%s nach halb %d" % (30-remain_min, 'n' if 30-remain_min>1 else '', hour)
 
-        if minute >= 45 and minute <= 59:
+        if minute >= 40 and minute <= 59:
             string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min>1 else '', hour+1)
 
         if minute == 30:
