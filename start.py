@@ -225,12 +225,12 @@ class MainScreen(QWidget, Ui_MainScreen):
     def cmdHandler(self):
         while self.udpsock.hasPendingDatagrams():
             data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
-            print "DATA: ", data
+            #print "DATA: ", data
             lines = data.splitlines()
             for line in lines:
                 (command, value) = line.split(':',1)
-                print "command: '" + command + "'"
-                print "value: '" + value + "'"
+                #print "command: '" + command + "'"
+                #print "value: '" + value + "'"
                 if command == "NOW":
                     self.setCurrentSongText(value)
                 if command == "NEXT":
@@ -285,7 +285,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     #split group, config and values and apply them
                     (group, paramvalue) = value.split(':',1)
                     (param, content) = paramvalue.split('=',1)
-                    print "CONF:", param, content
+                    #print "CONF:", param, content
                     if group == "General":
                         if param == "stationname":
                             self.settings.StationName.setText(content)
