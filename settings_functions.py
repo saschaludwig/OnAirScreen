@@ -542,3 +542,6 @@ class Settings(QWidget, Ui_Settings):
     def resetLogo(self):
         self.logoPath.setText(":/astrastudio_logo/astrastudio_transparent.png")
 
+    def setLogoPath(self, path):
+        self.logoPath.setText(path)
+

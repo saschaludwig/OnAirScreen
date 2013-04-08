@@ -366,6 +366,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                             self.settings.setDigitalSecondColor(self.settings.getColorFromName(content))
                         if param == "digitaldigitcolor":
                             self.settings.setDigitalDigitColor(self.settings.getColorFromName(content))
+                        if param == "logopath":
+                            self.settings.setLogoPath(content)
 
                     if group == "Network":
                         if param == "udpport":
@@ -373,8 +375,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                         if param == "tcpport":
                             self.settings.tcpport.setText(content)
 
-                    # apply and save settings
-                    self.settings.applySettings()
+                    if group == "CONF":
+                        if param == "APPLY":
+                            if content == "TRUE":
+                                # apply and save settings
+                                self.settings.applySettings()
 
     def toggleLED1(self):
         if self.statusLED1:
