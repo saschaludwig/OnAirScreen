@@ -144,6 +144,7 @@ class Settings(QWidget, Ui_Settings):
         self.connect(self.DigitalSecondColorButton, SIGNAL("clicked()"), self.setDigitalSecondColor )
         self.connect(self.DigitalDigitColorButton, SIGNAL("clicked()"), self.setDigitalDigitColor )
         self.connect(self.logoButton, SIGNAL("clicked()"), self.openLogoPathSelector )
+        self.connect(self.resetLogoButton, SIGNAL("clicked()"), self.resetLogo )
 
         self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor )
         self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor )
@@ -535,8 +536,10 @@ class Settings(QWidget, Ui_Settings):
         return color
 
     def openLogoPathSelector(self):
-        #print "openlogo"
         filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)" )
         if filename:
             self.logoPath.setText(filename)
+
+    def resetLogo(self):
+        self.logoPath.setText(":/astrastudio_logo/astrastudio_transparent.png")
 
