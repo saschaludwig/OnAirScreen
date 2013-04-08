@@ -87,10 +87,9 @@ class Settings(QWidget, Ui_Settings):
         self.settings = OASSettings()
         self.oacmode = oacmode
 
-        if self.oacmode == False:
-            # read the config, add missing values, save config and re-read config
-            self.restoreSettingsFromConfig()
-            self.sigConfigFinished.emit()
+        # read the config, add missing values, save config and re-read config
+        self.restoreSettingsFromConfig()
+        self.sigConfigFinished.emit()
 
         # set version string
         self.versionLabel.setText("Version %s" % versionString)

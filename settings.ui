@@ -2415,14 +2415,56 @@ Parts of analog clockwidget:
   </layout>
  </widget>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
   <tabstop>StationName</tabstop>
-  <tabstop>StationNameColor</tabstop>
   <tabstop>Slogan</tabstop>
+  <tabstop>StationNameColor</tabstop>
+  <tabstop>tabWidget</tabstop>
   <tabstop>SloganColor</tabstop>
   <tabstop>CloseButton</tabstop>
   <tabstop>ApplyButton</tabstop>
   <tabstop>ExitButton</tabstop>
+  <tabstop>RebootButton</tabstop>
+  <tabstop>ShutdownButton</tabstop>
+  <tabstop>LEDInactive</tabstop>
+  <tabstop>LEDInactiveBGColor</tabstop>
+  <tabstop>LEDInactiveFGColor</tabstop>
+  <tabstop>checkBox_NTPCheck</tabstop>
+  <tabstop>NTPCheckServer</tabstop>
+  <tabstop>logoPath</tabstop>
+  <tabstop>logoButton</tabstop>
+  <tabstop>resetLogoButton</tabstop>
+  <tabstop>clockDigital</tabstop>
+  <tabstop>clockAnalog</tabstop>
+  <tabstop>DigitalHourColorButton</tabstop>
+  <tabstop>DigitalSecondColorButton</tabstop>
+  <tabstop>DigitalDigitColorButton</tabstop>
+  <tabstop>LED1</tabstop>
+  <tabstop>LED1Text</tabstop>
+  <tabstop>LED1BGColor</tabstop>
+  <tabstop>LED1FGColor</tabstop>
+  <tabstop>LED1Autoflash</tabstop>
+  <tabstop>LED1Timedflash</tabstop>
+  <tabstop>LED2</tabstop>
+  <tabstop>LED2Text</tabstop>
+  <tabstop>LED2BGColor</tabstop>
+  <tabstop>LED2FGColor</tabstop>
+  <tabstop>LED2Autoflash</tabstop>
+  <tabstop>LED2Timedflash</tabstop>
+  <tabstop>LED3</tabstop>
+  <tabstop>LED3Text</tabstop>
+  <tabstop>LED3BGColor</tabstop>
+  <tabstop>LED3FGColor</tabstop>
+  <tabstop>LED3Autoflash</tabstop>
+  <tabstop>LED3Timedflash</tabstop>
+  <tabstop>LED4</tabstop>
+  <tabstop>LED4Text</tabstop>
+  <tabstop>LED4BGColor</tabstop>
+  <tabstop>LED4FGColor</tabstop>
+  <tabstop>LED4Autoflash</tabstop>
+  <tabstop>LED4Timedflash</tabstop>
+  <tabstop>tcpport</tabstop>
+  <tabstop>udpport</tabstop>
+  <tabstop>plainTextEdit</tabstop>
  </tabstops>
  <resources>
   <include location="resources.qrc"/>
