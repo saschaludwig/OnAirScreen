@@ -165,7 +165,10 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def radioTimerSet(self, seconds):
         self.Air3Seconds = seconds
-        self.radioTimerMode = 1 #count down mode
+        if seconds > 0:
+            self.radioTimerMode = 1 #count down mode
+        else:
+            self.radioTimerMode = 0 #count up mode
         self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
 
     def getTimerDialog(self):
