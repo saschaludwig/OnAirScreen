@@ -51,7 +51,7 @@ class myWin(QLineEdit):
      def keyPressEvent(self, event):
          if type(event) == QKeyEvent:
              #here accept the event and do something
-             self.setText("%s = '%s'" %( str(event.key()), str(event.text()) ) )
+             self.setText("%s = '%s'" %( str(event.key()), unicode(event.text()) ) )
 
              event.accept()
          else:
