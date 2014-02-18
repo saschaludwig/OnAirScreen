@@ -814,6 +814,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
     def reboot_host(self):
+        self.showWarning( "SYSTEM REBOOT IN PROGRESS" )
         if os.name == "posix":
             cmd = "sudo reboot"
             os.system(cmd)
@@ -822,6 +823,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             pass
 
     def shutdown_host(self):
+        self.showWarning( "SYSTEM SHUTDOWN IN PROGRESS" )
         if os.name == "posix":
             cmd = "sudo halt"
             os.system(cmd)
