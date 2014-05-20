@@ -871,7 +871,7 @@
               <bool>true</bool>
              </property>
              <property name="text">
-              <string>10sec flash</string>
+              <string>20sec flash</string>
              </property>
             </widget>
            </item>
@@ -1019,7 +1019,7 @@
               <bool>true</bool>
              </property>
              <property name="text">
-              <string>10sec flash</string>
+              <string>20sec flash</string>
              </property>
             </widget>
            </item>
@@ -1167,7 +1167,7 @@
               <bool>true</bool>
              </property>
              <property name="text">
-              <string>10sec flash</string>
+              <string>20sec flash</string>
              </property>
             </widget>
            </item>
@@ -1315,7 +1315,7 @@
               <bool>true</bool>
              </property>
              <property name="text">
-              <string>10sec flash</string>
+              <string>20sec flash</string>
              </property>
             </widget>
            </item>

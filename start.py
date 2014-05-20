@@ -433,28 +433,28 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED1.start(500)
                 if self.settings.LED1Timedflash.isChecked():
                     self.timerLED1.start(500)
-                    QTimer.singleShot(10000, self.unsetLED1)
+                    QTimer.singleShot(20000, self.unsetLED1)
                 self.setLED1(state)
             if led == 2:
                 if self.settings.LED2Autoflash.isChecked():
                     self.timerLED2.start(500)
                 if self.settings.LED2Timedflash.isChecked():
                     self.timerLED2.start(500)
-                    QTimer.singleShot(10000, self.unsetLED2)
+                    QTimer.singleShot(20000, self.unsetLED2)
                 self.setLED2(state)
             if led == 3:
                 if self.settings.LED3Autoflash.isChecked():
                     self.timerLED3.start(500)
                 if self.settings.LED3Timedflash.isChecked():
                     self.timerLED3.start(500)
-                    QTimer.singleShot(10000, self.unsetLED3)
+                    QTimer.singleShot(20000, self.unsetLED3)
                 self.setLED3(state)
             if led == 4:
                 if self.settings.LED4Autoflash.isChecked():
                     self.timerLED4.start(500)
                 if self.settings.LED4Timedflash.isChecked():
                     self.timerLED4.start(500)
-                    QTimer.singleShot(10000, self.unsetLED4)
+                    QTimer.singleShot(20000, self.unsetLED4)
                 self.setLED4(state)
 
         if state == False:
