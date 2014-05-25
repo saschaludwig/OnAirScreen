@@ -77,7 +77,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
         QShortcut(QKeySequence("F"), self, self.toggleFullScreen )
         QShortcut(QKeySequence(16777429), self, self.toggleFullScreen ) # 'Display' Key on OAS USB Keyboard
-        QShortcut(QKeySequence(16777379), self, self.toggleFullScreen ) # 'Calculator' Key on OAS USB Keyboard
+        QShortcut(QKeySequence(16777379), self, self.shutdown-host ) # 'Calculator' Key on OAS USB Keyboard
         QShortcut(QKeySequence("Ctrl+Q"), self, QCoreApplication.instance().quit )
         QShortcut(QKeySequence("Q"), self, QCoreApplication.instance().quit )
         QShortcut(QKeySequence("Ctrl+C"), self, QCoreApplication.instance().quit )
