@@ -237,7 +237,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if command == "NOW":
                     self.setCurrentSongText(value)
                 if command == "NEXT":
-                    self.setNewsText("Next: %s" % value)
+                    self.setNewsText(value)
                 if command == "LED1":
                     if value == "OFF":
                         self.ledLogic(1, False)
