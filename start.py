@@ -3,7 +3,7 @@
 #############################################################################
 ##
 ## OnAirScreen
-## Copyright (C) 2013 Sascha Ludwig
+## Copyright (C) 2014 Sascha Ludwig
 ## All rights reserved.
 ##
 ## start.py
