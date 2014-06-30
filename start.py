@@ -132,7 +132,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.radioTimerMode = 0 #count up mode
 
         # Setup check NTP Timer
-        self.ntpHadWarning = False
+        self.ntpHadWarning = True
         self.timerNTP = QTimer()
         QObject.connect(self.timerNTP, SIGNAL("timeout()"), self.checkNTPOffset)
         # initial check
