@@ -132,6 +132,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.radioTimerMode = 0 #count up mode
 
         # Setup check NTP Timer
+        self.ntpHadWarning = False
         self.timerNTP = QTimer()
         QObject.connect(self.timerNTP, SIGNAL("timeout()"), self.checkNTPOffset)
         # initial check
@@ -684,17 +685,23 @@ class MainScreen(QWidget, Ui_MainScreen):
             if response.offset > max_deviation or response.offset < -max_deviation:
                 print "offset too big: %f while checking %s" % (response.offset, ntpserver)
                 self.showWarning("Clock not NTP synchronized: offset too big")
+                self.ntpHadWarning = True
             else:
-                self.hideWarning()
+                if self.ntpHadWarning == True:
+                    self.ntpHadWarning = False
+                    self.hideWarning()
         except socket.timeout:
             print "timeout checking NTP %s" % ntpserver
             self.showWarning("Clock not NTP synchronized")
+            self.ntpHadWarning = True
         except socket.gaierror:
             print "error checking NTP %s" % ntpserver
             self.showWarning("Clock not NTP synchronized")
+            self.ntpHadWarning = True
         except:
             print "general error checking NTP %s" % ntpserver
             self.showWarning("Clock not NTP synchronized")
+            self.ntpHadWarning = True
         self.timerNTP.start(60000)
 
     def setLED1(self, action):
