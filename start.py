@@ -97,6 +97,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("/"), self, self.toggleAIR1 )
         QShortcut(QKeySequence("P"), self, self.toggleAIR2 )
         QShortcut(QKeySequence("*"), self, self.toggleAIR2 )
+        QShortcut(QKeySequence("S"), self, self.toggleAIR4 )
         QShortcut(QKeySequence("Enter"), self, self.getTimerDialog )
         QShortcut(QKeySequence("Return"), self, self.getTimerDialog )
 
@@ -130,6 +131,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.Air3Seconds = 0
         self.statusAIR3 = False
         self.radioTimerMode = 0 #count up mode
+
+        self.timerAIR4 = QTimer()
+        QObject.connect(self.timerAIR4, SIGNAL("timeout()"), self.updateAIR4Seconds)
+        self.Air4Seconds = 0
+        self.statusAIR4 = False
+        self.streamTimerMode = 0 #count up mode
 
         # Setup check NTP Timer
         self.ntpHadWarning = True
@@ -208,6 +215,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         seconds = (minutes*60)+seconds
         self.radioTimerSet(seconds)
 
+    def streamTimerStartStop(self):
+        self.startStopAIR4()
+
+    def streamTimerReset(self):
+        self.resetAIR4()
+        self.streamTimerMode = 0 #count up mode
+
     def showsettings(self):
         global app
         # un-hide mousecursor
@@ -276,6 +290,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                         self.setAIR2(False)
                     else:
                         self.setAIR2(True)
+
+                if command == "AIR4":
+                    if value == "OFF":
+                        self.setAIR4(False)
+                    else:
+                        self.setAIR4(True)
 
                 if command == "CMD":
                         if value == "REBOOT":
@@ -417,6 +437,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.setAIR2(False)
         else:
             self.setAIR2(True)
+
+    def toggleAIR4(self):
+        if self.statusAIR4:
+            self.setAIR4(False)
+        else:
+            self.setAIR4(True)
 
     def unsetLED1(self):
         self.ledLogic(1, False)
@@ -669,6 +695,57 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.radioTimerMode = 0
         self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
 
+
+    def resetAIR4(self):
+        self.timerAIR4.stop()
+        self.Air4Seconds = 0
+        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds/60, self.Air4Seconds%60) )
+        if self.statusAIR4 == True:
+            self.timerAIR4.start(1000)
+
+    def setAIR4(self, action):
+        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        if action:
+            self.AirLabel_4.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirIcon_4.setStyleSheet("color: #000000; background-color: #FF0000")
+            self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds/60, self.Air4Seconds%60) )
+            self.statusAIR4 = True
+            # substract initial second on countdown with display update
+            if self.streamTimerMode == 1 and self.Air4Seconds > 1:
+                self.updateAIR4Seconds()
+            # AIR4 timer
+            self.timerAIR4.start(1000)
+        else:
+            settings.beginGroup("LEDS")
+            self.AirIcon_4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirLabel_4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            settings.endGroup()
+            self.statusAIR4 = False
+            self.timerAIR4.stop()
+
+    def startStopAIR4(self):
+        if self.statusAIR4 == False:
+            self.startAIR4()
+        else:
+            self.stopAIR4()
+
+    def startAIR4(self):
+        self.setAIR4(True)
+
+    def stopAIR4(self):
+        self.setAIR4(False)
+
+    def updateAIR4Seconds(self):
+        if self.streamTimerMode == 0: #count up mode
+            self.Air4Seconds += 1
+        else:
+            self.Air4Seconds -= 1
+            if self.Air4Seconds < 1:
+                self.stopAIR4()
+                self.radioTimerMode = 0
+        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds/60, self.Air4Seconds%60) )
+
+
     def checkNTPOffset(self):
         settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
@@ -871,6 +948,7 @@ if __name__ == "__main__":
     mainscreen.setAIR1(False)
     mainscreen.setAIR2(False)
     mainscreen.setAIR3(False)
+    mainscreen.setAIR4(False)
 
     mainscreen.show()
 
