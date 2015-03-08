@@ -2,6 +2,10 @@
   <qresource prefix="oas_icon">
     <file>oas_icon.png</file>
   </qresource>
+  <qresource prefix="stream_icon">
+    <file>antenna.png</file>
+    <file>antenna2.png</file>
+  </qresource>
   <qresource prefix="thirdparty">
     <file>pyqt.png</file>
     <file>pyinstaller.png</file>
