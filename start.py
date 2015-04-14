@@ -294,8 +294,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if command == "AIR4":
                     if value == "OFF":
                         self.setAIR4(False)
-                    else:
+                    if value == "ON":
                         self.setAIR4(True)
+                    if value == "RESET":
+                        self.streamTimerReset()
+
 
                 if command == "CMD":
                         if value == "REBOOT":
