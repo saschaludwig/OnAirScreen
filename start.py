@@ -291,6 +291,20 @@ class MainScreen(QWidget, Ui_MainScreen):
                     else:
                         self.setAIR2(True)
 
+                if command == "AIR3":
+                    if value == "OFF":
+                        self.stopAIR3()
+                    if value == "ON":
+                        self.startAIR3()
+                    if value == "RESET":
+                        self.radioTimerReset()
+                    if value == "TOGGLE":
+                        self.radioTimerStartStop()
+
+                if command == "AIR3TIME":
+                    self.radioTimerSet(int(value))
+
+
                 if command == "AIR4":
                     if value == "OFF":
                         self.setAIR4(False)
