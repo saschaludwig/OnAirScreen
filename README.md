@@ -77,6 +77,3 @@ Feel free to donate.
 
 <span class="badge-flattr"><a href="https://flattr.com/thing/a13fe4c17e506612878b6f83f94987fa" title="Donate to this project using Flattr"><img src="https://img.shields.io/badge/flattr-donate-yellow.svg" alt="Flattr donate button" /></a></span>
 <span class="badge-paypal"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YCQKC82DLCHMG" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-yellow.svg" alt="PayPal donate button" /></a></span>
-
-
-more infos: https://www.astrastudio.de/wiki/onairscreen
