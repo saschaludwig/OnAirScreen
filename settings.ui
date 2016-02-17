@@ -1449,7 +1449,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/oas_icon_256/oas_icon_256.png</pixmap>
+          <pixmap resource="resources.qrc">:/oas_icon_256/images/oas_icon_256.png</pixmap>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -1501,7 +1501,7 @@
                   <string/>
                  </property>
                  <property name="pixmap">
-                  <pixmap resource="resources.qrc">:/thirdparty/pyinstaller.png</pixmap>
+                  <pixmap resource="resources.qrc">:/thirdparty/images/pyinstaller.png</pixmap>
                  </property>
                  <property name="scaledContents">
                   <bool>true</bool>
@@ -1560,7 +1560,7 @@
                   <string/>
                  </property>
                  <property name="pixmap">
-                  <pixmap resource="resources.qrc">:/thirdparty/pyqt.png</pixmap>
+                  <pixmap resource="resources.qrc">:/thirdparty/images/pyqt.png</pixmap>
                  </property>
                  <property name="scaledContents">
                   <bool>true</bool>
