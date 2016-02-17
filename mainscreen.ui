@@ -91,7 +91,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">
-    <normaloff>:/oas_icon/oas_icon.png</normaloff>:/oas_icon/oas_icon.png</iconset>
+    <normaloff>:/oas_icon/images/oas_icon.png</normaloff>:/oas_icon/images/oas_icon.png</iconset>
   </property>
   <property name="autoFillBackground">
    <bool>false</bool>
@@ -151,7 +151,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="resources.qrc">:/phone_icon/phone_icon.png</pixmap>
+         <pixmap resource="resources.qrc">:/phone_icon/images/phone_icon.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
@@ -265,7 +265,7 @@
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 0, 0); 
+        <string notr="true">background-color: rgb(255, 0, 0);
 color: rgb(255, 255, 255);</string>
        </property>
        <property name="text">
@@ -326,7 +326,7 @@ color: rgb(255, 255, 255);</string>
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="resources.qrc">:/mic_icon.png/mic_icon.png</pixmap>
+         <pixmap resource="resources.qrc">:/mic_icon.png/images/mic_icon.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
@@ -812,7 +812,7 @@ color: rgb(255, 255, 255);</string>
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="resources.qrc">:/timer_icon/timer_icon.png</pixmap>
+         <pixmap resource="resources.qrc">:/timer_icon/images/timer_icon.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
@@ -964,7 +964,7 @@ color: rgb(255, 255, 255);</string>
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="resources.qrc">:/stream_icon/antenna2.png</pixmap>
+         <pixmap resource="resources.qrc">:/stream_icon/images/antenna2.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>

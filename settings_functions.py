@@ -232,7 +232,7 @@ class Settings(QWidget, Ui_Settings):
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
-        self.logoPath.setText(settings.value('logopath', ':/astrastudio_logo/astrastudio_transparent.png').toString())
+        self.logoPath.setText(settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png').toString())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -540,7 +540,7 @@ class Settings(QWidget, Ui_Settings):
             self.logoPath.setText(filename)
 
     def resetLogo(self):
-        self.logoPath.setText(":/astrastudio_logo/astrastudio_transparent.png")
+        self.logoPath.setText(":/astrastudio_logo/images/astrastudio_transparent.png")
 
     def setLogoPath(self, path):
         self.logoPath.setText(path)
