@@ -2,16 +2,26 @@
 Multi purpose "OnAir Lamp" solution targeted for use in professional broadcast environments
 
 --
-#### Screenshot:
+#### Screenshot
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas.png" width="500px">
 
-#### Pictures of OnAirScreen in use:
+#### Pictures of OnAirScreen in use
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px">
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px">
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px">
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
 
-### OnAirScreen Function Keys
+#### Features
+ * flexible integration into existing studio setups
+ * customizable logo, colors and labels
+ * 4:3 and 16:9/16:10 monitor aspect ratio support
+ * easy installation
+ * runs on RaspberryPi
+ * runs on Windows, Mac, Linux
+ * conrtolled via keyboard and network
+ * OnAir Timer, Stopwatch, Countdown and more
+
+#### OnAirScreen Function Keys
 | Hotkeys                         | Function                |
 |---------------------------------|-------------------------|
 | Ctrl+F or F                     | Toggle fullscreen       |
@@ -27,7 +37,7 @@ Multi purpose "OnAir Lamp" solution targeted for use in professional broadcast e
 | P or *                          | Phone Timer start/stop  |
 | Enter                           | opens set timer dialog  |
 
-### OnAirScreen API / UDP Commands
+#### OnAirScreen API / UDP Commands
 OnAirScreen can receive API commands via UDP port 3310<br>
 Here is an easy example on how to control a local OnAirScreen instance on a linux system.
 
@@ -37,7 +47,7 @@ echo "CONF:LED1:text=FOO" > /dev/udp/127.0.0.1/3310
 echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 ```
 
-#### API Commands
+##### API Commands
 | UDP Command         | Function |
 ----------------------|----------|
 | `LED1:[ON|OFF]`     | switch LED1 on/off |
@@ -56,7 +66,7 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 | `CMD:SHUTDOWN`               | OS shutdown |
 | `CMD:QUIT`                   | quit OnAirScreen instance |
 
-#### Remote Configuration Commands
+##### Remote Configuration Commands
 `CONF:General:stationname=TEXT`<br>
 `CONF:General:slogan=TEXT`<br>
 `CONF:General:stationcolor=COLOR`<br>
@@ -76,7 +86,7 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 `CONF:Network:tcpport=PORT`<br>
 `CONF:CONF:APPLY=TRUE`<br>
 
-### Donation
+#### Donation
 Do you like OnAirScreen?
 Feel free to donate.
 
