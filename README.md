@@ -2,9 +2,14 @@
 Multi purpose "OnAir Lamp" solution targeted for use in professional broadcast environments
 
 --
-Screenshot:
+#### Screenshot:
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas.png" width="500px">
 
-<img src="https://www.astrastudio.de/wiki/lib/exe/fetch.php?media=%20:oas.png" width="500px">
+#### Pictures of OnAirScreen in use:
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
 
 ### OnAirScreen Function Keys
 | Hotkeys                         | Function                |
