@@ -51,21 +51,21 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 ##### API Commands
 | UDP Command         | Function |
 ----------------------|----------|
-| `LED1:[ON|OFF]`     | switch LED1 on/off |
-| `LED2:[ON|OFF]`     | switch LED2 on/off |
-| `LED3:[ON|OFF]`     | switch LED3 on/off |
-| `LED4:[ON|OFF]`     | switch LED4 on/off |
-| `NOW:TEXT`          | set TEXT in first footer line |
-| `NEXT:TEXT`         | set TEXT in second footer line |
-| `WARN:TEXT`         | set TEXT and switch on red warning mode |
-| `AIR1:[ON|OFF]`     | start/stop Mic Timer |
-| `AIR2:[ON|OFF]`     | start/stop Phone Timer |
-| `AIR3:[ON|OFF|RESET|TOGGLE]` | start/stop/reset/toggelt Radio Timer |
-| `AIR3TIME:seconds`           | set Radio Timer to given value in seconds |
-| `AIR4:[ON|OFF|RESET]`        | start/stop/reset Stream Timer |
-| `CMD:REBOOT`                 | OS restart |
-| `CMD:SHUTDOWN`               | OS shutdown |
-| `CMD:QUIT`                   | quit OnAirScreen instance |
+| `LED1:[ON/OFF]`     | switch LED1 on/off |
+| `LED2:[ON/OFF]`     | switch LED2 on/off |
+| `LED3:[ON/OFF]`     | switch LED3 on/off |
+| `LED4:[ON/OFF]`     | switch LED4 on/off |
+| `NOW:TEXT`               | set TEXT in first footer line |
+| `NEXT:TEXT`              | set TEXT in second footer line |
+| `WARN:TEXT`              | set TEXT and switch on red warning mode |
+| `AIR1:[ON/OFF]`          | start/stop Mic Timer |
+| `AIR2:[ON/OFF]`          | start/stop Phone Timer |
+| `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggelt Radio Timer |
+| `AIR3TIME:seconds`            | set Radio Timer to given value in seconds |
+| `AIR4:[ON/OFF/RESET]`        | start/stop/reset Stream Timer |
+| `CMD:REBOOT`                  | OS restart |
+| `CMD:SHUTDOWN`                | OS shutdown |
+| `CMD:QUIT`                    | quit OnAirScreen instance |
 
 ##### Remote Configuration Commands
 `CONF:General:stationname=TEXT`<br>
