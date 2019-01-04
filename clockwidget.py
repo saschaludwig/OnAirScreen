@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #############################################################################
 ##
 ## OnAirScreen Analog / Digital Clock implementation
-## Copyright (C) 2013 Sascha Ludwig
+## Copyright (C) 2013-2019 Sascha Ludwig
 ## All rights reserved.
 ##
 ## start.py
@@ -77,10 +77,10 @@
 ##
 #############################################################################
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import time as pytime
 
-class ClockWidget(QtGui.QWidget):
+class ClockWidget(QtWidgets.QWidget):
 
     __pyqtSignals__ = ("timeChanged(QTime)", "timeZoneChanged(int)")
 
