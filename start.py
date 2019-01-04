@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #############################################################################
 ##
 ## OnAirScreen
-## Copyright (C) 2014-2016 Sascha Ludwig
+## Copyright (C) 2014-2019 Sascha Ludwig
 ## All rights reserved.
 ##
 ## start.py
@@ -40,9 +40,10 @@ import os
 import sys
 import re
 from datetime import datetime
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel, QIcon, QPixmap
-from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
-from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
+from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
+from PyQt5.QtCore import pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
+from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from locale import LC_TIME, setlocale
 import ntplib
@@ -777,7 +778,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         try:
             response = c.request(ntpserver)
             if response.offset > max_deviation or response.offset < -max_deviation:
-                print "offset too big: %f while checking %s" % (response.offset, ntpserver)
+                print("offset too big: %f while checking %s" % (response.offset, ntpserver))
                 self.showWarning("Clock not NTP synchronized: offset too big")
                 self.ntpHadWarning = True
             else:
@@ -785,15 +786,15 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.ntpHadWarning = False
                     self.hideWarning()
         except socket.timeout:
-            print "timeout checking NTP %s" % ntpserver
+            print("timeout checking NTP %s" % ntpserver)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
         except socket.gaierror:
-            print "error checking NTP %s" % ntpserver
+            print("error checking NTP %s" % ntpserver)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
         except:
-            print "general error checking NTP %s" % ntpserver
+            print("general error checking NTP %s" % ntpserver)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
         self.timerNTP.start(60000)
