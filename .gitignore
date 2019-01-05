@@ -10,3 +10,4 @@ venv/
 .idea/
 dist/
 build/
+*.spec
