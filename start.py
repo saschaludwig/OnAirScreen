@@ -151,7 +151,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.udpsock = QUdpSocket()
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
-        port = settings.value('udpport', 3310)
+        port = int(settings.value('udpport', 3310))
         settings.endGroup()
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
         self.udpsock.readyRead.connect(self.cmdHandler)

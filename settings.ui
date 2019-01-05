@@ -1633,7 +1633,7 @@ p, li { white-space: pre-wrap; }
            <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>© 2013 Sascha Ludwig</string>
+              <string>© 2012-2019 Sascha Ludwig</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1657,7 +1657,7 @@ p, li { white-space: pre-wrap; }
           <string>##################################################################
 ##
 ## OnAirScreen
-## Copyright (C) 2013 Sascha Ludwig
+## Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
 ## All rights reserved.
 ##
 ## You may use this file under the terms of the BSD license as follows:
