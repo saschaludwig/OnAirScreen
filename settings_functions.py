@@ -35,9 +35,9 @@
 #
 #############################################################################
 
-from PyQt5.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, \
-    QFileDialog
-from PyQt5.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
+from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence
+from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QFileDialog
+from PyQt5.QtCore import pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from settings import Ui_Settings
 from collections import defaultdict
@@ -71,7 +71,7 @@ class OASSettings:
 
 
 class Settings(QWidget, Ui_Settings):
-    sigConfigChanged = pyqtSignal(int, unicode)
+    sigConfigChanged = pyqtSignal(int, str)
     sigExitOAS = pyqtSignal()
     sigRebootHost = pyqtSignal()
     sigShutdownHost = pyqtSignal()
@@ -127,32 +127,32 @@ class Settings(QWidget, Ui_Settings):
             self.sigShutdownRemoteHost.emit(self.row)
 
     def _connectSlots(self):
-        self.connect(self.ApplyButton, SIGNAL("clicked()"), self.applySettings)
-        self.connect(self.CloseButton, SIGNAL("clicked()"), self.closeSettings)
-        self.connect(self.ExitButton, SIGNAL("clicked()"), self.exitOnAirScreen)
-        self.connect(self.RebootButton, SIGNAL("clicked()"), self.rebootHost)
-        self.connect(self.ShutdownButton, SIGNAL("clicked()"), self.shutdownHost)
-        self.connect(self.LEDInactiveBGColor, SIGNAL("clicked()"), self.setLEDInactiveBGColor)
-        self.connect(self.LEDInactiveFGColor, SIGNAL("clicked()"), self.setLEDInactiveFGColor)
-        self.connect(self.LED1BGColor, SIGNAL("clicked()"), self.setLED1BGColor)
-        self.connect(self.LED1FGColor, SIGNAL("clicked()"), self.setLED1FGColor)
-        self.connect(self.LED2BGColor, SIGNAL("clicked()"), self.setLED2BGColor)
-        self.connect(self.LED2FGColor, SIGNAL("clicked()"), self.setLED2FGColor)
-        self.connect(self.LED3BGColor, SIGNAL("clicked()"), self.setLED3BGColor)
-        self.connect(self.LED3FGColor, SIGNAL("clicked()"), self.setLED3FGColor)
-        self.connect(self.LED4BGColor, SIGNAL("clicked()"), self.setLED4BGColor)
-        self.connect(self.LED4FGColor, SIGNAL("clicked()"), self.setLED4FGColor)
+        self.connect(self.ApplyButton, pyqtSignal("clicked()"), self.applySettings)
+        self.connect(self.CloseButton, pyqtSignal("clicked()"), self.closeSettings)
+        self.connect(self.ExitButton, pyqtSignal("clicked()"), self.exitOnAirScreen)
+        self.connect(self.RebootButton, pyqtSignal("clicked()"), self.rebootHost)
+        self.connect(self.ShutdownButton, pyqtSignal("clicked()"), self.shutdownHost)
+        self.connect(self.LEDInactiveBGColor, pyqtSignal("clicked()"), self.setLEDInactiveBGColor)
+        self.connect(self.LEDInactiveFGColor, pyqtSignal("clicked()"), self.setLEDInactiveFGColor)
+        self.connect(self.LED1BGColor, pyqtSignal("clicked()"), self.setLED1BGColor)
+        self.connect(self.LED1FGColor, pyqtSignal("clicked()"), self.setLED1FGColor)
+        self.connect(self.LED2BGColor, pyqtSignal("clicked()"), self.setLED2BGColor)
+        self.connect(self.LED2FGColor, pyqtSignal("clicked()"), self.setLED2FGColor)
+        self.connect(self.LED3BGColor, pyqtSignal("clicked()"), self.setLED3BGColor)
+        self.connect(self.LED3FGColor, pyqtSignal("clicked()"), self.setLED3FGColor)
+        self.connect(self.LED4BGColor, pyqtSignal("clicked()"), self.setLED4BGColor)
+        self.connect(self.LED4FGColor, pyqtSignal("clicked()"), self.setLED4FGColor)
 
-        self.connect(self.DigitalHourColorButton, SIGNAL("clicked()"), self.setDigitalHourColor)
-        self.connect(self.DigitalSecondColorButton, SIGNAL("clicked()"), self.setDigitalSecondColor)
-        self.connect(self.DigitalDigitColorButton, SIGNAL("clicked()"), self.setDigitalDigitColor)
-        self.connect(self.logoButton, SIGNAL("clicked()"), self.openLogoPathSelector)
-        self.connect(self.resetLogoButton, SIGNAL("clicked()"), self.resetLogo)
+        self.connect(self.DigitalHourColorButton, pyqtSignal("clicked()"), self.setDigitalHourColor)
+        self.connect(self.DigitalSecondColorButton, pyqtSignal("clicked()"), self.setDigitalSecondColor)
+        self.connect(self.DigitalDigitColorButton, pyqtSignal("clicked()"), self.setDigitalDigitColor)
+        self.connect(self.logoButton, pyqtSignal("clicked()"), self.openLogoPathSelector)
+        self.connect(self.resetLogoButton, pyqtSignal("clicked()"), self.resetLogo)
 
-        self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor)
-        self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor)
+        self.connect(self.StationNameColor, pyqtSignal("clicked()"), self.setStationNameColor)
+        self.connect(self.SloganColor, pyqtSignal("clicked()"), self.setSloganColor)
 
-        self.connect(self, SIGNAL("triggered()"), self.closeEvent)
+        self.connect(self, pyqtSignal("triggered()"), self.closeEvent)
 
     # special OAS Settings from OAC functions
 
