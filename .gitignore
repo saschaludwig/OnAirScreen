@@ -8,3 +8,5 @@ onairscreen.ini
 .DS_Store
 venv/
 .idea/
+dist/
+build/
