@@ -42,7 +42,7 @@ import re
 from datetime import datetime
 from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
-from PyQt5.QtCore import pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
+from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 #from locale import LC_TIME, setlocale
@@ -68,9 +68,9 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', True).toBool():
+        if settings.value('fullscreen', True):
             self.showFullScreen()
-            app.setOverrideCursor(QCursor(10))
+            app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
 
         self.labelWarning.hide()
@@ -105,37 +105,37 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # Setup and start timers
         self.ctimer = QTimer()
-        QObject.connect(self.ctimer, SIGNAL("timeout()"), self.constantUpdate)
+        self.ctimer.timeout.connect(self.constantUpdate)
         self.ctimer.start(100)
         # LED timers
         self.timerLED1 = QTimer()
-        QObject.connect(self.timerLED1, SIGNAL("timeout()"), self.toggleLED1)
+        self.timerLED1.timeout.connect(self.toggleLED1)
         self.timerLED2 = QTimer()
-        QObject.connect(self.timerLED2, SIGNAL("timeout()"), self.toggleLED2)
+        self.timerLED2.timeout.connect(self.toggleLED2)
         self.timerLED3 = QTimer()
-        QObject.connect(self.timerLED3, SIGNAL("timeout()"), self.toggleLED3)
+        self.timerLED3.timeout.connect(self.toggleLED3)
         self.timerLED4 = QTimer()
-        QObject.connect(self.timerLED4, SIGNAL("timeout()"), self.toggleLED4)
+        self.timerLED4.timeout.connect(self.toggleLED4)
 
         # Setup OnAir Timers
         self.timerAIR1 = QTimer()
-        QObject.connect(self.timerAIR1, SIGNAL("timeout()"), self.updateAIR1Seconds)
+        self.timerAIR1.timeout.connect(self.updateAIR1Seconds)
         self.Air1Seconds = 0
         self.statusAIR1 = False
 
         self.timerAIR2 = QTimer()
-        QObject.connect(self.timerAIR2, SIGNAL("timeout()"), self.updateAIR2Seconds)
+        self.timerAIR2.timeout.connect(self.updateAIR2Seconds)
         self.Air2Seconds = 0
         self.statusAIR2 = False
 
         self.timerAIR3 = QTimer()
-        QObject.connect(self.timerAIR3, SIGNAL("timeout()"), self.updateAIR3Seconds)
+        self.timerAIR3.timeout.connect(self.updateAIR3Seconds)
         self.Air3Seconds = 0
         self.statusAIR3 = False
         self.radioTimerMode = 0  # count up mode
 
         self.timerAIR4 = QTimer()
-        QObject.connect(self.timerAIR4, SIGNAL("timeout()"), self.updateAIR4Seconds)
+        self.timerAIR4.timeout.connect(self.updateAIR4Seconds)
         self.Air4Seconds = 0
         self.statusAIR4 = False
         self.streamTimerMode = 0  # count up mode
@@ -143,7 +143,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Setup check NTP Timer
         self.ntpHadWarning = True
         self.timerNTP = QTimer()
-        QObject.connect(self.timerNTP, SIGNAL("timeout()"), self.checkNTPOffset)
+        self.timerNTP.timeout.connect(self.checkNTPOffset)
         # initial check
         self.timerNTP.start(5000)
 
@@ -151,7 +151,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.udpsock = QUdpSocket()
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
-        (port, foo) = settings.value('udpport', 3310).toInt()
+        port = settings.value('udpport', 3310)
         settings.endGroup()
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
         self.udpsock.readyRead.connect(self.cmdHandler)
@@ -162,7 +162,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         # set NTP warning
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
-        if settings.value('ntpcheck', True).toBool():
+        if settings.value('ntpcheck', True):
             self.showWarning("Clock NTP status unknown")
         settings.endGroup()
 
@@ -227,7 +227,7 @@ class MainScreen(QWidget, Ui_MainScreen):
     def showsettings(self):
         global app
         # un-hide mousecursor
-        app.setOverrideCursor(QCursor(0));
+        app.setOverrideCursor(QCursor(Qt.ArrowCursor));
         self.settings.showsettings()
 
     def displayAllHostaddresses(self):
@@ -534,40 +534,40 @@ class MainScreen(QWidget, Ui_MainScreen):
     def restoreSettingsFromConfig(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan').toString())
-        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation').toString())
-        self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00').toString()))
-        self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00').toString()))
+        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
+        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
+        self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
+        self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
         settings.endGroup()
 
         settings.beginGroup("LED1")
-        self.setLED1Text(settings.value('text', 'ON AIR').toString())
+        self.setLED1Text(settings.value('text', 'ON AIR'))
         settings.endGroup()
 
         settings.beginGroup("LED2")
-        self.setLED2Text(settings.value('text', 'PHONE').toString())
+        self.setLED2Text(settings.value('text', 'PHONE'))
         settings.endGroup()
 
         settings.beginGroup("LED3")
-        self.setLED3Text(settings.value('text', 'DOORBELL').toString())
+        self.setLED3Text(settings.value('text', 'DOORBELL'))
         settings.endGroup()
 
         settings.beginGroup("LED4")
-        self.setLED4Text(settings.value('text', 'ARI').toString())
+        self.setLED4Text(settings.value('text', 'ARI'))
         settings.endGroup()
 
         settings.beginGroup("Clock")
-        self.clockWidget.setClockMode(settings.value('digital', True).toBool())
+        self.clockWidget.setClockMode(settings.value('digital', True))
 
         self.clockWidget.setDigiHourColor(
-            self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
+            self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
         self.clockWidget.setDigiSecondColor(
-            self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
+            self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
         self.clockWidget.setDigiDigitColor(
-            self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
+            self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
 
         self.clockWidget.setLogo(
-            settings.value('logopath', ':/astrastudio_logo/astrastudio_transparent.png').toString())
+            settings.value('logopath', ':/astrastudio_logo/astrastudio_transparent.png'))
         settings.endGroup()
 
     def constantUpdate(self):
@@ -619,13 +619,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if not settings.value('fullscreen', 'True').toBool():
+        if not settings.value('fullscreen', 'True'):
             self.showFullScreen()
-            app.setOverrideCursor(QCursor(10));
+            app.setOverrideCursor(QCursor(Qt.BlankCursor))
             settings.setValue('fullscreen', True)
         else:
             self.showNormal()
-            app.setOverrideCursor(QCursor(0));
+            app.setOverrideCursor(QCursor(Qt.ArrowCursor))
             settings.setValue('fullscreen', False)
         settings.endGroup()
 
@@ -642,11 +642,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             settings.beginGroup("LEDS")
             self.AirIcon_1.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             self.AirLabel_1.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR1 = False
             self.timerAIR1.stop()
@@ -668,11 +668,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             settings.beginGroup("LEDS")
             self.AirIcon_2.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             self.AirLabel_2.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR2 = False
             self.timerAIR2.stop()
@@ -703,11 +703,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             settings.beginGroup("LEDS")
             self.AirIcon_3.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             self.AirLabel_3.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR3 = False
             self.timerAIR3.stop()
@@ -756,11 +756,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             settings.beginGroup("LEDS")
             self.AirIcon_4.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             self.AirLabel_4.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR4 = False
             self.timerAIR4.stop()
@@ -790,8 +790,8 @@ class MainScreen(QWidget, Ui_MainScreen):
     def checkNTPOffset(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
-        ntpcheck = settings.value('ntpcheck', True).toBool()
-        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org').toString())
+        ntpcheck = settings.value('ntpcheck', True)
+        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
         settings.endGroup()
         if not ntpcheck:
             return
@@ -827,15 +827,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         if action:
             settings.beginGroup("LED1")
             self.buttonLED1.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF').toString() + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000').toString())
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#FF0000'))
             settings.endGroup()
             self.statusLED1 = True
         else:
             settings.beginGroup("LEDS")
             self.buttonLED1.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED1 = False
 
@@ -844,15 +844,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         if action:
             settings.beginGroup("LED2")
             self.buttonLED2.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF').toString() + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000').toString())
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#FF0000'))
             settings.endGroup()
             self.statusLED2 = True
         else:
             settings.beginGroup("LEDS")
             self.buttonLED2.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED2 = False
 
@@ -861,15 +861,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         if action:
             settings.beginGroup("LED3")
             self.buttonLED3.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF').toString() + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000').toString())
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#FF0000'))
             settings.endGroup()
             self.statusLED3 = True
         else:
             settings.beginGroup("LEDS")
             self.buttonLED3.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED3 = False
 
@@ -878,15 +878,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         if action:
             settings.beginGroup("LED4")
             self.buttonLED4.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF').toString() + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000').toString())
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#FF0000'))
             settings.endGroup()
             self.statusLED4 = True
         else:
             settings.beginGroup("LEDS")
             self.buttonLED4.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555').toString() + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222').toString())
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED4 = False
 
@@ -950,7 +950,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         # hide mousecursor if in fullscreen mode
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', 'True').toBool():
+        if settings.value('fullscreen', 'True'):
             app.setOverrideCursor(QCursor(10));
         settings.endGroup()
 
