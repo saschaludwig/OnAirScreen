@@ -1,51 +1,53 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #############################################################################
-##
-## OnAirScreen Analog
-## Copyright (C) 2013 Sascha Ludwig
-## All rights reserved.
-##
-## settings_functions.py
-## This file is part of OnAirScreen
-##
-## You may use this file under the terms of the BSD license as follows:
-##
-## "Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##   * Redistributions of source code must retain the above copyright
-##     notice, this list of conditions and the following disclaimer.
-##   * Redistributions in binary form must reproduce the above copyright
-##     notice, this list of conditions and the following disclaimer in
-##     the documentation and/or other materials provided with the
-##     distribution.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-## A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-## OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-## SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-## LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-## DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-## THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-## OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-##
+#
+# OnAirScreen
+# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# All rights reserved.
+#
+# settings_functions.py
+# This file is part of OnAirScreen
+#
+# You may use this file under the terms of the BSD license as follows:
+#
+# "Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in
+#     the documentation and/or other materials provided with the
+#     distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+#
 #############################################################################
 
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QFileDialog
-from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
-from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
+from PyQt5.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, \
+    QFileDialog
+from PyQt5.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
+from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from settings import Ui_Settings
 from collections import defaultdict
 import json
 
-versionString = "0.7"
+versionString = "0.8"
+
 
 # class OASSettings for use from OAC
-class OASSettings():
+class OASSettings:
     def __init__(self):
         self.config = defaultdict(dict)
         self.currentgroup = None
@@ -67,6 +69,7 @@ class OASSettings():
         except KeyError:
             return QVariant(default)
 
+
 class Settings(QWidget, Ui_Settings):
     sigConfigChanged = pyqtSignal(int, unicode)
     sigExitOAS = pyqtSignal()
@@ -76,6 +79,7 @@ class Settings(QWidget, Ui_Settings):
     sigExitRemoteOAS = pyqtSignal(int)
     sigRebootRemoteHost = pyqtSignal(int)
     sigShutdownRemoteHost = pyqtSignal(int)
+
     def __init__(self, oacmode=False):
         self.row = -1
         QWidget.__init__(self)
@@ -98,62 +102,62 @@ class Settings(QWidget, Ui_Settings):
         self.show()
 
     def closeEvent(self, event):
-        #emit config finished signal
+        # emit config finished signal
         self.sigConfigFinished.emit()
 
     def exitOnAirScreen(self):
-        if self.oacmode == False:
-            #emit app close signal
+        if not self.oacmode:
+            # emit app close signal
             self.sigExitOAS.emit()
         else:
             self.sigExitRemoteOAS.emit(self.row)
 
     def rebootHost(self):
         if self.oacmode == False:
-            #emit reboot host signal
+            # emit reboot host signal
             self.sigRebootHost.emit()
         else:
             self.sigRebootRemoteHost.emit(self.row)
 
     def shutdownHost(self):
         if self.oacmode == False:
-            #emit shutdown host signal
+            # emit shutdown host signal
             self.sigShutdownHost.emit()
         else:
             self.sigShutdownRemoteHost.emit(self.row)
 
     def _connectSlots(self):
-        self.connect(self.ApplyButton, SIGNAL("clicked()"), self.applySettings )
-        self.connect(self.CloseButton, SIGNAL("clicked()"), self.closeSettings )
-        self.connect(self.ExitButton, SIGNAL("clicked()"), self.exitOnAirScreen )
-        self.connect(self.RebootButton, SIGNAL("clicked()"), self.rebootHost )
-        self.connect(self.ShutdownButton, SIGNAL("clicked()"), self.shutdownHost )
-        self.connect(self.LEDInactiveBGColor, SIGNAL("clicked()"), self.setLEDInactiveBGColor )
-        self.connect(self.LEDInactiveFGColor, SIGNAL("clicked()"), self.setLEDInactiveFGColor )
-        self.connect(self.LED1BGColor, SIGNAL("clicked()"), self.setLED1BGColor )
-        self.connect(self.LED1FGColor, SIGNAL("clicked()"), self.setLED1FGColor )
-        self.connect(self.LED2BGColor, SIGNAL("clicked()"), self.setLED2BGColor )
-        self.connect(self.LED2FGColor, SIGNAL("clicked()"), self.setLED2FGColor )
-        self.connect(self.LED3BGColor, SIGNAL("clicked()"), self.setLED3BGColor )
-        self.connect(self.LED3FGColor, SIGNAL("clicked()"), self.setLED3FGColor )
-        self.connect(self.LED4BGColor, SIGNAL("clicked()"), self.setLED4BGColor )
-        self.connect(self.LED4FGColor, SIGNAL("clicked()"), self.setLED4FGColor )
+        self.connect(self.ApplyButton, SIGNAL("clicked()"), self.applySettings)
+        self.connect(self.CloseButton, SIGNAL("clicked()"), self.closeSettings)
+        self.connect(self.ExitButton, SIGNAL("clicked()"), self.exitOnAirScreen)
+        self.connect(self.RebootButton, SIGNAL("clicked()"), self.rebootHost)
+        self.connect(self.ShutdownButton, SIGNAL("clicked()"), self.shutdownHost)
+        self.connect(self.LEDInactiveBGColor, SIGNAL("clicked()"), self.setLEDInactiveBGColor)
+        self.connect(self.LEDInactiveFGColor, SIGNAL("clicked()"), self.setLEDInactiveFGColor)
+        self.connect(self.LED1BGColor, SIGNAL("clicked()"), self.setLED1BGColor)
+        self.connect(self.LED1FGColor, SIGNAL("clicked()"), self.setLED1FGColor)
+        self.connect(self.LED2BGColor, SIGNAL("clicked()"), self.setLED2BGColor)
+        self.connect(self.LED2FGColor, SIGNAL("clicked()"), self.setLED2FGColor)
+        self.connect(self.LED3BGColor, SIGNAL("clicked()"), self.setLED3BGColor)
+        self.connect(self.LED3FGColor, SIGNAL("clicked()"), self.setLED3FGColor)
+        self.connect(self.LED4BGColor, SIGNAL("clicked()"), self.setLED4BGColor)
+        self.connect(self.LED4FGColor, SIGNAL("clicked()"), self.setLED4FGColor)
 
-        self.connect(self.DigitalHourColorButton, SIGNAL("clicked()"), self.setDigitalHourColor )
-        self.connect(self.DigitalSecondColorButton, SIGNAL("clicked()"), self.setDigitalSecondColor )
-        self.connect(self.DigitalDigitColorButton, SIGNAL("clicked()"), self.setDigitalDigitColor )
-        self.connect(self.logoButton, SIGNAL("clicked()"), self.openLogoPathSelector )
-        self.connect(self.resetLogoButton, SIGNAL("clicked()"), self.resetLogo )
+        self.connect(self.DigitalHourColorButton, SIGNAL("clicked()"), self.setDigitalHourColor)
+        self.connect(self.DigitalSecondColorButton, SIGNAL("clicked()"), self.setDigitalSecondColor)
+        self.connect(self.DigitalDigitColorButton, SIGNAL("clicked()"), self.setDigitalDigitColor)
+        self.connect(self.logoButton, SIGNAL("clicked()"), self.openLogoPathSelector)
+        self.connect(self.resetLogoButton, SIGNAL("clicked()"), self.resetLogo)
 
-        self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor )
-        self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor )
+        self.connect(self.StationNameColor, SIGNAL("clicked()"), self.setStationNameColor)
+        self.connect(self.SloganColor, SIGNAL("clicked()"), self.setSloganColor)
 
-        self.connect(self, SIGNAL("triggered()"), self.closeEvent )
+        self.connect(self, SIGNAL("triggered()"), self.closeEvent)
 
     # special OAS Settings from OAC functions
 
     def readConfigFromJson(self, row, config):
-        #remember which row we are
+        # remember which row we are
         self.row = row
         confdict = json.loads(unicode(config))
         for group, content in confdict.items():
@@ -164,14 +168,14 @@ class Settings(QWidget, Ui_Settings):
         self.restoreSettingsFromConfig()
 
     def readJsonFromConfig(self):
-        #return json representation of config
+        # return json representation of config
         return json.dumps(self.settings.config)
 
     def restoreSettingsFromConfig(self):
         if self.oacmode == True:
             settings = self.settings
         else:
-            settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+            settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         self.StationName.setText(settings.value('stationname', 'Radio Eriwan').toString())
@@ -232,7 +236,8 @@ class Settings(QWidget, Ui_Settings):
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
-        self.logoPath.setText(settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png').toString())
+        self.logoPath.setText(
+            settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png').toString())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -244,7 +249,7 @@ class Settings(QWidget, Ui_Settings):
         if self.oacmode == True:
             settings = self.settings
         else:
-            settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+            settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         settings.setValue('stationname', self.StationName.displayText())
@@ -316,21 +321,20 @@ class Settings(QWidget, Ui_Settings):
             # send oac a signal the the config has changed
             self.sigConfigChanged.emit(self.row, self.readJsonFromConfig())
 
-
     def applySettings(self):
-        #apply settings button pressed
+        # apply settings button pressed
         self.getSettingsFromDialog()
         self.sigConfigFinished.emit()
 
     def closeSettings(self):
-        #close settings button pressed
+        # close settings button pressed
         self.restoreSettingsFromConfig()
 
     def setLED1BGColor(self, newcolor=False):
         palette = self.LED1Text.palette()
         oldcolor = palette.base().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Base, newcolor)
         self.LED1Text.setPalette(palette)
 
@@ -338,7 +342,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LEDInactive.palette()
         oldcolor = palette.base().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Base, newcolor)
         self.LEDInactive.setPalette(palette)
 
@@ -346,7 +350,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LEDInactive.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.LEDInactive.setPalette(palette)
 
@@ -354,7 +358,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED1Text.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.LED1Text.setPalette(palette)
 
@@ -362,7 +366,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED2Text.palette()
         oldcolor = palette.base().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Base, newcolor)
         self.LED2Text.setPalette(palette)
 
@@ -370,7 +374,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED2Text.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.LED2Text.setPalette(palette)
 
@@ -378,7 +382,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED3Text.palette()
         oldcolor = palette.base().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Base, newcolor)
         self.LED3Text.setPalette(palette)
 
@@ -386,7 +390,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED3Text.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.LED3Text.setPalette(palette)
 
@@ -394,7 +398,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED4Text.palette()
         oldcolor = palette.base().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Base, newcolor)
         self.LED4Text.setPalette(palette)
 
@@ -402,7 +406,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.LED4Text.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.LED4Text.setPalette(palette)
 
@@ -410,7 +414,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.StationName.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.StationName.setPalette(palette)
 
@@ -418,7 +422,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.Slogan.palette()
         oldcolor = palette.text().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Text, newcolor)
         self.Slogan.setPalette(palette)
 
@@ -501,7 +505,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.DigitalHourColor.palette()
         oldcolor = palette.window().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Window, newcolor)
         self.DigitalHourColor.setPalette(palette)
 
@@ -509,7 +513,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.DigitalSecondColor.palette()
         oldcolor = palette.window().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Window, newcolor)
         self.DigitalSecondColor.setPalette(palette)
 
@@ -517,7 +521,7 @@ class Settings(QWidget, Ui_Settings):
         palette = self.DigitalDigitColor.palette()
         oldcolor = palette.window().color()
         if not newcolor:
-            newcolor = self.openColorDialog( oldcolor )
+            newcolor = self.openColorDialog(oldcolor)
         palette.setColor(QPalette.Window, newcolor)
         self.DigitalDigitColor.setPalette(palette)
 
@@ -531,11 +535,11 @@ class Settings(QWidget, Ui_Settings):
 
     def getColorFromName(self, colorname):
         color = QColor()
-        color.setNamedColor( colorname )
+        color.setNamedColor(colorname)
         return color
 
     def openLogoPathSelector(self):
-        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)" )
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")
         if filename:
             self.logoPath.setText(filename)
 
@@ -544,4 +548,3 @@ class Settings(QWidget, Ui_Settings):
 
     def setLogoPath(self, path):
         self.logoPath.setText(path)
-

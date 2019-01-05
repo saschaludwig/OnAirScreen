@@ -19,7 +19,7 @@ http://saschaludwig.github.io/OnAirScreen/
  * easy installation
  * runs on RaspberryPi
  * runs on Windows, Mac, Linux
- * conrtolled via keyboard and network
+ * controlled via keyboard and network
  * OnAir Timer, Stopwatch, Countdown and more
 
 #### OnAirScreen Function Keys
@@ -60,7 +60,7 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 | `WARN:TEXT`              | set TEXT and switch on red warning mode |
 | `AIR1:[ON/OFF]`          | start/stop Mic Timer |
 | `AIR2:[ON/OFF]`          | start/stop Phone Timer |
-| `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggelt Radio Timer |
+| `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggle Radio Timer |
 | `AIR3TIME:seconds`            | set Radio Timer to given value in seconds |
 | `AIR4:[ON/OFF/RESET]`        | start/stop/reset Stream Timer |
 | `CMD:REBOOT`                  | OS restart |
