@@ -584,10 +584,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.updateBacktimingSeconds()
 
     def updateDate(self):
+        # TODO: configurable date format
         now = datetime.now()
         self.setLeftText(QDate.currentDate().toString("dddd, dd. MMMM yyyy"))
 
     def updateBacktimingText(self):
+        # TODO: configurable time format
         now = datetime.now()
         hour = now.hour
         minute = now.minute

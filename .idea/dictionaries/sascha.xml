@@ -1,7 +1,21 @@
 <component name="ProjectDictionaryState">
   <dictionary name="sascha">
     <words>
+      <w>activebgcolor</w>
+      <w>activetextcolor</w>
+      <w>astrastudio</w>
+      <w>autoflash</w>
+      <w>digitaldigitcolor</w>
+      <w>digitalhourcolor</w>
+      <w>digitalsecondcolor</w>
+      <w>logopath</w>
       <w>onairscreen</w>
+      <w>slogancolor</w>
+      <w>stationcolor</w>
+      <w>stationname</w>
+      <w>tcpport</w>
+      <w>timedflash</w>
+      <w>udpport</w>
     </words>
   </dictionary>
 </component>
