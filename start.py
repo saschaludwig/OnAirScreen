@@ -44,7 +44,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDia
 from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
-#from locale import LC_TIME, setlocale
 import ntplib
 import signal
 import socket
@@ -155,8 +154,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
         self.udpsock.readyRead.connect(self.cmdHandler)
 
-        # diplay all host adresses
+        # display all host addresses
         self.displayAllHostaddresses()
+
+        # create get time dialog
+        self.getTimeWindow = QDialog()
 
         # set NTP warning
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -182,7 +184,6 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def getTimerDialog(self):
         # generate and display timer input window
-        self.getTimeWindow = QDialog()
         self.getTimeWindow.resize(200, 100)
         self.getTimeWindow.setWindowTitle("Please enter timer")
         self.getTimeWindow.timeEdit = QLineEdit("Enter timer here")
@@ -201,7 +202,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         seconds = 0
         # hide input window
         self.sender().parent().hide()
-        # get timestring
+        # get time string
         text = str(self.sender().text())
         if re.match('^[0-9]*,[0-9]*$', text):
             (minutes, seconds) = text.split(",")
@@ -225,7 +226,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def showsettings(self):
         global app
-        # un-hide mousecursor
+        # un-hide mouse cursor
         app.setOverrideCursor(QCursor(Qt.ArrowCursor));
         self.settings.showsettings()
 
