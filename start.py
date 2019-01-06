@@ -51,6 +51,8 @@ from settings_functions import Settings
 
 
 class MainScreen(QWidget, Ui_MainScreen):
+    ntpHadWarning: bool
+
     def __init__(self):
         QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
@@ -100,6 +102,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("S"), self, self.toggleAIR4)
         QShortcut(QKeySequence("Enter"), self, self.getTimerDialog)
         QShortcut(QKeySequence("Return"), self, self.getTimerDialog)
+
+        self.statusLED1 = False
+        self.statusLED2 = False
+        self.statusLED3 = False
+        self.statusLED4 = False
 
         # Setup and start timers
         self.ctimer = QTimer()
@@ -592,13 +599,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         if 0 < minute < 25:
             string = "%d Minute%s nach %d" % (minute, 'n' if minute > 1 else '', hour)
 
-        if minute >= 25 and minute < 30:
+        if 25 <= minute < 30:
             string = "%d Minute%s vor halb %d" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
 
-        if minute >= 30 and minute <= 39:
+        if 30 <= minute <= 39:
             string = "%d Minute%s nach halb %d" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
 
-        if minute >= 40 and minute <= 59:
+        if 40 <= minute <= 59:
             string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
 
         if minute == 30:
@@ -805,7 +812,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.showWarning("Clock not NTP synchronized: offset too big")
                 self.ntpHadWarning = True
             else:
-                if self.ntpHadWarning == True:
+                if self.ntpHadWarning:
                     self.ntpHadWarning = False
                     self.hideWarning()
         except socket.timeout:
@@ -817,7 +824,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
         except:
-            print("general error checking NTP %s" % ntpserver)
+            print("unknown error checking NTP %s" % ntpserver)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
         self.timerNTP.start(60000)
@@ -947,11 +954,11 @@ class MainScreen(QWidget, Ui_MainScreen):
     def configFinished(self):
         self.restoreSettingsFromConfig()
         global app
-        # hide mousecursor if in fullscreen mode
+        # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
         if settings.value('fullscreen', 'True'):
-            app.setOverrideCursor(QCursor(10));
+            app.setOverrideCursor(QCursor(Qt.BlankCursor));
         settings.endGroup()
 
     def reboot_host(self):
