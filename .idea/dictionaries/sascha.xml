@@ -5,10 +5,13 @@
       <w>activetextcolor</w>
       <w>astrastudio</w>
       <w>autoflash</w>
+      <w>ctimer</w>
       <w>digitaldigitcolor</w>
       <w>digitalhourcolor</w>
       <w>digitalsecondcolor</w>
+      <w>hotkey</w>
       <w>logopath</w>
+      <w>ntpcheck</w>
       <w>onairscreen</w>
       <w>slogancolor</w>
       <w>stationcolor</w>
@@ -16,6 +19,7 @@
       <w>tcpport</w>
       <w>timedflash</w>
       <w>udpport</w>
+      <w>udpsock</w>
     </words>
   </dictionary>
 </component>
