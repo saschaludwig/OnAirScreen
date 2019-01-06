@@ -35,10 +35,9 @@
 #
 #############################################################################
 
-from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence
-from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QFileDialog
-from PyQt5.QtCore import pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, pyqtSignal
-from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
+from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog
+from PyQt5.QtCore import QSettings, QVariant, pyqtSignal
 from settings import Ui_Settings
 from collections import defaultdict
 import json
@@ -60,7 +59,7 @@ class OASSettings:
 
     def setValue(self, name, value):
         if self.currentgroup:
-            self.config[self.currentgroup][name] = unicode(value)
+            self.config[self.currentgroup][name] = value
         pass
 
     def value(self, name, default=None):
@@ -129,9 +128,6 @@ class Settings(QWidget, Ui_Settings):
     def _connectSlots(self):
         self.ApplyButton.clicked.connect(self.applySettings)
         self.CloseButton.clicked.connect(self.closeSettings)
-
-#        self.connect(self.ApplyButton, pyqtSignal("clicked()"), self.applySettings)
-#        self.connect(self.CloseButton, pyqtSignal("clicked()"), self.closeSettings)
         self.ExitButton.clicked.connect(self.exitOnAirScreen)
         self.RebootButton.clicked.connect(self.rebootHost)
         self.ShutdownButton.clicked.connect(self.shutdownHost)
@@ -155,7 +151,7 @@ class Settings(QWidget, Ui_Settings):
         self.StationNameColor.clicked.connect(self.setStationNameColor)
         self.SloganColor.clicked.connect(self.setSloganColor)
 
-        #self.triggered.connect(self.closeEvent)
+#        self.triggered.connect(self.closeEvent)
 
     # special OAS Settings from OAC functions
 
@@ -542,7 +538,7 @@ class Settings(QWidget, Ui_Settings):
         return color
 
     def openLogoPathSelector(self):
-        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
         if filename:
             self.logoPath.setText(filename)
 

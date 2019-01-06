@@ -119,8 +119,8 @@ class ClockWidget(QtWidgets.QWidget):
             pytime.sleep(0.001)
         self.timer.start(500)
 
-#    def updateTime(self):
-#        self.emit(QtCore.SIGNAL("timeChanged(QTime)"), QtCore.QTime.currentTime())
+    def updateTime(self):
+        self.timeChanged.emit(QtCore.QTime.currentTime())
 
 #    @QtCore.pyqtSignature("setTimeZone(int)")
     def getTimeZone(self):
@@ -129,13 +129,13 @@ class ClockWidget(QtWidgets.QWidget):
     def setTimeZone(self, value):
         if value != self.timeZoneOffset:
             self.timeZoneOffset = value
-            self.emit(QtCore.SIGNAL("timeZoneChanged(int)"), value)
+            self.timeZoneChanged.emit(value)
             self.update()
 
     def resetTimeZone(self):
         if self.timeZoneOffset != 0:
             self.timeZoneOffset = 0
-            self.emit(QtCore.SIGNAL("timeZoneChanged(int)"), 0)
+            self.timeZoneChanged.emit(0)
             self.update()
 
     timeZone = QtCore.pyqtProperty("int", getTimeZone, setTimeZone, resetTimeZone)

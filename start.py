@@ -855,17 +855,22 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.ntpHadWarning = False
                     self.hideWarning()
         except socket.timeout:
-            print("timeout checking NTP %s" % ntpserver)
+            print("NTP error: timeout while checking NTP %s" % ntpserver)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
         except socket.gaierror:
-            print("error checking NTP %s" % ntpserver)
+            print("NTP error: socket error while checking NTP %s" % ntpserver)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
-        except:
-            print("unknown error checking NTP %s" % ntpserver)
+        except ntplib.NTPException as e:
+            print("NTP error:", e)
             self.showWarning("Clock not NTP synchronized")
             self.ntpHadWarning = True
+#        except:
+#            print("unknown error checking NTP %s" % ntpserver)
+#            print("error:", e)
+#            self.showWarning("Clock not NTP synchronized")
+#            self.ntpHadWarning = True
         self.timerNTP.start(60000)
 
     def setLED1(self, action):
