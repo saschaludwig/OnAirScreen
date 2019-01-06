@@ -51,6 +51,7 @@ from settings_functions import Settings
 
 
 class MainScreen(QWidget, Ui_MainScreen):
+    getTimeWindow: QDialog
     ntpHadWarning: bool
 
     def __init__(self):
@@ -91,10 +92,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("."), self, self.radioTimerStartStop)
         QShortcut(QKeySequence("0"), self, self.radioTimerReset)
         QShortcut(QKeySequence("R"), self, self.radioTimerReset)
-        QShortcut(QKeySequence("1"), self, self.toggleLED1)
-        QShortcut(QKeySequence("2"), self, self.toggleLED2)
-        QShortcut(QKeySequence("3"), self, self.toggleLED3)
-        QShortcut(QKeySequence("4"), self, self.toggleLED4)
+        QShortcut(QKeySequence("1"), self, self.manualToggleLED1)
+        QShortcut(QKeySequence("2"), self, self.manualToggleLED2)
+        QShortcut(QKeySequence("3"), self, self.manualToggleLED3)
+        QShortcut(QKeySequence("4"), self, self.manualToggleLED4)
         QShortcut(QKeySequence("M"), self, self.toggleAIR1)
         QShortcut(QKeySequence("/"), self, self.toggleAIR1)
         QShortcut(QKeySequence("P"), self, self.toggleAIR2)
@@ -107,6 +108,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.statusLED2 = False
         self.statusLED3 = False
         self.statusLED4 = False
+
+        self.LED1on = False
+        self.LED2on = False
+        self.LED3on = False
+        self.LED4on = False
+
 
         # Setup and start timers
         self.ctimer = QTimer()
@@ -164,9 +171,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         # display all host addresses
         self.displayAllHostaddresses()
 
-        # create get time dialog
-        self.getTimeWindow = QDialog()
-
         # set NTP warning
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
@@ -191,6 +195,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def getTimerDialog(self):
         # generate and display timer input window
+        self.getTimeWindow = QDialog()
         self.getTimeWindow.resize(200, 100)
         self.getTimeWindow.setWindowTitle("Please enter timer")
         self.getTimeWindow.timeEdit = QLineEdit("Enter timer here")
@@ -429,6 +434,30 @@ class MainScreen(QWidget, Ui_MainScreen):
                                 # apply and save settings
                                 self.settings.applySettings()
 
+    def manualToggleLED1(self):
+        if self.LED1on:
+            self.ledLogic(1, False)
+        else:
+            self.ledLogic(1, True)
+
+    def manualToggleLED2(self):
+        if self.LED2on:
+            self.ledLogic(2, False)
+        else:
+            self.ledLogic(2, True)
+
+    def manualToggleLED3(self):
+        if self.LED3on:
+            self.ledLogic(3, False)
+        else:
+            self.ledLogic(3, True)
+
+    def manualToggleLED4(self):
+        if self.LED4on:
+            self.ledLogic(4, False)
+        else:
+            self.ledLogic(4, True)
+
     def toggleLED1(self):
         if self.statusLED1:
             self.setLED1(False)
@@ -492,6 +521,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED1.start(500)
                     QTimer.singleShot(20000, self.unsetLED1)
                 self.setLED1(state)
+                self.LED1on = state
             if led == 2:
                 if self.settings.LED2Autoflash.isChecked():
                     self.timerLED2.start(500)
@@ -499,6 +529,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED2.start(500)
                     QTimer.singleShot(20000, self.unsetLED2)
                 self.setLED2(state)
+                self.LED2on = state
             if led == 3:
                 if self.settings.LED3Autoflash.isChecked():
                     self.timerLED3.start(500)
@@ -506,6 +537,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED3.start(500)
                     QTimer.singleShot(20000, self.unsetLED3)
                 self.setLED3(state)
+                self.LED3on = state
             if led == 4:
                 if self.settings.LED4Autoflash.isChecked():
                     self.timerLED4.start(500)
@@ -513,20 +545,25 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED4.start(500)
                     QTimer.singleShot(20000, self.unsetLED4)
                 self.setLED4(state)
+                self.LED4on = state
 
         if state == False:
             if led == 1:
                 self.setLED1(state)
                 self.timerLED1.stop()
+                self.LED1on = state
             if led == 2:
                 self.setLED2(state)
                 self.timerLED2.stop()
+                self.LED2on = state
             if led == 3:
                 self.setLED3(state)
                 self.timerLED3.stop()
+                self.LED3on = state
             if led == 4:
                 self.setLED4(state)
                 self.timerLED4.stop()
+                self.LED4on = state
 
     def setStationColor(self, newcolor):
         palette = self.labelStation.palette()
