@@ -73,6 +73,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.showFullScreen()
             app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
+        #print("Loading Settings: ", settings.fileName())
 
         self.labelWarning.hide()
 
@@ -428,8 +429,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if group == "Network":
                         if param == "udpport":
                             self.settings.udpport.setText(content)
-                        if param == "tcpport":
-                            self.settings.tcpport.setText(content)
 
                     if group == "CONF":
                         if param == "APPLY":
@@ -614,7 +613,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
 
         self.clockWidget.setLogo(
-            settings.value('logopath', ':/astrastudio_logo/astrastudio_transparent.png'))
+            settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
         settings.endGroup()
 
     def constantUpdate(self):
@@ -624,16 +623,17 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.updateBacktimingSeconds()
 
     def updateDate(self):
-        # TODO: configurable date format
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Formatting")
         now = datetime.now()
-        self.setLeftText(QDate.currentDate().toString("dddd, dd. MMMM yyyy"))
+        self.setLeftText(QDate.currentDate().toString(settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
+        settings.endGroup()
 
     def updateBacktimingText(self):
         # TODO: configurable time format
         now = datetime.now()
         hour = now.hour
         minute = now.minute
-        second = now.second
         remain_min = 60 - minute
         if hour > 12:
             hour -= 12
@@ -867,7 +867,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.ntpHadWarning = True
         except ntplib.NTPException as e:
             print("NTP error:", e)
-            self.showWarning("Clock not NTP synchronized")
+            self.showWarning(str(e))
             self.ntpHadWarning = True
 #        except:
 #            print("unknown error checking NTP %s" % ntpserver)

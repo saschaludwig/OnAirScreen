@@ -42,7 +42,7 @@ from settings import Ui_Settings
 from collections import defaultdict
 import json
 
-versionString = "0.8"
+versionString = "0.9beta1"
 
 
 # class OASSettings for use from OAC
@@ -125,6 +125,12 @@ class Settings(QWidget, Ui_Settings):
         else:
             self.sigShutdownRemoteHost.emit(self.row)
 
+    def resetSettings(self):
+        resetSettings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        resetSettings.clear()
+        self.sigConfigFinished.emit()
+        self.close()
+
     def _connectSlots(self):
         self.ApplyButton.clicked.connect(self.applySettings)
         self.CloseButton.clicked.connect(self.closeSettings)
@@ -141,6 +147,7 @@ class Settings(QWidget, Ui_Settings):
         self.LED3FGColor.clicked.connect(self.setLED3FGColor)
         self.LED4BGColor.clicked.connect(self.setLED4BGColor)
         self.LED4FGColor.clicked.connect(self.setLED4FGColor)
+        self.ResetSettingsButton.clicked.connect(self.resetSettings)
 
         self.DigitalHourColorButton.clicked.connect(self.setDigitalHourColor)
         self.DigitalSecondColorButton.clicked.connect(self.setDigitalSecondColor)
@@ -151,7 +158,7 @@ class Settings(QWidget, Ui_Settings):
         self.StationNameColor.clicked.connect(self.setStationNameColor)
         self.SloganColor.clicked.connect(self.setSloganColor)
 
-#        self.triggered.connect(self.closeEvent)
+    #        self.triggered.connect(self.closeEvent)
 
     # special OAS Settings from OAC functions
 
@@ -196,6 +203,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("LED1")
         self.LED1.setChecked(settings.value('used', True))
         self.LED1Text.setText(settings.value('text', 'ON AIR'))
+        self.LED1Demo.setText(settings.value('text', 'ON AIR'))
         self.setLED1BGColor(self.getColorFromName(settings.value('activebgcolor', '#FF0000')))
         self.setLED1FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF')))
         self.LED1Autoflash.setChecked(settings.value('autoflash', False))
@@ -205,6 +213,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("LED2")
         self.LED2.setChecked(settings.value('used', True))
         self.LED2Text.setText(settings.value('text', 'PHONE'))
+        self.LED2Demo.setText(settings.value('text', 'PHONE'))
         self.setLED2BGColor(self.getColorFromName(settings.value('activebgcolor', '#DCDC00')))
         self.setLED2FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF')))
         self.LED2Autoflash.setChecked(settings.value('autoflash', False))
@@ -214,6 +223,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("LED3")
         self.LED3.setChecked(settings.value('used', True))
         self.LED3Text.setText(settings.value('text', 'DOORBELL'))
+        self.LED3Demo.setText(settings.value('text', 'DOORBELL'))
         self.setLED3BGColor(self.getColorFromName(settings.value('activebgcolor', '#00C8C8')))
         self.setLED3FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF')))
         self.LED3Autoflash.setChecked(settings.value('autoflash', False))
@@ -223,6 +233,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("LED4")
         self.LED4.setChecked(settings.value('used', True))
         self.LED4Text.setText(settings.value('text', 'ARI'))
+        self.LED4Demo.setText(settings.value('text', 'ARI'))
         self.setLED4BGColor(self.getColorFromName(settings.value('activebgcolor', '#FF00FF')))
         self.setLED4FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF')))
         self.LED4Autoflash.setChecked(settings.value('autoflash', False))
@@ -241,7 +252,10 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310'))
-        self.tcpport.setText(settings.value('tcpport', '3310'))
+        settings.endGroup()
+
+        settings.beginGroup("Formatting")
+        self.dateFormat.setText(settings.value('dateFormat', 'dddd, dd. MMMM yyyy'))
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -313,7 +327,10 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         settings.setValue('udpport', self.udpport.displayText())
-        settings.setValue('tcpport', self.tcpport.displayText())
+        settings.endGroup()
+
+        settings.beginGroup("Formatting")
+        settings.setValue('dateFormat', self.dateFormat.displayText())
         settings.endGroup()
 
         if self.oacmode == True:
@@ -330,109 +347,109 @@ class Settings(QWidget, Ui_Settings):
         self.restoreSettingsFromConfig()
 
     def setLED1BGColor(self, newcolor=False):
-        palette = self.LED1Text.palette()
-        oldcolor = palette.base().color()
+        palette = self.LED1Demo.palette()
+        oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Base, newcolor)
-        self.LED1Text.setPalette(palette)
+        palette.setColor(QPalette.Window, newcolor)
+        self.LED1Demo.setPalette(palette)
 
     def setLEDInactiveBGColor(self, newcolor=False):
         palette = self.LEDInactive.palette()
-        oldcolor = palette.base().color()
+        oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Base, newcolor)
+        palette.setColor(QPalette.Window, newcolor)
         self.LEDInactive.setPalette(palette)
 
     def setLEDInactiveFGColor(self, newcolor=False):
         palette = self.LEDInactive.palette()
-        oldcolor = palette.text().color()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
         self.LEDInactive.setPalette(palette)
 
     def setLED1FGColor(self, newcolor=False):
-        palette = self.LED1Text.palette()
-        oldcolor = palette.text().color()
+        palette = self.LED1Demo.palette()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
-        self.LED1Text.setPalette(palette)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.LED1Demo.setPalette(palette)
 
     def setLED2BGColor(self, newcolor=False):
-        palette = self.LED2Text.palette()
-        oldcolor = palette.base().color()
+        palette = self.LED2Demo.palette()
+        oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Base, newcolor)
-        self.LED2Text.setPalette(palette)
+        palette.setColor(QPalette.Window, newcolor)
+        self.LED2Demo.setPalette(palette)
 
     def setLED2FGColor(self, newcolor=False):
-        palette = self.LED2Text.palette()
-        oldcolor = palette.text().color()
+        palette = self.LED2Demo.palette()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
-        self.LED2Text.setPalette(palette)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.LED2Demo.setPalette(palette)
 
     def setLED3BGColor(self, newcolor=False):
-        palette = self.LED3Text.palette()
-        oldcolor = palette.base().color()
+        palette = self.LED3Demo.palette()
+        oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Base, newcolor)
-        self.LED3Text.setPalette(palette)
+        palette.setColor(QPalette.Window, newcolor)
+        self.LED3Demo.setPalette(palette)
 
     def setLED3FGColor(self, newcolor=False):
-        palette = self.LED3Text.palette()
-        oldcolor = palette.text().color()
+        palette = self.LED3Demo.palette()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
-        self.LED3Text.setPalette(palette)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.LED3Demo.setPalette(palette)
 
     def setLED4BGColor(self, newcolor=False):
-        palette = self.LED4Text.palette()
-        oldcolor = palette.base().color()
+        palette = self.LED4Demo.palette()
+        oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Base, newcolor)
-        self.LED4Text.setPalette(palette)
+        palette.setColor(QPalette.Window, newcolor)
+        self.LED4Demo.setPalette(palette)
 
     def setLED4FGColor(self, newcolor=False):
-        palette = self.LED4Text.palette()
-        oldcolor = palette.text().color()
+        palette = self.LED4Demo.palette()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
-        self.LED4Text.setPalette(palette)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.LED4Demo.setPalette(palette)
 
     def setStationNameColor(self, newcolor=False):
-        palette = self.StationName.palette()
-        oldcolor = palette.text().color()
+        palette = self.StationNameDemo.palette()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
-        self.StationName.setPalette(palette)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.StationNameDemo.setPalette(palette)
 
     def setSloganColor(self, newcolor=False):
-        palette = self.Slogan.palette()
-        oldcolor = palette.text().color()
+        palette = self.SloganDemo.palette()
+        oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Text, newcolor)
-        self.Slogan.setPalette(palette)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.SloganDemo.setPalette(palette)
 
     def getStationNameColor(self):
-        palette = self.StationName.palette()
-        color = palette.text().color()
+        palette = self.StationNameDemo.palette()
+        color = palette.windowText().color()
         return color
 
     def getSloganColor(self):
-        palette = self.Slogan.palette()
-        color = palette.text().color()
+        palette = self.SloganDemo.palette()
+        color = palette.windowText().color()
         return color
 
     def getLEDInactiveBGColor(self):
@@ -446,43 +463,43 @@ class Settings(QWidget, Ui_Settings):
         return color
 
     def getLED1BGColor(self):
-        palette = self.LED1Text.palette()
-        color = palette.base().color()
+        palette = self.LED1Demo.palette()
+        color = palette.window().color()
         return color
 
     def getLED2BGColor(self):
-        palette = self.LED2Text.palette()
-        color = palette.base().color()
+        palette = self.LED2Demo.palette()
+        color = palette.window().color()
         return color
 
     def getLED3BGColor(self):
-        palette = self.LED3Text.palette()
-        color = palette.base().color()
+        palette = self.LED3Demo.palette()
+        color = palette.window().color()
         return color
 
     def getLED4BGColor(self):
-        palette = self.LED4Text.palette()
-        color = palette.base().color()
+        palette = self.LED4Demo.palette()
+        color = palette.window().color()
         return color
 
     def getLED1FGColor(self):
-        palette = self.LED1Text.palette()
-        color = palette.text().color()
+        palette = self.LED1Demo.palette()
+        color = palette.windowText().color()
         return color
 
     def getLED2FGColor(self):
-        palette = self.LED2Text.palette()
-        color = palette.text().color()
+        palette = self.LED2Demo.palette()
+        color = palette.windowText().color()
         return color
 
     def getLED3FGColor(self):
-        palette = self.LED3Text.palette()
-        color = palette.text().color()
+        palette = self.LED3Demo.palette()
+        color = palette.windowText().color()
         return color
 
     def getLED4FGColor(self):
-        palette = self.LED4Text.palette()
-        color = palette.text().color()
+        palette = self.LED4Demo.palette()
+        color = palette.windowText().color()
         return color
 
     def getDigitalHourColor(self):
