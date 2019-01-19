@@ -5,15 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40945d0f-a040-472d-9834-8ec4155c6ee4" name="Default Changelist" comment="fixed unicode handling in cmdHandler">
-      <change beforePath="$PROJECT_DIR$/.idea/OnAirScreen.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/OnAirScreen.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build_osx.sh" beforeDir="false" afterPath="$PROJECT_DIR$/build_osx.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build_win.sh" beforeDir="false" afterPath="$PROJECT_DIR$/build_win.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/settings.ui" beforeDir="false" afterPath="$PROJECT_DIR$/settings.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/settings_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/settings_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/start.py" beforeDir="false" afterPath="$PROJECT_DIR$/start.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -383,14 +377,14 @@
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.30107528" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32844576" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.32844576" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.398827" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32861635" />
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.32844576" />
       <window_info anchor="bottom" id="Inspection Results" order="8" weight="0.32861635" />
-      <window_info anchor="bottom" id="Terminal" order="9" sideWeight="0.49971047" weight="0.18963832" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="9" sideWeight="0.49971047" visible="true" weight="0.18963832" />
       <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.5002895" side_tool="true" weight="0.18963832" />
       <window_info anchor="bottom" id="Python Console" order="11" weight="0.32844576" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
