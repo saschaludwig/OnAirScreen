@@ -8,3 +8,4 @@ onairscreen.ini
 venv/
 dist/
 build/
+.idea/
