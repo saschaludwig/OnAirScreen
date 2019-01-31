@@ -19,7 +19,7 @@ http://saschaludwig.github.io/OnAirScreen/
  * easy installation
  * runs on RaspberryPi
  * runs on Windows, Mac, Linux
- * conrtolled via keyboard and network
+ * controlled via keyboard and network
  * OnAir Timer, Stopwatch, Countdown and more
 
 #### OnAirScreen Function Keys
