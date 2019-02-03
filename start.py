@@ -615,6 +615,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
         settings.endGroup()
 
+        settings.beginGroup("Formatting")
+        self.clockWidget.setAmPm(settings.value('isAmPm', False))
+        settings.endGroup()
+
     def constantUpdate(self):
         # slot for constant timer timeout
         self.updateDate()
@@ -629,9 +633,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
     def updateBacktimingText(self):
-        # TODO: configurable time format
-        textClockLang = "English"
-        isampm = False
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Formatting")
+        textClockLang = settings.value('textClockLanguage', 'English')
+        isampm = settings.value('isAmPm', False)
+        settings.endGroup()
+
         string = ""
         now = datetime.now()
         hour = now.hour
@@ -918,7 +925,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.beginGroup("LED2")
             self.buttonLED2.setStyleSheet("color:" + settings.value('activetextcolor',
                                                                     '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000'))
+                'activebgcolor', '#DCDC00'))
             settings.endGroup()
             self.statusLED2 = True
         else:
@@ -935,7 +942,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.beginGroup("LED3")
             self.buttonLED3.setStyleSheet("color:" + settings.value('activetextcolor',
                                                                     '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000'))
+                'activebgcolor', '#00C8C8'))
             settings.endGroup()
             self.statusLED3 = True
         else:
@@ -952,7 +959,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.beginGroup("LED4")
             self.buttonLED4.setStyleSheet("color:" + settings.value('activetextcolor',
                                                                     '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000'))
+                'activebgcolor', '#FF00FF'))
             settings.endGroup()
             self.statusLED4 = True
         else:
