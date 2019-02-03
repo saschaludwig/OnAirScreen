@@ -1,11 +1,9 @@
 #!/bin/bash
 
-#echo  "CONF:LED1TEXT=FOO" | nc -w 1 -u 127.0.0.1 3310
-#echo  "CONF:LED2TEXT=FOO" | nc -w 1 -u 127.0.0.1 3310
-#echo  "CONF:LED3TEXT=FOO" | nc -w 1 -u 127.0.0.1 3310
-#echo  "CONF:LED4TEXT=FOO" | nc -w 1 -u 127.0.0.1 3310
-#echo  "CONF:STATIONNAME=BAR" | nc -w 1 -u 127.0.0.1 3310
-#echo  "CONF:SLOGAN=Generic 2342" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:Clock:showseconds=True" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:Clock:showseconds=False" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
 
 echo  "NOW:The Testers - Test around the clock" | nc -w 1 -u 127.0.0.1 3310
 echo  "NEXT:coming up next: the foo the bar and the generic" | nc -w 1 -u 127.0.0.1 3310

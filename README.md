@@ -79,6 +79,7 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 `CONF:LED[1-4]:autoflash=[False|True]`<br>
 `CONF:LED[1-4]:timedflash=[False|True]`<br>
 `CONF:Clock:digital=[True|False]`<br>
+`CONF:Clock:showseconds=[True|False]`<br>
 `CONF:Clock:digitalhourcolor=COLOR`<br>
 `CONF:Clock:digitalsecondcolor=COLOR`<br>
 `CONF:Clock:digitaldigitcolor=COLOR`<br>
