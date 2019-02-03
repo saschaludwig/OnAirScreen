@@ -256,6 +256,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Formatting")
         self.dateFormat.setText(settings.value('dateFormat', 'dddd, dd. MMMM yyyy'))
+        self.textClockLanguage.setCurrentIndex(self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -331,6 +332,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Formatting")
         settings.setValue('dateFormat', self.dateFormat.displayText())
+        settings.setValue('textClockLanguage', self.textClockLanguage.currentText())
         settings.endGroup()
 
         if self.oacmode == True:

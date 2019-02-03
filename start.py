@@ -73,7 +73,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.showFullScreen()
             app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
-        #print("Loading Settings: ", settings.fileName())
+        # print("Loading Settings: ", settings.fileName())
 
         self.labelWarning.hide()
 
@@ -114,7 +114,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.LED2on = False
         self.LED3on = False
         self.LED4on = False
-
 
         # Setup and start timers
         self.ctimer = QTimer()
@@ -176,7 +175,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
         if settings.value('ntpcheck', True):
-            self.showWarning("Clock NTP status unknown")
+            self.showWarning("waiting for NTP status check")
         settings.endGroup()
 
     def radioTimerStartStop(self):
@@ -258,15 +257,15 @@ class MainScreen(QWidget, Ui_MainScreen):
     def cmdHandler(self):
         while self.udpsock.hasPendingDatagrams():
             data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
-            #print("DATA: ", data)
+            # print("DATA: ", data)
             lines = data.splitlines()
             for line in lines:
-                #print("Line:", line)
+                # print("Line:", line)
                 (command, value) = line.decode('utf_8').split(':', 1)
                 command = str(command)
                 value = str(value)
-                #print("command: >" + command + "<")
-                #print("value: >" + value + "<")
+                # print("command: >" + command + "<")
+                # print("value: >" + value + "<")
                 if command == "NOW":
                     self.setCurrentSongText(value)
                 if command == "NEXT":
@@ -631,30 +630,50 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def updateBacktimingText(self):
         # TODO: configurable time format
+        textClockLang = "English"
+        isampm = False
+        string = ""
         now = datetime.now()
         hour = now.hour
         minute = now.minute
         remain_min = 60 - minute
-        if hour > 12:
-            hour -= 12
 
-        if 0 < minute < 25:
-            string = "%d Minute%s nach %d" % (minute, 'n' if minute > 1 else '', hour)
+        if textClockLang == "German":
+            # german textclock
+            if hour > 12:
+                hour -= 12
+            if 0 < minute < 25:
+                string = "%d Minute%s nach %d" % (minute, 'n' if minute > 1 else '', hour)
+            if 25 <= minute < 30:
+                string = "%d Minute%s vor halb %d" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
+            if 30 <= minute <= 39:
+                string = "%d Minute%s nach halb %d" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
+            if 40 <= minute <= 59:
+                string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
+            if minute == 30:
+                string = "halb %d" % (hour + 1)
+            if minute == 0:
+                string = "%d" % hour
 
-        if 25 <= minute < 30:
-            string = "%d Minute%s vor halb %d" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
+        else:
+            # english textclock
+            if isampm:
+                if hour > 12:
+                    hour -= 12
+            if minute == 0:
+                string = "its %d o'clock" % hour
+            if (0 < minute < 15) or (16 <= minute <= 29):
+                string = "its %d minute%s past %d" % (minute, 's' if minute > 1 else '', hour)
+            if minute == 15:
+                string = "its a quarter past %d" % hour
+            if minute == 30:
+                string = "its half past %d" % hour
+            if minute == 45:
+                string = "its a quarter to %d" % hour
+            if (31 <= minute <= 44) or (46 <= minute <= 59):
+                string = "its %d minute%s to %d" % (
+                    remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
-        if 30 <= minute <= 39:
-            string = "%d Minute%s nach halb %d" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
-
-        if 40 <= minute <= 59:
-            string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
-
-        if minute == 30:
-            string = "halb %d" % (hour + 1)
-
-        if minute == 0:
-            string = "%d" % hour
 
         self.setRightText(string)
 
@@ -869,11 +888,11 @@ class MainScreen(QWidget, Ui_MainScreen):
             print("NTP error:", e)
             self.showWarning(str(e))
             self.ntpHadWarning = True
-#        except:
-#            print("unknown error checking NTP %s" % ntpserver)
-#            print("error:", e)
-#            self.showWarning("Clock not NTP synchronized")
-#            self.ntpHadWarning = True
+        #        except:
+        #            print("unknown error checking NTP %s" % ntpserver)
+        #            print("error:", e)
+        #            self.showWarning("Clock not NTP synchronized")
+        #            self.ntpHadWarning = True
         self.timerNTP.start(60000)
 
     def setLED1(self, action):
