@@ -411,11 +411,16 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if group == "Clock":
                         if param == "digital":
                             if content == "True":
-                                self.settings.clockDigital.setChecked(QVariant(content).toBool())
-                                self.settings.clockAnalog.setChecked(not QVariant(content).toBool())
+                                self.settings.clockDigital.setChecked(True)
+                                self.settings.clockAnalog.setChecked(False)
                             if content == "False":
-                                self.settings.clockAnalog.setChecked(QVariant(content).toBool())
-                                self.settings.clockDigital.setChecked(not QVariant(content).toBool())
+                                self.settings.clockAnalog.setChecked(False)
+                                self.settings.clockDigital.setChecked(True)
+                        if param == "showseconds":
+                            if content == "True":
+                                self.settings.showSeconds.setChecked(True)
+                            if content == "False":
+                                self.settings.showSeconds.setChecked(False)
                         if param == "digitalhourcolor":
                             self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
                         if param == "digitalsecondcolor":
