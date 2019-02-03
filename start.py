@@ -603,16 +603,15 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.beginGroup("Clock")
         self.clockWidget.setClockMode(settings.value('digital', True))
-
         self.clockWidget.setDigiHourColor(
             self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
         self.clockWidget.setDigiSecondColor(
             self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
         self.clockWidget.setDigiDigitColor(
             self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
-
         self.clockWidget.setLogo(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
+        self.clockWidget.setShowSeconds(settings.value('showSeconds', False))
         settings.endGroup()
 
         settings.beginGroup("Formatting")

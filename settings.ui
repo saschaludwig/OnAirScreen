@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>789</height>
+    <height>696</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -677,7 +677,7 @@
             </layout>
            </item>
            <item>
-            <layout class="QFormLayout" name="formLayout_2">
+            <layout class="QFormLayout" name="digitalClockColorForm">
              <property name="fieldGrowthPolicy">
               <enum>QFormLayout::FieldsStayAtSizeHint</enum>
              </property>
@@ -694,7 +694,7 @@
               <number>2</number>
              </property>
              <item row="0" column="0">
-              <widget class="QLabel" name="label_12">
+              <widget class="QLabel" name="hoursLEDsLabel">
                <property name="text">
                 <string>Hours LEDs</string>
                </property>
@@ -734,7 +734,7 @@
               </layout>
              </item>
              <item row="2" column="0">
-              <widget class="QLabel" name="label_13">
+              <widget class="QLabel" name="secondsLEDsLabel">
                <property name="text">
                 <string>Seconds LEDs</string>
                </property>
@@ -774,7 +774,7 @@
               </layout>
              </item>
              <item row="3" column="0">
-              <widget class="QLabel" name="label_14">
+              <widget class="QLabel" name="digitsLEDsLabel">
                <property name="text">
                 <string>Digits LEDs</string>
                </property>
@@ -814,6 +814,13 @@
               </layout>
              </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="showSeconds">
+             <property name="text">
+              <string>Show seconds</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_7">
@@ -3165,6 +3172,102 @@ Parts of analog clockwidget:
     <hint type="destinationlabel">
      <x>363</x>
      <y>499</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>DigitalHourColorButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>451</x>
+     <y>294</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>331</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>DigitalSecondColorButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>451</x>
+     <y>294</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>367</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>DigitalDigitColorButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>451</x>
+     <y>294</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>401</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>hoursLEDsLabel</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>451</x>
+     <y>294</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>411</x>
+     <y>329</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>secondsLEDsLabel</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>451</x>
+     <y>248</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>419</x>
+     <y>319</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>digitsLEDsLabel</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>451</x>
+     <y>248</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>411</x>
+     <y>353</y>
     </hint>
    </hints>
   </connection>

@@ -251,6 +251,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Clock")
         self.clockDigital.setChecked(settings.value('digital', True))
         self.clockAnalog.setChecked(not settings.value('digital', True))
+        self.showSeconds.setChecked(settings.value('showSeconds', False))
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
@@ -330,6 +331,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Clock")
         settings.setValue('digital', self.clockDigital.isChecked())
+        settings.setValue('showSeconds', self.showSeconds.isChecked())
         settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
         settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
         settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
