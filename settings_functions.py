@@ -83,6 +83,10 @@ class Settings(QWidget, Ui_Settings):
         self.row = -1
         QWidget.__init__(self)
         Ui_Settings.__init__(self)
+
+        # available text clock languages
+        self.textClockLanguages = ["English", "German"]
+
         self.setupUi(self)
         self._connectSlots()
         self.hide()
@@ -183,6 +187,10 @@ class Settings(QWidget, Ui_Settings):
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
 
+        # polulate text clock languages
+        self.textClockLanguage.clear()
+        self.textClockLanguage.addItems(self.textClockLanguages)
+
         settings.beginGroup("General")
         self.StationName.setText(settings.value('stationname', 'Radio Eriwan'))
         self.Slogan.setText(settings.value('slogan', 'Your question is our motivation'))
@@ -257,6 +265,8 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Formatting")
         self.dateFormat.setText(settings.value('dateFormat', 'dddd, dd. MMMM yyyy'))
         self.textClockLanguage.setCurrentIndex(self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
+        self.time_am_pm.setChecked(settings.value('isAmPm', False))
+        self.time_24h.setChecked(not settings.value('isAmPm', False))
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -333,6 +343,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Formatting")
         settings.setValue('dateFormat', self.dateFormat.displayText())
         settings.setValue('textClockLanguage', self.textClockLanguage.currentText())
+        settings.setValue('isAmPm', self.time_am_pm.isChecked())
         settings.endGroup()
 
         if self.oacmode == True:
@@ -456,12 +467,12 @@ class Settings(QWidget, Ui_Settings):
 
     def getLEDInactiveBGColor(self):
         palette = self.LEDInactive.palette()
-        color = palette.base().color()
+        color = palette.window().color()
         return color
 
     def getLEDInactiveFGColor(self):
         palette = self.LEDInactive.palette()
-        color = palette.text().color()
+        color = palette.windowText().color()
         return color
 
     def getLED1BGColor(self):

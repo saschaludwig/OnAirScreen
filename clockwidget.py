@@ -107,6 +107,7 @@ class ClockWidget(QtWidgets.QWidget):
 
         self.timeZoneOffset = 0
         self.clockMode = 1
+        self.isAmPm = False
         self.counter = 0
 
         self.timer = QtCore.QTimer(self)
@@ -155,7 +156,19 @@ class ClockWidget(QtWidgets.QWidget):
 
     clockType = QtCore.pyqtProperty("int", getClockMode, setClockMode, resetClockMode)
 
-#    @QtCore.pyqtSignature("setDigiHourColor(QColor)")
+    #    @QtCore.pyqtSignature("setAmPm(bool)")
+    def setAmPm(self, mode):
+        self.isAmPm = mode
+
+    def resetAmPm(self):
+        self.isAmPm = False
+
+    def getAmPm(self):
+        return self.isAmPm
+
+    clockAmPm = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
+
+    #    @QtCore.pyqtSignature("setDigiHourColor(QColor)")
     def setDigiHourColor(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiHourColor = color
 
@@ -194,7 +207,6 @@ class ClockWidget(QtWidgets.QWidget):
     def paintEvent(self, event):
         side = min(self.width(), self.height())
         self.time = QtCore.QTime.currentTime()
-        time = self.time
 
         painter = QtGui.QPainter(self)
         painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
@@ -283,7 +295,10 @@ class ClockWidget(QtWidgets.QWidget):
 
         digitSpacing = 28
 
-        hourStr = "%02d" % time.hour()
+        if self.isAmPm:
+            hourStr = "%02d" % (time.hour()-12)
+        else:
+            hourStr = "%02d" % time.hour()
         self.drawDigit(painter, digitSpacing * -2, 0, hourStr[0:1])
         self.drawDigit(painter, digitSpacing * -1, 0, hourStr[1:2])
 
@@ -498,5 +513,6 @@ if __name__ == '__main__':
     widget.setStyleSheet("background-color:black;")
     widget.resize(500, 500)
     widget.setClockMode(1)
+    widget.setAmPm(False)
     widget.show()
     sys.exit(app.exec_())
