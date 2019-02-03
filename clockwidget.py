@@ -108,6 +108,7 @@ class ClockWidget(QtWidgets.QWidget):
         self.timeZoneOffset = 0
         self.clockMode = 1
         self.isAmPm = False
+        self.showSeconds = False
         self.counter = 0
 
         self.timer = QtCore.QTimer(self)
@@ -167,6 +168,19 @@ class ClockWidget(QtWidgets.QWidget):
         return self.isAmPm
 
     clockAmPm = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
+
+    #    @QtCore.pyqtSignature("setShowSeconds(bool)")
+    def setShowSeconds(self, value):
+        self.showSeconds = value
+
+    def resetShowSeconds(self):
+        self.showSeconds = False
+
+    def getShowSeconds(self):
+        return self.showSeconds
+
+    clockShowSeconds = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
+
 
     #    @QtCore.pyqtSignature("setDigiHourColor(QColor)")
     def setDigiHourColor(self, color=QtGui.QColor(50, 50, 255, 255)):
@@ -294,6 +308,8 @@ class ClockWidget(QtWidgets.QWidget):
         painter.setPen(self.digiDigitColor)
 
         digitSpacing = 28
+        digitSpacingY = 45
+        secondsOffsetX = -3.5
 
         if self.isAmPm:
             hourStr = "%02d" % (time.hour()-12)
@@ -307,6 +323,11 @@ class ClockWidget(QtWidgets.QWidget):
         minuteStr = "%02d" % time.minute()
         self.drawDigit(painter, digitSpacing * 1, 0, minuteStr[0:1])
         self.drawDigit(painter, digitSpacing * 2, 0, minuteStr[1:2])
+
+        if self.showSeconds:
+            secondStr = "%02d" % time.second()
+            self.drawDigit(painter, (digitSpacing * -0.3) + secondsOffsetX, digitSpacingY, secondStr[0:1], 0.8, 3)
+            self.drawDigit(painter, (digitSpacing * 0.3) + secondsOffsetX, digitSpacingY, secondStr[1:2], 0.8, 3)
 
         # set painter to 12 o'clock position
         painter.rotate(-90.0)
@@ -345,10 +366,16 @@ class ClockWidget(QtWidgets.QWidget):
             painter.save()
             painter.rotate(90)
 
-            # logo position and with
-            paint_x = 0
-            paint_y = 50
-            paint_w = 100
+            if self.showSeconds:
+                # logo position and width when showing seconds
+                paint_x = 0
+                paint_y = -50
+                paint_w = 100
+            else:
+                # logo position and width without seconds
+                paint_x = 0
+                paint_y = 50
+                paint_w = 100
 
             # calculate height from aspect ratio
             paint_h = (float(image_h) / float(image_w)) * paint_w
@@ -373,12 +400,10 @@ class ClockWidget(QtWidgets.QWidget):
                 QtCore.QPointF(digitStartPosX + (dotSlant * 2 * currentRow), digitStartPosY - (dotOffset * currentRow)),
                 dotSize, dotSize)
 
-    def drawDigit(self, painter, digitStartPosX=0, digitStartPosY=0, value=8):
+    def drawDigit(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, value=8, dotSize= 1.6, dotOffset = 4.5, slant = 19):
         value = int(value)
         # draw dots from one 7segment digit
-        dotSize = 1.6
-        dotOffset = 4.5  # spacing between the dots
-        dotSlant = dotOffset / 19  # horizontal slant of each row
+        dotSlant = dotOffset / slant  # horizontal slant of each row
 
         # decimal to segment conversion table
         segments = [0b0111111, 0b0000110, 0b1011011, 0b1001111, 0b1100110, 0b1101101, 0b1111101, 0b0000111, 0b1111111,
@@ -514,5 +539,6 @@ if __name__ == '__main__':
     widget.resize(500, 500)
     widget.setClockMode(1)
     widget.setAmPm(False)
+    widget.setShowSeconds(True)
     widget.show()
     sys.exit(app.exec_())
