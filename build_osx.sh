@@ -4,6 +4,6 @@ rm -rf ./dist/osx/*
 source venv/bin/activate
 make && \
 pyinstaller -y --distpath ./dist/osx/ "$@" OnAirScreen_osx.spec && \
-mv -f ./dist/osx/OnAirScreen.app ./dist/osx/OnAirScreen_$(git rev-parse --short HEAD)_$(git describe --abbrev=0 --tags).app
+mv -f ./dist/osx/OnAirScreen.app ./dist/osx/OnAirScreen_$(git describe --abbrev=0 --tags)_$(git rev-parse --short HEAD).app
 
 open dist/osx/
