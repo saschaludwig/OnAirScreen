@@ -2,6 +2,10 @@
 Multi purpose "OnAir Lamp" solution targeted for use in professional broadcast environments
 http://saschaludwig.github.io/OnAirScreen/
 
+#### Precompiled Linux/Win/Mac versions
+If you need ready-to-run Linux/Win/Mac executables, please visit https://www.astrastudio.de/software/onairscreen/.
+You can purchase the Windows .exe versions of the latest build including updates.
+If you want to purchase a Linux or Mac binary or need extended support, please contact me.
 
 #### Screenshot
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas.png" width="500px">
