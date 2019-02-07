@@ -7,14 +7,12 @@ If you need ready-to-run Linux/Win/Mac executables, please visit https://www.ast
 You can purchase the Windows .exe versions of the latest build including updates.
 If you want to purchase a Linux or Mac binary or need extended support, please contact me.
 
-#### Screenshot
+#### Screenshots
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas.png" width="500px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px">
 
 #### Pictures of OnAirScreen in use
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
 
 #### Features
  * flexible integration into existing studio setups
