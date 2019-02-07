@@ -41,6 +41,7 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
 | M or /                            | Mic Timer start/stop    |
 | P or *                            | Phone Timer start/stop  |
 | Enter                             | opens set timer dialog  |
+
 On OSX use the `command ⌘` key instead of `Ctrl`
 
 #### OnAirScreen API / UDP Commands
