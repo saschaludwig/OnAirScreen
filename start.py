@@ -39,15 +39,19 @@ import os
 import sys
 import re
 from datetime import datetime
+from time import sleep
+
 from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
+from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 import ntplib
 import signal
 import socket
 from settings_functions import Settings
+
+
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -152,12 +156,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.statusAIR4 = False
         self.streamTimerMode = 0  # count up mode
 
+        # Setup NTP Check Tread
+        self.checkNTPOffset = checkNTPOffsetTread(self)
+
         # Setup check NTP Timer
         self.ntpHadWarning = True
         self.timerNTP = QTimer()
-        self.timerNTP.timeout.connect(self.checkNTPOffset)
+        self.timerNTP.timeout.connect(self.triggerNTPcheck)
         # initial check
-        self.timerNTP.start(5000)
+        self.timerNTP.start(1000)
 
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
@@ -685,7 +692,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                 string = "its %d minute%s to %d" % (
                     remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
-
         self.setRightText(string)
 
     def updateBacktimingSeconds(self):
@@ -866,45 +872,18 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.radioTimerMode = 0
         self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
 
-    def checkNTPOffset(self):
+    def triggerNTPcheck(self):
+        print("NTP Check triggered")
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
         ntpcheck = settings.value('ntpcheck', True)
-        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
         settings.endGroup()
         if not ntpcheck:
             return
         self.timerNTP.stop()
-        max_deviation = 0.3
-        c = ntplib.NTPClient()
-        try:
-            response = c.request(ntpserver)
-            if response.offset > max_deviation or response.offset < -max_deviation:
-                print("offset too big: %f while checking %s" % (response.offset, ntpserver))
-                self.showWarning("Clock not NTP synchronized: offset too big")
-                self.ntpHadWarning = True
-            else:
-                if self.ntpHadWarning:
-                    self.ntpHadWarning = False
-                    self.hideWarning()
-        except socket.timeout:
-            print("NTP error: timeout while checking NTP %s" % ntpserver)
-            self.showWarning("Clock not NTP synchronized")
-            self.ntpHadWarning = True
-        except socket.gaierror:
-            print("NTP error: socket error while checking NTP %s" % ntpserver)
-            self.showWarning("Clock not NTP synchronized")
-            self.ntpHadWarning = True
-        except ntplib.NTPException as e:
-            print("NTP error:", e)
-            self.showWarning(str(e))
-            self.ntpHadWarning = True
-        #        except:
-        #            print("unknown error checking NTP %s" % ntpserver)
-        #            print("error:", e)
-        #            self.showWarning("Clock not NTP synchronized")
-        #            self.ntpHadWarning = True
+        self.checkNTPOffset.start()
         self.timerNTP.start(60000)
+
 
     def setLED1(self, action):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -1055,6 +1034,56 @@ class MainScreen(QWidget, Ui_MainScreen):
         if os.name == "nt":
             cmd = "shutdown -f -t 0"
             pass
+
+
+class checkNTPOffsetTread(QThread):
+
+    def __init__(self, oas):
+        self.oas = oas
+        QThread.__init__(self)
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        print("entered run, sleeping")
+        sleep(5)
+        print("sleep done")
+
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("NTP")
+        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
+        settings.endGroup()
+        max_deviation = 0.3
+        c = ntplib.NTPClient()
+        try:
+            response = c.request(ntpserver)
+            if response.offset > max_deviation or response.offset < -max_deviation:
+                print("offset too big: %f while checking %s" % (response.offset, ntpserver))
+                #self.oas.showWarning("Clock not NTP synchronized: offset too big")
+                self.oas.ntpHadWarning = True
+            else:
+                if self.oas.ntpHadWarning:
+                    self.oas.ntpHadWarning = False
+                    #self.oas.hideWarning()
+        except socket.timeout:
+            print("NTP error: timeout while checking NTP %s" % ntpserver)
+            #self.oas.showWarning("Clock not NTP synchronized")
+            self.oas.ntpHadWarning = True
+        except socket.gaierror:
+            print("NTP error: socket error while checking NTP %s" % ntpserver)
+            #self.oas.showWarning("Clock not NTP synchronized")
+            self.oas.ntpHadWarning = True
+        except ntplib.NTPException as e:
+            print("NTP error:", e)
+            #self.oas.showWarning(str(e))
+            self.oas.ntpHadWarning = True
+        #        except:
+        #            print("unknown error checking NTP %s" % ntpserver)
+        #            print("error:", e)
+        #            self.showWarning("Clock not NTP synchronized")
+        #            self.ntpHadWarning = True
+
 
 
 ###################################
