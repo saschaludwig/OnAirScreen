@@ -27,20 +27,21 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
  * OnAir Timer, Stopwatch, Countdown and more
 
 #### OnAirScreen Function Keys
-| Hotkeys                         | Function                |
-|---------------------------------|-------------------------|
-| Ctrl+F or F                     | Toggle fullscreen       |
-| Ctrl+Q or Q or Ctrl+C or ESC    | Quit OnAirScreen        |
-| Ctrl+S or Ctrl+,                | Open settings dialog    |
-| Space or 0                      | Timer start/stop        |
-| . or , or R                     | Timer reset to 0:00     |
-| 1                               | LED1 on/off             |
-| 2                               | LED2 on/off             |
-| 3                               | LED3 on/off             |
-| 4                               | LED4 on/off             |
-| M or /                          | Mic Timer start/stop    |
-| P or *                          | Phone Timer start/stop  |
-| Enter                           | opens set timer dialog  |
+| Hotkeys                           | Function                |
+|-----------------------------------|-------------------------|
+| Ctrl+F or F                       | Toggle fullscreen       |
+| Ctrl+Q or Q or Ctrl+C or ESC      | Quit OnAirScreen        |
+| Ctrl+S or Ctrl+,                  | Open settings dialog    |
+| Space or 0                        | Timer start/stop        |
+| . or , or R                       | Timer reset to 0:00     |
+| 1                                 | LED1 on/off             |
+| 2                                 | LED2 on/off             |
+| 3                                 | LED3 on/off             |
+| 4                                 | LED4 on/off             |
+| M or /                            | Mic Timer start/stop    |
+| P or *                            | Phone Timer start/stop  |
+| Enter                             | opens set timer dialog  |
+On OSX use the `command ⌘` key instead of `Ctrl`
 
 #### OnAirScreen API / UDP Commands
 OnAirScreen can receive API commands via UDP port 3310<br>
