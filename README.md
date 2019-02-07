@@ -9,7 +9,7 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
 
 #### Screenshots
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas.png" width="500px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="400px">
 
 #### Pictures of OnAirScreen in use
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
