@@ -39,7 +39,6 @@ import os
 import sys
 import re
 from datetime import datetime
-from time import sleep
 
 from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
