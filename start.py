@@ -52,11 +52,10 @@ import socket
 from settings_functions import Settings
 
 
-
-
 class MainScreen(QWidget, Ui_MainScreen):
     getTimeWindow: QDialog
     ntpHadWarning: bool
+    ntpWarnMessage: str
 
     def __init__(self):
         QWidget.__init__(self)
@@ -77,7 +76,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.showFullScreen()
             app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
-        # print("Loading Settings: ", settings.fileName())
+        print("Loading Settings from: ", settings.fileName())
 
         self.labelWarning.hide()
 
@@ -161,6 +160,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # Setup check NTP Timer
         self.ntpHadWarning = True
+        self.ntpWarnMessage = ""
         self.timerNTP = QTimer()
         self.timerNTP.timeout.connect(self.triggerNTPcheck)
         # initial check
@@ -182,7 +182,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
         if settings.value('ntpcheck', True):
-            self.showWarning("waiting for NTP status check")
+            self.ntpHadWarning = True
+            self.ntpWarnMessage = "waiting for NTP status check"
         settings.endGroup()
 
     def radioTimerStartStop(self):
@@ -635,6 +636,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
+        self.updateNTPstatus()
 
     def updateDate(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -699,6 +701,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         second = now.second
         remain_seconds = 60 - second
         self.setBacktimingSecs(remain_seconds)
+
+    def updateNTPstatus(self):
+        if self.ntpHadWarning and len(self.ntpWarnMessage):
+            self.showWarning(self.ntpWarnMessage)
+        else:
+            self.ntpWarnMessage = ""
+            self.hideWarning()
 
     def toggleFullScreen(self):
         global app
@@ -1060,7 +1069,7 @@ class checkNTPOffsetTread(QThread):
             response = c.request(ntpserver)
             if response.offset > max_deviation or response.offset < -max_deviation:
                 print("offset too big: %f while checking %s" % (response.offset, ntpserver))
-                #self.oas.showWarning("Clock not NTP synchronized: offset too big")
+                self.oas.ntpWarnMessage = "Clock not NTP synchronized: offset too big"
                 self.oas.ntpHadWarning = True
             else:
                 if self.oas.ntpHadWarning:
@@ -1068,15 +1077,15 @@ class checkNTPOffsetTread(QThread):
                     #self.oas.hideWarning()
         except socket.timeout:
             print("NTP error: timeout while checking NTP %s" % ntpserver)
-            #self.oas.showWarning("Clock not NTP synchronized")
+            self.oas.ntpWarnMessage = "Clock not NTP synchronized"
             self.oas.ntpHadWarning = True
         except socket.gaierror:
             print("NTP error: socket error while checking NTP %s" % ntpserver)
-            #self.oas.showWarning("Clock not NTP synchronized")
+            self.oas.ntpWarnMessage = "Clock not NTP synchronized"
             self.oas.ntpHadWarning = True
         except ntplib.NTPException as e:
             print("NTP error:", e)
-            #self.oas.showWarning(str(e))
+            self.oas.ntpWarnMessage = str(e)
             self.oas.ntpHadWarning = True
         #        except:
         #            print("unknown error checking NTP %s" % ntpserver)
