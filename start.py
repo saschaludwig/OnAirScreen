@@ -155,8 +155,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.statusAIR4 = False
         self.streamTimerMode = 0  # count up mode
 
-        # Setup NTP Check Tread
-        self.checkNTPOffset = checkNTPOffsetTread(self)
+        # Setup NTP Check Thread
+        self.checkNTPOffset = checkNTPOffsetThread(self)
 
         # Setup check NTP Timer
         self.ntpHadWarning = True
@@ -888,10 +888,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         ntpcheck = settings.value('ntpcheck', True)
         settings.endGroup()
         if not ntpcheck:
+            self.timerNTP.stop()
             return
-        self.timerNTP.stop()
-        self.checkNTPOffset.start()
-        self.timerNTP.start(60000)
+        else:
+            self.timerNTP.stop()
+            self.checkNTPOffset.start()
+            self.timerNTP.start(60000)
 
 
     def setLED1(self, action):
@@ -1045,7 +1047,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             pass
 
 
-class checkNTPOffsetTread(QThread):
+class checkNTPOffsetThread(QThread):
 
     def __init__(self, oas):
         self.oas = oas
@@ -1055,10 +1057,7 @@ class checkNTPOffsetTread(QThread):
         self.wait()
 
     def run(self):
-        print("entered run, sleeping")
-        sleep(5)
-        print("sleep done")
-
+        print("entered checkNTPOffsetThread.run")
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
         ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
@@ -1074,7 +1073,6 @@ class checkNTPOffsetTread(QThread):
             else:
                 if self.oas.ntpHadWarning:
                     self.oas.ntpHadWarning = False
-                    #self.oas.hideWarning()
         except socket.timeout:
             print("NTP error: timeout while checking NTP %s" % ntpserver)
             self.oas.ntpWarnMessage = "Clock not NTP synchronized"
@@ -1087,16 +1085,10 @@ class checkNTPOffsetTread(QThread):
             print("NTP error:", e)
             self.oas.ntpWarnMessage = str(e)
             self.oas.ntpHadWarning = True
-        #        except:
-        #            print("unknown error checking NTP %s" % ntpserver)
-        #            print("error:", e)
-        #            self.showWarning("Clock not NTP synchronized")
-        #            self.ntpHadWarning = True
-
 
 
 ###################################
-## App SIGINT handler
+# App SIGINT handler
 ###################################
 def sigint_handler(*args):
     # Handler for SIGINT signal
@@ -1105,7 +1097,7 @@ def sigint_handler(*args):
 
 
 ###################################
-## App Init
+# App Init
 ###################################
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, sigint_handler)
