@@ -71,7 +71,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', True):
+        if settings.value('fullscreen', True, type=bool):
             self.showFullScreen()
             app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
@@ -180,7 +180,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         # set NTP warning
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
-        if settings.value('ntpcheck', True):
+        if settings.value('ntpcheck', True, type=bool):
             self.ntpHadWarning = True
             self.ntpWarnMessage = "waiting for NTP status check"
         settings.endGroup()
@@ -614,7 +614,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("Clock")
-        self.clockWidget.setClockMode(settings.value('digital', True))
+        self.clockWidget.setClockMode(settings.value('digital', True, type=bool))
         self.clockWidget.setDigiHourColor(
             self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
         self.clockWidget.setDigiSecondColor(
@@ -623,11 +623,11 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
         self.clockWidget.setLogo(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
-        self.clockWidget.setShowSeconds(settings.value('showSeconds', False))
+        self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
-        self.clockWidget.setAmPm(settings.value('isAmPm', False))
+        self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
         settings.endGroup()
 
     def constantUpdate(self):
@@ -648,7 +648,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Formatting")
         textClockLang = settings.value('textClockLanguage', 'English')
-        isampm = settings.value('isAmPm', False)
+        isampm = settings.value('isAmPm', False, type=bool)
         settings.endGroup()
 
         string = ""
@@ -712,7 +712,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if not settings.value('fullscreen', 'True'):
+        if not settings.value('fullscreen', True, type=bool):
             self.showFullScreen()
             app.setOverrideCursor(QCursor(Qt.BlankCursor))
             settings.setValue('fullscreen', True)
@@ -884,7 +884,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         print("NTP Check triggered")
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
-        ntpcheck = settings.value('ntpcheck', True)
+        ntpcheck = settings.value('ntpcheck', True, type=bool)
         settings.endGroup()
         if not ntpcheck:
             self.timerNTP.stop()
@@ -1023,7 +1023,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', 'True'):
+        if settings.value('fullscreen', True, type=bool):
             app.setOverrideCursor(QCursor(Qt.BlankCursor));
         settings.endGroup()
 
