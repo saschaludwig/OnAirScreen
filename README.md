@@ -7,14 +7,12 @@ If you need ready-to-run Linux/Win/Mac executables, please visit https://www.ast
 You can purchase the Windows .exe versions of the latest build including updates.
 If you want to purchase a Linux or Mac binary or need extended support, please contact me.
 
-#### Screenshot
+#### Screenshots
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas.png" width="500px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="400px">
 
 #### Pictures of OnAirScreen in use
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
 
 #### Features
  * flexible integration into existing studio setups
@@ -27,20 +25,22 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
  * OnAir Timer, Stopwatch, Countdown and more
 
 #### OnAirScreen Function Keys
-| Hotkeys                         | Function                |
-|---------------------------------|-------------------------|
-| Ctrl+F or F                     | Toggle fullscreen       |
-| Ctrl+Q or Q or Ctrl+C or ESC    | Quit OnAirScreen        |
-| Ctrl+S or Ctrl+,                | Open settings dialog    |
-| Space or 0                      | Timer start/stop        |
-| . or , or R                     | Timer reset to 0:00     |
-| 1                               | LED1 on/off             |
-| 2                               | LED2 on/off             |
-| 3                               | LED3 on/off             |
-| 4                               | LED4 on/off             |
-| M or /                          | Mic Timer start/stop    |
-| P or *                          | Phone Timer start/stop  |
-| Enter                           | opens set timer dialog  |
+| Hotkeys                           | Function                |
+|-----------------------------------|-------------------------|
+| Ctrl+F or F                       | Toggle fullscreen       |
+| Ctrl+Q or Q or Ctrl+C or ESC      | Quit OnAirScreen        |
+| Ctrl+S or Ctrl+,                  | Open settings dialog    |
+| Space or 0                        | Timer start/stop        |
+| . or , or R                       | Timer reset to 0:00     |
+| 1                                 | LED1 on/off             |
+| 2                                 | LED2 on/off             |
+| 3                                 | LED3 on/off             |
+| 4                                 | LED4 on/off             |
+| M or /                            | Mic Timer start/stop    |
+| P or *                            | Phone Timer start/stop  |
+| Enter                             | opens set timer dialog  |
+
+On OSX use the `command ⌘` key instead of `Ctrl`
 
 #### OnAirScreen API / UDP Commands
 OnAirScreen can receive API commands via UDP port 3310<br>
@@ -64,7 +64,7 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 | `WARN:TEXT`              | set TEXT and switch on red warning mode |
 | `AIR1:[ON/OFF]`          | start/stop Mic Timer |
 | `AIR2:[ON/OFF]`          | start/stop Phone Timer |
-| `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggelt Radio Timer |
+| `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggle Radio Timer |
 | `AIR3TIME:seconds`            | set Radio Timer to given value in seconds |
 | `AIR4:[ON/OFF/RESET]`        | start/stop/reset Stream Timer |
 | `CMD:REBOOT`                  | OS restart |
@@ -83,6 +83,7 @@ echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 `CONF:LED[1-4]:autoflash=[False|True]`<br>
 `CONF:LED[1-4]:timedflash=[False|True]`<br>
 `CONF:Clock:digital=[True|False]`<br>
+`CONF:Clock:showseconds=[True|False]`<br>
 `CONF:Clock:digitalhourcolor=COLOR`<br>
 `CONF:Clock:digitalsecondcolor=COLOR`<br>
 `CONF:Clock:digitaldigitcolor=COLOR`<br>
