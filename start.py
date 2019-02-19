@@ -1,56 +1,61 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #############################################################################
-##
-## OnAirScreen
-## Copyright (C) 2014-2016 Sascha Ludwig
-## All rights reserved.
-##
-## start.py
-## This file is part of OnAirScreen
-##
-## You may use this file under the terms of the BSD license as follows:
-##
-## "Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##   * Redistributions of source code must retain the above copyright
-##     notice, this list of conditions and the following disclaimer.
-##   * Redistributions in binary form must reproduce the above copyright
-##     notice, this list of conditions and the following disclaimer in
-##     the documentation and/or other materials provided with the
-##     distribution.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-## A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-## OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-## SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-## LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-## DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-## THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-## OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-##
+#
+# OnAirScreen
+# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# All rights reserved.
+#
+# start.py
+# This file is part of OnAirScreen
+#
+# You may use this file under the terms of the BSD license as follows:
+#
+# "Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in
+#     the documentation and/or other materials provided with the
+#     distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+#
 #############################################################################
 
-import atexit
 import os
 import sys
 import re
 from datetime import datetime
-from PyQt4.QtGui import QApplication, QWidget, QCursor, QPalette, QColorDialog, QColor, QShortcut, QKeySequence, QDialog, QLineEdit, QVBoxLayout, QLabel, QIcon, QPixmap
-from PyQt4.QtCore import SIGNAL, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate
-from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
+
+from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
+from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread
+from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
-from locale import LC_TIME, setlocale
 import ntplib
 import signal
 import socket
 from settings_functions import Settings
 
+
 class MainScreen(QWidget, Ui_MainScreen):
+    getTimeWindow: QDialog
+    ntpHadWarning: bool
+    ntpWarnMessage: str
+
     def __init__(self):
         QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
@@ -64,104 +69,120 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigShutdownHost.connect(self.shutdown_host)
         self.settings.sigConfigFinished.connect(self.configFinished)
 
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', True).toBool():
+        if settings.value('fullscreen', True, type=bool):
             self.showFullScreen()
-            app.setOverrideCursor( QCursor( 10 ) );
+            app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
+        print("Loading Settings from: ", settings.fileName())
 
         self.labelWarning.hide()
 
         # add hotkey bindings
-        QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen )
-        QShortcut(QKeySequence("F"), self, self.toggleFullScreen )
-        QShortcut(QKeySequence(16777429), self, self.toggleFullScreen ) # 'Display' Key on OAS USB Keyboard
-        QShortcut(QKeySequence(16777379), self, self.shutdown_host ) # 'Calculator' Key on OAS USB Keyboard
-        QShortcut(QKeySequence("Ctrl+Q"), self, QCoreApplication.instance().quit )
-        QShortcut(QKeySequence("Q"), self, QCoreApplication.instance().quit )
-        QShortcut(QKeySequence("Ctrl+C"), self, QCoreApplication.instance().quit )
-        QShortcut(QKeySequence("ESC"), self, QCoreApplication.instance().quit )
-        QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings )
-        QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings )
-        QShortcut(QKeySequence(" "), self, self.radioTimerStartStop )
-        QShortcut(QKeySequence(","), self, self.radioTimerStartStop )
-        QShortcut(QKeySequence("."), self, self.radioTimerStartStop )
-        QShortcut(QKeySequence("0"), self, self.radioTimerReset )
-        QShortcut(QKeySequence("R"), self, self.radioTimerReset )
-        QShortcut(QKeySequence("1"), self, self.toggleLED1 )
-        QShortcut(QKeySequence("2"), self, self.toggleLED2 )
-        QShortcut(QKeySequence("3"), self, self.toggleLED3 )
-        QShortcut(QKeySequence("4"), self, self.toggleLED4 )
-        QShortcut(QKeySequence("M"), self, self.toggleAIR1 )
-        QShortcut(QKeySequence("/"), self, self.toggleAIR1 )
-        QShortcut(QKeySequence("P"), self, self.toggleAIR2 )
-        QShortcut(QKeySequence("*"), self, self.toggleAIR2 )
-        QShortcut(QKeySequence("S"), self, self.toggleAIR4 )
-        QShortcut(QKeySequence("Enter"), self, self.getTimerDialog )
-        QShortcut(QKeySequence("Return"), self, self.getTimerDialog )
+        QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen)
+        QShortcut(QKeySequence("F"), self, self.toggleFullScreen)
+        QShortcut(QKeySequence(16777429), self, self.toggleFullScreen)  # 'Display' Key on OAS USB Keyboard
+        QShortcut(QKeySequence(16777379), self, self.shutdown_host)  # 'Calculator' Key on OAS USB Keyboard
+        QShortcut(QKeySequence("Ctrl+Q"), self, QCoreApplication.instance().quit)
+        QShortcut(QKeySequence("Q"), self, QCoreApplication.instance().quit)
+        QShortcut(QKeySequence("Ctrl+C"), self, QCoreApplication.instance().quit)
+        QShortcut(QKeySequence("ESC"), self, QCoreApplication.instance().quit)
+        QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings)
+        QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings)
+        QShortcut(QKeySequence(" "), self, self.radioTimerStartStop)
+        QShortcut(QKeySequence(","), self, self.radioTimerStartStop)
+        QShortcut(QKeySequence("."), self, self.radioTimerStartStop)
+        QShortcut(QKeySequence("0"), self, self.radioTimerReset)
+        QShortcut(QKeySequence("R"), self, self.radioTimerReset)
+        QShortcut(QKeySequence("1"), self, self.manualToggleLED1)
+        QShortcut(QKeySequence("2"), self, self.manualToggleLED2)
+        QShortcut(QKeySequence("3"), self, self.manualToggleLED3)
+        QShortcut(QKeySequence("4"), self, self.manualToggleLED4)
+        QShortcut(QKeySequence("M"), self, self.toggleAIR1)
+        QShortcut(QKeySequence("/"), self, self.toggleAIR1)
+        QShortcut(QKeySequence("P"), self, self.toggleAIR2)
+        QShortcut(QKeySequence("*"), self, self.toggleAIR2)
+        QShortcut(QKeySequence("S"), self, self.toggleAIR4)
+        QShortcut(QKeySequence("Enter"), self, self.getTimerDialog)
+        QShortcut(QKeySequence("Return"), self, self.getTimerDialog)
+
+        self.statusLED1 = False
+        self.statusLED2 = False
+        self.statusLED3 = False
+        self.statusLED4 = False
+
+        self.LED1on = False
+        self.LED2on = False
+        self.LED3on = False
+        self.LED4on = False
 
         # Setup and start timers
         self.ctimer = QTimer()
-        QObject.connect(self.ctimer, SIGNAL("timeout()"), self.constantUpdate)
+        self.ctimer.timeout.connect(self.constantUpdate)
         self.ctimer.start(100)
         # LED timers
         self.timerLED1 = QTimer()
-        QObject.connect(self.timerLED1, SIGNAL("timeout()"), self.toggleLED1)
+        self.timerLED1.timeout.connect(self.toggleLED1)
         self.timerLED2 = QTimer()
-        QObject.connect(self.timerLED2, SIGNAL("timeout()"), self.toggleLED2)
+        self.timerLED2.timeout.connect(self.toggleLED2)
         self.timerLED3 = QTimer()
-        QObject.connect(self.timerLED3, SIGNAL("timeout()"), self.toggleLED3)
+        self.timerLED3.timeout.connect(self.toggleLED3)
         self.timerLED4 = QTimer()
-        QObject.connect(self.timerLED4, SIGNAL("timeout()"), self.toggleLED4)
+        self.timerLED4.timeout.connect(self.toggleLED4)
 
         # Setup OnAir Timers
         self.timerAIR1 = QTimer()
-        QObject.connect(self.timerAIR1, SIGNAL("timeout()"), self.updateAIR1Seconds)
+        self.timerAIR1.timeout.connect(self.updateAIR1Seconds)
         self.Air1Seconds = 0
         self.statusAIR1 = False
 
         self.timerAIR2 = QTimer()
-        QObject.connect(self.timerAIR2, SIGNAL("timeout()"), self.updateAIR2Seconds)
+        self.timerAIR2.timeout.connect(self.updateAIR2Seconds)
         self.Air2Seconds = 0
         self.statusAIR2 = False
 
         self.timerAIR3 = QTimer()
-        QObject.connect(self.timerAIR3, SIGNAL("timeout()"), self.updateAIR3Seconds)
+        self.timerAIR3.timeout.connect(self.updateAIR3Seconds)
         self.Air3Seconds = 0
         self.statusAIR3 = False
-        self.radioTimerMode = 0 #count up mode
+        self.radioTimerMode = 0  # count up mode
 
         self.timerAIR4 = QTimer()
-        QObject.connect(self.timerAIR4, SIGNAL("timeout()"), self.updateAIR4Seconds)
+        self.timerAIR4.timeout.connect(self.updateAIR4Seconds)
         self.Air4Seconds = 0
         self.statusAIR4 = False
-        self.streamTimerMode = 0 #count up mode
+        self.streamTimerMode = 0  # count up mode
+
+        # Setup NTP Check Thread
+        self.checkNTPOffset = checkNTPOffsetThread(self)
 
         # Setup check NTP Timer
         self.ntpHadWarning = True
+        self.ntpWarnMessage = ""
         self.timerNTP = QTimer()
-        QObject.connect(self.timerNTP, SIGNAL("timeout()"), self.checkNTPOffset)
+        self.timerNTP.timeout.connect(self.triggerNTPcheck)
         # initial check
-        self.timerNTP.start(5000)
+        self.timerNTP.start(1000)
 
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
-        (port, foo) = settings.value('udpport', 3310).toInt()
+        port = int(settings.value('udpport', 3310))
         settings.endGroup()
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
         self.udpsock.readyRead.connect(self.cmdHandler)
 
-        # diplay all host adresses
+        # display all host addresses
         self.displayAllHostaddresses()
 
         # set NTP warning
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
-        if settings.value('ntpcheck', True).toBool():
-            self.showWarning("Clock NTP status unknown")
+        if settings.value('ntpcheck', True, type=bool):
+            self.ntpHadWarning = True
+            self.ntpWarnMessage = "waiting for NTP status check"
         settings.endGroup()
 
     def radioTimerStartStop(self):
@@ -169,20 +190,20 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def radioTimerReset(self):
         self.resetAIR3()
-        self.radioTimerMode = 0 #count up mode
+        self.radioTimerMode = 0  # count up mode
 
     def radioTimerSet(self, seconds):
         self.Air3Seconds = seconds
         if seconds > 0:
-            self.radioTimerMode = 1 #count down mode
+            self.radioTimerMode = 1  # count down mode
         else:
-            self.radioTimerMode = 0 #count up mode
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+            self.radioTimerMode = 0  # count up mode
+        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
 
     def getTimerDialog(self):
         # generate and display timer input window
         self.getTimeWindow = QDialog()
-        self.getTimeWindow.resize(200,100)
+        self.getTimeWindow.resize(200, 100)
         self.getTimeWindow.setWindowTitle("Please enter timer")
         self.getTimeWindow.timeEdit = QLineEdit("Enter timer here")
         self.getTimeWindow.timeEdit.selectAll()
@@ -200,7 +221,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         seconds = 0
         # hide input window
         self.sender().parent().hide()
-        # get timestring
+        # get time string
         text = str(self.sender().text())
         if re.match('^[0-9]*,[0-9]*$', text):
             (minutes, seconds) = text.split(",")
@@ -212,7 +233,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             seconds = int(seconds)
         elif re.match('^[0-9]*$', text):
             seconds = int(text)
-        seconds = (minutes*60)+seconds
+        seconds = (minutes * 60) + seconds
         self.radioTimerSet(seconds)
 
     def streamTimerStartStop(self):
@@ -220,12 +241,12 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def streamTimerReset(self):
         self.resetAIR4()
-        self.streamTimerMode = 0 #count up mode
+        self.streamTimerMode = 0  # count up mode
 
     def showsettings(self):
         global app
-        # un-hide mousecursor
-        app.setOverrideCursor( QCursor( 0 ) );
+        # un-hide mouse cursor
+        app.setOverrideCursor(QCursor(Qt.ArrowCursor));
         self.settings.showsettings()
 
     def displayAllHostaddresses(self):
@@ -234,21 +255,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         for address in QNetworkInterface().allAddresses():
             if address.protocol() == 0:
                 v4addrs.append(address.toString())
-            #if address.protocol() == 1:
+            # if address.protocol() == 1:
             #    v6addrs.append(address.toString())
 
-        self.setCurrentSongText(", ".join(["%s" % (addr) for addr in v4addrs]))
+        self.setCurrentSongText(", ".join(["%s" % addr for addr in v4addrs]))
         self.setNewsText(", ".join(["%s" % (addr) for addr in v6addrs]))
 
     def cmdHandler(self):
         while self.udpsock.hasPendingDatagrams():
             data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
-            #print "DATA: ", data
+            # print("DATA: ", data)
             lines = data.splitlines()
             for line in lines:
-                (command, value) = line.split(':',1)
-                #print "command: '" + command + "'"
-                #print "value: '" + value + "'"
+                # print("Line:", line)
+                (command, value) = line.decode('utf_8').split(':', 1)
+                command = str(command)
+                value = str(value)
+                # print("command: >" + command + "<")
+                # print("value: >" + value + "<")
                 if command == "NOW":
                     self.setCurrentSongText(value)
                 if command == "NEXT":
@@ -304,7 +328,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if command == "AIR3TIME":
                     self.radioTimerSet(int(value))
 
-
                 if command == "AIR4":
                     if value == "OFF":
                         self.setAIR4(False)
@@ -313,20 +336,19 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if value == "RESET":
                         self.streamTimerReset()
 
-
                 if command == "CMD":
-                        if value == "REBOOT":
-                            self.reboot_host()
-                        if value == "SHUTDOWN":
-                            self.shutdown_host()
-                        if value == "QUIT":
-                            QApplication.quit()
+                    if value == "REBOOT":
+                        self.reboot_host()
+                    if value == "SHUTDOWN":
+                        self.shutdown_host()
+                    if value == "QUIT":
+                        QApplication.quit()
 
                 if command == "CONF":
-                    #split group, config and values and apply them
-                    (group, paramvalue) = value.split(':',1)
-                    (param, content) = paramvalue.split('=',1)
-                    #print "CONF:", param, content
+                    # split group, config and values and apply them
+                    (group, paramvalue) = value.split(':', 1)
+                    (param, content) = paramvalue.split('=', 1)
+                    # print "CONF:", param, content
                     if group == "General":
                         if param == "stationname":
                             self.settings.StationName.setText(content)
@@ -396,11 +418,16 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if group == "Clock":
                         if param == "digital":
                             if content == "True":
-                                self.settings.clockDigital.setChecked(QVariant(content).toBool())
-                                self.settings.clockAnalog.setChecked(not QVariant(content).toBool())
+                                self.settings.clockDigital.setChecked(True)
+                                self.settings.clockAnalog.setChecked(False)
                             if content == "False":
-                                self.settings.clockAnalog.setChecked(QVariant(content).toBool())
-                                self.settings.clockDigital.setChecked(not QVariant(content).toBool())
+                                self.settings.clockAnalog.setChecked(False)
+                                self.settings.clockDigital.setChecked(True)
+                        if param == "showseconds":
+                            if content == "True":
+                                self.settings.showSeconds.setChecked(True)
+                            if content == "False":
+                                self.settings.showSeconds.setChecked(False)
                         if param == "digitalhourcolor":
                             self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
                         if param == "digitalsecondcolor":
@@ -413,8 +440,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if group == "Network":
                         if param == "udpport":
                             self.settings.udpport.setText(content)
-                        if param == "tcpport":
-                            self.settings.tcpport.setText(content)
 
                     if group == "CONF":
                         if param == "APPLY":
@@ -422,21 +447,48 @@ class MainScreen(QWidget, Ui_MainScreen):
                                 # apply and save settings
                                 self.settings.applySettings()
 
+    def manualToggleLED1(self):
+        if self.LED1on:
+            self.ledLogic(1, False)
+        else:
+            self.ledLogic(1, True)
+
+    def manualToggleLED2(self):
+        if self.LED2on:
+            self.ledLogic(2, False)
+        else:
+            self.ledLogic(2, True)
+
+    def manualToggleLED3(self):
+        if self.LED3on:
+            self.ledLogic(3, False)
+        else:
+            self.ledLogic(3, True)
+
+    def manualToggleLED4(self):
+        if self.LED4on:
+            self.ledLogic(4, False)
+        else:
+            self.ledLogic(4, True)
+
     def toggleLED1(self):
         if self.statusLED1:
             self.setLED1(False)
         else:
             self.setLED1(True)
+
     def toggleLED2(self):
         if self.statusLED2:
             self.setLED2(False)
         else:
             self.setLED2(True)
+
     def toggleLED3(self):
         if self.statusLED3:
             self.setLED3(False)
         else:
             self.setLED3(True)
+
     def toggleLED4(self):
         if self.statusLED4:
             self.setLED4(False)
@@ -463,15 +515,18 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def unsetLED1(self):
         self.ledLogic(1, False)
+
     def unsetLED2(self):
         self.ledLogic(2, False)
+
     def unsetLED3(self):
         self.ledLogic(3, False)
+
     def unsetLED4(self):
         self.ledLogic(4, False)
 
     def ledLogic(self, led, state):
-        if state == True:
+        if state:
             if led == 1:
                 if self.settings.LED1Autoflash.isChecked():
                     self.timerLED1.start(500)
@@ -479,6 +534,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED1.start(500)
                     QTimer.singleShot(20000, self.unsetLED1)
                 self.setLED1(state)
+                self.LED1on = state
             if led == 2:
                 if self.settings.LED2Autoflash.isChecked():
                     self.timerLED2.start(500)
@@ -486,6 +542,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED2.start(500)
                     QTimer.singleShot(20000, self.unsetLED2)
                 self.setLED2(state)
+                self.LED2on = state
             if led == 3:
                 if self.settings.LED3Autoflash.isChecked():
                     self.timerLED3.start(500)
@@ -493,6 +550,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED3.start(500)
                     QTimer.singleShot(20000, self.unsetLED3)
                 self.setLED3(state)
+                self.LED3on = state
             if led == 4:
                 if self.settings.LED4Autoflash.isChecked():
                     self.timerLED4.start(500)
@@ -500,20 +558,25 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.timerLED4.start(500)
                     QTimer.singleShot(20000, self.unsetLED4)
                 self.setLED4(state)
+                self.LED4on = state
 
         if state == False:
             if led == 1:
                 self.setLED1(state)
                 self.timerLED1.stop()
+                self.LED1on = state
             if led == 2:
                 self.setLED2(state)
                 self.timerLED2.stop()
+                self.LED2on = state
             if led == 3:
                 self.setLED3(state)
                 self.timerLED3.stop()
+                self.LED3on = state
             if led == 4:
                 self.setLED4(state)
                 self.timerLED4.stop()
+                self.LED4on = state
 
     def setStationColor(self, newcolor):
         palette = self.labelStation.palette()
@@ -526,38 +589,45 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelSlogan.setPalette(palette)
 
     def restoreSettingsFromConfig(self):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan').toString())
-        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation').toString())
-        self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00').toString()))
-        self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00').toString()))
+        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
+        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
+        self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
+        self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
         settings.endGroup()
 
         settings.beginGroup("LED1")
-        self.setLED1Text(settings.value('text', 'ON AIR').toString())
+        self.setLED1Text(settings.value('text', 'ON AIR'))
         settings.endGroup()
 
         settings.beginGroup("LED2")
-        self.setLED2Text(settings.value('text', 'PHONE').toString())
+        self.setLED2Text(settings.value('text', 'PHONE'))
         settings.endGroup()
 
         settings.beginGroup("LED3")
-        self.setLED3Text(settings.value('text', 'DOORBELL').toString())
+        self.setLED3Text(settings.value('text', 'DOORBELL'))
         settings.endGroup()
 
         settings.beginGroup("LED4")
-        self.setLED4Text(settings.value('text', 'ARI').toString())
+        self.setLED4Text(settings.value('text', 'ARI'))
         settings.endGroup()
 
         settings.beginGroup("Clock")
-        self.clockWidget.setClockMode( settings.value('digital', True).toBool() )
+        self.clockWidget.setClockMode(settings.value('digital', True, type=bool))
+        self.clockWidget.setDigiHourColor(
+            self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
+        self.clockWidget.setDigiSecondColor(
+            self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
+        self.clockWidget.setDigiDigitColor(
+            self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
+        self.clockWidget.setLogo(
+            settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
+        self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
+        settings.endGroup()
 
-        self.clockWidget.setDigiHourColor(self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF').toString()))
-        self.clockWidget.setDigiSecondColor(self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900').toString()))
-        self.clockWidget.setDigiDigitColor(self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF').toString()))
-
-        self.clockWidget.setLogo( settings.value('logopath', ':/astrastudio_logo/astrastudio_transparent.png').toString() )
+        settings.beginGroup("Formatting")
+        self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
         settings.endGroup()
 
     def constantUpdate(self):
@@ -565,117 +635,158 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
+        self.updateNTPstatus()
 
     def updateDate(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Formatting")
         now = datetime.now()
-        self.setLeftText( QDate.currentDate().toString("dddd, dd. MMMM yyyy") )
+        self.setLeftText(QDate.currentDate().toString(settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
+        settings.endGroup()
 
     def updateBacktimingText(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Formatting")
+        textClockLang = settings.value('textClockLanguage', 'English')
+        isampm = settings.value('isAmPm', False, type=bool)
+        settings.endGroup()
+
+        string = ""
         now = datetime.now()
         hour = now.hour
         minute = now.minute
-        second = now.second
-        remain_min = 60-minute
-        if hour > 12:
-            hour -= 12
+        remain_min = 60 - minute
 
-        if minute > 0 and minute < 25:
-            string = "%d Minute%s nach %d" % (minute, 'n' if minute>1 else '', hour)
+        if textClockLang == "German":
+            # german textclock
+            if hour > 12:
+                hour -= 12
+            if 0 < minute < 25:
+                string = "%d Minute%s nach %d" % (minute, 'n' if minute > 1 else '', hour)
+            if 25 <= minute < 30:
+                string = "%d Minute%s vor halb %d" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
+            if 30 <= minute <= 39:
+                string = "%d Minute%s nach halb %d" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
+            if 40 <= minute <= 59:
+                string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
+            if minute == 30:
+                string = "halb %d" % (hour + 1)
+            if minute == 0:
+                string = "%d" % hour
 
-        if minute >= 25 and minute < 30:
-            string = "%d Minute%s vor halb %d" % (remain_min-30, 'n' if remain_min-30>1 else '', hour+1)
+        else:
+            # english textclock
+            if isampm:
+                if hour > 12:
+                    hour -= 12
+            if minute == 0:
+                string = "its %d o'clock" % hour
+            if (0 < minute < 15) or (16 <= minute <= 29):
+                string = "its %d minute%s past %d" % (minute, 's' if minute > 1 else '', hour)
+            if minute == 15:
+                string = "its a quarter past %d" % hour
+            if minute == 30:
+                string = "its half past %d" % hour
+            if minute == 45:
+                string = "its a quarter to %d" % hour
+            if (31 <= minute <= 44) or (46 <= minute <= 59):
+                string = "its %d minute%s to %d" % (
+                    remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
-        if minute >= 30 and minute <= 39:
-            string = "%d Minute%s nach halb %d" % (30-remain_min, 'n' if 30-remain_min>1 else '', hour+1)
-
-        if minute >= 40 and minute <= 59:
-            string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min>1 else '', hour+1)
-
-        if minute == 30:
-           string = "halb %d" % (hour+1)
-
-        if minute == 0:
-            string = "%d" % hour
-
-        self.setRightText( string )
+        self.setRightText(string)
 
     def updateBacktimingSeconds(self):
         now = datetime.now()
         second = now.second
-        remain_seconds = 60-second
+        remain_seconds = 60 - second
         self.setBacktimingSecs(remain_seconds)
+
+    def updateNTPstatus(self):
+        if self.ntpHadWarning and len(self.ntpWarnMessage):
+            self.showWarning(self.ntpWarnMessage)
+        else:
+            self.ntpWarnMessage = ""
+            self.hideWarning()
 
     def toggleFullScreen(self):
         global app
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if not settings.value('fullscreen', 'True').toBool():
+        if not settings.value('fullscreen', True, type=bool):
             self.showFullScreen()
-            app.setOverrideCursor( QCursor( 10 ) );
+            app.setOverrideCursor(QCursor(Qt.BlankCursor))
             settings.setValue('fullscreen', True)
         else:
             self.showNormal()
-            app.setOverrideCursor( QCursor( 0 ) );
+            app.setOverrideCursor(QCursor(Qt.ArrowCursor))
             settings.setValue('fullscreen', False)
         settings.endGroup()
 
     def setAIR1(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.Air1Seconds = 0
             self.AirLabel_1.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_1.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds/60, self.Air1Seconds%60) )
+            self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds / 60, self.Air1Seconds % 60))
             self.statusAIR1 = True
             # AIR1 timer
             self.timerAIR1.start(1000)
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
-            self.AirLabel_1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirIcon_1.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
+            self.AirLabel_1.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR1 = False
             self.timerAIR1.stop()
 
     def updateAIR1Seconds(self):
         self.Air1Seconds += 1
-        self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds/60, self.Air1Seconds%60) )
+        self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds / 60, self.Air1Seconds % 60))
 
     def setAIR2(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.Air2Seconds = 0
             self.AirLabel_2.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_2.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds/60, self.Air2Seconds%60) )
+            self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds / 60, self.Air2Seconds % 60))
             self.statusAIR2 = True
             # AIR2 timer
             self.timerAIR2.start(1000)
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
-            self.AirLabel_2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirIcon_2.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
+            self.AirLabel_2.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR2 = False
             self.timerAIR2.stop()
 
     def updateAIR2Seconds(self):
         self.Air2Seconds += 1
-        self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds/60, self.Air2Seconds%60) )
+        self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds / 60, self.Air2Seconds % 60))
 
     def resetAIR3(self):
         self.timerAIR3.stop()
         self.Air3Seconds = 0
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
         if self.statusAIR3 == True:
             self.timerAIR3.start(1000)
 
     def setAIR3(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.AirLabel_3.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_3.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
+            self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
             self.statusAIR3 = True
             # substract initial second on countdown with display update
             if self.radioTimerMode == 1 and self.Air3Seconds > 1:
@@ -684,8 +795,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR3.start(1000)
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
-            self.AirLabel_3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirIcon_3.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
+            self.AirLabel_3.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR3 = False
             self.timerAIR3.stop()
@@ -703,29 +818,28 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setAIR3(False)
 
     def updateAIR3Seconds(self):
-        if self.radioTimerMode == 0: #count up mode
+        if self.radioTimerMode == 0:  # count up mode
             self.Air3Seconds += 1
         else:
             self.Air3Seconds -= 1
             if self.Air3Seconds < 1:
                 self.stopAIR3()
                 self.radioTimerMode = 0
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds/60, self.Air3Seconds%60) )
-
+        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
 
     def resetAIR4(self):
         self.timerAIR4.stop()
         self.Air4Seconds = 0
-        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds/60, self.Air4Seconds%60) )
+        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
         if self.statusAIR4 == True:
             self.timerAIR4.start(1000)
 
     def setAIR4(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.AirLabel_4.setStyleSheet("color: #000000; background-color: #FF0000")
             self.AirIcon_4.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds/60, self.Air4Seconds%60) )
+            self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
             self.statusAIR4 = True
             # substract initial second on countdown with display update
             if self.streamTimerMode == 1 and self.Air4Seconds > 1:
@@ -734,8 +848,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR4.start(1000)
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
-            self.AirLabel_4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.AirIcon_4.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                   '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
+            self.AirLabel_4.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusAIR4 = False
             self.timerAIR4.stop()
@@ -753,100 +871,95 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setAIR4(False)
 
     def updateAIR4Seconds(self):
-        if self.streamTimerMode == 0: #count up mode
+        if self.streamTimerMode == 0:  # count up mode
             self.Air4Seconds += 1
         else:
             self.Air4Seconds -= 1
             if self.Air4Seconds < 1:
                 self.stopAIR4()
                 self.radioTimerMode = 0
-        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds/60, self.Air4Seconds%60) )
+        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
 
-
-    def checkNTPOffset(self):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+    def triggerNTPcheck(self):
+        print("NTP Check triggered")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("NTP")
-        ntpcheck = settings.value('ntpcheck', True).toBool()
-        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org').toString())
+        ntpcheck = settings.value('ntpcheck', True, type=bool)
         settings.endGroup()
         if not ntpcheck:
+            self.timerNTP.stop()
             return
-        self.timerNTP.stop()
-        max_deviation = 0.3
-        c = ntplib.NTPClient()
-        try:
-            response = c.request(ntpserver)
-            if response.offset > max_deviation or response.offset < -max_deviation:
-                print "offset too big: %f while checking %s" % (response.offset, ntpserver)
-                self.showWarning("Clock not NTP synchronized: offset too big")
-                self.ntpHadWarning = True
-            else:
-                if self.ntpHadWarning == True:
-                    self.ntpHadWarning = False
-                    self.hideWarning()
-        except socket.timeout:
-            print "timeout checking NTP %s" % ntpserver
-            self.showWarning("Clock not NTP synchronized")
-            self.ntpHadWarning = True
-        except socket.gaierror:
-            print "error checking NTP %s" % ntpserver
-            self.showWarning("Clock not NTP synchronized")
-            self.ntpHadWarning = True
-        except:
-            print "general error checking NTP %s" % ntpserver
-            self.showWarning("Clock not NTP synchronized")
-            self.ntpHadWarning = True
-        self.timerNTP.start(60000)
+        else:
+            self.timerNTP.stop()
+            self.checkNTPOffset.start()
+            self.timerNTP.start(60000)
+
 
     def setLED1(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED1")
-            self.buttonLED1.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            self.buttonLED1.setStyleSheet("color:" + settings.value('activetextcolor',
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#FF0000'))
             settings.endGroup()
             self.statusLED1 = True
         else:
             settings.beginGroup("LEDS")
-            self.buttonLED1.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.buttonLED1.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED1 = False
 
     def setLED2(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED2")
-            self.buttonLED2.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            self.buttonLED2.setStyleSheet("color:" + settings.value('activetextcolor',
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#DCDC00'))
             settings.endGroup()
             self.statusLED2 = True
         else:
             settings.beginGroup("LEDS")
-            self.buttonLED2.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.buttonLED2.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED2 = False
 
     def setLED3(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED3")
-            self.buttonLED3.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            self.buttonLED3.setStyleSheet("color:" + settings.value('activetextcolor',
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#00C8C8'))
             settings.endGroup()
             self.statusLED3 = True
         else:
             settings.beginGroup("LEDS")
-            self.buttonLED3.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.buttonLED3.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED3 = False
 
     def setLED4(self, action):
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED4")
-            self.buttonLED4.setStyleSheet("color:"+settings.value('activetextcolor', '#FFFFFF').toString()+";background-color:"+settings.value('activebgcolor', '#FF0000').toString())
+            self.buttonLED4.setStyleSheet("color:" + settings.value('activetextcolor',
+                                                                    '#FFFFFF') + ";background-color:" + settings.value(
+                'activebgcolor', '#FF00FF'))
             settings.endGroup()
             self.statusLED4 = True
         else:
             settings.beginGroup("LEDS")
-            self.buttonLED4.setStyleSheet("color:"+settings.value('inactivetextcolor', '#555555').toString()+";background-color:"+settings.value('inactivebgcolor', '#222222').toString())
+            self.buttonLED4.setStyleSheet("color:" + settings.value('inactivetextcolor',
+                                                                    '#555555') + ";background-color:" + settings.value(
+                'inactivebgcolor', '#222222'))
             settings.endGroup()
             self.statusLED4 = False
 
@@ -882,12 +995,12 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def setBacktimingSecs(self, value):
         pass
-        #self.labelSeconds.setText( str(value) )
+        # self.labelSeconds.setText( str(value) )
 
     def showWarning(self, text):
         self.labelCurrentSong.hide()
         self.labelNews.hide()
-        self.labelWarning.setText( text )
+        self.labelWarning.setText(text)
         font = self.labelWarning.font()
         font.setPointSize(45)
         self.labelWarning.setFont(font)
@@ -897,7 +1010,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelWarning.hide()
         self.labelCurrentSong.show()
         self.labelNews.show()
-        self.labelWarning.setText( "" )
+        self.labelWarning.setText("")
         self.labelWarning.hide()
 
     def exitOAS(self):
@@ -907,15 +1020,15 @@ class MainScreen(QWidget, Ui_MainScreen):
     def configFinished(self):
         self.restoreSettingsFromConfig()
         global app
-        # hide mousecursor if in fullscreen mode
-        settings = QSettings( QSettings.UserScope, "astrastudio", "OnAirScreen")
+        # hide mouse cursor if in fullscreen mode
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', 'True').toBool():
-            app.setOverrideCursor( QCursor( 10 ) );
+        if settings.value('fullscreen', True, type=bool):
+            app.setOverrideCursor(QCursor(Qt.BlankCursor));
         settings.endGroup()
 
     def reboot_host(self):
-        self.showWarning( "SYSTEM REBOOT IN PROGRESS" )
+        self.showWarning("SYSTEM REBOOT IN PROGRESS")
         if os.name == "posix":
             cmd = "sudo reboot"
             os.system(cmd)
@@ -924,7 +1037,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             pass
 
     def shutdown_host(self):
-        self.showWarning( "SYSTEM SHUTDOWN IN PROGRESS" )
+        self.showWarning("SYSTEM SHUTDOWN IN PROGRESS")
         if os.name == "posix":
             cmd = "sudo halt"
             os.system(cmd)
@@ -933,16 +1046,57 @@ class MainScreen(QWidget, Ui_MainScreen):
             pass
 
 
+class checkNTPOffsetThread(QThread):
+
+    def __init__(self, oas):
+        self.oas = oas
+        QThread.__init__(self)
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        print("entered checkNTPOffsetThread.run")
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("NTP")
+        ntpserver = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
+        settings.endGroup()
+        max_deviation = 0.3
+        c = ntplib.NTPClient()
+        try:
+            response = c.request(ntpserver)
+            if response.offset > max_deviation or response.offset < -max_deviation:
+                print("offset too big: %f while checking %s" % (response.offset, ntpserver))
+                self.oas.ntpWarnMessage = "Clock not NTP synchronized: offset too big"
+                self.oas.ntpHadWarning = True
+            else:
+                if self.oas.ntpHadWarning:
+                    self.oas.ntpHadWarning = False
+        except socket.timeout:
+            print("NTP error: timeout while checking NTP %s" % ntpserver)
+            self.oas.ntpWarnMessage = "Clock not NTP synchronized"
+            self.oas.ntpHadWarning = True
+        except socket.gaierror:
+            print("NTP error: socket error while checking NTP %s" % ntpserver)
+            self.oas.ntpWarnMessage = "Clock not NTP synchronized"
+            self.oas.ntpHadWarning = True
+        except ntplib.NTPException as e:
+            print("NTP error:", e)
+            self.oas.ntpWarnMessage = str(e)
+            self.oas.ntpHadWarning = True
+
+
 ###################################
-## App SIGINT handler
+# App SIGINT handler
 ###################################
 def sigint_handler(*args):
     # Handler for SIGINT signal
     sys.stderr.write("\n")
     QApplication.quit()
 
+
 ###################################
-## App Init
+# App Init
 ###################################
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, sigint_handler)
@@ -958,8 +1112,7 @@ if __name__ == "__main__":
     mainscreen = MainScreen()
     mainscreen.setWindowIcon(icon)
 
-
-    for i in range(1,5):
+    for i in range(1, 5):
         mainscreen.ledLogic(i, False)
 
     mainscreen.setAIR1(False)

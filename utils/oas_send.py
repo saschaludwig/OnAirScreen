@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-# OnAirScreen Keypress Tool
-# tool to display keyboard keycodes
+# OnAirScreen
 # Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
-# keypress.py
+# oas_send.py
 # This file is part of OnAirScreen
 #
 # You may use this file under the terms of the BSD license as follows:
@@ -36,30 +35,21 @@
 #
 #############################################################################
 
+import socket
+import argparse
 
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-import sys
+parser = argparse.ArgumentParser(description='Send an UDP API command to OnAirScreen.')
+parser.add_argument("-i", "--ip", type=str, help="OnAirScreen target IP (default: 127.0.0.1)", default="127.0.0.1")
+parser.add_argument("-p", "--port", type=int, help="OnAirScreen target port (default: 3310)", default="3310")
+parser.add_argument("-s", "--silent", help="do not print any information, except for errors", action='store_true')
+parser.add_argument('message', type=str, help="API message to send")
+args = parser.parse_args()
 
+UDP_IP = args.ip
+UDP_PORT = args.port
+MESSAGE = args.message
 
-class myWin(QLineEdit):
-    def __init__(self, parent=None):
-        QWidget.__init__(self, parent)
-        self.setText("    KEYCODE    ")
-        self.setReadOnly(True)
-
-    def keyPressEvent(self, event):
-        if type(event) == QKeyEvent:
-            # here accept the event and do something
-            self.setText("%s = '%s'" % (str(event.key()), unicode(event.text())))
-
-            event.accept()
-        else:
-            event.ignore()
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    mainW = myWin()
-    mainW.show()
-    sys.exit(app.exec_())
+if not args.silent:
+    print("IP:", UDP_IP, "| PORT:",UDP_PORT, "| Message:", MESSAGE)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.sendto(bytes(MESSAGE, "utf-8"), (UDP_IP, UDP_PORT))
