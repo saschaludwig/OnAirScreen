@@ -42,7 +42,7 @@ from settings import Ui_Settings
 from collections import defaultdict
 import json
 
-versionString = "0.9beta2"
+versionString = "0.9beta4"
 
 
 # class OASSettings for use from OAC
@@ -261,6 +261,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310'))
+        self.httpport.setText(settings.value('httpport', '8010'))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
@@ -340,6 +341,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         settings.setValue('udpport', self.udpport.displayText())
+        settings.setValue('httpport', self.httpport.displayText())
         settings.endGroup()
 
         settings.beginGroup("Formatting")

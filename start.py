@@ -48,7 +48,11 @@ from mainscreen import Ui_MainScreen
 import ntplib
 import signal
 import socket
-from settings_functions import Settings
+from settings_functions import Settings, versionString
+
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+HOST, PORT = '127.0.0.1', 12345
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -173,6 +177,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
         self.udpsock.readyRead.connect(self.cmdHandler)
+
+        # Setup HTTP Server
+        self.httpd = HttpDaemon(self)
+        self.httpd.start()
 
         # display all host addresses
         self.displayAllHostaddresses()
@@ -1045,6 +1053,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             cmd = "shutdown -f -t 0"
             pass
 
+    def closeEvent(self, event):
+        self.httpd.stop()
+
 
 class checkNTPOffsetThread(QThread):
 
@@ -1086,7 +1097,50 @@ class checkNTPOffsetThread(QThread):
             self.oas.ntpHadWarning = True
 
 
-###################################
+class HttpDaemon(QThread):
+    def run(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Network")
+        port = int(settings.value('httpport', 8010))
+        settings.endGroup()
+
+        Handler = OASHTTPRequestHandler
+        self._server = HTTPServer((HOST, port), Handler)
+        self._server.serve_forever()
+
+    def stop(self):
+        self._server.shutdown()
+        self._server.socket.close()
+        self.wait()
+
+
+class OASHTTPRequestHandler(BaseHTTPRequestHandler):
+    server_version = "OnAirScreen/%s" % versionString
+    # handle HEAD request
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+    # handle GET command
+    def do_GET(self):
+        print(self.path)
+        try:
+            if self.path.startswith('/CMD'):
+                self.send_response(200)
+
+                # send header first
+                self.send_header('Content-type', 'text-html')
+                self.end_headers()
+
+                # send file content to client
+                self.wfile.write(b"YEAH")
+                return
+
+        except IOError:
+            self.send_error(404, 'file not found')
+
+        ###################################
 # App SIGINT handler
 ###################################
 def sigint_handler(*args):
