@@ -49,8 +49,9 @@ import ntplib
 import signal
 import socket
 from settings_functions import Settings, versionString
-
+from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
 
 HOST, PORT = '127.0.0.1', 12345
 
@@ -72,6 +73,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigRebootHost.connect(self.reboot_host)
         self.settings.sigShutdownHost.connect(self.shutdown_host)
         self.settings.sigConfigFinished.connect(self.configFinished)
+        self.settings.sigConfigClosed.connect(self.configClosed)
 
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
@@ -276,7 +278,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             lines = data.splitlines()
             for line in lines:
                 # print("Line:", line)
-                (command, value) = line.decode('utf_8').split(':', 1)
+                try:
+                    (command, value) = line.decode('utf_8').split(':', 1)
+                except ValueError:
+                    return
                 command = str(command)
                 value = str(value)
                 # print("command: >" + command + "<")
@@ -354,9 +359,13 @@ class MainScreen(QWidget, Ui_MainScreen):
 
                 if command == "CONF":
                     # split group, config and values and apply them
-                    (group, paramvalue) = value.split(':', 1)
-                    (param, content) = paramvalue.split('=', 1)
-                    # print "CONF:", param, content
+                    try:
+                        (group, paramvalue) = value.split(':', 1)
+                        (param, content) = paramvalue.split('=', 1)
+                        # print "CONF:", param, content
+                    except ValueError:
+                        return
+
                     if group == "General":
                         if param == "stationname":
                             self.settings.StationName.setText(content)
@@ -1025,8 +1034,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         app.exit()
 
-    def configFinished(self):
-        self.restoreSettingsFromConfig()
+    def configClosed(self):
         global app
         # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -1034,6 +1042,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         if settings.value('fullscreen', True, type=bool):
             app.setOverrideCursor(QCursor(Qt.BlankCursor));
         settings.endGroup()
+
+    def configFinished(self):
+        self.restoreSettingsFromConfig()
 
     def reboot_host(self):
         self.showWarning("SYSTEM REBOOT IN PROGRESS")
@@ -1125,22 +1136,40 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     # handle GET command
     def do_GET(self):
         print(self.path)
-        try:
-            if self.path.startswith('/CMD'):
+        if self.path.startswith('/?'):
+            try:
+                cmd, message = unquote(str(self.path)[5:]).split("=", 1)
+            except ValueError:
+                self.send_error(400, 'no command was given')
+                return
+
+            if len(message) > 0:
                 self.send_response(200)
 
                 # send header first
                 self.send_header('Content-type', 'text-html')
                 self.end_headers()
 
+                settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+                settings.beginGroup("Network")
+                port = int(settings.value('udpport', 3310))
+                settings.endGroup()
+
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.sendto(message.encode(), ("127.0.0.1", port))
+
                 # send file content to client
-                self.wfile.write(b"YEAH")
+                self.wfile.write(message.encode())
+                self.wfile.write("\n".encode())
+                return
+            else:
+                self.send_error(400, 'no command was given')
                 return
 
-        except IOError:
-            self.send_error(404, 'file not found')
+        self.send_error(404, 'file not found')
 
-        ###################################
+
+###################################
 # App SIGINT handler
 ###################################
 def sigint_handler(*args):

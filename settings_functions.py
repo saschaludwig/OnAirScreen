@@ -42,7 +42,7 @@ from settings import Ui_Settings
 from collections import defaultdict
 import json
 
-versionString = "0.9beta4"
+versionString = "0.9.1beta1"
 
 
 # class OASSettings for use from OAC
@@ -75,6 +75,7 @@ class Settings(QWidget, Ui_Settings):
     sigRebootHost = pyqtSignal()
     sigShutdownHost = pyqtSignal()
     sigConfigFinished = pyqtSignal()
+    sigConfigClosed = pyqtSignal()
     sigExitRemoteOAS = pyqtSignal(int)
     sigRebootRemoteHost = pyqtSignal(int)
     sigShutdownRemoteHost = pyqtSignal(int)
@@ -107,6 +108,7 @@ class Settings(QWidget, Ui_Settings):
     def closeEvent(self, event):
         # emit config finished signal
         self.sigConfigFinished.emit()
+        self.sigConfigClosed.emit()
 
     def exitOnAirScreen(self):
         if not self.oacmode:
