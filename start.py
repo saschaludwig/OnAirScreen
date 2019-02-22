@@ -1115,8 +1115,8 @@ class HttpDaemon(QThread):
         port = int(settings.value('httpport', 8010))
         settings.endGroup()
 
-        Handler = OASHTTPRequestHandler
-        self._server = HTTPServer((HOST, port), Handler)
+        handler = OASHTTPRequestHandler
+        self._server = HTTPServer((HOST, port), handler)
         self._server.serve_forever()
 
     def stop(self):
@@ -1127,6 +1127,7 @@ class HttpDaemon(QThread):
 
 class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     server_version = "OnAirScreen/%s" % versionString
+
     # handle HEAD request
     def do_HEAD(self):
         self.send_response(200)
@@ -1136,7 +1137,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     # handle GET command
     def do_GET(self):
         print(self.path)
-        if self.path.startswith('/?'):
+        if self.path.startswith('/?cmd'):
             try:
                 cmd, message = unquote(str(self.path)[5:]).split("=", 1)
             except ValueError:
