@@ -697,17 +697,17 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if hour > 12:
                     hour -= 12
             if minute == 0:
-                string = "its %d o'clock" % hour
+                string = "it's %d o'clock" % hour
             if (0 < minute < 15) or (16 <= minute <= 29):
-                string = "its %d minute%s past %d" % (minute, 's' if minute > 1 else '', hour)
+                string = "it's %d minute%s past %d:00" % (minute, 's' if minute > 1 else '', hour)
             if minute == 15:
-                string = "its a quarter past %d" % hour
+                string = "it's a quarter past %d:00" % hour
             if minute == 30:
-                string = "its half past %d" % hour
+                string = "it's half past %d:00" % hour
             if minute == 45:
-                string = "its a quarter to %d" % hour
+                string = "it's a quarter to %d:00" % hour
             if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = "its %d minute%s to %d" % (
+                string = "it's %d minute%s to %d:00" % (
                     remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
         self.setRightText(string)
