@@ -124,7 +124,7 @@ class ClockWidget(QtWidgets.QWidget):
     def updateTime(self):
         self.timeChanged.emit(QtCore.QTime.currentTime())
 
-#    @QtCore.pyqtSignature("setTimeZone(int)")
+    @QtCore.pyqtSlot(int)
     def getTimeZone(self):
         return self.timeZoneOffset
 
@@ -142,7 +142,7 @@ class ClockWidget(QtWidgets.QWidget):
 
     timeZone = QtCore.pyqtProperty("int", getTimeZone, setTimeZone, resetTimeZone)
 
-#    @QtCore.pyqtSignature("setClockMode(int)")
+    @QtCore.pyqtSlot(int)
     def setClockMode(self, mode):
         if mode == 1:
             self.clockMode = 1
@@ -157,7 +157,7 @@ class ClockWidget(QtWidgets.QWidget):
 
     clockType = QtCore.pyqtProperty("int", getClockMode, setClockMode, resetClockMode)
 
-    #    @QtCore.pyqtSignature("setAmPm(bool)")
+    @QtCore.pyqtSlot(bool)
     def setAmPm(self, mode):
         self.isAmPm = mode
 
@@ -169,7 +169,7 @@ class ClockWidget(QtWidgets.QWidget):
 
     clockAmPm = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
 
-    #    @QtCore.pyqtSignature("setShowSeconds(bool)")
+    @QtCore.pyqtSlot(bool)
     def setShowSeconds(self, value):
         self.showSeconds = value
 
@@ -182,7 +182,7 @@ class ClockWidget(QtWidgets.QWidget):
     clockShowSeconds = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
 
 
-    #    @QtCore.pyqtSignature("setDigiHourColor(QColor)")
+    @QtCore.pyqtSlot(QtGui.QColor)
     def setDigiHourColor(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiHourColor = color
 
@@ -194,7 +194,7 @@ class ClockWidget(QtWidgets.QWidget):
 
     colorDigiHour = QtCore.pyqtProperty(QtGui.QColor, getDigiHourColor, setDigiHourColor, resetDigiHourColor)
 
-#    @QtCore.pyqtSignature("setDigiSecondColor(QColor)")
+    @QtCore.pyqtSlot(QtGui.QColor)
     def setDigiSecondColor(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiSecondColor = color
 
@@ -206,7 +206,7 @@ class ClockWidget(QtWidgets.QWidget):
 
     colorDigiSecond = QtCore.pyqtProperty(QtGui.QColor, getDigiSecondColor, setDigiSecondColor, resetDigiSecondColor)
 
-#    @QtCore.pyqtSignature("setDigiDigitColor(QColor)")
+    @QtCore.pyqtSlot(QtGui.QColor)
     def setDigiDigitColor(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiDigitColor = color
 
@@ -284,7 +284,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.rotate(6.0)
         # end analog clock mode
 
-#    @QtCore.pyqtSignature("")
+    @QtCore.pyqtSlot(str)
     def setLogo(self, logofile=""):
         self.imagepath = logofile
         self.image = QtGui.QImage(logofile)
