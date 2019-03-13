@@ -42,7 +42,7 @@ from settings import Ui_Settings
 from collections import defaultdict
 import json
 
-versionString = "0.9.1beta1"
+versionString = "0.9.1beta2"
 
 
 # class OASSettings for use from OAC
