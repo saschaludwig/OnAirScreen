@@ -1294,6 +1294,46 @@
        <property name="bottomMargin">
         <number>0</number>
        </property>
+       <item row="0" column="0">
+        <layout class="QFormLayout" name="formLayout">
+         <property name="formAlignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>UDP Port</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="udpport">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>HTTP Port</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="httpport"/>
+         </item>
+        </layout>
+       </item>
        <item row="4" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_16">
          <item>
@@ -1332,46 +1372,6 @@
             </property>
            </item>
           </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="0" column="0">
-        <layout class="QFormLayout" name="formLayout">
-         <property name="formAlignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>UDP Port</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="udpport">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_12">
-           <property name="text">
-            <string>HTTP Port</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="httpport"/>
          </item>
         </layout>
        </item>
@@ -1464,6 +1464,19 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
+       <item row="6" column="0">
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
        <item row="3" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_17">
          <item>
@@ -1502,18 +1515,36 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item row="6" column="0">
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
+       <item row="5" column="0">
+        <layout class="QVBoxLayout" name="verticalLayout_18">
+         <item>
+          <widget class="QLabel" name="label_13">
+           <property name="text">
+            <string>Weather Widget Code (weatherwidget.io)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="weatherWidgetEnabled">
+           <property name="text">
+            <string>show Weather Widget</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="weatherWidgetCode">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="plainText">
+            <string>&lt;a class=&quot;weatherwidget-io&quot; href=&quot;https://forecast7.com/de/50d777d19/sankt-augustin/&quot; data-label_1=&quot;SANKT AUGUSTIN&quot; data-label_2=&quot;Wetter&quot; data-mode=&quot;Current&quot; data-days=&quot;3&quot; data-theme=&quot;weather_one&quot; &gt;SANKT AUGUSTIN Wetter&lt;/a&gt;
+&lt;script&gt;
+!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+&lt;/script&gt;</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
@@ -3278,6 +3309,22 @@ Parts of analog clockwidget:
     <hint type="destinationlabel">
      <x>411</x>
      <y>353</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>weatherWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>weatherWidgetCode</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>367</x>
+     <y>368</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>364</x>
+     <y>480</y>
     </hint>
    </hints>
   </connection>
