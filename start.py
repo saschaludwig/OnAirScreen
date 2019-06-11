@@ -52,8 +52,7 @@ from settings_functions import Settings, versionString, weatherWidgetFallback
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-
-HOST, PORT = '127.0.0.1', 12345
+HOST = '127.0.0.1'
 
 
 class MainScreen(QWidget, Ui_MainScreen):
