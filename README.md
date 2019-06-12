@@ -22,6 +22,7 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
  * runs on RaspberryPi
  * runs on Windows, Mac, Linux
  * controlled via keyboard and network
+ * Weather Widget
  * OnAir Timer, Stopwatch, Countdown and more
 
 #### OnAirScreen Function Keys
