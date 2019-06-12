@@ -42,8 +42,13 @@ from settings import Ui_Settings
 from collections import defaultdict
 import json
 
-versionString = "0.9"
-
+versionString = "0.9.1beta2"
+weatherWidgetFallback = """
+<a class="weatherwidget-io" href="https://forecast7.com/en/50d777d19/sankt-augustin/" data-label_1="SANKT AUGUSTIN" data-label_2="Wetter" data-mode="Current" data-days="3" data-theme="weather_one" >SANKT AUGUSTIN Wetter</a>
+<script>
+!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+</script>
+"""
 
 # class OASSettings for use from OAC
 class OASSettings:
@@ -75,6 +80,7 @@ class Settings(QWidget, Ui_Settings):
     sigRebootHost = pyqtSignal()
     sigShutdownHost = pyqtSignal()
     sigConfigFinished = pyqtSignal()
+    sigConfigClosed = pyqtSignal()
     sigExitRemoteOAS = pyqtSignal(int)
     sigRebootRemoteHost = pyqtSignal(int)
     sigShutdownRemoteHost = pyqtSignal(int)
@@ -107,6 +113,7 @@ class Settings(QWidget, Ui_Settings):
     def closeEvent(self, event):
         # emit config finished signal
         self.sigConfigFinished.emit()
+        self.sigConfigClosed.emit()
 
     def exitOnAirScreen(self):
         if not self.oacmode:
@@ -261,6 +268,7 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310'))
+        self.httpport.setText(settings.value('httpport', '8010'))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
@@ -268,6 +276,12 @@ class Settings(QWidget, Ui_Settings):
         self.textClockLanguage.setCurrentIndex(self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
         self.time_am_pm.setChecked(settings.value('isAmPm', False, type=bool))
         self.time_24h.setChecked(not settings.value('isAmPm', False, type=bool))
+        settings.endGroup()
+
+        settings.beginGroup("WeatherWidget")
+        self.weatherWidgetEnabled.setChecked(settings.value('WeatherWidgetEnabled', False, type=bool))
+        self.weatherWidgetCode.setEnabled(settings.value('WeatherWidgetEnabled', False, type=bool))
+        self.weatherWidgetCode.setPlainText(settings.value('WeatherWidgetCode', weatherWidgetFallback))
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -340,12 +354,18 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Network")
         settings.setValue('udpport', self.udpport.displayText())
+        settings.setValue('httpport', self.httpport.displayText())
         settings.endGroup()
 
         settings.beginGroup("Formatting")
         settings.setValue('dateFormat', self.dateFormat.displayText())
         settings.setValue('textClockLanguage', self.textClockLanguage.currentText())
         settings.setValue('isAmPm', self.time_am_pm.isChecked())
+        settings.endGroup()
+
+        settings.beginGroup("WeatherWidget")
+        settings.setValue('WeatherWidgetEnabled', self.weatherWidgetEnabled.isChecked())
+        settings.setValue('WeatherWidgetCode', self.weatherWidgetCode.toPlainText())
         settings.endGroup()
 
         if self.oacmode == True:
