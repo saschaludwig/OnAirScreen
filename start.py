@@ -48,7 +48,12 @@ from mainscreen import Ui_MainScreen
 import ntplib
 import signal
 import socket
-from settings_functions import Settings
+from settings_functions import Settings, versionString, weatherWidgetFallback
+from urllib.parse import unquote
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+#HOST = '127.0.0.1'
+HOST = '0.0.0.0'
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -68,6 +73,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigRebootHost.connect(self.reboot_host)
         self.settings.sigShutdownHost.connect(self.shutdown_host)
         self.settings.sigConfigFinished.connect(self.configFinished)
+        self.settings.sigConfigClosed.connect(self.configClosed)
 
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
@@ -78,6 +84,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         print("Loading Settings from: ", settings.fileName())
 
         self.labelWarning.hide()
+
+        # init warning prio array (0-2
+        self.warnings = ["", "", ""]
 
         # add hotkey bindings
         QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen)
@@ -174,6 +183,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
         self.udpsock.readyRead.connect(self.cmdHandler)
 
+        # Setup HTTP Server
+        self.httpd = HttpDaemon(self)
+        self.httpd.start()
+
         # display all host addresses
         self.displayAllHostaddresses()
 
@@ -268,7 +281,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             lines = data.splitlines()
             for line in lines:
                 # print("Line:", line)
-                (command, value) = line.decode('utf_8').split(':', 1)
+                try:
+                    (command, value) = line.decode('utf_8').split(':', 1)
+                except ValueError:
+                    return
                 command = str(command)
                 value = str(value)
                 # print("command: >" + command + "<")
@@ -299,9 +315,9 @@ class MainScreen(QWidget, Ui_MainScreen):
                         self.ledLogic(4, True)
                 if command == "WARN":
                     if value:
-                        self.showWarning(value)
+                        self.addWarning(value, 1)
                     else:
-                        self.hideWarning()
+                        self.removeWarning(1)
 
                 if command == "AIR1":
                     if value == "OFF":
@@ -346,9 +362,13 @@ class MainScreen(QWidget, Ui_MainScreen):
 
                 if command == "CONF":
                     # split group, config and values and apply them
-                    (group, paramvalue) = value.split(':', 1)
-                    (param, content) = paramvalue.split('=', 1)
-                    # print "CONF:", param, content
+                    try:
+                        (group, paramvalue) = value.split(':', 1)
+                        (param, content) = paramvalue.split('=', 1)
+                        # print "CONF:", param, content
+                    except ValueError:
+                        return
+
                     if group == "General":
                         if param == "stationname":
                             self.settings.StationName.setText(content)
@@ -630,12 +650,31 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
         settings.endGroup()
 
+        settings.beginGroup("WeatherWidget")
+        self.weatherWidget.setVisible(settings.value('WeatherWidgetEnabled', False, type=bool))
+        if settings.value('WeatherWidgetEnabled', False, type=bool):
+            widgetHtml = """      
+<style type="text/css">
+body {
+    overflow:hidden;
+    width: 221px;
+    border: 0px;
+    margin: 0px;
+    background: #000;
+}
+</style>
+<body>
+""" + settings.value('WeatherWidgetCode', weatherWidgetFallback) + "</body>"
+            self.weatherWidget.setHtml(widgetHtml);
+        settings.endGroup()
+
     def constantUpdate(self):
         # slot for constant timer timeout
         self.updateDate()
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
         self.updateNTPstatus()
+        self.processWarnings()
 
     def updateDate(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -680,17 +719,17 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if hour > 12:
                     hour -= 12
             if minute == 0:
-                string = "its %d o'clock" % hour
+                string = "it's %d o'clock" % hour
             if (0 < minute < 15) or (16 <= minute <= 29):
-                string = "its %d minute%s past %d" % (minute, 's' if minute > 1 else '', hour)
+                string = "it's %d minute%s past %d:00" % (minute, 's' if minute > 1 else '', hour)
             if minute == 15:
-                string = "its a quarter past %d" % hour
+                string = "it's a quarter past %d:00" % hour
             if minute == 30:
-                string = "its half past %d" % hour
+                string = "it's half past %d:00" % hour
             if minute == 45:
-                string = "its a quarter to %d" % hour
+                string = "it's a quarter to %d:00" % hour
             if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = "its %d minute%s to %d" % (
+                string = "it's %d minute%s to %d:00" % (
                     remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
         self.setRightText(string)
@@ -703,10 +742,10 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def updateNTPstatus(self):
         if self.ntpHadWarning and len(self.ntpWarnMessage):
-            self.showWarning(self.ntpWarnMessage)
+            self.addWarning(self.ntpWarnMessage, 0)
         else:
             self.ntpWarnMessage = ""
-            self.hideWarning()
+            self.removeWarning(0)
 
     def toggleFullScreen(self):
         global app
@@ -997,6 +1036,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         pass
         # self.labelSeconds.setText( str(value) )
 
+    def addWarning(self, text, priority=0):
+        self.warnings[priority] = text
+
+    def removeWarning(self, priority=0):
+        self.warnings[priority] = ""
+
+    def processWarnings(self):
+        warningAvailable = False
+
+        for warning in self.warnings:
+            if len(warning) > 0:
+                lastwarning = warning
+                warningAvailable = True
+        if warningAvailable:
+            self.showWarning(lastwarning)
+        else:
+            self.hideWarning()
+
     def showWarning(self, text):
         self.labelCurrentSong.hide()
         self.labelNews.hide()
@@ -1006,7 +1063,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelWarning.setFont(font)
         self.labelWarning.show()
 
-    def hideWarning(self):
+    def hideWarning(self, priority=0):
         self.labelWarning.hide()
         self.labelCurrentSong.show()
         self.labelNews.show()
@@ -1017,8 +1074,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         app.exit()
 
-    def configFinished(self):
-        self.restoreSettingsFromConfig()
+    def configClosed(self):
         global app
         # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -1027,8 +1083,11 @@ class MainScreen(QWidget, Ui_MainScreen):
             app.setOverrideCursor(QCursor(Qt.BlankCursor));
         settings.endGroup()
 
+    def configFinished(self):
+        self.restoreSettingsFromConfig()
+
     def reboot_host(self):
-        self.showWarning("SYSTEM REBOOT IN PROGRESS")
+        self.addWarning("SYSTEM REBOOT IN PROGRESS", 2)
         if os.name == "posix":
             cmd = "sudo reboot"
             os.system(cmd)
@@ -1037,13 +1096,16 @@ class MainScreen(QWidget, Ui_MainScreen):
             pass
 
     def shutdown_host(self):
-        self.showWarning("SYSTEM SHUTDOWN IN PROGRESS")
+        self.addWarning("SYSTEM SHUTDOWN IN PROGRESS", 2)
         if os.name == "posix":
             cmd = "sudo halt"
             os.system(cmd)
         if os.name == "nt":
             cmd = "shutdown -f -t 0"
             pass
+
+    def closeEvent(self, event):
+        self.httpd.stop()
 
 
 class checkNTPOffsetThread(QThread):
@@ -1084,6 +1146,68 @@ class checkNTPOffsetThread(QThread):
             print("NTP error:", e)
             self.oas.ntpWarnMessage = str(e)
             self.oas.ntpHadWarning = True
+
+
+class HttpDaemon(QThread):
+    def run(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Network")
+        port = int(settings.value('httpport', 8010))
+        settings.endGroup()
+
+        handler = OASHTTPRequestHandler
+        self._server = HTTPServer((HOST, port), handler)
+        self._server.serve_forever()
+
+    def stop(self):
+        self._server.shutdown()
+        self._server.socket.close()
+        self.wait()
+
+
+class OASHTTPRequestHandler(BaseHTTPRequestHandler):
+    server_version = "OnAirScreen/%s" % versionString
+
+    # handle HEAD request
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+    # handle GET command
+    def do_GET(self):
+        print(self.path)
+        if self.path.startswith('/?cmd'):
+            try:
+                cmd, message = unquote(str(self.path)[5:]).split("=", 1)
+            except ValueError:
+                self.send_error(400, 'no command was given')
+                return
+
+            if len(message) > 0:
+                self.send_response(200)
+
+                # send header first
+                self.send_header('Content-type', 'text-html')
+                self.end_headers()
+
+                settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+                settings.beginGroup("Network")
+                port = int(settings.value('udpport', 3310))
+                settings.endGroup()
+
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.sendto(message.encode(), ("127.0.0.1", port))
+
+                # send file content to client
+                self.wfile.write(message.encode())
+                self.wfile.write("\n".encode())
+                return
+            else:
+                self.send_error(400, 'no command was given')
+                return
+
+        self.send_error(404, 'file not found')
 
 
 ###################################
