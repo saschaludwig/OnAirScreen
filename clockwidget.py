@@ -312,7 +312,10 @@ class ClockWidget(QtWidgets.QWidget):
         secondsOffsetX = -3.5
 
         if self.isAmPm:
-            hourStr = "%02d" % (time.hour()-12)
+            if time.hour() >= 12:
+                hourStr = "%02d" % (time.hour()-12)
+            else:
+                hourStr = "%02d" % time.hour()
         else:
             hourStr = "%02d" % time.hour()
         self.drawDigit(painter, digitSpacing * -2, 0, hourStr[0:1])
