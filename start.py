@@ -52,7 +52,8 @@ from settings_functions import Settings, versionString, weatherWidgetFallback
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-HOST = '127.0.0.1'
+#HOST = '127.0.0.1'
+HOST = '0.0.0.0'
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -83,6 +84,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         print("Loading Settings from: ", settings.fileName())
 
         self.labelWarning.hide()
+
+        # init warning prio array (0-2
+        self.warnings = ["", "", ""]
 
         # add hotkey bindings
         QShortcut(QKeySequence("Ctrl+F"), self, self.toggleFullScreen)
@@ -311,9 +315,9 @@ class MainScreen(QWidget, Ui_MainScreen):
                         self.ledLogic(4, True)
                 if command == "WARN":
                     if value:
-                        self.showWarning(value)
+                        self.addWarning(value, 1)
                     else:
-                        self.hideWarning()
+                        self.removeWarning(1)
 
                 if command == "AIR1":
                     if value == "OFF":
@@ -670,6 +674,7 @@ body {
         self.updateBacktimingText()
         self.updateBacktimingSeconds()
         self.updateNTPstatus()
+        self.processWarnings()
 
     def updateDate(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -737,10 +742,10 @@ body {
 
     def updateNTPstatus(self):
         if self.ntpHadWarning and len(self.ntpWarnMessage):
-            self.showWarning(self.ntpWarnMessage)
+            self.addWarning(self.ntpWarnMessage, 0)
         else:
             self.ntpWarnMessage = ""
-            self.hideWarning()
+            self.removeWarning(0)
 
     def toggleFullScreen(self):
         global app
@@ -1031,6 +1036,24 @@ body {
         pass
         # self.labelSeconds.setText( str(value) )
 
+    def addWarning(self, text, priority=0):
+        self.warnings[priority] = text
+
+    def removeWarning(self, priority=0):
+        self.warnings[priority] = ""
+
+    def processWarnings(self):
+        warningAvailable = False
+
+        for warning in self.warnings:
+            if len(warning) > 0:
+                lastwarning = warning
+                warningAvailable = True
+        if warningAvailable:
+            self.showWarning(lastwarning)
+        else:
+            self.hideWarning()
+
     def showWarning(self, text):
         self.labelCurrentSong.hide()
         self.labelNews.hide()
@@ -1040,7 +1063,7 @@ body {
         self.labelWarning.setFont(font)
         self.labelWarning.show()
 
-    def hideWarning(self):
+    def hideWarning(self, priority=0):
         self.labelWarning.hide()
         self.labelCurrentSong.show()
         self.labelNews.show()
@@ -1064,7 +1087,7 @@ body {
         self.restoreSettingsFromConfig()
 
     def reboot_host(self):
-        self.showWarning("SYSTEM REBOOT IN PROGRESS")
+        self.addWarning("SYSTEM REBOOT IN PROGRESS", 2)
         if os.name == "posix":
             cmd = "sudo reboot"
             os.system(cmd)
@@ -1073,7 +1096,7 @@ body {
             pass
 
     def shutdown_host(self):
-        self.showWarning("SYSTEM SHUTDOWN IN PROGRESS")
+        self.addWarning("SYSTEM SHUTDOWN IN PROGRESS", 2)
         if os.name == "posix":
             cmd = "sudo halt"
             os.system(cmd)
