@@ -18,7 +18,7 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
  * flexible integration into existing studio setups
  * customizable logo, colors and labels
  * 4:3 and 16:9/16:10 monitor aspect ratio support
- * easy installation
+ * easy installation (Win/Linux/Mac binaries available)
  * runs on RaspberryPi
  * runs on Windows, Mac, Linux
  * controlled via keyboard and network
