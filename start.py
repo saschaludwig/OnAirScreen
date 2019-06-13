@@ -48,9 +48,10 @@ from mainscreen import Ui_MainScreen
 import ntplib
 import signal
 import socket
-from settings_functions import Settings, versionString, weatherWidgetFallback
+from settings_functions import Settings, versionString
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
 
 #HOST = '127.0.0.1'
 HOST = '0.0.0.0'
@@ -651,21 +652,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
-        self.weatherWidget.setVisible(settings.value('WeatherWidgetEnabled', False, type=bool))
-        if settings.value('WeatherWidgetEnabled', False, type=bool):
-            widgetHtml = """      
-<style type="text/css">
-body {
-    overflow:hidden;
-    width: 221px;
-    border: 0px;
-    margin: 0px;
-    background: #000;
-}
-</style>
-<body>
-""" + settings.value('WeatherWidgetCode', weatherWidgetFallback) + "</body>"
-            self.weatherWidget.setHtml(widgetHtml);
+        self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
+        #if settings.value('owmWidgetEnabled', False, type=bool):
         settings.endGroup()
 
     def constantUpdate(self):

@@ -13,7 +13,7 @@
     <x>0</x>
     <y>0</y>
     <width>1001</width>
-    <height>878</height>
+    <height>791</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -1065,7 +1065,7 @@ color: rgb(255, 255, 255);</string>
     </layout>
    </item>
    <item row="8" column="0">
-    <widget class="QWebEngineView" name="weatherWidget">
+    <widget class="QWidget" name="weatherWidget" native="true">
      <property name="enabled">
       <bool>false</bool>
      </property>
@@ -1081,19 +1081,11 @@ color: rgb(255, 255, 255);</string>
        <height>130</height>
       </size>
      </property>
-     <property name="styleSheet">
-      <string notr="true">background-color: rgb(0, 0, 0);</string>
-     </property>
     </widget>
    </item>
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>QWebEngineView</class>
-   <extends>QWidget</extends>
-   <header location="global">QtWebEngineWidgets/QWebEngineView</header>
-  </customwidget>
   <customwidget>
    <class>ClockWidget</class>
    <extends>QWidget</extends>
