@@ -2,6 +2,9 @@
   <qresource prefix="oas_icon">
     <file>images/oas_icon.png</file>
   </qresource>
+  <qresource prefix="weather_backgrounds">
+    <file>images/rain.jpg</file>
+  </qresource>
   <qresource prefix="stream_icon">
     <file>images/antenna.png</file>
     <file>images/antenna2.png</file>

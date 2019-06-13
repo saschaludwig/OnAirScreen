@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WeatherWidget</class>
+ <widget class="QWidget" name="WeatherWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>236</width>
+    <height>152</height>
+   </rect>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">border-image: url(:/weather_backgrounds/images/rain.jpg) 0 0 0 0 stretch stretch;
+background-color: #000;
+background-size: contain;
+background-repeat: no-repeat;
+</string>
+  </property>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
