@@ -3,7 +3,16 @@
     <file>images/oas_icon.png</file>
   </qresource>
   <qresource prefix="weather_backgrounds">
+    <file>images/thunder.jpg</file>
     <file>images/rain.jpg</file>
+    <file>images/clear_day.jpg</file>
+    <file>images/clear_night.jpg</file>
+    <file>images/cloudy.jpg</file>
+    <file>images/fog.jpg</file>
+    <file>images/partly_cloudy_day.jpg</file>
+  </qresource>
+  <qresource prefix="fonts">
+    <file>images/iconvault_forecastfont.ttf</file>
   </qresource>
   <qresource prefix="stream_icon">
     <file>images/antenna.png</file>
