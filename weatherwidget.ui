@@ -6,17 +6,120 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>236</width>
-    <height>152</height>
+    <width>332</width>
+    <height>211</height>
    </rect>
   </property>
   <property name="styleSheet">
-   <string notr="true">border-image: url(:/weather_backgrounds/images/rain.jpg) 0 0 0 0 stretch stretch;
+   <string notr="true">QWidget#WeatherWidget {
+border-image: url(:/weather_backgrounds/images/rain.jpg) 0 0 0 0 stretch stretch;
 background-color: #000;
 background-size: contain;
 background-repeat: no-repeat;
-</string>
+}</string>
   </property>
+  <layout class="QVBoxLayout" name="verticalLayout_3">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="cityLabel">
+       <property name="font">
+        <font>
+         <pointsize>15</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: #fff</string>
+       </property>
+       <property name="text">
+        <string>NEW YORK</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="weatherLabel">
+       <property name="styleSheet">
+        <string notr="true">color: #fff</string>
+       </property>
+       <property name="text">
+        <string>WEATHER</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="font">
+        <font>
+         <pointsize>42</pointsize>
+        </font>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: #fff</string>
+       </property>
+       <property name="text">
+        <string>A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="font">
+          <font>
+           <pointsize>39</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: #fff</string>
+         </property>
+         <property name="text">
+          <string>15°C</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_2">
+         <property name="styleSheet">
+          <string notr="true">color: #fff</string>
+         </property>
+         <property name="text">
+          <string>Light Rain</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
  </widget>
  <resources>
   <include location="resources.qrc"/>
