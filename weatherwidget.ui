@@ -6,29 +6,45 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>332</width>
-    <height>211</height>
+    <width>221</width>
+    <height>150</height>
    </rect>
   </property>
   <property name="styleSheet">
    <string notr="true">QWidget#WeatherWidget {
-border-image: url(:/weather_backgrounds/images/rain.jpg) 0 0 0 0 stretch stretch;
+border-image: url(:/weather_backgrounds/images/clear_day.jpg) 0 0 0 0 stretch stretch;
 background-color: #000;
 background-size: contain;
 background-repeat: no-repeat;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <property name="spacing">
+    <number>0</number>
+   </property>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
      <property name="spacing">
       <number>0</number>
      </property>
      <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
       <widget class="QLabel" name="cityLabel">
        <property name="font">
         <font>
-         <pointsize>15</pointsize>
+         <pointsize>22</pointsize>
          <weight>75</weight>
          <bold>true</bold>
         </font>
@@ -46,6 +62,11 @@ background-repeat: no-repeat;
      </item>
      <item>
       <widget class="QLabel" name="weatherLabel">
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
        <property name="styleSheet">
         <string notr="true">color: #fff</string>
        </property>
@@ -57,22 +78,35 @@ background-repeat: no-repeat;
        </property>
       </widget>
      </item>
+     <item>
+      <spacer name="verticalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
      <item>
       <widget class="QLabel" name="label_3">
        <property name="font">
         <font>
-         <pointsize>42</pointsize>
+         <pointsize>50</pointsize>
         </font>
        </property>
-       <property name="autoFillBackground">
-        <bool>false</bool>
-       </property>
        <property name="styleSheet">
-        <string notr="true">color: #fff</string>
+        <string notr="true">color: #fff;</string>
        </property>
        <property name="text">
         <string>A</string>
@@ -84,6 +118,9 @@ background-repeat: no-repeat;
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label">
          <property name="font">
@@ -104,6 +141,11 @@ background-repeat: no-repeat;
        </item>
        <item>
         <widget class="QLabel" name="label_2">
+         <property name="font">
+          <font>
+           <pointsize>13</pointsize>
+          </font>
+         </property>
          <property name="styleSheet">
           <string notr="true">color: #fff</string>
          </property>
