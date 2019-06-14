@@ -659,7 +659,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         if settings.value('owmWidgetEnabled', False, type=bool):
             self.weatherWidget.setAttribute(Qt.WA_TranslucentBackground)
             self.weatherWidget.setStyleSheet("background: transparent")
-            
+
+            # https://stackoverflow.com/questions/45909518/qt-qwebengineview-not-allowed-to-load-local-resource
+
             page = self.weatherWidget.page()
             page.setBackgroundColor(Qt.transparent)
             widgetHtml = """
