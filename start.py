@@ -45,6 +45,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDia
 from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
+from weatherwidget import Ui_WeatherWidget
 import ntplib
 import signal
 import socket

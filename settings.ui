@@ -124,7 +124,7 @@
       <enum>QTabWidget::West</enum>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <property name="documentMode">
       <bool>true</bool>
@@ -1521,7 +1521,7 @@ p, li { white-space: pre-wrap; }
            <item row="3" column="0">
             <widget class="QLabel" name="label_26">
              <property name="text">
-              <string>Units</string>
+              <string>Unit</string>
              </property>
             </widget>
            </item>
@@ -1539,7 +1539,11 @@ p, li { white-space: pre-wrap; }
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_19">
            <item>
-            <widget class="QPlainTextEdit" name="owmTestOutput"/>
+            <widget class="QPlainTextEdit" name="owmTestOutput">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -3498,6 +3502,86 @@ Parts of analog clockwidget:
     <hint type="destinationlabel">
      <x>70</x>
      <y>409</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_25</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>71</x>
+     <y>507</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_26</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>62</x>
+     <y>470</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmUnit</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>152</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmTestAPI</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>172</x>
+     <y>509</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmTestOutput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>364</x>
+     <y>580</y>
     </hint>
    </hints>
   </connection>
