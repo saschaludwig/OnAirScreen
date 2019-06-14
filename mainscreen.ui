@@ -1072,10 +1072,11 @@ color: rgb(255, 255, 255);</string>
        <height>120</height>
       </size>
      </property>
-     <property name="url">
-      <url>
-       <string>about:blank</string>
-      </url>
+     <property name="contextMenuPolicy">
+      <enum>Qt::NoContextMenu</enum>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
      </property>
     </widget>
    </item>

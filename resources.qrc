@@ -12,6 +12,9 @@
     <file>images/partly_cloudy_day.jpg</file>
   </qresource>
   <qresource prefix="fonts">
+    <file>images/iconvault_forecastfont.eot</file>
+    <file>images/iconvault_forecastfont.svg</file>
+    <file>images/iconvault_forecastfont.woff</file>
     <file>images/iconvault_forecastfont.ttf</file>
   </qresource>
   <qresource prefix="stream_icon">
