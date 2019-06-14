@@ -68,6 +68,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
 
+        # load weather widget
+
+
         self.settings = Settings()
         self.restoreSettingsFromConfig()
         # quit app from settings window
@@ -653,8 +656,60 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
+        if settings.value('owmWidgetEnabled', False, type=bool):
+            self.weatherWidget.setAttribute(Qt.WA_TranslucentBackground)
+            self.weatherWidget.setStyleSheet("background: transparent")
+            
+            page = self.weatherWidget.page()
+            page.setBackgroundColor(Qt.transparent)
+            widgetHtml = """
+                <html>
+                <head>
+                    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+                </head>
+                
+                <style type="text/css">
+                body {
+                    overflow:hidden;
+                    border: 0px;
+                    margin: 5px;
+                    background: #000;
+                    color: #fff;
+                    background-image: url(qrc:/weather_backgrounds/images/clear_day.jpg);
+                    background-size: cover;
+                    font-family: FreeSans, sans-serif;
+                    text-align: center;
+                }
+                @font-face { 
+                    font-family: "iconvault"; 
+                    src: url(qrc:/fonts/images/iconvault_forecastfont.eot);
+                    src: url(qrc:/fonts/images/iconvault_forecastfont.eot?#iefix) format("embedded-opentype"),
+                         url(qrc:/fonts/images/iconvault_forecastfont.woff) format("woff"),
+                         url(qrc:/fonts/images/iconvault_forecastfont.ttf) format("truetype"),
+                         url(qrc:/fonts/images/iconvault_forecastfont.svg#iconvault) format("svg");       
+                    font-weight: normal;
+                    font-style: normal; 
+                }
+                .icon1 {
+                    color: #f00;
+                    font-family: "iconvault";
+                    font-style: normal;
+                    font-weight: normal;
+                    font-variant: normal;
+                    text-transform: none;
+                    line-height: 1;
+                    -webkit-font-smoothing: antialiased;
+                    display: inline-block;
+                    text-decoration: inherit;
+                 }
+                .icon1:before { content: "\f113"; }
+                 
+                </style>
+                <body>Weather Widget
+                <ul><li class="icon1">A</li></ul>
+                """ + "</body></html>"
+            page.setHtml(widgetHtml)
         self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
-        #if settings.value('owmWidgetEnabled', False, type=bool):
         settings.endGroup()
 
     def constantUpdate(self):
