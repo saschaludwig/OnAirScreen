@@ -1,6 +1,5 @@
 mainscreen.py
 settings.py
-weatherwidget.py
 resources_rc.py
 *.pyc
 *.pyo
