@@ -2,6 +2,9 @@
   <qresource prefix="oas_icon">
     <file>images/oas_icon.png</file>
   </qresource>
+  <qresource prefix="html">
+    <file>weatherwidget.html</file>
+  </qresource>
   <qresource prefix="weather_backgrounds">
     <file>images/thunder.jpg</file>
     <file>images/rain.jpg</file>
@@ -10,6 +13,33 @@
     <file>images/cloudy.jpg</file>
     <file>images/fog.jpg</file>
     <file>images/partly_cloudy_day.jpg</file>
+  </qresource>
+  <qresource prefix="weather">
+    <file>images/weather/rainy-1.svg</file>
+    <file>images/weather/cloudy-day-1.svg</file>
+    <file>images/weather/cloudy-day-2.svg</file>
+    <file>images/weather/cloudy-day-3.svg</file>
+    <file>images/weather/cloudy-night-1.svg</file>
+    <file>images/weather/cloudy-night-2.svg</file>
+    <file>images/weather/cloudy-night-3.svg</file>
+    <file>images/weather/cloudy.svg</file>
+    <file>images/weather/day.svg</file>
+    <file>images/weather/night.svg</file>
+    <file>images/weather/rainy-2.svg</file>
+    <file>images/weather/rainy-3.svg</file>
+    <file>images/weather/rainy-4.svg</file>
+    <file>images/weather/rainy-5.svg</file>
+    <file>images/weather/rainy-6.svg</file>
+    <file>images/weather/rainy-7.svg</file>
+    <file>images/weather/snowy-1.svg</file>
+    <file>images/weather/snowy-2.svg</file>
+    <file>images/weather/snowy-3.svg</file>
+    <file>images/weather/snowy-4.svg</file>
+    <file>images/weather/snowy-5.svg</file>
+    <file>images/weather/snowy-6.svg</file>
+    <file>images/weather/thunder.svg</file>
+    <file>images/weather/weather-sprite.svg</file>
+    <file>images/weather/weather.svg</file>
   </qresource>
   <qresource prefix="fonts">
     <file>images/iconvault_forecastfont.eot</file>

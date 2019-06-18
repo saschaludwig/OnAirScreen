@@ -42,7 +42,7 @@ from datetime import datetime
 
 from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread
+from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread, QUrl
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
 from weatherwidget import Ui_WeatherWidget
@@ -657,61 +657,13 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.beginGroup("WeatherWidget")
         if settings.value('owmWidgetEnabled', False, type=bool):
-            self.weatherWidget.setAttribute(Qt.WA_TranslucentBackground)
-            self.weatherWidget.setStyleSheet("background: transparent")
+            #self.weatherWidget =
 
-            # https://stackoverflow.com/questions/45909518/qt-qwebengineview-not-allowed-to-load-local-resource
-
-            page = self.weatherWidget.page()
-            page.setBackgroundColor(Qt.transparent)
-            widgetHtml = """
-                <html>
-                <head>
-                    <meta http-equiv="Access-Control-Allow-Origin" content="*">
-                </head>
-                
-                <style type="text/css">
-                body {
-                    overflow:hidden;
-                    border: 0px;
-                    margin: 5px;
-                    background: #000;
-                    color: #fff;
-                    background-image: url(qrc:/weather_backgrounds/images/clear_day.jpg);
-                    background-size: cover;
-                    font-family: FreeSans, sans-serif;
-                    text-align: center;
-                }
-                @font-face { 
-                    font-family: "iconvault"; 
-                    src: url(qrc:/fonts/images/iconvault_forecastfont.eot);
-                    src: url(qrc:/fonts/images/iconvault_forecastfont.eot?#iefix) format("embedded-opentype"),
-                         url(qrc:/fonts/images/iconvault_forecastfont.woff) format("woff"),
-                         url(qrc:/fonts/images/iconvault_forecastfont.ttf) format("truetype"),
-                         url(qrc:/fonts/images/iconvault_forecastfont.svg#iconvault) format("svg");       
-                    font-weight: normal;
-                    font-style: normal; 
-                }
-                .icon1 {
-                    color: #f00;
-                    font-family: "iconvault";
-                    font-style: normal;
-                    font-weight: normal;
-                    font-variant: normal;
-                    text-transform: none;
-                    line-height: 1;
-                    -webkit-font-smoothing: antialiased;
-                    display: inline-block;
-                    text-decoration: inherit;
-                 }
-                .icon1:before { content: "\f113"; }
-                 
-                </style>
-                <body>Weather Widget
-                <ul><li class="icon1">A</li></ul>
-                """ + "</body></html>"
-            page.setHtml(widgetHtml)
-        self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
+            #page = self.weatherWidget.page()
+            #page.setBackgroundColor(Qt.transparent)
+            #page.setHtml(widgetHtml)
+            #self.weatherWidget.setUrl(QUrl("qrc:/html/weatherwidget.html"))
+        #self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
         settings.endGroup()
 
     def constantUpdate(self):
