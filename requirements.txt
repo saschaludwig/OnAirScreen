@@ -1,5 +1,4 @@
 PyQt5
 ntplib
-PyInstaller==3.4
+PyInstaller
 pyqt-distutils
-PyQtWebEngine

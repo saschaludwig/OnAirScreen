@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>221</width>
-    <height>150</height>
+    <height>135</height>
    </rect>
   </property>
   <property name="styleSheet">
@@ -105,11 +105,8 @@ background-repeat: no-repeat;
          <pointsize>50</pointsize>
         </font>
        </property>
-       <property name="styleSheet">
-        <string notr="true">color: #fff;</string>
-       </property>
-       <property name="text">
-        <string>A</string>
+       <property name="pixmap">
+        <pixmap resource="resources.qrc">:/weather/images/weather/rainy-1.svg</pixmap>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
