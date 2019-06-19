@@ -2,9 +2,6 @@
   <qresource prefix="oas_icon">
     <file>images/oas_icon.png</file>
   </qresource>
-  <qresource prefix="html">
-    <file>weatherwidget.html</file>
-  </qresource>
   <qresource prefix="weather_backgrounds">
     <file>images/thunder.jpg</file>
     <file>images/rain.jpg</file>
@@ -40,12 +37,6 @@
     <file>images/weather/thunder.svg</file>
     <file>images/weather/weather-sprite.svg</file>
     <file>images/weather/weather.svg</file>
-  </qresource>
-  <qresource prefix="fonts">
-    <file>images/iconvault_forecastfont.eot</file>
-    <file>images/iconvault_forecastfont.svg</file>
-    <file>images/iconvault_forecastfont.woff</file>
-    <file>images/iconvault_forecastfont.ttf</file>
   </qresource>
   <qresource prefix="stream_icon">
     <file>images/antenna.png</file>
