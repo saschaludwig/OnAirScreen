@@ -42,6 +42,7 @@ import PyQt5.QtNetwork as QtNetwork
 from settings import Ui_Settings
 from collections import defaultdict
 import json
+from weatherwidget import WeatherWidget as ww
 
 versionString = "0.9.1beta2"
 
@@ -90,14 +91,14 @@ class Settings(QWidget, Ui_Settings):
         self.textClockLanguages = ["English", "German"]
 
         # available Weather Widget languages
-        self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
-                             "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
-                             "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
-                             "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
-                             "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
-                             "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
-                             "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
-        self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
+        #self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
+        #                     "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
+        #                     "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
+        #                     "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
+        #                     "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
+        #                     "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
+        #                     "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
+        #self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
         self._connectSlots()
@@ -208,11 +209,11 @@ class Settings(QWidget, Ui_Settings):
 
         # populate owm widget languages
         self.owmLanguage.clear()
-        self.owmLanguage.addItems(self.owmLanguages.keys())
+        self.owmLanguage.addItems(ww.owm_languages.keys())
 
         # populate owm units
         self.owmUnit.clear()
-        self.owmUnit.addItems(self.owmUnits.keys())
+        self.owmUnit.addItems(ww.owm_units.keys())
 
         settings.beginGroup("General")
         self.StationName.setText(settings.value('stationname', 'Radio Eriwan'))
@@ -411,8 +412,8 @@ class Settings(QWidget, Ui_Settings):
     def makeOWMTestCall(self):
         appid = self.owmAPIKey.displayText()
         cityID = self.owmCityID.displayText()
-        units = self.owmUnits.get(self.owmUnit.currentText())
-        lang = self.owmLanguages.get(self.owmLanguage.currentText())
+        units = ww.owm_units.get(self.owmUnit.currentText())
+        lang = ww.owm_languages.get(self.owmLanguage.currentText())
         url = "http://api.openweathermap.org/data/2.5/weather?id=" + cityID + "&units=" + units + "&lang=" + lang + "&appid=" + appid
 
         req = QtNetwork.QNetworkRequest(QUrl(url))

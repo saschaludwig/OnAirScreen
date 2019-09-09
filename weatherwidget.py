@@ -37,13 +37,14 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import PyQt5.QtNetwork as QtNetwork
+import json
 
 class WeatherWidget(QtWidgets.QWidget):
 
     # https://openweathermap.org/weather-conditions
     #":/weather_backgrounds/images/"
-    conditions = {"Thunderstorm": {"bg": "thunder.jpg", "iconday": "thunder.svg"},
+    owm_conditions = {"Thunderstorm": {"bg": "thunder.jpg", "iconday": "thunder.svg"},
                   "Drizzle":      {"bg": "rain.jpg",    "iconday": "rainy-1.svg"},
                   "Rain":         {"bg": "rain.jpg",    "iconday": "rainy-6.svg"},
                   "Snow":         {"bg": "snow.jpg",    "iconday": "snowy-6.svg"},
@@ -62,7 +63,16 @@ class WeatherWidget(QtWidgets.QWidget):
 
                   }
 
-    #print(conditions["Clear"]["day"]["icon"])
+    owm_languages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
+                     "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
+                     "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
+                     "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
+                     "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
+                     "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
+                     "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
+    owm_units = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
+
+    print(owm_conditions["Clear"]["day"]["icon"])
     #rain.jpg
     #clear_day.jpg
     #partly_cloudy_day.jpg
@@ -74,16 +84,21 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(WeatherWidget, self).__init__(parent)
-        self.setObjectName("WeatherWidget")
-        # self.resize(221, 135)
+        self.nam = None
+        self.bg = None
+        self.widgetEnabled = None
+        self.owmAPIKey = None
+        self.owmCityID = None
+        self.owmLanguage = None
+        self.owmUnit = None
+        self.readConfig()
 
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self)
         self.verticalLayout_3.setContentsMargins(2, 2, 2, 2)
         self.verticalLayout_3.setSpacing(0)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSpacing(0)
-        self.verticalLayout.setObjectName("verticalLayout")
+
         #spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         #self.verticalLayout.addItem(spacerItem)
 
@@ -130,6 +145,11 @@ class WeatherWidget(QtWidgets.QWidget):
         iconPixmap = QtGui.QPixmap(":/weather/images/weather/rainy-1.svg")
         self.weatherIcon.setPixmap(iconPixmap)
         self.weatherIcon.setAlignment(QtCore.Qt.AlignCenter)
+        iconfx = QtWidgets.QGraphicsDropShadowEffect()
+        iconfx.setBlurRadius(6)
+        iconfx.setColor(QtGui.QColor("#000"))
+        iconfx.setOffset(0, 0)
+        self.weatherIcon.setGraphicsEffect(iconfx)
         self.horizontalLayout.addWidget(self.weatherIcon)
 
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
@@ -167,18 +187,64 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout_3.addLayout(self.horizontalLayout)
 
         # set demo text
-        self.cityLabel.setText("NEW YORK")
-        self.weatherLabel.setText("WEATHER")
-        self.temperatureLabel.setText("15°C")
-        self.conditionLabel.setText("Light Rain")
+        self.setData("", "", "")
+        self.makeOWMApiCall()
 
-        # QtCore.QMetaObject.connectSlotsByName(self)
+    def setData(self, city, temperature, condition, icon="01d", background=None, label="WEATHER"):
+        self.cityLabel.setText(city)
+        self.temperatureLabel.setText(temperature)
+        self.conditionLabel.setText(condition)
+        self.weatherLabel.setText(label)
+        self.setWeatherIcon(icon)
+        self.setWeatherBackground(background)
+
+    def setWeatherIcon(self, icon):
+        icon_pixmap = QtGui.QPixmap(":/weather/images/weather_icons/{}.svg".format(icon))
+        self.weatherIcon.setPixmap(icon_pixmap)
+
+    def setWeatherBackground(self, background):
+        self.bg = ":/weather_backgrounds/images/weather_backgrounds/{}.jpg".format(background)
+        self.repaint()
+
+    def makeOWMApiCall(self):
+        print("OWM API Call")
+        url = "http://api.openweathermap.org/data/2.5/weather?id=" + self.owmCityID + "&units=" + self.owmUnit + "&lang=" + self.owmLanguage + "&appid=" + self.owmAPIKey
+        req = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
+        self.nam = QtNetwork.QNetworkAccessManager()
+        self.nam.finished.connect(self.handleOWMResponse)
+        self.nam.get(req)
+
+    def handleOWMResponse(self, reply):
+        er = reply.error()
+        if er == QtNetwork.QNetworkReply.NoError:
+            bytes_string = reply.readAll()
+            replyString = str(bytes_string, 'utf-8')
+            #print(replyString)
+            weatherJson = (json.loads(replyString))
+            main_weather = weatherJson["weather"][0]["main"]
+            condition = weatherJson["weather"][0]["description"]
+            city = weatherJson["name"]
+            temp = "{:.1f}°{}".format(weatherJson["main"]["temp"], "C")
+            icon = weatherJson["weather"][0]["icon"]
+            background = icon
+            self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background, label="WETTER")
+        else:
+            errorString = "Error occured: {}, {}".format(er, reply.errorString())
+            print(errorString)
+
+    def readConfig(self):
+        # settings
+        settings = QtCore.QSettings(QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("WeatherWidget")
+        self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
+        self.owmAPIKey = settings.value('owmAPIKey', "")
+        self.owmCityID = settings.value('owmCityID', "2643743")
+        self.owmLanguage = self.owm_languages.get(settings.value('owmLanguage', "English"))
+        self.owmUnit = self.owm_units.get(settings.value('owmUnit', "Celsius"))
+        settings.endGroup()
 
     def paintEvent(self, event):
-        print("paint")
         painter = QtGui.QPainter(self)
-        #painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(":/weather_backgrounds/images/rain.jpg"))
-        painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(":/weather_backgrounds/images/clear_day.jpg"))
-
+        painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(self.bg))
 
 import resources_rc
