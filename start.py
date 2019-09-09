@@ -45,7 +45,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDia
 from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread, QUrl
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
 from mainscreen import Ui_MainScreen
-from weatherwidget import WeatherWidget
 import ntplib
 import signal
 import socket
@@ -657,6 +656,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.beginGroup("WeatherWidget")
         if settings.value('owmWidgetEnabled', False, type=bool):
+            pass
             #self.weatherWidget =
 
             #page = self.weatherWidget.page()
