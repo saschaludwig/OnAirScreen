@@ -72,7 +72,7 @@ class WeatherWidget(QtWidgets.QWidget):
                      "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
     owm_units = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
-    print(owm_conditions["Clear"]["day"]["icon"])
+    #print(owm_conditions["Clear"]["day"]["icon"])
     #rain.jpg
     #clear_day.jpg
     #partly_cloudy_day.jpg
@@ -191,6 +191,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.makeOWMApiCall()
 
     def setData(self, city, temperature, condition, icon="01d", background=None, label="WEATHER"):
+        print(icon, background)
         self.cityLabel.setText(city)
         self.temperatureLabel.setText(temperature)
         self.conditionLabel.setText(condition)
@@ -224,7 +225,7 @@ class WeatherWidget(QtWidgets.QWidget):
             main_weather = weatherJson["weather"][0]["main"]
             condition = weatherJson["weather"][0]["description"]
             city = weatherJson["name"]
-            temp = "{:.1f}°{}".format(weatherJson["main"]["temp"], "C")
+            temp = "{:.0f}°{}".format(weatherJson["main"]["temp"], "C")
             icon = weatherJson["weather"][0]["icon"]
             background = icon
             self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background, label="WETTER")

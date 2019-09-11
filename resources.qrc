@@ -23,6 +23,7 @@
     <file>images/weather_backgrounds/50n.jpg</file>
   </qresource>
   <qresource prefix="weather">
+    <file>images/weather_icons/10n.svg</file>
     <file>images/weather_icons/01d.svg</file>
     <file>images/weather_icons/01n.svg</file>
     <file>images/weather_icons/02d.svg</file>
