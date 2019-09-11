@@ -23,22 +23,22 @@
     <file>images/weather_backgrounds/50n.jpg</file>
   </qresource>
   <qresource prefix="weather">
-    <file>images/weather_icons/10n.svg</file>
-    <file>images/weather_icons/01d.svg</file>
-    <file>images/weather_icons/01n.svg</file>
-    <file>images/weather_icons/02d.svg</file>
-    <file>images/weather_icons/02n.svg</file>
-    <file>images/weather_icons/03d.svg</file>
-    <file>images/weather_icons/03n.svg</file>
-    <file>images/weather_icons/04d.svg</file>
-    <file>images/weather_icons/04n.svg</file>
-    <file>images/weather_icons/09d.svg</file>
-    <file>images/weather_icons/09n.svg</file>
-    <file>images/weather_icons/10d.svg</file>
-    <file>images/weather_icons/11d.svg</file>
-    <file>images/weather_icons/11n.svg</file>
-    <file>images/weather_icons/13d.svg</file>
-    <file>images/weather_icons/13n.svg</file>
+    <file>images/weather_icons/01d.png</file>
+    <file>images/weather_icons/01n.png</file>
+    <file>images/weather_icons/02d.png</file>
+    <file>images/weather_icons/02n.png</file>
+    <file>images/weather_icons/03d.png</file>
+    <file>images/weather_icons/03n.png</file>
+    <file>images/weather_icons/04d.png</file>
+    <file>images/weather_icons/04n.png</file>
+    <file>images/weather_icons/09d.png</file>
+    <file>images/weather_icons/09n.png</file>
+    <file>images/weather_icons/10d.png</file>
+    <file>images/weather_icons/10n.png</file>
+    <file>images/weather_icons/11d.png</file>
+    <file>images/weather_icons/11n.png</file>
+    <file>images/weather_icons/13d.png</file>
+    <file>images/weather_icons/13n.png</file>
   </qresource>
   <qresource prefix="stream_icon">
     <file>images/antenna.png</file>
