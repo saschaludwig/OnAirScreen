@@ -40,28 +40,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import PyQt5.QtNetwork as QtNetwork
 import json
 
+
 class WeatherWidget(QtWidgets.QWidget):
-
-    # https://openweathermap.org/weather-conditions
-    #":/weather_backgrounds/images/"
-    owm_conditions = {"Thunderstorm": {"bg": "thunder.jpg", "iconday": "thunder.svg"},
-                  "Drizzle":      {"bg": "rain.jpg",    "iconday": "rainy-1.svg"},
-                  "Rain":         {"bg": "rain.jpg",    "iconday": "rainy-6.svg"},
-                  "Snow":         {"bg": "snow.jpg",    "iconday": "snowy-6.svg"},
-                  "Mist":         {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Haze":         {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Dust":         {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Fog":          {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Sand":         {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Ash":          {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Squall":       {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Tornado":      {"bg": "fog.jpg",     "iconday": "thunder.svg"},
-                  "Clear":        {"day":   {"bg": "clear_day.jpg", "icon": "day.svg"},
-                                   "night": {"bg": "clear_night.jpg", "icon": "night.svg"}},
-                  "Clouds":       {"day":   {"bg": "cloudy.jpg", "icon": "day.svg"},
-                                   "night": {"bg": "clear_night.jpg", "icon": "night.svg"}},
-
-                  }
 
     owm_languages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
                      "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
@@ -71,15 +51,6 @@ class WeatherWidget(QtWidgets.QWidget):
                      "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
                      "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
     owm_units = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
-
-    #print(owm_conditions["Clear"]["day"]["icon"])
-    #rain.jpg
-    #clear_day.jpg
-    #partly_cloudy_day.jpg
-    #cloudy.jpg
-    #fog.jpg
-    #thunder.jpg
-    #clear_night.jpg
 
 
     def __init__(self, parent=None):
@@ -142,11 +113,11 @@ class WeatherWidget(QtWidgets.QWidget):
 
         # weather icon
         self.weatherIcon = QtWidgets.QLabel(self)
-        iconPixmap = QtGui.QPixmap(":/weather/images/weather/rainy-1.svg")
+        iconPixmap = QtGui.QPixmap()
         self.weatherIcon.setPixmap(iconPixmap)
         self.weatherIcon.setAlignment(QtCore.Qt.AlignCenter)
         iconfx = QtWidgets.QGraphicsDropShadowEffect()
-        iconfx.setBlurRadius(6)
+        iconfx.setBlurRadius(20)
         iconfx.setColor(QtGui.QColor("#000"))
         iconfx.setOffset(0, 0)
         self.weatherIcon.setGraphicsEffect(iconfx)
@@ -158,7 +129,8 @@ class WeatherWidget(QtWidgets.QWidget):
         # temperature label
         self.temperatureLabel = QtWidgets.QLabel(self)
         font = QtGui.QFont()
-        font.setPointSize(42)
+        font.setPointSize(45)
+        font.setWeight(75)
         self.temperatureLabel.setFont(font)
         self.temperatureLabel.setStyleSheet("color: #fff;")
         self.temperatureLabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -200,7 +172,8 @@ class WeatherWidget(QtWidgets.QWidget):
         self.setWeatherBackground(background)
 
     def setWeatherIcon(self, icon):
-        icon_pixmap = QtGui.QPixmap(":/weather/images/weather_icons/{}.svg".format(icon))
+        icon_pixmap = QtGui.QPixmap(":/weather/images/weather_icons/{}.png".format(icon))
+        icon_pixmap.setDevicePixelRatio(5)
         self.weatherIcon.setPixmap(icon_pixmap)
 
     def setWeatherBackground(self, background):
@@ -246,6 +219,7 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
         painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(self.bg))
 
 import resources_rc
