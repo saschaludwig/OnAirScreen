@@ -52,7 +52,6 @@ from settings_functions import Settings, versionString
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-
 #HOST = '127.0.0.1'
 HOST = '0.0.0.0'
 
@@ -68,7 +67,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setupUi(self)
 
         # load weather widget
-
 
         self.settings = Settings()
         self.restoreSettingsFromConfig()
@@ -87,7 +85,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
         print("Loading Settings from: ", settings.fileName())
 
-        self.labelWarning.hide()
+        #self.labelWarning.hide()
 
         # init warning prio array (0-2
         self.warnings = ["", "", ""]
@@ -103,32 +101,19 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("ESC"), self, QCoreApplication.instance().quit)
         QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings)
         QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings)
-        QShortcut(QKeySequence(" "), self, self.radioTimerStartStop)
-        QShortcut(QKeySequence(","), self, self.radioTimerStartStop)
-        QShortcut(QKeySequence("."), self, self.radioTimerStartStop)
-        QShortcut(QKeySequence("0"), self, self.radioTimerReset)
-        QShortcut(QKeySequence("R"), self, self.radioTimerReset)
         QShortcut(QKeySequence("1"), self, self.manualToggleLED1)
         QShortcut(QKeySequence("2"), self, self.manualToggleLED2)
         QShortcut(QKeySequence("3"), self, self.manualToggleLED3)
-        QShortcut(QKeySequence("4"), self, self.manualToggleLED4)
         QShortcut(QKeySequence("M"), self, self.toggleAIR1)
         QShortcut(QKeySequence("/"), self, self.toggleAIR1)
-        QShortcut(QKeySequence("P"), self, self.toggleAIR2)
-        QShortcut(QKeySequence("*"), self, self.toggleAIR2)
-        QShortcut(QKeySequence("S"), self, self.toggleAIR4)
-        QShortcut(QKeySequence("Enter"), self, self.getTimerDialog)
-        QShortcut(QKeySequence("Return"), self, self.getTimerDialog)
 
         self.statusLED1 = False
         self.statusLED2 = False
         self.statusLED3 = False
-        self.statusLED4 = False
 
         self.LED1on = False
         self.LED2on = False
         self.LED3on = False
-        self.LED4on = False
 
         # Setup and start timers
         self.ctimer = QTimer()
@@ -141,8 +126,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerLED2.timeout.connect(self.toggleLED2)
         self.timerLED3 = QTimer()
         self.timerLED3.timeout.connect(self.toggleLED3)
-        self.timerLED4 = QTimer()
-        self.timerLED4.timeout.connect(self.toggleLED4)
+        #self.timerLED4 = QTimer()
+        #self.timerLED4.timeout.connect(self.toggleLED4)
 
         # Setup OnAir Timers
         self.timerAIR1 = QTimer()
@@ -150,33 +135,33 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.Air1Seconds = 0
         self.statusAIR1 = False
 
-        self.timerAIR2 = QTimer()
-        self.timerAIR2.timeout.connect(self.updateAIR2Seconds)
-        self.Air2Seconds = 0
-        self.statusAIR2 = False
+        #self.timerAIR2 = QTimer()
+        #self.timerAIR2.timeout.connect(self.updateAIR2Seconds)
+        #self.Air2Seconds = 0
+        #self.statusAIR2 = False
 
-        self.timerAIR3 = QTimer()
-        self.timerAIR3.timeout.connect(self.updateAIR3Seconds)
-        self.Air3Seconds = 0
-        self.statusAIR3 = False
-        self.radioTimerMode = 0  # count up mode
+        #self.timerAIR3 = QTimer()
+        #self.timerAIR3.timeout.connect(self.updateAIR3Seconds)
+        #self.Air3Seconds = 0
+        #self.statusAIR3 = False
+        #self.radioTimerMode = 0  # count up mode
 
-        self.timerAIR4 = QTimer()
-        self.timerAIR4.timeout.connect(self.updateAIR4Seconds)
-        self.Air4Seconds = 0
-        self.statusAIR4 = False
-        self.streamTimerMode = 0  # count up mode
+        #self.timerAIR4 = QTimer()
+        #self.timerAIR4.timeout.connect(self.updateAIR4Seconds)
+        #self.Air4Seconds = 0
+        #self.statusAIR4 = False
+        #self.streamTimerMode = 0  # count up mode
 
         # Setup NTP Check Thread
-        self.checkNTPOffset = checkNTPOffsetThread(self)
+        #self.checkNTPOffset = checkNTPOffsetThread(self)
 
         # Setup check NTP Timer
-        self.ntpHadWarning = True
-        self.ntpWarnMessage = ""
-        self.timerNTP = QTimer()
-        self.timerNTP.timeout.connect(self.triggerNTPcheck)
+        #self.ntpHadWarning = True
+        #self.ntpWarnMessage = ""
+        #self.timerNTP = QTimer()
+        #self.timerNTP.timeout.connect(self.triggerNTPcheck)
         # initial check
-        self.timerNTP.start(1000)
+        #self.timerNTP.start(1000)
 
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
@@ -195,29 +180,33 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.displayAllHostaddresses()
 
         # set NTP warning
-        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("NTP")
-        if settings.value('ntpcheck', True, type=bool):
-            self.ntpHadWarning = True
-            self.ntpWarnMessage = "waiting for NTP status check"
-        settings.endGroup()
+        #settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        #settings.beginGroup("NTP")
+        #if settings.value('ntpcheck', True, type=bool):
+        #    self.ntpHadWarning = True
+        #    self.ntpWarnMessage = "waiting for NTP status check"
+        #settings.endGroup()
 
     def radioTimerStartStop(self):
-        self.startStopAIR3()
+        pass
+        #self.startStopAIR3()
 
     def radioTimerReset(self):
-        self.resetAIR3()
-        self.radioTimerMode = 0  # count up mode
+        pass
+        #self.resetAIR3()
+        #self.radioTimerMode = 0  # count up mode
 
     def radioTimerSet(self, seconds):
-        self.Air3Seconds = seconds
-        if seconds > 0:
-            self.radioTimerMode = 1  # count down mode
-        else:
-            self.radioTimerMode = 0  # count up mode
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
+        pass
+        #self.Air3Seconds = seconds
+        #if seconds > 0:
+        #    self.radioTimerMode = 1  # count down mode
+        #else:
+        #    self.radioTimerMode = 0  # count up mode
+        #self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
 
     def getTimerDialog(self):
+        return
         # generate and display timer input window
         self.getTimeWindow = QDialog()
         self.getTimeWindow.resize(200, 100)
@@ -575,14 +564,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                     QTimer.singleShot(20000, self.unsetLED3)
                 self.setLED3(state)
                 self.LED3on = state
-            if led == 4:
-                if self.settings.LED4Autoflash.isChecked():
-                    self.timerLED4.start(500)
-                if self.settings.LED4Timedflash.isChecked():
-                    self.timerLED4.start(500)
-                    QTimer.singleShot(20000, self.unsetLED4)
-                self.setLED4(state)
-                self.LED4on = state
 
         if state == False:
             if led == 1:
@@ -597,10 +578,6 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.setLED3(state)
                 self.timerLED3.stop()
                 self.LED3on = state
-            if led == 4:
-                self.setLED4(state)
-                self.timerLED4.stop()
-                self.LED4on = state
 
     def setStationColor(self, newcolor):
         palette = self.labelStation.palette()
@@ -615,10 +592,10 @@ class MainScreen(QWidget, Ui_MainScreen):
     def restoreSettingsFromConfig(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
-        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
-        self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
-        self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
+        #self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
+        #self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
+        #self.setStationColor(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
+        #self.setSloganColor(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
         settings.endGroup()
 
         settings.beginGroup("LED1")
@@ -633,26 +610,26 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setLED3Text(settings.value('text', 'DOORBELL'))
         settings.endGroup()
 
-        settings.beginGroup("LED4")
-        self.setLED4Text(settings.value('text', 'ARI'))
-        settings.endGroup()
+        #settings.beginGroup("LED4")
+        #self.setLED4Text(settings.value('text', 'ARI'))
+        #settings.endGroup()
 
-        settings.beginGroup("Clock")
-        self.clockWidget.setClockMode(settings.value('digital', True, type=bool))
-        self.clockWidget.setDigiHourColor(
-            self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
-        self.clockWidget.setDigiSecondColor(
-            self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
-        self.clockWidget.setDigiDigitColor(
-            self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
-        self.clockWidget.setLogo(
-            settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
-        self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
-        settings.endGroup()
+        #settings.beginGroup("Clock")
+        #self.clockWidget.setClockMode(settings.value('digital', True, type=bool))
+        #self.clockWidget.setDigiHourColor(
+        #    self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
+        #self.clockWidget.setDigiSecondColor(
+        #    self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
+        #self.clockWidget.setDigiDigitColor(
+        #    self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
+        #self.clockWidget.setLogo(
+        #    settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
+        #self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
+        #settings.endGroup()
 
-        settings.beginGroup("Formatting")
-        self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
-        settings.endGroup()
+        #settings.beginGroup("Formatting")
+        #self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
+        #settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
         if settings.value('owmWidgetEnabled', False, type=bool):
@@ -663,8 +640,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             #page.setBackgroundColor(Qt.transparent)
             #page.setHtml(widgetHtml)
             #self.weatherWidget.setUrl(QUrl("qrc:/html/weatherwidget.html"))
-        #self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
+        self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
         settings.endGroup()
+
 
     def constantUpdate(self):
         # slot for constant timer timeout
@@ -675,13 +653,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.processWarnings()
 
     def updateDate(self):
+        return
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Formatting")
         now = datetime.now()
-        self.setLeftText(QDate.currentDate().toString(settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
+        #self.setLeftText(QDate.currentDate().toString(settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
         settings.endGroup()
 
     def updateBacktimingText(self):
+        return
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Formatting")
         textClockLang = settings.value('textClockLanguage', 'English')
@@ -739,6 +719,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setBacktimingSecs(remain_seconds)
 
     def updateNTPstatus(self):
+        return
         if self.ntpHadWarning and len(self.ntpWarnMessage):
             self.addWarning(self.ntpWarnMessage, 0)
         else:
@@ -786,6 +767,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds / 60, self.Air1Seconds % 60))
 
     def setAIR2(self, action):
+        return
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.Air2Seconds = 0
@@ -808,10 +790,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR2.stop()
 
     def updateAIR2Seconds(self):
+        return
         self.Air2Seconds += 1
         self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds / 60, self.Air2Seconds % 60))
 
     def resetAIR3(self):
+        return
         self.timerAIR3.stop()
         self.Air3Seconds = 0
         self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
@@ -819,6 +803,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR3.start(1000)
 
     def setAIR3(self, action):
+        return
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.AirLabel_3.setStyleSheet("color: #000000; background-color: #FF0000")
@@ -843,18 +828,22 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR3.stop()
 
     def startStopAIR3(self):
+        return
         if self.statusAIR3 == False:
             self.startAIR3()
         else:
             self.stopAIR3()
 
     def startAIR3(self):
+        return
         self.setAIR3(True)
 
     def stopAIR3(self):
+        return
         self.setAIR3(False)
 
     def updateAIR3Seconds(self):
+        return
         if self.radioTimerMode == 0:  # count up mode
             self.Air3Seconds += 1
         else:
@@ -865,6 +854,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
 
     def resetAIR4(self):
+        return
         self.timerAIR4.stop()
         self.Air4Seconds = 0
         self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
@@ -872,6 +862,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR4.start(1000)
 
     def setAIR4(self, action):
+        return
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             self.AirLabel_4.setStyleSheet("color: #000000; background-color: #FF0000")
@@ -896,18 +887,22 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.timerAIR4.stop()
 
     def startStopAIR4(self):
+        return
         if self.statusAIR4 == False:
             self.startAIR4()
         else:
             self.stopAIR4()
 
     def startAIR4(self):
+        return
         self.setAIR4(True)
 
     def stopAIR4(self):
+        return
         self.setAIR4(False)
 
     def updateAIR4Seconds(self):
+        return
         if self.streamTimerMode == 0:  # count up mode
             self.Air4Seconds += 1
         else:
@@ -984,6 +979,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.statusLED3 = False
 
     def setLED4(self, action):
+        return
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
             settings.beginGroup("LED4")
@@ -1025,20 +1021,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.buttonLED4.setText(text)
 
     def setCurrentSongText(self, text):
-        self.labelCurrentSong.setText(text)
+        pass
+        #self.labelCurrentSong.setText(text)
 
     def setNewsText(self, text):
-        self.labelNews.setText(text)
+        pass
+        #self.labelNews.setText(text)
 
     def setBacktimingSecs(self, value):
         pass
         # self.labelSeconds.setText( str(value) )
 
     def addWarning(self, text, priority=0):
-        self.warnings[priority] = text
+        pass
+        #self.warnings[priority] = text
 
     def removeWarning(self, priority=0):
-        self.warnings[priority] = ""
+        pass
+        #self.warnings[priority] = ""
 
     def processWarnings(self):
         warningAvailable = False
@@ -1062,6 +1062,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelWarning.show()
 
     def hideWarning(self, priority=0):
+        return
         self.labelWarning.hide()
         self.labelCurrentSong.show()
         self.labelNews.show()

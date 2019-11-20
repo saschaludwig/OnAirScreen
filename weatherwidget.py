@@ -201,7 +201,7 @@ class WeatherWidget(QtWidgets.QWidget):
             temp = "{:.0f}°{}".format(weatherJson["main"]["temp"], "C")
             icon = weatherJson["weather"][0]["icon"]
             background = icon
-            self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background, label="WETTER")
+            self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background, label="WEATHER")
         else:
             errorString = "Error occured: {}, {}".format(er, reply.errorString())
             print(errorString)
