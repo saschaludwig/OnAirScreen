@@ -36,7 +36,7 @@
 #############################################################################
 
 from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog
+from PyQt5.QtWidgets import QWidget, QColorDialog
 from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl
 import PyQt5.QtNetwork as QtNetwork
 from settings import Ui_Settings
@@ -86,19 +86,6 @@ class Settings(QWidget, Ui_Settings):
         self.row = -1
         QWidget.__init__(self)
         Ui_Settings.__init__(self)
-
-        # available text clock languages
-        self.textClockLanguages = ["English", "German"]
-
-        # available Weather Widget languages
-        #self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
-        #                     "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
-        #                     "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
-        #                     "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
-        #                     "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
-        #                     "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
-        #                     "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
-        #self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
         self._connectSlots()
