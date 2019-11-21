@@ -163,22 +163,8 @@ class Settings(QWidget, Ui_Settings):
         self.LED2FGColor.clicked.connect(self.setLED2FGColor)
         self.LED3BGColor.clicked.connect(self.setLED3BGColor)
         self.LED3FGColor.clicked.connect(self.setLED3FGColor)
-        self.LED4BGColor.clicked.connect(self.setLED4BGColor)
-        self.LED4FGColor.clicked.connect(self.setLED4FGColor)
         self.ResetSettingsButton.clicked.connect(self.resetSettings)
-
-        self.DigitalHourColorButton.clicked.connect(self.setDigitalHourColor)
-        self.DigitalSecondColorButton.clicked.connect(self.setDigitalSecondColor)
-        self.DigitalDigitColorButton.clicked.connect(self.setDigitalDigitColor)
-        self.logoButton.clicked.connect(self.openLogoPathSelector)
-        self.resetLogoButton.clicked.connect(self.resetLogo)
-
-        self.StationNameColor.clicked.connect(self.setStationNameColor)
-        self.SloganColor.clicked.connect(self.setSloganColor)
-
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
-
-    #        self.triggered.connect(self.closeEvent)
 
     # special OAS Settings from OAC functions
 
@@ -203,10 +189,6 @@ class Settings(QWidget, Ui_Settings):
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
 
-        # polulate text clock languages
-        self.textClockLanguage.clear()
-        self.textClockLanguage.addItems(self.textClockLanguages)
-
         # populate owm widget languages
         self.owmLanguage.clear()
         self.owmLanguage.addItems(ww.owm_languages.keys())
@@ -214,18 +196,6 @@ class Settings(QWidget, Ui_Settings):
         # populate owm units
         self.owmUnit.clear()
         self.owmUnit.addItems(ww.owm_units.keys())
-
-        settings.beginGroup("General")
-        self.StationName.setText(settings.value('stationname', 'Radio Eriwan'))
-        self.Slogan.setText(settings.value('slogan', 'Your question is our motivation'))
-        self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', '#FFAA00')))
-        self.setSloganColor(self.getColorFromName(settings.value('slogancolor', '#FFAA00')))
-        settings.endGroup()
-
-        settings.beginGroup("NTP")
-        self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', True, type=bool))
-        self.NTPCheckServer.setText(settings.value('ntpcheckserver', 'pool.ntp.org'))
-        settings.endGroup()
 
         settings.beginGroup("LEDS")
         self.setLEDInactiveBGColor(self.getColorFromName(settings.value('inactivebgcolor', '#222222')))
@@ -262,37 +232,9 @@ class Settings(QWidget, Ui_Settings):
         self.LED3Timedflash.setChecked(settings.value('timedflash', False, type=bool))
         settings.endGroup()
 
-        settings.beginGroup("LED4")
-        self.LED4.setChecked(settings.value('used', True, type=bool))
-        self.LED4Text.setText(settings.value('text', 'ARI'))
-        self.LED4Demo.setText(settings.value('text', 'ARI'))
-        self.setLED4BGColor(self.getColorFromName(settings.value('activebgcolor', '#FF00FF')))
-        self.setLED4FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF')))
-        self.LED4Autoflash.setChecked(settings.value('autoflash', False, type=bool))
-        self.LED4Timedflash.setChecked(settings.value('timedflash', False, type=bool))
-        settings.endGroup()
-
-        settings.beginGroup("Clock")
-        self.clockDigital.setChecked(settings.value('digital', True, type=bool))
-        self.clockAnalog.setChecked(not settings.value('digital', True, type=bool))
-        self.showSeconds.setChecked(settings.value('showSeconds', False, type=bool))
-        self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
-        self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
-        self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
-        self.logoPath.setText(
-            settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
-        settings.endGroup()
-
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310'))
         self.httpport.setText(settings.value('httpport', '8010'))
-        settings.endGroup()
-
-        settings.beginGroup("Formatting")
-        self.dateFormat.setText(settings.value('dateFormat', 'dddd, dd. MMMM yyyy'))
-        self.textClockLanguage.setCurrentIndex(self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
-        self.time_am_pm.setChecked(settings.value('isAmPm', False, type=bool))
-        self.time_24h.setChecked(not settings.value('isAmPm', False, type=bool))
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
@@ -314,18 +256,6 @@ class Settings(QWidget, Ui_Settings):
             settings = self.settings
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
-
-        settings.beginGroup("General")
-        settings.setValue('stationname', self.StationName.displayText())
-        settings.setValue('slogan', self.Slogan.displayText())
-        settings.setValue('stationcolor', self.getStationNameColor().name())
-        settings.setValue('slogancolor', self.getSloganColor().name())
-        settings.endGroup()
-
-        settings.beginGroup("NTP")
-        settings.setValue('ntpcheck', self.checkBox_NTPCheck.isChecked())
-        settings.setValue('ntpcheckserver', self.NTPCheckServer.displayText())
-        settings.endGroup()
 
         settings.beginGroup("LEDS")
         settings.setValue('inactivebgcolor', self.getLEDInactiveBGColor().name())
@@ -359,33 +289,9 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('timedflash', self.LED3Timedflash.isChecked())
         settings.endGroup()
 
-        settings.beginGroup("LED4")
-        settings.setValue('used', self.LED4.isChecked())
-        settings.setValue('text', self.LED4Text.displayText())
-        settings.setValue('activebgcolor', self.getLED4BGColor().name())
-        settings.setValue('activetextcolor', self.getLED4FGColor().name())
-        settings.setValue('autoflash', self.LED4Autoflash.isChecked())
-        settings.setValue('timedflash', self.LED4Timedflash.isChecked())
-        settings.endGroup()
-
-        settings.beginGroup("Clock")
-        settings.setValue('digital', self.clockDigital.isChecked())
-        settings.setValue('showSeconds', self.showSeconds.isChecked())
-        settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
-        settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
-        settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
-        settings.setValue('logopath', self.logoPath.text())
-        settings.endGroup()
-
         settings.beginGroup("Network")
         settings.setValue('udpport', self.udpport.displayText())
         settings.setValue('httpport', self.httpport.displayText())
-        settings.endGroup()
-
-        settings.beginGroup("Formatting")
-        settings.setValue('dateFormat', self.dateFormat.displayText())
-        settings.setValue('textClockLanguage', self.textClockLanguage.currentText())
-        settings.setValue('isAmPm', self.time_am_pm.isChecked())
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
@@ -422,7 +328,6 @@ class Settings(QWidget, Ui_Settings):
         self.nam.get(req)
 
     def handleOWMResponse(self, reply):
-
         er = reply.error()
 
         if er == QtNetwork.QNetworkReply.NoError:
@@ -497,48 +402,6 @@ class Settings(QWidget, Ui_Settings):
         palette.setColor(QPalette.WindowText, newcolor)
         self.LED3Demo.setPalette(palette)
 
-    def setLED4BGColor(self, newcolor=False):
-        palette = self.LED4Demo.palette()
-        oldcolor = palette.window().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
-        self.LED4Demo.setPalette(palette)
-
-    def setLED4FGColor(self, newcolor=False):
-        palette = self.LED4Demo.palette()
-        oldcolor = palette.windowText().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
-        self.LED4Demo.setPalette(palette)
-
-    def setStationNameColor(self, newcolor=False):
-        palette = self.StationNameDemo.palette()
-        oldcolor = palette.windowText().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
-        self.StationNameDemo.setPalette(palette)
-
-    def setSloganColor(self, newcolor=False):
-        palette = self.SloganDemo.palette()
-        oldcolor = palette.windowText().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
-        self.SloganDemo.setPalette(palette)
-
-    def getStationNameColor(self):
-        palette = self.StationNameDemo.palette()
-        color = palette.windowText().color()
-        return color
-
-    def getSloganColor(self):
-        palette = self.SloganDemo.palette()
-        color = palette.windowText().color()
-        return color
-
     def getLEDInactiveBGColor(self):
         palette = self.LEDInactive.palette()
         color = palette.window().color()
@@ -564,11 +427,6 @@ class Settings(QWidget, Ui_Settings):
         color = palette.window().color()
         return color
 
-    def getLED4BGColor(self):
-        palette = self.LED4Demo.palette()
-        color = palette.window().color()
-        return color
-
     def getLED1FGColor(self):
         palette = self.LED1Demo.palette()
         color = palette.windowText().color()
@@ -584,50 +442,6 @@ class Settings(QWidget, Ui_Settings):
         color = palette.windowText().color()
         return color
 
-    def getLED4FGColor(self):
-        palette = self.LED4Demo.palette()
-        color = palette.windowText().color()
-        return color
-
-    def getDigitalHourColor(self):
-        palette = self.DigitalHourColor.palette()
-        color = palette.window().color()
-        return color
-
-    def getDigitalSecondColor(self):
-        palette = self.DigitalSecondColor.palette()
-        color = palette.window().color()
-        return color
-
-    def getDigitalDigitColor(self):
-        palette = self.DigitalDigitColor.palette()
-        color = palette.window().color()
-        return color
-
-    def setDigitalHourColor(self, newcolor=False):
-        palette = self.DigitalHourColor.palette()
-        oldcolor = palette.window().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
-        self.DigitalHourColor.setPalette(palette)
-
-    def setDigitalSecondColor(self, newcolor=False):
-        palette = self.DigitalSecondColor.palette()
-        oldcolor = palette.window().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
-        self.DigitalSecondColor.setPalette(palette)
-
-    def setDigitalDigitColor(self, newcolor=False):
-        palette = self.DigitalDigitColor.palette()
-        oldcolor = palette.window().color()
-        if not newcolor:
-            newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
-        self.DigitalDigitColor.setPalette(palette)
-
     def openColorDialog(self, initcolor):
         colordialog = QColorDialog()
         selectedcolor = colordialog.getColor(initcolor, None, 'Please select a color')
@@ -640,14 +454,3 @@ class Settings(QWidget, Ui_Settings):
         color = QColor()
         color.setNamedColor(colorname)
         return color
-
-    def openLogoPathSelector(self):
-        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
-        if filename:
-            self.logoPath.setText(filename)
-
-    def resetLogo(self):
-        self.logoPath.setText(":/astrastudio_logo/images/astrastudio_transparent.png")
-
-    def setLogoPath(self, path):
-        self.logoPath.setText(path)
