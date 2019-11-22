@@ -75,10 +75,10 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
-        if settings.value('fullscreen', True, type=bool):
-            self.showFullScreen()
-            app.setOverrideCursor(QCursor(Qt.BlankCursor))
-        settings.endGroup()
+        #if settings.value('fullscreen', True, type=bool):
+        #    self.showFullScreen()
+        #    app.setOverrideCursor(QCursor(Qt.BlankCursor))
+        #settings.endGroup()
         print("Loading Settings from: ", settings.fileName())
 
         # add hotkey bindings
