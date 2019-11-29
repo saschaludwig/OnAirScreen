@@ -160,6 +160,15 @@ class WeatherWidget(QtWidgets.QWidget):
 
         # set demo text
         self.setData("", "", "")
+        self.updateWeather()
+
+        # start timer for background update every 10 minutes
+        self.updateTimer = QtCore.QTimer()
+        self.updateTimer.timeout.connect(self.updateWeather)
+        self.updateTimer.start(10*60*1000)
+
+    def updateWeather(self):
+        print("update weather called")
         self.makeOWMApiCall()
 
     def setData(self, city, temperature, condition, icon="01d", background=None, label="WEATHER"):
