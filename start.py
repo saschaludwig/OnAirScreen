@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -452,6 +452,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                                 self.settings.showSeconds.setChecked(True)
                             if content == "False":
                                 self.settings.showSeconds.setChecked(False)
+                        if param == "staticcolon":
+                            if content == "True":
+                                self.settings.staticColon.setChecked(True)
+                            if content == "False":
+                                self.settings.staticColon.setChecked(False)
                         if param == "digitalhourcolor":
                             self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
                         if param == "digitalsecondcolor":
@@ -648,6 +653,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.clockWidget.setLogo(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
         self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
+        self.clockWidget.setStaticColon(settings.value('staticColon', False, type=bool))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
@@ -1083,6 +1089,8 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def configFinished(self):
         self.restoreSettingsFromConfig()
+        self.weatherWidget.readConfig()
+        self.weatherWidget.makeOWMApiCall()
 
     def reboot_host(self):
         self.addWarning("SYSTEM REBOOT IN PROGRESS", 2)

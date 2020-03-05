@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen Analog / Digital Clock implementation
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -109,6 +109,7 @@ class ClockWidget(QtWidgets.QWidget):
         self.clockMode = 1
         self.isAmPm = False
         self.showSeconds = False
+        self.staticColon = False
         self.counter = 0
 
         self.timer = QtCore.QTimer(self)
@@ -179,8 +180,19 @@ class ClockWidget(QtWidgets.QWidget):
     def getShowSeconds(self):
         return self.showSeconds
 
-    clockShowSeconds = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
+    clockShowSeconds = QtCore.pyqtProperty("int", getShowSeconds, setShowSeconds, resetShowSeconds)
 
+    @QtCore.pyqtSlot(bool)
+    def setStaticColon(self, value):
+        self.staticColon = value
+
+    def resetStaticColon(self):
+        self.staticColon = False
+
+    def getStaticColon(self):
+        return self.staticColon
+
+    clockStaticColon = QtCore.pyqtProperty("int", getStaticColon, setStaticColon, resetStaticColon)
 
     @QtCore.pyqtSlot(QtGui.QColor)
     def setDigiHourColor(self, color=QtGui.QColor(50, 50, 255, 255)):
@@ -390,7 +402,7 @@ class ClockWidget(QtWidgets.QWidget):
 
     def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
         # paint colon only half a second
-        if self.time.msec() < 500:
+        if self.time.msec() < 500 or self.staticColon:
             dotSize = 1.6
             dotOffset = 4.5  # spacing between the dots
             dotSlant = dotOffset / 15  # horizontal slant of each row
@@ -543,5 +555,6 @@ if __name__ == '__main__':
     widget.setClockMode(1)
     widget.setAmPm(False)
     widget.setShowSeconds(True)
+    widget.setStaticColon(False)
     widget.show()
     sys.exit(app.exec_())
