@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # settings_functions.py
@@ -44,7 +44,7 @@ from collections import defaultdict
 import json
 from weatherwidget import WeatherWidget as ww
 
-versionString = "0.9.1beta2"
+versionString = "0.9.1beta3"
 
 
 # class OASSettings for use from OAC
@@ -276,6 +276,7 @@ class Settings(QWidget, Ui_Settings):
         self.clockDigital.setChecked(settings.value('digital', True, type=bool))
         self.clockAnalog.setChecked(not settings.value('digital', True, type=bool))
         self.showSeconds.setChecked(settings.value('showSeconds', False, type=bool))
+        self.staticColon.setChecked(settings.value('staticColon', False, type=bool))
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
@@ -371,6 +372,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Clock")
         settings.setValue('digital', self.clockDigital.isChecked())
         settings.setValue('showSeconds', self.showSeconds.isChecked())
+        settings.setValue('staticColon', self.staticColon.isChecked())
         settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
         settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
         settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
