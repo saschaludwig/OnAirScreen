@@ -44,7 +44,7 @@ from collections import defaultdict
 import json
 from weatherwidget import WeatherWidget as ww
 
-versionString = "0.9.1beta3"
+versionString = "0.9.1beta4"
 
 
 # class OASSettings for use from OAC

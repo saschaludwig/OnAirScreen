@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.9.1 beta4]
+### Changed
+- Fix window resize when displaying long text in NOW/NEXT/WARN
 
 ## [0.9.1 beta3]
 ### Added
