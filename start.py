@@ -705,17 +705,17 @@ class MainScreen(QWidget, Ui_MainScreen):
             if hour > 12:
                 hour -= 12
             if 0 < minute < 25:
-                string = "%d Minute%s nach %d" % (minute, 'n' if minute > 1 else '', hour)
+                string = "%d Minute%s nach %d:00" % (minute, 'n' if minute > 1 else '', hour)
             if 25 <= minute < 30:
-                string = "%d Minute%s vor halb %d" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
+                string = "%d Minute%s vor halb %d:00" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
             if 30 <= minute <= 39:
-                string = "%d Minute%s nach halb %d" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
+                string = "%d Minute%s nach halb %d:00" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
             if 40 <= minute <= 59:
-                string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
+                string = "%d Minute%s vor %d:00" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
             if minute == 30:
-                string = "halb %d" % (hour + 1)
+                string = "halb %d:00" % (hour + 1)
             if minute == 0:
-                string = "%d" % hour
+                string = "%d:00" % hour
 
         else:
             # english textclock
