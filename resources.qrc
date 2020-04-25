@@ -2,6 +2,44 @@
   <qresource prefix="oas_icon">
     <file>images/oas_icon.png</file>
   </qresource>
+  <qresource prefix="weather_backgrounds">
+    <file>images/weather_backgrounds/01d.jpg</file>
+    <file>images/weather_backgrounds/01n.jpg</file>
+    <file>images/weather_backgrounds/02d.jpg</file>
+    <file>images/weather_backgrounds/02n.jpg</file>
+    <file>images/weather_backgrounds/03d.jpg</file>
+    <file>images/weather_backgrounds/03n.jpg</file>
+    <file>images/weather_backgrounds/04d.jpg</file>
+    <file>images/weather_backgrounds/04n.jpg</file>
+    <file>images/weather_backgrounds/09d.jpg</file>
+    <file>images/weather_backgrounds/09n.jpg</file>
+    <file>images/weather_backgrounds/10d.jpg</file>
+    <file>images/weather_backgrounds/10n.jpg</file>
+    <file>images/weather_backgrounds/11d.jpg</file>
+    <file>images/weather_backgrounds/11n.jpg</file>
+    <file>images/weather_backgrounds/13d.jpg</file>
+    <file>images/weather_backgrounds/13n.jpg</file>
+    <file>images/weather_backgrounds/50d.jpg</file>
+    <file>images/weather_backgrounds/50n.jpg</file>
+  </qresource>
+  <qresource prefix="weather">
+    <file>images/weather_icons/01d.png</file>
+    <file>images/weather_icons/01n.png</file>
+    <file>images/weather_icons/02d.png</file>
+    <file>images/weather_icons/02n.png</file>
+    <file>images/weather_icons/03d.png</file>
+    <file>images/weather_icons/03n.png</file>
+    <file>images/weather_icons/04d.png</file>
+    <file>images/weather_icons/04n.png</file>
+    <file>images/weather_icons/09d.png</file>
+    <file>images/weather_icons/09n.png</file>
+    <file>images/weather_icons/10d.png</file>
+    <file>images/weather_icons/10n.png</file>
+    <file>images/weather_icons/11d.png</file>
+    <file>images/weather_icons/11n.png</file>
+    <file>images/weather_icons/13d.png</file>
+    <file>images/weather_icons/13n.png</file>
+  </qresource>
   <qresource prefix="stream_icon">
     <file>images/antenna.png</file>
     <file>images/antenna2.png</file>

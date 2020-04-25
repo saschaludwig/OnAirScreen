@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -36,21 +36,22 @@
 #############################################################################
 
 import os
-import sys
 import re
-from datetime import datetime
-
-from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread
-from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
-from mainscreen import Ui_MainScreen
-import ntplib
 import signal
 import socket
-from settings_functions import Settings, versionString, weatherWidgetFallback
-from urllib.parse import unquote
+import sys
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import unquote
+
+import ntplib
+from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread
+from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap
+from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
+from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
+
+from mainscreen import Ui_MainScreen
+from settings_functions import Settings, versionString
 
 #HOST = '127.0.0.1'
 HOST = '0.0.0.0'
@@ -65,6 +66,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
+
+        # load weather widget
+
 
         self.settings = Settings()
         self.restoreSettingsFromConfig()
@@ -448,6 +452,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                                 self.settings.showSeconds.setChecked(True)
                             if content == "False":
                                 self.settings.showSeconds.setChecked(False)
+                        if param == "staticcolon":
+                            if content == "True":
+                                self.settings.staticColon.setChecked(True)
+                            if content == "False":
+                                self.settings.staticColon.setChecked(False)
                         if param == "digitalhourcolor":
                             self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
                         if param == "digitalsecondcolor":
@@ -644,6 +653,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.clockWidget.setLogo(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
         self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
+        self.clockWidget.setStaticColon(settings.value('staticColon', False, type=bool))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
@@ -651,21 +661,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
-        self.weatherWidget.setVisible(settings.value('WeatherWidgetEnabled', False, type=bool))
-        if settings.value('WeatherWidgetEnabled', False, type=bool):
-            widgetHtml = """      
-<style type="text/css">
-body {
-    overflow:hidden;
-    width: 221px;
-    border: 0px;
-    margin: 0px;
-    background: #000;
-}
-</style>
-<body>
-""" + settings.value('WeatherWidgetCode', weatherWidgetFallback) + "</body>"
-            self.weatherWidget.setHtml(widgetHtml);
+        if settings.value('owmWidgetEnabled', False, type=bool):
+            pass
+            #self.weatherWidget =
+
+            #page = self.weatherWidget.page()
+            #page.setBackgroundColor(Qt.transparent)
+            #page.setHtml(widgetHtml)
+            #self.weatherWidget.setUrl(QUrl("qrc:/html/weatherwidget.html"))
+        #self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
         settings.endGroup()
 
     def constantUpdate(self):
@@ -701,17 +705,17 @@ body {
             if hour > 12:
                 hour -= 12
             if 0 < minute < 25:
-                string = "%d Minute%s nach %d" % (minute, 'n' if minute > 1 else '', hour)
+                string = "%d Minute%s nach %d:00" % (minute, 'n' if minute > 1 else '', hour)
             if 25 <= minute < 30:
-                string = "%d Minute%s vor halb %d" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
+                string = "%d Minute%s vor halb %d:00" % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
             if 30 <= minute <= 39:
-                string = "%d Minute%s nach halb %d" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
+                string = "%d Minute%s nach halb %d:00" % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
             if 40 <= minute <= 59:
-                string = "%d Minute%s vor %d" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
+                string = "%d Minute%s vor %d:00" % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
             if minute == 30:
-                string = "halb %d" % (hour + 1)
+                string = "halb %d:00" % (hour + 1)
             if minute == 0:
-                string = "%d" % hour
+                string = "%d:00" % hour
 
         else:
             # english textclock
@@ -1085,6 +1089,8 @@ body {
 
     def configFinished(self):
         self.restoreSettingsFromConfig()
+        self.weatherWidget.readConfig()
+        self.weatherWidget.makeOWMApiCall()
 
     def reboot_host(self):
         self.addWarning("SYSTEM REBOOT IN PROGRESS", 2)
@@ -1155,9 +1161,12 @@ class HttpDaemon(QThread):
         port = int(settings.value('httpport', 8010))
         settings.endGroup()
 
-        handler = OASHTTPRequestHandler
-        self._server = HTTPServer((HOST, port), handler)
-        self._server.serve_forever()
+        try:
+            handler = OASHTTPRequestHandler
+            self._server = HTTPServer((HOST, port), handler)
+            self._server.serve_forever()
+        except OSError as error:
+            print("ERROR: Starting HTTP Sever on port", port, error)
 
     def stop(self):
         self._server.shutdown()

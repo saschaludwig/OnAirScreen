@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # settings_functions.py
@@ -37,18 +37,15 @@
 
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog
-from PyQt5.QtCore import QSettings, QVariant, pyqtSignal
+from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl
+import PyQt5.QtNetwork as QtNetwork
 from settings import Ui_Settings
 from collections import defaultdict
 import json
+from weatherwidget import WeatherWidget as ww
 
-versionString = "0.9.1beta2"
-weatherWidgetFallback = """
-<a class="weatherwidget-io" href="https://forecast7.com/en/50d777d19/sankt-augustin/" data-label_1="SANKT AUGUSTIN" data-label_2="Wetter" data-mode="Current" data-days="3" data-theme="weather_one" >SANKT AUGUSTIN Wetter</a>
-<script>
-!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
-</script>
-"""
+versionString = "0.9.1beta5"
+
 
 # class OASSettings for use from OAC
 class OASSettings:
@@ -92,6 +89,16 @@ class Settings(QWidget, Ui_Settings):
 
         # available text clock languages
         self.textClockLanguages = ["English", "German"]
+
+        # available Weather Widget languages
+        #self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
+        #                     "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
+        #                     "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
+        #                     "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
+        #                     "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
+        #                     "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
+        #                     "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
+        #self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
         self._connectSlots()
@@ -169,6 +176,8 @@ class Settings(QWidget, Ui_Settings):
         self.StationNameColor.clicked.connect(self.setStationNameColor)
         self.SloganColor.clicked.connect(self.setSloganColor)
 
+        self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
+
     #        self.triggered.connect(self.closeEvent)
 
     # special OAS Settings from OAC functions
@@ -197,6 +206,14 @@ class Settings(QWidget, Ui_Settings):
         # polulate text clock languages
         self.textClockLanguage.clear()
         self.textClockLanguage.addItems(self.textClockLanguages)
+
+        # populate owm widget languages
+        self.owmLanguage.clear()
+        self.owmLanguage.addItems(ww.owm_languages.keys())
+
+        # populate owm units
+        self.owmUnit.clear()
+        self.owmUnit.addItems(ww.owm_units.keys())
 
         settings.beginGroup("General")
         self.StationName.setText(settings.value('stationname', 'Radio Eriwan'))
@@ -259,6 +276,7 @@ class Settings(QWidget, Ui_Settings):
         self.clockDigital.setChecked(settings.value('digital', True, type=bool))
         self.clockAnalog.setChecked(not settings.value('digital', True, type=bool))
         self.showSeconds.setChecked(settings.value('showSeconds', False, type=bool))
+        self.staticColon.setChecked(settings.value('staticColon', False, type=bool))
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
         self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
@@ -279,9 +297,17 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
-        self.weatherWidgetEnabled.setChecked(settings.value('WeatherWidgetEnabled', False, type=bool))
-        self.weatherWidgetCode.setEnabled(settings.value('WeatherWidgetEnabled', False, type=bool))
-        self.weatherWidgetCode.setPlainText(settings.value('WeatherWidgetCode', weatherWidgetFallback))
+        self.owmWidgetEnabled.setChecked(settings.value('owmWidgetEnabled', False, type=bool))
+        self.owmAPIKey.setText(settings.value('owmAPIKey', ""))
+        self.owmCityID.setText(settings.value('owmCityID', "2643743"))
+        self.owmLanguage.setCurrentIndex(self.owmLanguage.findText(settings.value('owmLanguage', "English")))
+        self.owmUnit.setCurrentIndex(self.owmUnit.findText(settings.value('owmUnit', "Celsius")))
+        self.owmAPIKey.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
+        self.owmCityID.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
+        self.owmLanguage.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
+        self.owmUnit.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
+        self.owmTestAPI.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
+        self.owmTestOutput.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -346,6 +372,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Clock")
         settings.setValue('digital', self.clockDigital.isChecked())
         settings.setValue('showSeconds', self.showSeconds.isChecked())
+        settings.setValue('staticColon', self.staticColon.isChecked())
         settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
         settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
         settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
@@ -364,8 +391,11 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
-        settings.setValue('WeatherWidgetEnabled', self.weatherWidgetEnabled.isChecked())
-        settings.setValue('WeatherWidgetCode', self.weatherWidgetCode.toPlainText())
+        settings.setValue('owmWidgetEnabled', self.owmWidgetEnabled.isChecked())
+        settings.setValue('owmAPIKey', self.owmAPIKey.displayText())
+        settings.setValue('owmCityID', self.owmCityID.displayText())
+        settings.setValue('owmLanguage', self.owmLanguage.currentText())
+        settings.setValue('owmUnit', self.owmUnit.currentText())
         settings.endGroup()
 
         if self.oacmode == True:
@@ -380,6 +410,30 @@ class Settings(QWidget, Ui_Settings):
     def closeSettings(self):
         # close settings button pressed
         self.restoreSettingsFromConfig()
+
+    def makeOWMTestCall(self):
+        appid = self.owmAPIKey.displayText()
+        cityID = self.owmCityID.displayText()
+        units = ww.owm_units.get(self.owmUnit.currentText())
+        lang = ww.owm_languages.get(self.owmLanguage.currentText())
+        url = "http://api.openweathermap.org/data/2.5/weather?id=" + cityID + "&units=" + units + "&lang=" + lang + "&appid=" + appid
+
+        req = QtNetwork.QNetworkRequest(QUrl(url))
+        self.nam = QtNetwork.QNetworkAccessManager()
+        self.nam.finished.connect(self.handleOWMResponse)
+        self.nam.get(req)
+
+    def handleOWMResponse(self, reply):
+
+        er = reply.error()
+
+        if er == QtNetwork.QNetworkReply.NoError:
+            bytes_string = reply.readAll()
+            replyString = str(bytes_string, 'utf-8')
+            self.owmTestOutput.setPlainText(replyString)
+        else:
+            errorString = "Error occured: {}, {}".format(er, reply.errorString())
+            self.owmTestOutput.setPlainText(errorString)
 
     def setLED1BGColor(self, newcolor=False):
         palette = self.LED1Demo.palette()
