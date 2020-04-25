@@ -1,0 +1,14 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+## [0.9.1 beta4]
+### Changed
+- Fix window resize when displaying long text in NOW/NEXT/WARN
+
+## [0.9.1 beta3]
+### Added
+- this changelog
+- selectable blinking/static colon for HH:MM in digital clock mode
+
+### Changed
+- Fix update of weatherwidget when location is changed
