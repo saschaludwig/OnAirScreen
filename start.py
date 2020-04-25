@@ -36,22 +36,22 @@
 #############################################################################
 
 import os
-import sys
 import re
-from datetime import datetime
-
-from PyQt5.QtGui import QCursor, QPalette, QColor, QKeySequence, QIcon, QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QColorDialog, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QCoreApplication, QTimer, QObject, QVariant, QDate, QThread, QUrl
-from PyQt5.QtNetwork import QUdpSocket, QHostAddress, QHostInfo, QNetworkInterface
-from mainscreen import Ui_MainScreen
-import ntplib
 import signal
 import socket
-from settings_functions import Settings, versionString
-from urllib.parse import unquote
+import sys
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import unquote
 
+import ntplib
+from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread
+from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap
+from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
+from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
+
+from mainscreen import Ui_MainScreen
+from settings_functions import Settings, versionString
 
 #HOST = '127.0.0.1'
 HOST = '0.0.0.0'
@@ -1161,9 +1161,12 @@ class HttpDaemon(QThread):
         port = int(settings.value('httpport', 8010))
         settings.endGroup()
 
-        handler = OASHTTPRequestHandler
-        self._server = HTTPServer((HOST, port), handler)
-        self._server.serve_forever()
+        try:
+            handler = OASHTTPRequestHandler
+            self._server = HTTPServer((HOST, port), handler)
+            self._server.serve_forever()
+        except OSError as error:
+            print("ERROR: Starting HTTP Sever on port", port, error)
 
     def stop(self):
         self._server.shutdown()
