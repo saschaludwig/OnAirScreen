@@ -97,10 +97,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("F"), self, self.toggleFullScreen)
         QShortcut(QKeySequence(16777429), self, self.toggleFullScreen)  # 'Display' Key on OAS USB Keyboard
         QShortcut(QKeySequence(16777379), self, self.shutdown_host)  # 'Calculator' Key on OAS USB Keyboard
-        QShortcut(QKeySequence("Ctrl+Q"), self, QCoreApplication.instance().quit)
-        QShortcut(QKeySequence("Q"), self, QCoreApplication.instance().quit)
-        QShortcut(QKeySequence("Ctrl+C"), self, QCoreApplication.instance().quit)
-        QShortcut(QKeySequence("ESC"), self, QCoreApplication.instance().quit)
+        QShortcut(QKeySequence("Ctrl+Q"), self, self.quitOAS)
+        QShortcut(QKeySequence("Q"), self, self.quitOAS)
+        QShortcut(QKeySequence("Ctrl+C"), self, self.quitOAS)
+        QShortcut(QKeySequence("ESC"), self, self.quitOAS)
         QShortcut(QKeySequence("Ctrl+S"), self, self.showsettings)
         QShortcut(QKeySequence("Ctrl+,"), self, self.showsettings)
         QShortcut(QKeySequence(" "), self, self.radioTimerStartStop)
@@ -201,6 +201,13 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.ntpHadWarning = True
             self.ntpWarnMessage = "waiting for NTP status check"
         settings.endGroup()
+
+    def quitOAS(self):
+        # do cleanup here
+        print("Quitting, cleaning up...")
+        self.checkNTPOffset.stop()
+        self.httpd.stop()
+        QCoreApplication.instance().quit()
 
     def radioTimerStartStop(self):
         self.startStopAIR3()
@@ -362,7 +369,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                     if value == "SHUTDOWN":
                         self.shutdown_host()
                     if value == "QUIT":
-                        QApplication.quit()
+                        self.quitOAS()
 
                 if command == "CONF":
                     # split group, config and values and apply them
@@ -663,13 +670,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.beginGroup("WeatherWidget")
         if settings.value('owmWidgetEnabled', False, type=bool):
             pass
-            #self.weatherWidget =
+            self.weatherWidget.show()
+        else:
+            self.weatherWidget.hide()
 
-            #page = self.weatherWidget.page()
-            #page.setBackgroundColor(Qt.transparent)
-            #page.setHtml(widgetHtml)
-            #self.weatherWidget.setUrl(QUrl("qrc:/html/weatherwidget.html"))
-        #self.weatherWidget.setVisible(settings.value('owmWidgetEnabled', False, type=bool))
         settings.endGroup()
 
     def constantUpdate(self):
@@ -1112,6 +1116,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def closeEvent(self, event):
         self.httpd.stop()
+        self.checkNTPOffset.stop()
 
 
 class checkNTPOffsetThread(QThread):
@@ -1153,6 +1158,8 @@ class checkNTPOffsetThread(QThread):
             self.oas.ntpWarnMessage = str(e)
             self.oas.ntpHadWarning = True
 
+    def stop(self):
+        self.quit()
 
 class HttpDaemon(QThread):
     def run(self):
