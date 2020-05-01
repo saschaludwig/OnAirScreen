@@ -49,7 +49,6 @@ from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDat
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
-
 from mainscreen import Ui_MainScreen
 from settings_functions import Settings, versionString
 
@@ -66,9 +65,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
-
-        # load weather widget
-
 
         self.settings = Settings()
         self.restoreSettingsFromConfig()
