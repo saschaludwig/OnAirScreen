@@ -45,7 +45,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import unquote
 
 import ntplib
-from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread
+from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread, pyqtSignal
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
@@ -197,6 +197,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.ntpHadWarning = True
             self.ntpWarnMessage = "waiting for NTP status check"
         settings.endGroup()
+
+        # do initial update check
+        self.settings.sigCheckForUpdate.emit()
 
     def quitOAS(self):
         # do cleanup here
