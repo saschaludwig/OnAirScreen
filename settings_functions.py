@@ -36,20 +36,13 @@
 #############################################################################
 
 from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox, QPushButton
-from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
+from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog
+from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl
 import PyQt5.QtNetwork as QtNetwork
 from settings import Ui_Settings
 from collections import defaultdict
 import json
-import textwrap
-from uuid import getnode
 from weatherwidget import WeatherWidget as ww
-from utils import TimerUpdateMessageBox
-try:
-    from distribution import distributionString
-except ModuleNotFoundError:
-    distributionString = "OpenSource"
 
 versionString = "0.9.2"
 
@@ -88,7 +81,6 @@ class Settings(QWidget, Ui_Settings):
     sigExitRemoteOAS = pyqtSignal(int)
     sigRebootRemoteHost = pyqtSignal(int)
     sigShutdownRemoteHost = pyqtSignal(int)
-    sigCheckForUpdate = pyqtSignal()
 
     def __init__(self, oacmode=False):
         self.row = -1
@@ -121,9 +113,6 @@ class Settings(QWidget, Ui_Settings):
 
         # set version string
         self.versionLabel.setText("Version %s" % versionString)
-        # set update check mode
-        self.manual_update_check = False
-        self.sigCheckForUpdate.connect(self.check_for_updates)
 
     def showsettings(self):
         self.show()
@@ -188,7 +177,6 @@ class Settings(QWidget, Ui_Settings):
         self.SloganColor.clicked.connect(self.setSloganColor)
 
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
-        self.updateCheckNowButton.clicked.connect(self.trigger_manual_check_for_updates)
 
     #        self.triggered.connect(self.closeEvent)
 
@@ -197,8 +185,8 @@ class Settings(QWidget, Ui_Settings):
     def readConfigFromJson(self, row, config):
         # remember which row we are
         self.row = row
-        conf_dict = json.loads(config)
-        for group, content in conf_dict.items():
+        confdict = json.loads(unicode(config))
+        for group, content in confdict.items():
             self.settings.beginGroup(group)
             for key, value in content.items():
                 self.settings.setValue(key, value)
@@ -232,11 +220,6 @@ class Settings(QWidget, Ui_Settings):
         self.Slogan.setText(settings.value('slogan', 'Your question is our motivation'))
         self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', '#FFAA00')))
         self.setSloganColor(self.getColorFromName(settings.value('slogancolor', '#FFAA00')))
-        self.checkBox_UpdateCheck.setChecked(settings.value('updatecheck', False, type=bool))
-        self.updateKey.setEnabled(settings.value('updatecheck', False, type=bool))
-        self.label_28.setEnabled(settings.value('updatecheck', False, type=bool))
-        self.updateCheckNowButton.setEnabled(settings.value('updatecheck', False, type=bool))
-        self.updateKey.setText(settings.value('updatekey', ''))
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -328,7 +311,7 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
     def getSettingsFromDialog(self):
-        if self.oacmode:
+        if self.oacmode == True:
             settings = self.settings
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -338,8 +321,6 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('slogan', self.Slogan.displayText())
         settings.setValue('stationcolor', self.getStationNameColor().name())
         settings.setValue('slogancolor', self.getSloganColor().name())
-        settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
-        settings.setValue('updatekey', self.updateKey.displayText())
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -417,7 +398,7 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('owmUnit', self.owmUnit.currentText())
         settings.endGroup()
 
-        if self.oacmode:
+        if self.oacmode == True:
             # send oac a signal the the config has changed
             self.sigConfigChanged.emit(self.row, self.readJsonFromConfig())
 
@@ -429,85 +410,6 @@ class Settings(QWidget, Ui_Settings):
     def closeSettings(self):
         # close settings button pressed
         self.restoreSettingsFromConfig()
-
-    @staticmethod
-    def get_mac():
-        mac1 = getnode()
-        mac2 = getnode()
-        if mac1 == mac2:
-            mac = ":".join(textwrap.wrap(format(mac1, 'x').upper(), 2))
-        else:
-            print("ERROR: Could not get a valid mac address")
-            mac = "00:00:00:00:00:00"
-        return mac
-
-    def trigger_manual_check_for_updates(self):
-        self.manual_update_check = True
-        self.check_for_updates()
-
-    def check_for_updates(self):
-        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-
-        if self.checkBox_UpdateCheck.isChecked():
-            print("check for updates")
-            update_key = self.updateKey.displayText()
-            settings.endGroup()
-            if len(update_key) == 50:
-                url = "http://127.0.0.1:8000/updatemanager/c"
-                data = QUrlQuery()
-                data.addQueryItem("update_key", update_key)
-                data.addQueryItem("product", "OnAirScreen")
-                data.addQueryItem("current_version", versionString)
-                data.addQueryItem("distribution", distributionString)
-                data.addQueryItem("mac", self.get_mac())
-                req = QtNetwork.QNetworkRequest(QUrl(url))
-                req.setHeader(QtNetwork.QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
-                self.nam_update_check = QtNetwork.QNetworkAccessManager()
-                self.nam_update_check.finished.connect(self.handle_update_check_response)
-                self.nam_update_check.post(req, data.toString(QUrl.FullyEncoded).encode("UTF-8"))
-            else:
-                print("error, update key in wrong format")
-                self.error_dialog = QErrorMessage()
-                self.error_dialog.setWindowTitle("Update Check Error")
-                self.error_dialog.showMessage('Update key is in the wrong format!', 'UpdateKeyError')
-
-    def handle_update_check_response(self, reply):
-        er = reply.error()
-        if er == QtNetwork.QNetworkReply.NoError:
-            bytes_string = reply.readAll()
-            reply_string = str(bytes_string, 'utf-8')
-            json_reply = json.loads(reply_string)
-
-            if json_reply['Status'] == "UPDATE":
-                self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
-                self.timer_message_box.exec_()
-
-            if json_reply['Status'] == "OK" and self.manual_update_check:
-                self.message_box = QMessageBox()
-                self.message_box.setIcon(QMessageBox.Information)
-                self.message_box.setWindowTitle("OnAirScreen Update Check")
-                self.message_box.setText("OnAirScreen Update Check")
-                self.message_box.setInformativeText(f"{json_reply['Message']}")
-                self.message_box.setStandardButtons(QMessageBox.Ok)
-                self.message_box.show()
-                self.manual_update_check = False
-
-            if json_reply['Status'] == "ERROR" and self.manual_update_check:
-                self.message_box = QMessageBox()
-                self.message_box.setIcon(QMessageBox.Critical)
-                self.message_box.setWindowTitle("OnAirScreen Update Check")
-                self.message_box.setText("OnAirScreen Update Check")
-                self.message_box.setInformativeText(f"{json_reply['Message']}")
-                self.message_box.setStandardButtons(QMessageBox.Ok)
-                self.message_box.show()
-                self.manual_update_check = False
-
-        else:
-            error_string = "Error occurred: {}, {}".format(er, reply.errorString())
-            self.message_box = QMessageBox()
-            self.error_dialog.setWindowTitle("Update Check Error")
-            self.error_dialog.showMessage(error_string, 'UpdateCheckError')
 
     def makeOWMTestCall(self):
         appid = self.owmAPIKey.displayText()

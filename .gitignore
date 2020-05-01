@@ -9,4 +9,3 @@ venv/
 dist/
 build/
 .idea/
-distribution.py
