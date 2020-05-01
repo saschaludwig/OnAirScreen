@@ -424,7 +424,6 @@ class Settings(QWidget, Ui_Settings):
         self.nam.get(req)
 
     def handleOWMResponse(self, reply):
-
         er = reply.error()
 
         if er == QtNetwork.QNetworkReply.NoError:
@@ -432,7 +431,7 @@ class Settings(QWidget, Ui_Settings):
             replyString = str(bytes_string, 'utf-8')
             self.owmTestOutput.setPlainText(replyString)
         else:
-            errorString = "Error occured: {}, {}".format(er, reply.errorString())
+            errorString = "Error occurred: {}, {}".format(er, reply.errorString())
             self.owmTestOutput.setPlainText(errorString)
 
     def setLED1BGColor(self, newcolor=False):
