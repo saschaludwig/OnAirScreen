@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>727</height>
+    <height>763</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -634,14 +634,28 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>
-              <widget class="QCheckBox" name="checkBox_UpdateCheck">
-               <property name="text">
-                <string>Check for updates</string>
-               </property>
-               <property name="checked">
-                <bool>false</bool>
-               </property>
-              </widget>
+              <layout class="QVBoxLayout" name="verticalLayout_20">
+               <item>
+                <widget class="QCheckBox" name="checkBox_UpdateCheck">
+                 <property name="text">
+                  <string>Check for updates</string>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_IncludeBetaVersions">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Include beta versions</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
              <item>
               <widget class="QPushButton" name="updateCheckNowButton">
@@ -893,7 +907,7 @@
          </item>
         </layout>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -1328,6 +1342,13 @@
           </layout>
          </item>
         </layout>
+       </item>
+       <item row="2" column="0">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -3698,6 +3719,22 @@ Parts of analog clockwidget:
     <hint type="destinationlabel">
      <x>277</x>
      <y>341</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_UpdateCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_IncludeBetaVersions</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>124</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>124</x>
+     <y>358</y>
     </hint>
    </hints>
   </connection>

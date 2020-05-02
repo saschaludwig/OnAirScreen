@@ -236,7 +236,9 @@ class Settings(QWidget, Ui_Settings):
         self.updateKey.setEnabled(settings.value('updatecheck', False, type=bool))
         self.label_28.setEnabled(settings.value('updatecheck', False, type=bool))
         self.updateCheckNowButton.setEnabled(settings.value('updatecheck', False, type=bool))
+        self.checkBox_IncludeBetaVersions.setEnabled(settings.value('updatecheck', False, type=bool))
         self.updateKey.setText(settings.value('updatekey', ''))
+        self.checkBox_IncludeBetaVersions.setChecked(settings.value('updateincludebeta', False, type=bool))
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -340,6 +342,7 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('slogancolor', self.getSloganColor().name())
         settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
         settings.setValue('updatekey', self.updateKey.displayText())
+        settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -446,21 +449,18 @@ class Settings(QWidget, Ui_Settings):
         self.check_for_updates()
 
     def check_for_updates(self):
-        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-
         if self.checkBox_UpdateCheck.isChecked():
             print("check for updates")
             update_key = self.updateKey.displayText()
-            settings.endGroup()
             if len(update_key) == 50:
-                url = "http://127.0.0.1:8000/updatemanager/c"
+                url = "https://customer.astrastudio.de/updatemanager/c"
                 data = QUrlQuery()
                 data.addQueryItem("update_key", update_key)
                 data.addQueryItem("product", "OnAirScreen")
                 data.addQueryItem("current_version", versionString)
                 data.addQueryItem("distribution", distributionString)
                 data.addQueryItem("mac", self.get_mac())
+                data.addQueryItem("include_beta", f'{self.checkBox_IncludeBetaVersions.isChecked()}')
                 req = QtNetwork.QNetworkRequest(QUrl(url))
                 req.setHeader(QtNetwork.QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
                 self.nam_update_check = QtNetwork.QNetworkAccessManager()
@@ -503,9 +503,9 @@ class Settings(QWidget, Ui_Settings):
                 self.message_box.show()
                 self.manual_update_check = False
 
-        else:
+        elif self.manual_update_check:
             error_string = "Error occurred: {}, {}".format(er, reply.errorString())
-            self.message_box = QMessageBox()
+            self.error_dialog = QErrorMessage()
             self.error_dialog.setWindowTitle("Update Check Error")
             self.error_dialog.showMessage(error_string, 'UpdateCheckError')
 
