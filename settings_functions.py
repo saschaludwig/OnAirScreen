@@ -438,7 +438,7 @@ class Settings(QWidget, Ui_Settings):
         mac1 = getnode()
         mac2 = getnode()
         if mac1 == mac2:
-            mac = ":".join(textwrap.wrap(format(mac1, 'x').upper(), 2))
+            mac = ":".join(textwrap.wrap(format(mac1, 'x').zfill(12).upper(), 2))
         else:
             print("ERROR: Could not get a valid mac address")
             mac = "00:00:00:00:00:00"
