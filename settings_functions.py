@@ -47,9 +47,10 @@ from uuid import getnode
 from weatherwidget import WeatherWidget as ww
 from utils import TimerUpdateMessageBox
 try:
-    from distribution import distributionString
+    from distribution import distributionString, update_url
 except ModuleNotFoundError:
     distributionString = "OpenSource"
+    update_url = "https://customer.astrastudio.de/updatemanager/c"
 
 versionString = "0.9.2"
 
@@ -453,7 +454,6 @@ class Settings(QWidget, Ui_Settings):
             print("check for updates")
             update_key = self.updateKey.displayText()
             if len(update_key) == 50:
-                url = "https://customer.astrastudio.de/updatemanager/c"
                 data = QUrlQuery()
                 data.addQueryItem("update_key", update_key)
                 data.addQueryItem("product", "OnAirScreen")
@@ -461,7 +461,7 @@ class Settings(QWidget, Ui_Settings):
                 data.addQueryItem("distribution", distributionString)
                 data.addQueryItem("mac", self.get_mac())
                 data.addQueryItem("include_beta", f'{self.checkBox_IncludeBetaVersions.isChecked()}')
-                req = QtNetwork.QNetworkRequest(QUrl(url))
+                req = QtNetwork.QNetworkRequest(QUrl(update_url))
                 req.setHeader(QtNetwork.QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
                 self.nam_update_check = QtNetwork.QNetworkAccessManager()
                 self.nam_update_check.finished.connect(self.handle_update_check_response)
