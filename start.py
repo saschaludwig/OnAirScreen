@@ -875,7 +875,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerAIR4.stop()
         self.Air4Seconds = 0
         self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
-        if self.statusAIR4 == True:
+        if self.statusAIR4:
             self.timerAIR4.start(1000)
 
     def set_air4(self, action):
@@ -1100,7 +1100,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             os.system(cmd)
         if os.name == "nt":
             cmd = "shutdown -f -r -t 0"
-            pass
+            os.system(cmd)
 
     def shutdown_host(self):
         self.add_warning("SYSTEM SHUTDOWN IN PROGRESS", 2)
@@ -1109,7 +1109,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             os.system(cmd)
         if os.name == "nt":
             cmd = "shutdown -f -t 0"
-            pass
+            os.system(cmd)
 
     def closeEvent(self, event):
         self.httpd.stop()
