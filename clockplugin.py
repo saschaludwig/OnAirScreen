@@ -8,6 +8,7 @@
 #
 
 from PyQt5 import QtGui, QtDesigner
+
 from clockwidget import ClockWidget
 
 
