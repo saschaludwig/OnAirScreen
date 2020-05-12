@@ -35,9 +35,10 @@
 #
 #############################################################################
 
+import webbrowser
+
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-import webbrowser
 
 
 class TimerUpdateMessageBox(QtWidgets.QMessageBox):

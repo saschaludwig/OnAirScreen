@@ -35,17 +35,20 @@
 #
 #############################################################################
 
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox, QPushButton
-from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
-import PyQt5.QtNetwork as QtNetwork
-from settings import Ui_Settings
-from collections import defaultdict
 import json
 import textwrap
+from collections import defaultdict
 from uuid import getnode
-from weatherwidget import WeatherWidget as ww
+
+import PyQt5.QtNetwork as QtNetwork
+from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
+from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox
+
+from settings import Ui_Settings
 from utils import TimerUpdateMessageBox
+from weatherwidget import WeatherWidget as ww
+
 try:
     from distribution import distributionString, update_url
 except ModuleNotFoundError:
@@ -100,14 +103,14 @@ class Settings(QWidget, Ui_Settings):
         self.textClockLanguages = ["English", "German"]
 
         # available Weather Widget languages
-        #self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
+        # self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
         #                     "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
         #                     "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
         #                     "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
         #                     "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
         #                     "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
         #                     "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
-        #self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
+        # self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
         self._connectSlots()
@@ -311,7 +314,8 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Formatting")
         self.dateFormat.setText(settings.value('dateFormat', 'dddd, dd. MMMM yyyy'))
-        self.textClockLanguage.setCurrentIndex(self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
+        self.textClockLanguage.setCurrentIndex(
+            self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
         self.time_am_pm.setChecked(settings.value('isAmPm', False, type=bool))
         self.time_24h.setChecked(not settings.value('isAmPm', False, type=bool))
         settings.endGroup()
