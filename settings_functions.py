@@ -47,6 +47,7 @@ from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, Q
 
 from settings import Ui_Settings
 from utils import TimerUpdateMessageBox
+from version import versionString
 from weatherwidget import WeatherWidget as ww
 
 try:
@@ -54,8 +55,6 @@ try:
 except ModuleNotFoundError:
     distributionString = "OpenSource"
     update_url = "https://customer.astrastudio.de/updatemanager/c"
-
-versionString = "0.9.2"
 
 
 # class OASSettings for use from OAC
