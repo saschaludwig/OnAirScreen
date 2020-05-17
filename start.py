@@ -1184,13 +1184,13 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     server_version = "OnAirScreen/%s" % versionString
 
     # handle HEAD request
-    def do_head(self):
+    def do_HEAD(self):
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/html; charset=utf-8")
         self.end_headers()
 
     # handle GET command
-    def do_get(self):
+    def do_GET(self):
         print(self.path)
         if self.path.startswith('/?cmd'):
             try:
@@ -1203,7 +1203,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
 
                 # send header first
-                self.send_header('Content-type', 'text-html')
+                self.send_header('Content-type', 'text-html; charset=utf-8')
                 self.end_headers()
 
                 settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
