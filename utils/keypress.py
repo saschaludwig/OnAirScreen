@@ -4,7 +4,7 @@
 #
 # OnAirScreen Keypress Tool
 # tool to display keyboard keycodes
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # keypress.py
@@ -37,9 +37,10 @@
 #############################################################################
 
 
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
 import sys
+
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 
 class myWin(QLineEdit):
@@ -51,7 +52,7 @@ class myWin(QLineEdit):
     def keyPressEvent(self, event):
         if type(event) == QKeyEvent:
             # here accept the event and do something
-            self.setText("%s = '%s'" % (str(event.key()), unicode(event.text())))
+            self.setText("%s = '%s'" % (str(event.key()), event.text()))
 
             event.accept()
         else:

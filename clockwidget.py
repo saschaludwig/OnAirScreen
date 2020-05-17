@@ -77,8 +77,9 @@
 #
 #############################################################################
 
-from PyQt5 import QtCore, QtGui, QtWidgets
 import time as pytime
+
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class ClockWidget(QtWidgets.QWidget):
@@ -325,7 +326,7 @@ class ClockWidget(QtWidgets.QWidget):
 
         if self.isAmPm and time.hour() > 12:
             if time.hour() >= 12:
-                hourStr = "%02d" % (time.hour()-12)
+                hourStr = "%02d" % (time.hour() - 12)
             else:
                 hourStr = "%02d" % time.hour()
         else:
@@ -415,7 +416,7 @@ class ClockWidget(QtWidgets.QWidget):
                 QtCore.QPointF(digitStartPosX + (dotSlant * 2 * currentRow), digitStartPosY - (dotOffset * currentRow)),
                 dotSize, dotSize)
 
-    def drawDigit(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, value=8, dotSize= 1.6, dotOffset = 4.5, slant = 19):
+    def drawDigit(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, value=8, dotSize=1.6, dotOffset=4.5, slant=19):
         value = int(value)
         # draw dots from one 7segment digit
         dotSlant = dotOffset / slant  # horizontal slant of each row

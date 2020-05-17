@@ -42,7 +42,6 @@ import json
 
 
 class WeatherWidget(QtWidgets.QWidget):
-
     owm_languages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
                      "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
                      "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
@@ -51,7 +50,6 @@ class WeatherWidget(QtWidgets.QWidget):
                      "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
                      "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
     owm_units = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
-
 
     def __init__(self, parent=None):
         super(WeatherWidget, self).__init__(parent)
@@ -70,8 +68,8 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSpacing(0)
 
-        #spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        #self.verticalLayout.addItem(spacerItem)
+        # spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        # self.verticalLayout.addItem(spacerItem)
 
         # city label
         self.cityLabel = QtWidgets.QLabel(self)
@@ -165,7 +163,7 @@ class WeatherWidget(QtWidgets.QWidget):
         # start timer for background update every 10 minutes
         self.updateTimer = QtCore.QTimer()
         self.updateTimer.timeout.connect(self.updateWeather)
-        self.updateTimer.start(10*60*1000)
+        self.updateTimer.start(10 * 60 * 1000)
 
     def updateWeather(self):
         print("update weather called")
@@ -202,7 +200,7 @@ class WeatherWidget(QtWidgets.QWidget):
         if er == QtNetwork.QNetworkReply.NoError:
             bytes_string = reply.readAll()
             replyString = str(bytes_string, 'utf-8')
-            #print(replyString)
+            # print(replyString)
             weatherJson = (json.loads(replyString))
             main_weather = weatherJson["weather"][0]["main"]
             condition = weatherJson["weather"][0]["description"]
@@ -210,7 +208,8 @@ class WeatherWidget(QtWidgets.QWidget):
             temp = "{:.0f}°{}".format(weatherJson["main"]["temp"], "C")
             icon = weatherJson["weather"][0]["icon"]
             background = icon
-            self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background, label="WETTER")
+            self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background,
+                         label="WETTER")
         else:
             errorString = "Error occured: {}, {}".format(er, reply.errorString())
             print(errorString)
@@ -230,5 +229,6 @@ class WeatherWidget(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
         painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(self.bg))
+
 
 import resources_rc
