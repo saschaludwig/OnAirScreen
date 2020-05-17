@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2019 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2020 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # oas_send.py
@@ -35,8 +35,8 @@
 #
 #############################################################################
 
-import socket
 import argparse
+import socket
 
 parser = argparse.ArgumentParser(description='Send an UDP API command to OnAirScreen.')
 parser.add_argument("-i", "--ip", type=str, help="OnAirScreen target IP (default: 127.0.0.1)", default="127.0.0.1")
@@ -50,6 +50,6 @@ UDP_PORT = args.port
 MESSAGE = args.message
 
 if not args.silent:
-    print("IP:", UDP_IP, "| PORT:",UDP_PORT, "| Message:", MESSAGE)
+    print("IP:", UDP_IP, "| PORT:", UDP_PORT, "| Message:", MESSAGE)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.sendto(bytes(MESSAGE, "utf-8"), (UDP_IP, UDP_PORT))

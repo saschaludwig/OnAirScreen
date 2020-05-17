@@ -35,16 +35,26 @@
 #
 #############################################################################
 
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog
-from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl
-import PyQt5.QtNetwork as QtNetwork
-from settings import Ui_Settings
-from collections import defaultdict
 import json
+import textwrap
+from collections import defaultdict
+from uuid import getnode
+
+import PyQt5.QtNetwork as QtNetwork
+from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
+from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox
+
+from settings import Ui_Settings
+from utils import TimerUpdateMessageBox
+from version import versionString
 from weatherwidget import WeatherWidget as ww
 
-versionString = "0.9.2"
+try:
+    from distribution import distributionString, update_url
+except ModuleNotFoundError:
+    distributionString = "OpenSource"
+    update_url = "https://customer.astrastudio.de/updatemanager/c"
 
 
 # class OASSettings for use from OAC
@@ -81,6 +91,7 @@ class Settings(QWidget, Ui_Settings):
     sigExitRemoteOAS = pyqtSignal(int)
     sigRebootRemoteHost = pyqtSignal(int)
     sigShutdownRemoteHost = pyqtSignal(int)
+    sigCheckForUpdate = pyqtSignal()
 
     def __init__(self, oacmode=False):
         self.row = -1
@@ -91,14 +102,14 @@ class Settings(QWidget, Ui_Settings):
         self.textClockLanguages = ["English", "German"]
 
         # available Weather Widget languages
-        #self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
+        # self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
         #                     "Greek": "el", "English": "en", "Persian (Farsi)": "fa", "Finnish": "fi", "French": "fr",
         #                     "Galician": "gl", "Croatian": "hr", "Hungarian": "hu", "Italian": "it", "Japanese": "ja",
         #                     "Korean": "kr", "Latvian": "la", "Lithuanian": "lt", "Macedonian": "mk", "Dutch": "nl",
         #                     "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru", "Swedish": "se",
         #                     "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
         #                     "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
-        #self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
+        # self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
         self._connectSlots()
@@ -113,6 +124,9 @@ class Settings(QWidget, Ui_Settings):
 
         # set version string
         self.versionLabel.setText("Version %s" % versionString)
+        # set update check mode
+        self.manual_update_check = False
+        self.sigCheckForUpdate.connect(self.check_for_updates)
 
     def showsettings(self):
         self.show()
@@ -177,6 +191,7 @@ class Settings(QWidget, Ui_Settings):
         self.SloganColor.clicked.connect(self.setSloganColor)
 
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
+        self.updateCheckNowButton.clicked.connect(self.trigger_manual_check_for_updates)
 
     #        self.triggered.connect(self.closeEvent)
 
@@ -185,8 +200,8 @@ class Settings(QWidget, Ui_Settings):
     def readConfigFromJson(self, row, config):
         # remember which row we are
         self.row = row
-        confdict = json.loads(unicode(config))
-        for group, content in confdict.items():
+        conf_dict = json.loads(config)
+        for group, content in conf_dict.items():
             self.settings.beginGroup(group)
             for key, value in content.items():
                 self.settings.setValue(key, value)
@@ -220,6 +235,13 @@ class Settings(QWidget, Ui_Settings):
         self.Slogan.setText(settings.value('slogan', 'Your question is our motivation'))
         self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', '#FFAA00')))
         self.setSloganColor(self.getColorFromName(settings.value('slogancolor', '#FFAA00')))
+        self.checkBox_UpdateCheck.setChecked(settings.value('updatecheck', False, type=bool))
+        self.updateKey.setEnabled(settings.value('updatecheck', False, type=bool))
+        self.label_28.setEnabled(settings.value('updatecheck', False, type=bool))
+        self.updateCheckNowButton.setEnabled(settings.value('updatecheck', False, type=bool))
+        self.checkBox_IncludeBetaVersions.setEnabled(settings.value('updatecheck', False, type=bool))
+        self.updateKey.setText(settings.value('updatekey', ''))
+        self.checkBox_IncludeBetaVersions.setChecked(settings.value('updateincludebeta', False, type=bool))
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -291,7 +313,8 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("Formatting")
         self.dateFormat.setText(settings.value('dateFormat', 'dddd, dd. MMMM yyyy'))
-        self.textClockLanguage.setCurrentIndex(self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
+        self.textClockLanguage.setCurrentIndex(
+            self.textClockLanguage.findText(settings.value('textClockLanguage', 'English')))
         self.time_am_pm.setChecked(settings.value('isAmPm', False, type=bool))
         self.time_24h.setChecked(not settings.value('isAmPm', False, type=bool))
         settings.endGroup()
@@ -311,7 +334,7 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
     def getSettingsFromDialog(self):
-        if self.oacmode == True:
+        if self.oacmode:
             settings = self.settings
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -321,6 +344,9 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('slogan', self.Slogan.displayText())
         settings.setValue('stationcolor', self.getStationNameColor().name())
         settings.setValue('slogancolor', self.getSloganColor().name())
+        settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
+        settings.setValue('updatekey', self.updateKey.displayText())
+        settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -398,7 +424,7 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('owmUnit', self.owmUnit.currentText())
         settings.endGroup()
 
-        if self.oacmode == True:
+        if self.oacmode:
             # send oac a signal the the config has changed
             self.sigConfigChanged.emit(self.row, self.readJsonFromConfig())
 
@@ -410,6 +436,81 @@ class Settings(QWidget, Ui_Settings):
     def closeSettings(self):
         # close settings button pressed
         self.restoreSettingsFromConfig()
+
+    @staticmethod
+    def get_mac():
+        mac1 = getnode()
+        mac2 = getnode()
+        if mac1 == mac2:
+            mac = ":".join(textwrap.wrap(format(mac1, 'x').zfill(12).upper(), 2))
+        else:
+            print("ERROR: Could not get a valid mac address")
+            mac = "00:00:00:00:00:00"
+        return mac
+
+    def trigger_manual_check_for_updates(self):
+        self.manual_update_check = True
+        self.check_for_updates()
+
+    def check_for_updates(self):
+        if self.checkBox_UpdateCheck.isChecked():
+            print("check for updates")
+            update_key = self.updateKey.displayText()
+            if len(update_key) == 50:
+                data = QUrlQuery()
+                data.addQueryItem("update_key", update_key)
+                data.addQueryItem("product", "OnAirScreen")
+                data.addQueryItem("current_version", versionString)
+                data.addQueryItem("distribution", distributionString)
+                data.addQueryItem("mac", self.get_mac())
+                data.addQueryItem("include_beta", f'{self.checkBox_IncludeBetaVersions.isChecked()}')
+                req = QtNetwork.QNetworkRequest(QUrl(update_url))
+                req.setHeader(QtNetwork.QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
+                self.nam_update_check = QtNetwork.QNetworkAccessManager()
+                self.nam_update_check.finished.connect(self.handle_update_check_response)
+                self.nam_update_check.post(req, data.toString(QUrl.FullyEncoded).encode("UTF-8"))
+            else:
+                print("error, update key in wrong format")
+                self.error_dialog = QErrorMessage()
+                self.error_dialog.setWindowTitle("Update Check Error")
+                self.error_dialog.showMessage('Update key is in the wrong format!', 'UpdateKeyError')
+
+    def handle_update_check_response(self, reply):
+        er = reply.error()
+        if er == QtNetwork.QNetworkReply.NoError:
+            bytes_string = reply.readAll()
+            reply_string = str(bytes_string, 'utf-8')
+            json_reply = json.loads(reply_string)
+
+            if json_reply['Status'] == "UPDATE":
+                self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
+                self.timer_message_box.exec_()
+
+            if json_reply['Status'] == "OK" and self.manual_update_check:
+                self.message_box = QMessageBox()
+                self.message_box.setIcon(QMessageBox.Information)
+                self.message_box.setWindowTitle("OnAirScreen Update Check")
+                self.message_box.setText("OnAirScreen Update Check")
+                self.message_box.setInformativeText(f"{json_reply['Message']}")
+                self.message_box.setStandardButtons(QMessageBox.Ok)
+                self.message_box.show()
+                self.manual_update_check = False
+
+            if json_reply['Status'] == "ERROR" and self.manual_update_check:
+                self.message_box = QMessageBox()
+                self.message_box.setIcon(QMessageBox.Critical)
+                self.message_box.setWindowTitle("OnAirScreen Update Check")
+                self.message_box.setText("OnAirScreen Update Check")
+                self.message_box.setInformativeText(f"{json_reply['Message']}")
+                self.message_box.setStandardButtons(QMessageBox.Ok)
+                self.message_box.show()
+                self.manual_update_check = False
+
+        elif self.manual_update_check:
+            error_string = "Error occurred: {}, {}".format(er, reply.errorString())
+            self.error_dialog = QErrorMessage()
+            self.error_dialog.setWindowTitle("Update Check Error")
+            self.error_dialog.showMessage(error_string, 'UpdateCheckError')
 
     def makeOWMTestCall(self):
         appid = self.owmAPIKey.displayText()
