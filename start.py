@@ -45,7 +45,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import unquote
 
 import ntplib
-from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread
+from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread, pyqtSignal
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
@@ -181,7 +181,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         port = int(settings.value('udpport', 3310))
         settings.endGroup()
         self.udpsock.bind(port, QUdpSocket.ShareAddress)
-        self.udpsock.readyRead.connect(self.cmd_handler)
+        self.udpsock.readyRead.connect(self.udp_cmd_handler)
 
         # Setup HTTP Server
         self.httpd = HttpDaemon(self)
@@ -284,203 +284,207 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_current_song_text(", ".join(["%s" % addr for addr in v4addrs]))
         self.set_news_text(", ".join(["%s" % addr for addr in v6addrs]))
 
-    def cmd_handler(self):
+    def parse_cmd(self, data):
+        try:
+            (command, value) = data.decode('utf_8').split(':', 1)
+        except ValueError:
+            return False
+
+        command = str(command)
+        value = str(value)
+        # print("command: >" + command + "<")
+        # print("value: >" + value + "<")
+        if command == "NOW":
+            self.set_current_song_text(value)
+        elif command == "NEXT":
+            self.set_news_text(value)
+        elif command == "LED1":
+            if value == "OFF":
+                self.led_logic(1, False)
+            else:
+                self.led_logic(1, True)
+        elif command == "LED2":
+            if value == "OFF":
+                self.led_logic(2, False)
+            else:
+                self.led_logic(2, True)
+        elif command == "LED3":
+            if value == "OFF":
+                self.led_logic(3, False)
+            else:
+                self.led_logic(3, True)
+        elif command == "LED4":
+            if value == "OFF":
+                self.led_logic(4, False)
+            else:
+                self.led_logic(4, True)
+        elif command == "WARN":
+            if value:
+                self.add_warning(value, 1)
+            else:
+                self.remove_warning(1)
+
+        elif command == "AIR1":
+            if value == "OFF":
+                self.set_air1(False)
+            else:
+                self.set_air1(True)
+
+        elif command == "AIR2":
+            if value == "OFF":
+                self.set_air2(False)
+            else:
+                self.set_air2(True)
+
+        elif command == "AIR3":
+            if value == "OFF":
+                self.stop_air3()
+            if value == "ON":
+                self.start_air3()
+            if value == "RESET":
+                self.radio_timer_reset()
+            if value == "TOGGLE":
+                self.radio_timer_start_stop()
+
+        elif command == "AIR3TIME":
+            self.radio_timer_set(int(value))
+
+        elif command == "AIR4":
+            if value == "OFF":
+                self.set_air4(False)
+            if value == "ON":
+                self.set_air4(True)
+            if value == "RESET":
+                self.stream_timer_reset()
+
+        elif command == "CMD":
+            if value == "REBOOT":
+                self.reboot_host()
+            if value == "SHUTDOWN":
+                self.shutdown_host()
+            if value == "QUIT":
+                self.quit_oas()
+
+        elif command == "CONF":
+            # split group, config and values and apply them
+            try:
+                (group, paramvalue) = value.split(':', 1)
+                (param, content) = paramvalue.split('=', 1)
+                # print "CONF:", param, content
+            except ValueError:
+                return
+
+            if group == "General":
+                if param == "stationname":
+                    self.settings.StationName.setText(content)
+                elif param == "slogan":
+                    self.settings.Slogan.setText(content)
+                elif param == "stationcolor":
+                    self.settings.setStationNameColor(self.settings.getColorFromName(content))
+                elif param == "slogancolor":
+                    self.settings.setSloganColor(self.settings.getColorFromName(content))
+
+            elif group == "LED1":
+                if param == "used":
+                    self.settings.LED1.setChecked(QVariant(content).toBool())
+                elif param == "text":
+                    self.settings.LED1Text.setText(content)
+                elif param == "activebgcolor":
+                    self.settings.setLED1BGColor(self.settings.getColorFromName(content))
+                elif param == "activetextcolor":
+                    self.settings.setLED1FGColor(self.settings.getColorFromName(content))
+                elif param == "autoflash":
+                    self.settings.LED1Autoflash.setChecked(QVariant(content).toBool())
+                elif param == "timedflash":
+                    self.settings.LED1Timedflash.setChecked(QVariant(content).toBool())
+
+            elif group == "LED2":
+                if param == "used":
+                    self.settings.LED2.setChecked(QVariant(content).toBool())
+                elif param == "text":
+                    self.settings.LED2Text.setText(content)
+                elif param == "activebgcolor":
+                    self.settings.setLED2BGColor(self.settings.getColorFromName(content))
+                elif param == "activetextcolor":
+                    self.settings.setLED2FGColor(self.settings.getColorFromName(content))
+                elif param == "autoflash":
+                    self.settings.LED2Autoflash.setChecked(QVariant(content).toBool())
+                elif param == "timedflash":
+                    self.settings.LED2Timedflash.setChecked(QVariant(content).toBool())
+
+            elif group == "LED3":
+                if param == "used":
+                    self.settings.LED3.setChecked(QVariant(content).toBool())
+                elif param == "text":
+                    self.settings.LED3Text.setText(content)
+                elif param == "activebgcolor":
+                    self.settings.setLED3BGColor(self.settings.getColorFromName(content))
+                elif param == "activetextcolor":
+                    self.settings.setLED3FGColor(self.settings.getColorFromName(content))
+                elif param == "autoflash":
+                    self.settings.LED3Autoflash.setChecked(QVariant(content).toBool())
+                elif param == "timedflash":
+                    self.settings.LED3Timedflash.setChecked(QVariant(content).toBool())
+
+            elif group == "LED4":
+                if param == "used":
+                    self.settings.LED4.setChecked(QVariant(content).toBool())
+                elif param == "text":
+                    self.settings.LED4Text.setText(content)
+                elif param == "activebgcolor":
+                    self.settings.setLED4BGColor(self.settings.getColorFromName(content))
+                elif param == "activetextcolor":
+                    self.settings.setLED4FGColor(self.settings.getColorFromName(content))
+                elif param == "autoflash":
+                    self.settings.LED4Autoflash.setChecked(QVariant(content).toBool())
+                elif param == "timedflash":
+                    self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
+
+            elif group == "Clock":
+                if param == "digital":
+                    if content == "True":
+                        self.settings.clockDigital.setChecked(True)
+                        self.settings.clockAnalog.setChecked(False)
+                    elif content == "False":
+                        self.settings.clockAnalog.setChecked(False)
+                        self.settings.clockDigital.setChecked(True)
+                elif param == "showseconds":
+                    if content == "True":
+                        self.settings.showSeconds.setChecked(True)
+                    elif content == "False":
+                        self.settings.showSeconds.setChecked(False)
+                elif param == "staticcolon":
+                    if content == "True":
+                        self.settings.staticColon.setChecked(True)
+                    elif content == "False":
+                        self.settings.staticColon.setChecked(False)
+                elif param == "digitalhourcolor":
+                    self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
+                elif param == "digitalsecondcolor":
+                    self.settings.setDigitalSecondColor(self.settings.getColorFromName(content))
+                elif param == "digitaldigitcolor":
+                    self.settings.setDigitalDigitColor(self.settings.getColorFromName(content))
+                elif param == "logopath":
+                    self.settings.setLogoPath(content)
+
+            elif group == "Network":
+                if param == "udpport":
+                    self.settings.udpport.setText(content)
+
+            elif group == "CONF":
+                if param == "APPLY":
+                    if content == "TRUE":
+                        # apply and save settings
+                        self.settings.applySettings()
+
+    def udp_cmd_handler(self):
         while self.udpsock.hasPendingDatagrams():
             data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
             # print("DATA: ", data)
             lines = data.splitlines()
             for line in lines:
                 # print("Line:", line)
-                try:
-                    (command, value) = line.decode('utf_8').split(':', 1)
-                except ValueError:
-                    return
-                command = str(command)
-                value = str(value)
-                # print("command: >" + command + "<")
-                # print("value: >" + value + "<")
-                if command == "NOW":
-                    self.set_current_song_text(value)
-                if command == "NEXT":
-                    self.set_news_text(value)
-                if command == "LED1":
-                    if value == "OFF":
-                        self.led_logic(1, False)
-                    else:
-                        self.led_logic(1, True)
-                if command == "LED2":
-                    if value == "OFF":
-                        self.led_logic(2, False)
-                    else:
-                        self.led_logic(2, True)
-                if command == "LED3":
-                    if value == "OFF":
-                        self.led_logic(3, False)
-                    else:
-                        self.led_logic(3, True)
-                if command == "LED4":
-                    if value == "OFF":
-                        self.led_logic(4, False)
-                    else:
-                        self.led_logic(4, True)
-                if command == "WARN":
-                    if value:
-                        self.add_warning(value, 1)
-                    else:
-                        self.remove_warning(1)
-
-                if command == "AIR1":
-                    if value == "OFF":
-                        self.set_air1(False)
-                    else:
-                        self.set_air1(True)
-
-                if command == "AIR2":
-                    if value == "OFF":
-                        self.set_air2(False)
-                    else:
-                        self.set_air2(True)
-
-                if command == "AIR3":
-                    if value == "OFF":
-                        self.stop_air3()
-                    if value == "ON":
-                        self.start_air3()
-                    if value == "RESET":
-                        self.radio_timer_reset()
-                    if value == "TOGGLE":
-                        self.radio_timer_start_stop()
-
-                if command == "AIR3TIME":
-                    self.radio_timer_set(int(value))
-
-                if command == "AIR4":
-                    if value == "OFF":
-                        self.set_air4(False)
-                    if value == "ON":
-                        self.set_air4(True)
-                    if value == "RESET":
-                        self.stream_timer_reset()
-
-                if command == "CMD":
-                    if value == "REBOOT":
-                        self.reboot_host()
-                    if value == "SHUTDOWN":
-                        self.shutdown_host()
-                    if value == "QUIT":
-                        self.quit_oas()
-
-                if command == "CONF":
-                    # split group, config and values and apply them
-                    try:
-                        (group, paramvalue) = value.split(':', 1)
-                        (param, content) = paramvalue.split('=', 1)
-                        # print "CONF:", param, content
-                    except ValueError:
-                        return
-
-                    if group == "General":
-                        if param == "stationname":
-                            self.settings.StationName.setText(content)
-                        if param == "slogan":
-                            self.settings.Slogan.setText(content)
-                        if param == "stationcolor":
-                            self.settings.setStationNameColor(self.settings.getColorFromName(content))
-                        if param == "slogancolor":
-                            self.settings.setSloganColor(self.settings.getColorFromName(content))
-
-                    if group == "LED1":
-                        if param == "used":
-                            self.settings.LED1.setChecked(QVariant(content).toBool())
-                        if param == "text":
-                            self.settings.LED1Text.setText(content)
-                        if param == "activebgcolor":
-                            self.settings.setLED1BGColor(self.settings.getColorFromName(content))
-                        if param == "activetextcolor":
-                            self.settings.setLED1FGColor(self.settings.getColorFromName(content))
-                        if param == "autoflash":
-                            self.settings.LED1Autoflash.setChecked(QVariant(content).toBool())
-                        if param == "timedflash":
-                            self.settings.LED1Timedflash.setChecked(QVariant(content).toBool())
-
-                    if group == "LED2":
-                        if param == "used":
-                            self.settings.LED2.setChecked(QVariant(content).toBool())
-                        if param == "text":
-                            self.settings.LED2Text.setText(content)
-                        if param == "activebgcolor":
-                            self.settings.setLED2BGColor(self.settings.getColorFromName(content))
-                        if param == "activetextcolor":
-                            self.settings.setLED2FGColor(self.settings.getColorFromName(content))
-                        if param == "autoflash":
-                            self.settings.LED2Autoflash.setChecked(QVariant(content).toBool())
-                        if param == "timedflash":
-                            self.settings.LED2Timedflash.setChecked(QVariant(content).toBool())
-
-                    if group == "LED3":
-                        if param == "used":
-                            self.settings.LED3.setChecked(QVariant(content).toBool())
-                        if param == "text":
-                            self.settings.LED3Text.setText(content)
-                        if param == "activebgcolor":
-                            self.settings.setLED3BGColor(self.settings.getColorFromName(content))
-                        if param == "activetextcolor":
-                            self.settings.setLED3FGColor(self.settings.getColorFromName(content))
-                        if param == "autoflash":
-                            self.settings.LED3Autoflash.setChecked(QVariant(content).toBool())
-                        if param == "timedflash":
-                            self.settings.LED3Timedflash.setChecked(QVariant(content).toBool())
-
-                    if group == "LED4":
-                        if param == "used":
-                            self.settings.LED4.setChecked(QVariant(content).toBool())
-                        if param == "text":
-                            self.settings.LED4Text.setText(content)
-                        if param == "activebgcolor":
-                            self.settings.setLED4BGColor(self.settings.getColorFromName(content))
-                        if param == "activetextcolor":
-                            self.settings.setLED4FGColor(self.settings.getColorFromName(content))
-                        if param == "autoflash":
-                            self.settings.LED4Autoflash.setChecked(QVariant(content).toBool())
-                        if param == "timedflash":
-                            self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
-
-                    if group == "Clock":
-                        if param == "digital":
-                            if content == "True":
-                                self.settings.clockDigital.setChecked(True)
-                                self.settings.clockAnalog.setChecked(False)
-                            if content == "False":
-                                self.settings.clockAnalog.setChecked(False)
-                                self.settings.clockDigital.setChecked(True)
-                        if param == "showseconds":
-                            if content == "True":
-                                self.settings.showSeconds.setChecked(True)
-                            if content == "False":
-                                self.settings.showSeconds.setChecked(False)
-                        if param == "staticcolon":
-                            if content == "True":
-                                self.settings.staticColon.setChecked(True)
-                            if content == "False":
-                                self.settings.staticColon.setChecked(False)
-                        if param == "digitalhourcolor":
-                            self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
-                        if param == "digitalsecondcolor":
-                            self.settings.setDigitalSecondColor(self.settings.getColorFromName(content))
-                        if param == "digitaldigitcolor":
-                            self.settings.setDigitalDigitColor(self.settings.getColorFromName(content))
-                        if param == "logopath":
-                            self.settings.setLogoPath(content)
-
-                    if group == "Network":
-                        if param == "udpport":
-                            self.settings.udpport.setText(content)
-
-                    if group == "CONF":
-                        if param == "APPLY":
-                            if content == "TRUE":
-                                # apply and save settings
-                                self.settings.applySettings()
+                self.parse_cmd(line)
 
     def manual_toggle_led1(self):
         if self.LED1on:
