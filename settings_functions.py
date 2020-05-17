@@ -91,7 +91,6 @@ class Settings(QWidget, Ui_Settings):
     sigExitRemoteOAS = pyqtSignal(int)
     sigRebootRemoteHost = pyqtSignal(int)
     sigShutdownRemoteHost = pyqtSignal(int)
-    sigCheckForUpdate = pyqtSignal()
 
     def __init__(self, oacmode=False):
         self.row = -1
@@ -124,9 +123,6 @@ class Settings(QWidget, Ui_Settings):
 
         # set version string
         self.versionLabel.setText("Version %s" % versionString)
-        # set update check mode
-        self.manual_update_check = False
-        self.sigCheckForUpdate.connect(self.check_for_updates)
 
     def showsettings(self):
         self.show()
@@ -191,7 +187,6 @@ class Settings(QWidget, Ui_Settings):
         self.SloganColor.clicked.connect(self.setSloganColor)
 
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
-        self.updateCheckNowButton.clicked.connect(self.trigger_manual_check_for_updates)
 
     #        self.triggered.connect(self.closeEvent)
 
@@ -200,8 +195,8 @@ class Settings(QWidget, Ui_Settings):
     def readConfigFromJson(self, row, config):
         # remember which row we are
         self.row = row
-        conf_dict = json.loads(config)
-        for group, content in conf_dict.items():
+        confdict = json.loads(unicode(config))
+        for group, content in confdict.items():
             self.settings.beginGroup(group)
             for key, value in content.items():
                 self.settings.setValue(key, value)
@@ -334,7 +329,7 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
     def getSettingsFromDialog(self):
-        if self.oacmode:
+        if self.oacmode == True:
             settings = self.settings
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -424,7 +419,7 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('owmUnit', self.owmUnit.currentText())
         settings.endGroup()
 
-        if self.oacmode:
+        if self.oacmode == True:
             # send oac a signal the the config has changed
             self.sigConfigChanged.emit(self.row, self.readJsonFromConfig())
 
@@ -511,6 +506,7 @@ class Settings(QWidget, Ui_Settings):
             self.error_dialog = QErrorMessage()
             self.error_dialog.setWindowTitle("Update Check Error")
             self.error_dialog.showMessage(error_string, 'UpdateCheckError')
+
 
     def makeOWMTestCall(self):
         appid = self.owmAPIKey.displayText()
