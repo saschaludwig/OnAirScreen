@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+### Changed
+- Fix crash when timer value is not numeric
+- Fix show/hide of weather widget
+
+### Added
+- HTTP API
+- Update check support
+
 ## [0.9.1 beta4]
 ### Changed
 - Fix window resize when displaying long text in NOW/NEXT/WARN
