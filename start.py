@@ -347,7 +347,10 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.radio_timer_start_stop()
 
         elif command == "AIR3TIME":
-            self.radio_timer_set(int(value))
+            try:
+                self.radio_timer_set(int(value))
+            except ValueError as e:
+                print("ERROR: invalid value", e)
 
         elif command == "AIR4":
             if value == "OFF":
