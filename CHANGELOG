@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Fix crash when timer value is not numeric
 - Fix show/hide of weather widget
+- Fix HTTP API full UTF-8 support
 
 ### Added
 - HTTP API
 - Update check support
+- Show/hide LED1-4
+- Show/hide TextClock
 
 ## [0.9.1 beta4]
 ### Changed
