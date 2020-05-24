@@ -641,22 +641,22 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.beginGroup("LED1")
         self.set_led1_text(settings.value('text', 'ON AIR'))
-        self.buttonLED1.setVisible(settings.value('used', True))
+        self.buttonLED1.setVisible(settings.value('used', True, type=bool))
         settings.endGroup()
 
         settings.beginGroup("LED2")
         self.set_led2_text(settings.value('text', 'PHONE'))
-        self.buttonLED2.setVisible(settings.value('used', True))
+        self.buttonLED2.setVisible(settings.value('used', True, type=bool))
         settings.endGroup()
 
         settings.beginGroup("LED3")
         self.set_led3_text(settings.value('text', 'DOORBELL'))
-        self.buttonLED3.setVisible(settings.value('used', True))
+        self.buttonLED3.setVisible(settings.value('used', True, type=bool))
         settings.endGroup()
 
         settings.beginGroup("LED4")
         self.set_led4_text(settings.value('text', 'EAS ACTIVE'))
-        self.buttonLED4.setVisible(settings.value('used', True))
+        self.buttonLED4.setVisible(settings.value('used', True, type=bool))
         settings.endGroup()
 
         settings.beginGroup("Clock")
