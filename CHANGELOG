@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 - Fix crash when timer value is not numeric
 - Fix show/hide of weather widget
 - Fix HTTP API full UTF-8 support
+- Fix crash when restoring config on .ini style platforms, boolean type mismatch
 
 ### Added
 - HTTP API
