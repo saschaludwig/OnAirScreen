@@ -208,8 +208,12 @@ class WeatherWidget(QtWidgets.QWidget):
             temp = "{:.0f}°{}".format(weatherJson["main"]["temp"], "C")
             icon = weatherJson["weather"][0]["icon"]
             background = icon
+            if self.owmLanguage == "de":
+                label = "WETTER"
+            else:
+                label = "WEATHER"
             self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background,
-                         label="WETTER")
+                         label=label)
         else:
             errorString = "Error occured: {}, {}".format(er, reply.errorString())
             print(errorString)

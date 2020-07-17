@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - Fix show/hide of weather widget
 - Fix HTTP API full UTF-8 support
 - Fix crash when restoring config on .ini style platforms, boolean type mismatch
+- Localized "WEATHER" string in Weather Widget
 
 ### Added
 - HTTP API
