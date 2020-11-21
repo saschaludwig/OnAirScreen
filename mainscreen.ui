@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1039</width>
-    <height>788</height>
+    <width>979</width>
+    <height>815</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -1090,10 +1090,22 @@ color: rgb(255, 255, 255);</string>
    </item>
    <item row="8" column="0">
     <widget class="WeatherWidget" name="weatherWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>0</width>
        <height>135</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>221</width>
+       <height>16777215</height>
       </size>
      </property>
     </widget>

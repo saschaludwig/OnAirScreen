@@ -113,6 +113,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("P"), self, self.toggle_air2)
         QShortcut(QKeySequence("*"), self, self.toggle_air2)
         QShortcut(QKeySequence("S"), self, self.toggle_air4)
+        QShortcut(QKeySequence("Alt+S"), self, self.stream_timer_reset)
+
         QShortcut(QKeySequence("Enter"), self, self.get_timer_dialog)
         QShortcut(QKeySequence("Return"), self, self.get_timer_dialog)
 
