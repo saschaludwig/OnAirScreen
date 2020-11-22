@@ -426,6 +426,15 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('owmUnit', self.owmUnit.currentText())
         settings.endGroup()
 
+        settings.beginGroup("Timers")
+        settings.setValue('TimerAIR1Enabled', self.enableAIR1.isChecked())
+        settings.setValue('TimerAIR2Enabled', self.enableAIR2.isChecked())
+        settings.setValue('TimerAIR3Enabled', self.enableAIR3.isChecked())
+        settings.setValue('TimerAIR4Enabled', self.enableAIR4.isChecked())
+
+        settings.endGroup()
+
+
         if self.oacmode:
             # send oac a signal the the config has changed
             self.sigConfigChanged.emit(self.row, self.readJsonFromConfig())
