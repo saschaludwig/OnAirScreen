@@ -334,6 +334,13 @@ class Settings(QWidget, Ui_Settings):
         self.owmTestOutput.setEnabled(settings.value('owmWidgetEnabled', False, type=bool))
         settings.endGroup()
 
+        settings.beginGroup("Timers")
+        self.enableAIR1.setChecked(settings.value('TimerAIR1Enabled', True, type=bool))
+        self.enableAIR2.setChecked(settings.value('TimerAIR2Enabled', True, type=bool))
+        self.enableAIR3.setChecked(settings.value('TimerAIR3Enabled', True, type=bool))
+        self.enableAIR4.setChecked(settings.value('TimerAIR4Enabled', True, type=bool))
+        settings.endGroup()
+
     def getSettingsFromDialog(self):
         if self.oacmode:
             settings = self.settings
@@ -433,7 +440,6 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('TimerAIR4Enabled', self.enableAIR4.isChecked())
 
         settings.endGroup()
-
 
         if self.oacmode:
             # send oac a signal the the config has changed
