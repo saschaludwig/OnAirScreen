@@ -689,6 +689,28 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.endGroup()
 
+        settings.beginGroup("Timers")
+        if not settings.value('TimerAIR1Enabled', True, type=bool):
+            self.AirLED_1.hide()
+        else:
+            self.AirLED_1.show()
+        if not settings.value('TimerAIR2Enabled', True, type=bool):
+            self.AirLED_2.hide()
+        else:
+            self.AirLED_2.show()
+        if not settings.value('TimerAIR3Enabled', True, type=bool):
+            self.AirLED_3.hide()
+        else:
+            self.AirLED_3.show()
+        if not settings.value('TimerAIR4Enabled', True, type=bool):
+            self.AirLED_4.hide()
+        else:
+            self.AirLED_4.show()
+        settings.endGroup()
+
+
+
+
     def constant_update(self):
         # slot for constant timer timeout
         self.update_date()
