@@ -50,6 +50,7 @@ class WeatherWidget(QtWidgets.QWidget):
                      "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Turkish": "tr", "Ukrainian": "ua",
                      "Vietnamese": "vi", "Chinese Simplified": "zh_cn", "Chinese Traditional": "zh_tw."}
     owm_units = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
+    owm_units_abbrev = {"": "K", "metric": "°C", "imperial": "°F"}
 
     def __init__(self, parent=None):
         super(WeatherWidget, self).__init__(parent)
@@ -200,12 +201,15 @@ class WeatherWidget(QtWidgets.QWidget):
         if er == QtNetwork.QNetworkReply.NoError:
             bytes_string = reply.readAll()
             replyString = str(bytes_string, 'utf-8')
-            # print(replyString)
+            #print(replyString)
             weatherJson = (json.loads(replyString))
             main_weather = weatherJson["weather"][0]["main"]
             condition = weatherJson["weather"][0]["description"]
             city = weatherJson["name"]
-            temp = "{:.0f}°{}".format(weatherJson["main"]["temp"], "C")
+            unit_symbol = self.owm_units_abbrev.get(self.owmUnit)
+            print("UNIT:", self.owmUnit)
+            print("ABBR:", unit_symbol)
+            temp = "{:.0f}{}".format(weatherJson["main"]["temp"], unit_symbol)
             icon = weatherJson["weather"][0]["icon"]
             background = icon
             if self.owmLanguage == "de":
