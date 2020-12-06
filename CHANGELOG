@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 - Alt-S now resets stream timer
 - added enable/disable option for timers 1-4
 - fixed unit display in weather widget
+- fixed crash introduced through a lazy print
 
 ## [0.9.2]
 ### Changed

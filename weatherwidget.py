@@ -201,14 +201,11 @@ class WeatherWidget(QtWidgets.QWidget):
         if er == QtNetwork.QNetworkReply.NoError:
             bytes_string = reply.readAll()
             replyString = str(bytes_string, 'utf-8')
-            #print(replyString)
             weatherJson = (json.loads(replyString))
             main_weather = weatherJson["weather"][0]["main"]
             condition = weatherJson["weather"][0]["description"]
             city = weatherJson["name"]
             unit_symbol = self.owm_units_abbrev.get(self.owmUnit)
-            print("UNIT:", self.owmUnit)
-            print("ABBR:", unit_symbol)
             temp = "{:.0f}{}".format(weatherJson["main"]["temp"], unit_symbol)
             icon = weatherJson["weather"][0]["icon"]
             background = icon
