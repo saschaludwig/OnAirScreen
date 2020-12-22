@@ -375,9 +375,12 @@ class ClockWidget(QtWidgets.QWidget):
         painter.restore()
 
         # add logo
+        image_max_h = 40
+        image_max_w = 100
         image = self.image
         image_w = image.width()
         image_h = image.height()
+
         if image_w > 0 and image_h > 1:
             painter.save()
             painter.rotate(90)
@@ -386,15 +389,19 @@ class ClockWidget(QtWidgets.QWidget):
                 # logo position and width when showing seconds
                 paint_x = 0
                 paint_y = -50
-                paint_w = 100
             else:
                 # logo position and width without seconds
                 paint_x = 0
                 paint_y = 50
-                paint_w = 100
 
-            # calculate height from aspect ratio
-            paint_h = (float(image_h) / float(image_w)) * paint_w
+            if image_w > image_h:
+                # calculate height from aspect ratio
+                paint_w = image_max_w
+                paint_h = (float(image_h) / float(image_w)) * paint_w
+            else:
+                # calculate width from aspect ratio
+                paint_h = image_max_h
+                paint_w = (float(image_h) / float(image_w)) * paint_h
 
             painter.drawImage(QtCore.QRectF(paint_x - (paint_w / 2), paint_y - (paint_h / 2), paint_w, paint_h), image)
             painter.restore()
