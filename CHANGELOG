@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - added enable/disable option for timers 1-4
 - fixed unit display in weather widget
 - fixed crash introduced through a lazy print
+- Fixed logo size calculation for portrait format logos
 
 ## [0.9.2]
 ### Changed
