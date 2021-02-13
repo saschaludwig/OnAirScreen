@@ -44,17 +44,34 @@ If you want to purchase a Linux or Mac binary or need extended support, please c
 
 On OSX use the `command ⌘` key instead of `Ctrl`
 
-#### OnAirScreen API / UDP Commands
+#### OnAirScreen API Commands
+
+##### API via UDP
+
 OnAirScreen can receive API commands via UDP port 3310<br>
 Here is an easy example on how to control a local OnAirScreen instance on a linux system.
 
 Set LED1 Text to "FOO" and switch LED1 on:
-```
+
+```Shell
 echo "CONF:LED1:text=FOO" > /dev/udp/127.0.0.1/3310
 echo "LED1:ON" > /dev/udp/127.0.0.1/3310
 ```
 
+##### API via HTTP
+
+OnAirScreen can receive API commands via HTTP (port 8010 by default).<br>
+Here is an easy example of how to control a local OnAirScreen instance on a linux system.
+
+Set LED1 Text to "FOO" and switch LED1 on:
+
+```Shell
+curl http://127.0.0.1:8010/?cmd=CONF:LED1:text=FOO
+curl http://127.0.0.1:8010/?cmd=LED1:ON
+```  
+
 ##### API Commands
+
 | UDP Command         | Function |
 ----------------------|----------|
 | `LED1:[ON/OFF]`     | switch LED1 on/off |
