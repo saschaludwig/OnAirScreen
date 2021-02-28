@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - fixed unit display in weather widget
 - fixed crash introduced through a lazy print
 - Fixed logo size calculation for portrait format logos
+- customizable font and size for various elements
 
 ## [0.9.2]
 ### Changed

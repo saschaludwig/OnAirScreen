@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>793</height>
+    <height>803</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,101 +20,6 @@
    <string>OnAirScreen Settings</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <property name="leftMargin">
-    <number>10</number>
-   </property>
-   <property name="topMargin">
-    <number>10</number>
-   </property>
-   <property name="rightMargin">
-    <number>10</number>
-   </property>
-   <property name="bottomMargin">
-    <number>10</number>
-   </property>
-   <property name="verticalSpacing">
-    <number>10</number>
-   </property>
-   <item row="1" column="0">
-    <layout class="QHBoxLayout" name="global_button_bar">
-     <item>
-      <widget class="QPushButton" name="ExitButton">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Quit</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="RebootButton">
-       <property name="text">
-        <string>Reboot</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="ShutdownButton">
-       <property name="text">
-        <string>Shutdown</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="CloseButton">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Close</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="ApplyButton">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Apply &amp;&amp; Save</string>
-       </property>
-       <property name="default">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
    <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="enabled">
@@ -1430,6 +1335,9 @@
            <property name="text">
             <string>Date format</string>
            </property>
+           <property name="buddy">
+            <cstring>dateFormat</cstring>
+           </property>
           </widget>
          </item>
          <item>
@@ -1606,6 +1514,9 @@ p, li { white-space: pre-wrap; }
              <property name="text">
               <string>API Key</string>
              </property>
+             <property name="buddy">
+              <cstring>owmAPIKey</cstring>
+             </property>
             </widget>
            </item>
            <item row="0" column="1">
@@ -1626,6 +1537,9 @@ p, li { white-space: pre-wrap; }
              <property name="text">
               <string>City ID</string>
              </property>
+             <property name="buddy">
+              <cstring>owmCityID</cstring>
+             </property>
             </widget>
            </item>
            <item row="1" column="1">
@@ -1635,6 +1549,9 @@ p, li { white-space: pre-wrap; }
             <widget class="QLabel" name="label_24">
              <property name="text">
               <string>Language</string>
+             </property>
+             <property name="buddy">
+              <cstring>owmLanguage</cstring>
              </property>
             </widget>
            </item>
@@ -1659,12 +1576,18 @@ p, li { white-space: pre-wrap; }
              <property name="text">
               <string>Test API</string>
              </property>
+             <property name="buddy">
+              <cstring>owmTestAPI</cstring>
+             </property>
             </widget>
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="label_26">
              <property name="text">
               <string>Unit</string>
+             </property>
+             <property name="buddy">
+              <cstring>owmUnit</cstring>
              </property>
             </widget>
            </item>
@@ -1706,6 +1629,9 @@ p, li { white-space: pre-wrap; }
             <widget class="QLabel" name="label_15">
              <property name="text">
               <string>Textclock Language</string>
+             </property>
+             <property name="buddy">
+              <cstring>textClockLanguage</cstring>
              </property>
             </widget>
            </item>
@@ -1756,6 +1682,9 @@ p, li { white-space: pre-wrap; }
            <property name="text">
             <string>UDP Port</string>
            </property>
+           <property name="buddy">
+            <cstring>udpport</cstring>
+           </property>
           </widget>
          </item>
          <item row="0" column="1">
@@ -1779,12 +1708,249 @@ p, li { white-space: pre-wrap; }
            <property name="text">
             <string>HTTP Port</string>
            </property>
+           <property name="buddy">
+            <cstring>httpport</cstring>
+           </property>
           </widget>
          </item>
          <item row="1" column="1">
           <widget class="QLineEdit" name="httpport"/>
          </item>
         </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_fonts">
+      <attribute name="title">
+       <string>Fonts</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="0" column="1">
+        <layout class="QGridLayout" name="gridLayout_6" columnstretch="1,4,1">
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_38">
+           <property name="text">
+            <string>AIR4</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_29">
+           <property name="text">
+            <string>LED1</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_35">
+           <property name="text">
+            <string>AIR1</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_32">
+           <property name="text">
+            <string>LED4</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_34">
+           <property name="text">
+            <string>Slogan</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_30">
+           <property name="text">
+            <string>LED2</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_33">
+           <property name="text">
+            <string>Station Name</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_36">
+           <property name="text">
+            <string>AIR2</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_31">
+           <property name="text">
+            <string>LED3</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="ExampleFont_AIR1">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="ExampleFont_AIR2">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_37">
+           <property name="text">
+            <string>AIR3</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="ExampleFont_AIR3">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="ExampleFont_AIR4">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QLabel" name="ExampleFont_LED1">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLabel" name="ExampleFont_LED2">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QLabel" name="ExampleFont_LED3">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <widget class="QLabel" name="ExampleFont_LED4">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1">
+          <widget class="QLabel" name="ExampleFont_StationName">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <widget class="QLabel" name="ExampleFont_Slogan">
+           <property name="text">
+            <string>This is an example text</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QPushButton" name="SetFont_AIR3">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QPushButton" name="SetFont_AIR1">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QPushButton" name="SetFont_AIR2">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QPushButton" name="SetFont_AIR4">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QPushButton" name="SetFont_LED1">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <widget class="QPushButton" name="SetFont_LED2">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="2">
+          <widget class="QPushButton" name="SetFont_LED3">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="2">
+          <widget class="QPushButton" name="SetFont_LED4">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="2">
+          <widget class="QPushButton" name="SetFont_StationName">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="2">
+          <widget class="QPushButton" name="SetFont_Slogan">
+           <property name="text">
+            <string>Set Font</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="1">
+        <spacer name="verticalSpacer_8">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -2856,57 +3022,164 @@ Parts of analog clockwidget:
      </widget>
     </widget>
    </item>
+   <item row="1" column="0">
+    <layout class="QHBoxLayout" name="global_button_bar">
+     <item>
+      <widget class="QPushButton" name="ExitButton">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Quit</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="RebootButton">
+       <property name="text">
+        <string>Reboot</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ShutdownButton">
+       <property name="text">
+        <string>Shutdown</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="CloseButton">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ApplyButton">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Apply &amp;&amp; Save</string>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
   </layout>
  </widget>
  <tabstops>
   <tabstop>StationName</tabstop>
-  <tabstop>Slogan</tabstop>
   <tabstop>StationNameColor</tabstop>
-  <tabstop>tabWidget</tabstop>
+  <tabstop>Slogan</tabstop>
   <tabstop>SloganColor</tabstop>
-  <tabstop>CloseButton</tabstop>
-  <tabstop>ApplyButton</tabstop>
-  <tabstop>ExitButton</tabstop>
-  <tabstop>RebootButton</tabstop>
-  <tabstop>ShutdownButton</tabstop>
   <tabstop>LEDInactiveBGColor</tabstop>
   <tabstop>LEDInactiveFGColor</tabstop>
+  <tabstop>LEDFont</tabstop>
   <tabstop>checkBox_NTPCheck</tabstop>
   <tabstop>NTPCheckServer</tabstop>
+  <tabstop>clockDigital</tabstop>
+  <tabstop>clockAnalog</tabstop>
   <tabstop>logoPath</tabstop>
   <tabstop>logoButton</tabstop>
   <tabstop>resetLogoButton</tabstop>
-  <tabstop>clockDigital</tabstop>
-  <tabstop>clockAnalog</tabstop>
   <tabstop>DigitalHourColorButton</tabstop>
   <tabstop>DigitalSecondColorButton</tabstop>
   <tabstop>DigitalDigitColorButton</tabstop>
+  <tabstop>checkBox_UpdateCheck</tabstop>
+  <tabstop>checkBox_IncludeBetaVersions</tabstop>
+  <tabstop>updateCheckNowButton</tabstop>
+  <tabstop>updateKey</tabstop>
+  <tabstop>showSeconds</tabstop>
+  <tabstop>staticColon</tabstop>
+  <tabstop>useTextclock</tabstop>
+  <tabstop>plainTextEdit</tabstop>
+  <tabstop>enableAIR1</tabstop>
+  <tabstop>enableAIR2</tabstop>
+  <tabstop>enableAIR3</tabstop>
+  <tabstop>enableAIR4</tabstop>
   <tabstop>LED1</tabstop>
   <tabstop>LED1Text</tabstop>
+  <tabstop>LED2</tabstop>
+  <tabstop>LED2Text</tabstop>
+  <tabstop>LED3</tabstop>
+  <tabstop>LED3Text</tabstop>
+  <tabstop>LED4</tabstop>
+  <tabstop>LED4Text</tabstop>
   <tabstop>LED1BGColor</tabstop>
   <tabstop>LED1FGColor</tabstop>
   <tabstop>LED1Autoflash</tabstop>
   <tabstop>LED1Timedflash</tabstop>
-  <tabstop>LED2</tabstop>
-  <tabstop>LED2Text</tabstop>
   <tabstop>LED2BGColor</tabstop>
   <tabstop>LED2FGColor</tabstop>
   <tabstop>LED2Autoflash</tabstop>
   <tabstop>LED2Timedflash</tabstop>
-  <tabstop>LED3</tabstop>
-  <tabstop>LED3Text</tabstop>
   <tabstop>LED3BGColor</tabstop>
   <tabstop>LED3FGColor</tabstop>
   <tabstop>LED3Autoflash</tabstop>
   <tabstop>LED3Timedflash</tabstop>
-  <tabstop>LED4</tabstop>
-  <tabstop>LED4Text</tabstop>
   <tabstop>LED4BGColor</tabstop>
   <tabstop>LED4FGColor</tabstop>
   <tabstop>LED4Autoflash</tabstop>
   <tabstop>LED4Timedflash</tabstop>
   <tabstop>udpport</tabstop>
-  <tabstop>plainTextEdit</tabstop>
+  <tabstop>httpport</tabstop>
+  <tabstop>dateFormat</tabstop>
+  <tabstop>textBrowser_2</tabstop>
+  <tabstop>time_24h</tabstop>
+  <tabstop>time_am_pm</tabstop>
+  <tabstop>textClockLanguage</tabstop>
+  <tabstop>owmWidgetEnabled</tabstop>
+  <tabstop>owmAPIKey</tabstop>
+  <tabstop>owmCityID</tabstop>
+  <tabstop>owmLanguage</tabstop>
+  <tabstop>owmUnit</tabstop>
+  <tabstop>owmTestAPI</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>owmTestOutput</tabstop>
+  <tabstop>enableResetButton</tabstop>
+  <tabstop>ResetSettingsButton</tabstop>
+  <tabstop>ExitButton</tabstop>
+  <tabstop>RebootButton</tabstop>
+  <tabstop>ShutdownButton</tabstop>
+  <tabstop>CloseButton</tabstop>
+  <tabstop>ApplyButton</tabstop>
  </tabstops>
  <resources>
   <include location="resources.qrc"/>
@@ -2919,8 +3192,8 @@ Parts of analog clockwidget:
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>519</x>
-     <y>588</y>
+     <x>566</x>
+     <y>790</y>
     </hint>
     <hint type="destinationlabel">
      <x>201</x>
@@ -2929,594 +3202,18 @@ Parts of analog clockwidget:
    </hints>
   </connection>
   <connection>
-   <sender>LED1</sender>
+   <sender>owmWidgetEnabled</sender>
    <signal>clicked(bool)</signal>
-   <receiver>LED1Text</receiver>
+   <receiver>owmTestOutput</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>125</x>
-     <y>386</y>
+     <x>404</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
-     <x>123</x>
-     <y>419</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED1</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED1BGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>164</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>139</x>
-     <y>452</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED1</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED1FGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>99</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>96</x>
-     <y>485</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED1</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED1Autoflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>81</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>85</x>
-     <y>513</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED1</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED1Timedflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>164</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>116</x>
-     <y>541</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED2Text</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>315</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>315</x>
-     <y>419</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED2BGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>315</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>315</x>
-     <y>452</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED2FGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>315</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>315</x>
-     <y>485</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED2Autoflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>315</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>315</x>
-     <y>513</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED2Timedflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>315</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>315</x>
-     <y>541</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED3Text</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>466</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>466</x>
-     <y>419</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED3BGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>466</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>466</x>
-     <y>452</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED3FGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>466</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>466</x>
-     <y>485</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED3Autoflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>466</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>466</x>
-     <y>513</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED3Timedflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>466</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>466</x>
-     <y>541</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED4Text</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>617</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>617</x>
-     <y>419</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED4BGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>617</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>617</x>
-     <y>452</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED4FGColor</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>617</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>617</x>
-     <y>485</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED4Autoflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>617</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>617</x>
-     <y>513</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED4Timedflash</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>617</x>
-     <y>386</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>617</x>
-     <y>541</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>checkBox_NTPCheck</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>label_16</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>138</x>
-     <y>251</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>130</x>
-     <y>281</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>checkBox_NTPCheck</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>NTPCheckServer</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>219</x>
-     <y>255</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>220</x>
-     <y>281</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>StationName</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>StationNameDemo</receiver>
-   <slot>setText(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>203</x>
-     <y>85</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>242</x>
-     <y>199</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>Slogan</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>SloganDemo</receiver>
-   <slot>setText(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>203</x>
-     <y>154</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>242</x>
-     <y>223</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED1Text</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>LED1Demo</receiver>
-   <slot>setText(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>108</x>
-     <y>508</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>108</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2Text</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>LED2Demo</receiver>
-   <slot>setText(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>265</x>
-     <y>508</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>265</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3Text</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>LED3Demo</receiver>
-   <slot>setText(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>422</x>
-     <y>508</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>422</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4Text</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>LED4Demo</receiver>
-   <slot>setText(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>579</x>
-     <y>508</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>579</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED1</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED1Demo</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>111</x>
-     <y>481</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>108</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED2</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED2Demo</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>269</x>
-     <y>481</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>265</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED3</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED3Demo</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>426</x>
-     <y>481</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>422</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>LED4</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>LED4Demo</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>583</x>
-     <y>481</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>579</x>
-     <y>553</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>enableResetButton</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>ResetSettingsButton</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>367</x>
-     <y>467</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>363</x>
-     <y>499</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clockDigital</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>DigitalHourColorButton</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>451</x>
-     <y>294</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>526</x>
-     <y>331</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clockDigital</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>DigitalSecondColorButton</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>451</x>
-     <y>294</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>526</x>
-     <y>367</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clockDigital</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>DigitalDigitColorButton</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>451</x>
-     <y>294</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>526</x>
-     <y>401</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clockDigital</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>hoursLEDsLabel</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>451</x>
-     <y>294</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>411</x>
-     <y>329</y>
+     <x>403</x>
+     <y>730</y>
     </hint>
    </hints>
   </connection>
@@ -3537,6 +3234,774 @@ Parts of analog clockwidget:
    </hints>
   </connection>
   <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_23</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>89</x>
+     <y>477</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_24</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>108</x>
+     <y>513</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_UpdateCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>checkBox_IncludeBetaVersions</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>164</x>
+     <y>366</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>164</x>
+     <y>387</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmTestAPI</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>235</x>
+     <y>591</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>360</x>
+     <y>697</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>166</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>166</x>
+     <y>561</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>523</x>
+     <y>697</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>689</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>686</x>
+     <y>697</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>176</x>
+     <y>663</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3Timedflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>741</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1Autoflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>122</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>126</x>
+     <y>720</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4Timedflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>689</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>689</x>
+     <y>741</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>140</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>133</x>
+     <y>697</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2Autoflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>363</x>
+     <y>720</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>LED1Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>151</x>
+     <y>561</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>151</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1Timedflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>741</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3Autoflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>720</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>354</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2Timedflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>363</x>
+     <y>741</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4Autoflash</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>689</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>689</x>
+     <y>720</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>360</x>
+     <y>663</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>DigitalSecondColorButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>261</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>557</x>
+     <y>340</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>Slogan</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>SloganDemo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>126</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>281</x>
+     <y>202</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>523</x>
+     <y>663</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmAPIKey</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>285</x>
+     <y>446</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED1Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>152</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>151</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>689</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>686</x>
+     <y>663</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED2Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>363</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>354</x>
+     <y>561</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_25</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>98</x>
+     <y>583</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>DigitalHourColorButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>261</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>557</x>
+     <y>304</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_NTPCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>NTPCheckServer</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>256</x>
+     <y>236</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>353</x>
+     <y>264</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_UpdateCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>updateKey</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>203</x>
+     <y>366</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>239</x>
+     <y>426</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>517</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED3Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>517</x>
+     <y>561</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_UpdateCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>updateCheckNowButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>163</x>
+     <y>366</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>354</x>
+     <y>384</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED3Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>LED3Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>517</x>
+     <y>561</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>517</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmUnit</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>193</x>
+     <y>553</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>689</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>680</x>
+     <y>561</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>DigitalDigitColorButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>261</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>557</x>
+     <y>374</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>LED4Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>689</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>680</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_NTPCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_16</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>175</x>
+     <y>236</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>166</x>
+     <y>264</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmCityID</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>477</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_UpdateCheck</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_28</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>203</x>
+     <y>366</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>239</x>
+     <y>468</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clockDigital</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>hoursLEDsLabel</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>261</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>446</x>
+     <y>300</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LED2Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>LED2Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>354</x>
+     <y>561</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>354</x>
+     <y>621</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_26</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>73</x>
+     <y>549</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>StationName</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>StationNameDemo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>60</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>281</x>
+     <y>176</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>owmWidgetEnabled</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>owmLanguage</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>404</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>198</x>
+     <y>517</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>clockDigital</sender>
    <signal>toggled(bool)</signal>
    <receiver>digitsLEDsLabel</receiver>
@@ -3553,82 +4018,18 @@ Parts of analog clockwidget:
    </hints>
   </connection>
   <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>owmAPIKey</receiver>
-   <slot>setEnabled(bool)</slot>
+   <sender>LED4Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>LED4Demo</receiver>
+   <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>368</x>
-     <y>381</y>
+     <x>680</x>
+     <y>561</y>
     </hint>
     <hint type="destinationlabel">
-     <x>178</x>
-     <y>409</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>owmCityID</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>381</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>178</x>
-     <y>440</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>owmLanguage</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>381</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>155</x>
-     <y>474</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>label_23</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>381</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>67</x>
-     <y>440</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>label_24</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>381</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>77</x>
-     <y>473</y>
+     <x>680</x>
+     <y>621</y>
     </hint>
    </hints>
   </connection>
@@ -3639,156 +4040,28 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>368</x>
-     <y>381</y>
+     <x>404</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
-     <x>70</x>
-     <y>409</y>
+     <x>94</x>
+     <y>446</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>owmWidgetEnabled</sender>
+   <sender>enableResetButton</sender>
    <signal>clicked(bool)</signal>
-   <receiver>label_25</receiver>
+   <receiver>ResetSettingsButton</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>368</x>
-     <y>342</y>
+     <x>403</x>
+     <y>590</y>
     </hint>
     <hint type="destinationlabel">
-     <x>71</x>
-     <y>507</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>label_26</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>342</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>62</x>
-     <y>470</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>owmUnit</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>342</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>152</x>
-     <y>471</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>owmTestAPI</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>342</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>172</x>
-     <y>509</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>owmWidgetEnabled</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>owmTestOutput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>368</x>
-     <y>342</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>364</x>
-     <y>580</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>checkBox_UpdateCheck</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>updateKey</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>204</x>
-     <y>337</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>200</x>
-     <y>364</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>checkBox_UpdateCheck</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>label_28</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>204</x>
-     <y>337</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>200</x>
-     <y>400</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>checkBox_UpdateCheck</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>updateCheckNowButton</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>123</x>
-     <y>339</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>277</x>
-     <y>341</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>checkBox_UpdateCheck</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>checkBox_IncludeBetaVersions</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>124</x>
-     <y>342</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>124</x>
-     <y>358</y>
+     <x>399</x>
+     <y>628</y>
     </hint>
    </hints>
   </connection>
