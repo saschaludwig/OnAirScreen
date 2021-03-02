@@ -383,6 +383,26 @@ class Settings(QWidget, Ui_Settings):
         self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganNameFontName', "FreeSans"),
                                               settings.value('SloganNameFontSize', 18, type=int),
                                               settings.value('SloganNameFontWeight', QFont.Bold, type=int)))
+        self.ExampleFont_LED1.setText(f"{settings.value('LED1FontName', 'FreeSans')}, "
+                                      f"{settings.value('LED1FontSize', 24, type=int)}pt")
+        self.ExampleFont_LED2.setText(f"{settings.value('LED2FontName', 'FreeSans')}, "
+                                      f"{settings.value('LED2FontSize', 24, type=int)}pt")
+        self.ExampleFont_LED3.setText(f"{settings.value('LED3FontName', 'FreeSans')}, "
+                                      f"{settings.value('LED3FontSize', 24, type=int)}pt")
+        self.ExampleFont_LED4.setText(f"{settings.value('LED4FontName', 'FreeSans')}, "
+                                      f"{settings.value('LED4FontSize', 24, type=int)}pt")
+        self.ExampleFont_AIR1.setText(f"{settings.value('AIR1FontName', 'FreeSans')}, "
+                                      f"{settings.value('AIR1FontSize', 24, type=int)}pt")
+        self.ExampleFont_AIR2.setText(f"{settings.value('AIR2FontName', 'FreeSans')}, "
+                                      f"{settings.value('AIR2FontSize', 24, type=int)}pt")
+        self.ExampleFont_AIR3.setText(f"{settings.value('AIR3FontName', 'FreeSans')}, "
+                                      f"{settings.value('AIR3FontSize', 24, type=int)}pt")
+        self.ExampleFont_AIR4.setText(f"{settings.value('AIR4FontName', 'FreeSans')}, "
+                                      f"{settings.value('AIR4FontSize', 24, type=int)}pt")
+        self.ExampleFont_StationName.setText(f"{settings.value('StationNameFontName', 'FreeSans')}, "
+                                             f"{settings.value('StationNameFontSize', 24, type=int)}pt")
+        self.ExampleFont_Slogan.setText(f"{settings.value('SloganFontName', 'FreeSans')}, "
+                                        f"{settings.value('SloganFontSize', 24, type=int)}pt")
         settings.endGroup()
 
     def getSettingsFromDialog(self):
@@ -485,34 +505,34 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("Fonts")
-        settings.setValue("LED1FontName", self.ExampleFont_LED1.font().toString())
+        settings.setValue("LED1FontName", self.ExampleFont_LED1.font().family())
         settings.setValue("LED1FontSize", self.ExampleFont_LED1.font().pointSize())
         settings.setValue("LED1FontWeight", self.ExampleFont_LED1.font().weight())
-        settings.setValue("LED2FontName", self.ExampleFont_LED2.font().toString())
+        settings.setValue("LED2FontName", self.ExampleFont_LED2.font().family())
         settings.setValue("LED2FontSize", self.ExampleFont_LED2.font().pointSize())
         settings.setValue("LED2FontWeight", self.ExampleFont_LED2.font().weight())
-        settings.setValue("LED3FontName", self.ExampleFont_LED3.font().toString())
+        settings.setValue("LED3FontName", self.ExampleFont_LED3.font().family())
         settings.setValue("LED3FontSize", self.ExampleFont_LED3.font().pointSize())
         settings.setValue("LED3FontWeight", self.ExampleFont_LED3.font().weight())
-        settings.setValue("LED4FontName", self.ExampleFont_LED4.font().toString())
+        settings.setValue("LED4FontName", self.ExampleFont_LED4.font().family())
         settings.setValue("LED4FontSize", self.ExampleFont_LED4.font().pointSize())
         settings.setValue("LED4FontWeight", self.ExampleFont_LED4.font().weight())
-        settings.setValue("AIR1FontName", self.ExampleFont_AIR1.font().toString())
+        settings.setValue("AIR1FontName", self.ExampleFont_AIR1.font().family())
         settings.setValue("AIR1FontSize", self.ExampleFont_AIR1.font().pointSize())
         settings.setValue("AIR1FontWeight", self.ExampleFont_AIR1.font().weight())
-        settings.setValue("AIR2FontName", self.ExampleFont_AIR2.font().toString())
+        settings.setValue("AIR2FontName", self.ExampleFont_AIR2.font().family())
         settings.setValue("AIR2FontSize", self.ExampleFont_AIR2.font().pointSize())
         settings.setValue("AIR2FontWeight", self.ExampleFont_AIR2.font().weight())
-        settings.setValue("AIR3FontName", self.ExampleFont_AIR3.font().toString())
+        settings.setValue("AIR3FontName", self.ExampleFont_AIR3.font().family())
         settings.setValue("AIR3FontSize", self.ExampleFont_AIR3.font().pointSize())
         settings.setValue("AIR3FontWeight", self.ExampleFont_AIR3.font().weight())
-        settings.setValue("AIR4FontName", self.ExampleFont_AIR4.font().toString())
+        settings.setValue("AIR4FontName", self.ExampleFont_AIR4.font().family())
         settings.setValue("AIR4FontSize", self.ExampleFont_AIR4.font().pointSize())
         settings.setValue("AIR4FontWeight", self.ExampleFont_AIR4.font().weight())
-        settings.setValue("StationNameFontName", self.ExampleFont_StationName.font().toString())
+        settings.setValue("StationNameFontName", self.ExampleFont_StationName.font().family())
         settings.setValue("StationNameFontSize", self.ExampleFont_StationName.font().pointSize())
         settings.setValue("StationNameFontWeight", self.ExampleFont_StationName.font().weight())
-        settings.setValue("SloganFontName", self.ExampleFont_Slogan.font().toString())
+        settings.setValue("SloganFontName", self.ExampleFont_Slogan.font().family())
         settings.setValue("SloganFontSize", self.ExampleFont_Slogan.font().pointSize())
         settings.setValue("SloganFontWeight", self.ExampleFont_Slogan.font().weight())
         settings.endGroup()
@@ -853,6 +873,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_LED1.setFont(new_font)
+            self.ExampleFont_LED1.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontLED2(self):
         current_font = self.ExampleFont_LED2.font()
@@ -860,6 +881,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_LED2.setFont(new_font)
+            self.ExampleFont_LED2.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontLED3(self):
         current_font = self.ExampleFont_LED3.font()
@@ -867,6 +889,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_LED3.setFont(new_font)
+            self.ExampleFont_LED3.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontLED4(self):
         current_font = self.ExampleFont_LED4.font()
@@ -874,6 +897,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_LED4.setFont(new_font)
+            self.ExampleFont_LED4.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontAIR1(self):
         current_font = self.ExampleFont_AIR1.font()
@@ -881,6 +905,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_AIR1.setFont(new_font)
+            self.ExampleFont_AIR1.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontAIR2(self):
         current_font = self.ExampleFont_AIR2.font()
@@ -888,6 +913,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_AIR2.setFont(new_font)
+            self.ExampleFont_AIR2.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontAIR3(self):
         current_font = self.ExampleFont_AIR3.font()
@@ -895,6 +921,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_AIR3.setFont(new_font)
+            self.ExampleFont_AIR3.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontAIR4(self):
         current_font = self.ExampleFont_AIR4.font()
@@ -902,6 +929,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_AIR4.setFont(new_font)
+            self.ExampleFont_AIR4.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontStationName(self):
         current_font = self.ExampleFont_StationName.font()
@@ -909,6 +937,7 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_StationName.setFont(new_font)
+            self.ExampleFont_StationName.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
 
     def setOASFontSlogan(self):
         current_font = self.ExampleFont_Slogan.font()
@@ -916,3 +945,4 @@ class Settings(QWidget, Ui_Settings):
         if ok:
             print(new_font.toString())
             self.ExampleFont_Slogan.setFont(new_font)
+            self.ExampleFont_Slogan.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
