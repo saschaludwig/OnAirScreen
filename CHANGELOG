@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [0.9.3beta5]
+## [0.9.3]
 ### Added
 - Alt-S now resets stream timer
 - added enable/disable option for timers 1-4
