@@ -46,7 +46,7 @@ from urllib.parse import unquote
 
 import ntplib
 from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QThread, pyqtSignal
-from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap
+from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
 
@@ -709,7 +709,38 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
 
-
+        settings.beginGroup("Fonts")
+        self.buttonLED1.setFont(QFont(settings.value('LED1FontName', "FreeSans"),
+                                      settings.value('LED1FontSize', 24, type=int),
+                                      settings.value('LED1FontWeight', QFont.Bold, type=int)))
+        self.buttonLED2.setFont(QFont(settings.value('LED2FontName', "FreeSans"),
+                                      settings.value('LED2FontSize', 24, type=int),
+                                      settings.value('LED2FontWeight', QFont.Bold, type=int)))
+        self.buttonLED3.setFont(QFont(settings.value('LED3FontName', "FreeSans"),
+                                      settings.value('LED3FontSize', 24, type=int),
+                                      settings.value('LED3FontWeight', QFont.Bold, type=int)))
+        self.buttonLED4.setFont(QFont(settings.value('LED4FontName', "FreeSans"),
+                                      settings.value('LED4FontSize', 24, type=int),
+                                      settings.value('LED4FontWeight', QFont.Bold, type=int)))
+        self.AirLabel_1.setFont(QFont(settings.value('AIR1FontName', "FreeSans"),
+                                      settings.value('AIR1FontSize', 24, type=int),
+                                      settings.value('AIR1FontWeight', QFont.Bold, type=int)))
+        self.AirLabel_2.setFont(QFont(settings.value('AIR2FontName', "FreeSans"),
+                                      settings.value('AIR2FontSize', 24, type=int),
+                                      settings.value('AIR2FontWeight', QFont.Bold, type=int)))
+        self.AirLabel_3.setFont(QFont(settings.value('AIR3FontName', "FreeSans"),
+                                      settings.value('AIR3FontSize', 24, type=int),
+                                      settings.value('AIR3FontWeight', QFont.Bold, type=int)))
+        self.AirLabel_4.setFont(QFont(settings.value('AIR4FontName', "FreeSans"),
+                                      settings.value('AIR4FontSize', 24, type=int),
+                                      settings.value('AIR4FontWeight', QFont.Bold, type=int)))
+        self.labelStation.setFont(QFont(settings.value('StationNameFontName', "FreeSans"),
+                                        settings.value('StationNameFontSize', 24, type=int),
+                                        settings.value('StationNameFontWeight', QFont.Bold, type=int)))
+        self.labelSlogan.setFont(QFont(settings.value('SloganFontName', "FreeSans"),
+                                       settings.value('SloganFontSize', 24, type=int),
+                                       settings.value('SloganFontWeight', QFont.Bold, type=int)))
+        settings.endGroup()
 
     def constant_update(self):
         # slot for constant timer timeout
