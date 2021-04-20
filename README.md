@@ -2,7 +2,7 @@
 Multi purpose "OnAir Lamp" solution targeted for use in professional broadcast environments
 http://saschaludwig.github.io/OnAirScreen/
 
-<a href="https://www.buymeacoffee.com/saschaludwig" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" height="60px"></a>
+<a href="https://www.buymeacoffee.com/saschaludwig" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Thanks%20for%20OnAirScreen&emoji=%E2%98%95&slug=saschaludwig&button_colour=FFDD00&font_colour=000000&font_family=Arial&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" height="60px"></a>
 
 #### Precompiled Linux/Win/Mac versions
 If you need ready-to-run Linux/Win/Mac executables, please visit https://www.astrastudio.de/software/onairscreen/.
