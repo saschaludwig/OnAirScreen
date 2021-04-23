@@ -81,7 +81,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.showFullScreen()
             app.setOverrideCursor(QCursor(Qt.BlankCursor))
         settings.endGroup()
-        print("Loading Settings from: ", settings.fileName())
+        print("Loaded settings from: ", settings.fileName())
 
         self.labelWarning.hide()
 
