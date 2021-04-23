@@ -103,8 +103,8 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.weatherLabel)
 
         # spacer
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(spacerItem1)
+        spacer_item1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(spacer_item1)
 
         self.verticalLayout_3.addLayout(self.verticalLayout)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
@@ -112,14 +112,14 @@ class WeatherWidget(QtWidgets.QWidget):
 
         # weather icon
         self.weatherIcon = QtWidgets.QLabel(self)
-        iconPixmap = QtGui.QPixmap()
-        self.weatherIcon.setPixmap(iconPixmap)
+        icon_pixmap = QtGui.QPixmap()
+        self.weatherIcon.setPixmap(icon_pixmap)
         self.weatherIcon.setAlignment(QtCore.Qt.AlignCenter)
-        iconfx = QtWidgets.QGraphicsDropShadowEffect()
-        iconfx.setBlurRadius(20)
-        iconfx.setColor(QtGui.QColor("#000"))
-        iconfx.setOffset(0, 0)
-        self.weatherIcon.setGraphicsEffect(iconfx)
+        icon_fx = QtWidgets.QGraphicsDropShadowEffect()
+        icon_fx.setBlurRadius(20)
+        icon_fx.setColor(QtGui.QColor("#000"))
+        icon_fx.setOffset(0, 0)
+        self.weatherIcon.setGraphicsEffect(icon_fx)
         self.horizontalLayout.addWidget(self.weatherIcon)
 
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
@@ -191,7 +191,7 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def makeOWMApiCall(self):
         print("OWM API Call")
-        url = "http://api.openweathermap.org/data/2.5/weather?id=" + self.owmCityID + "&units=" + self.owmUnit + "&lang=" + self.owmLanguage + "&appid=" + self.owmAPIKey
+        url = "https://api.openweathermap.org/data/2.5/weather?id=" + self.owmCityID + "&units=" + self.owmUnit + "&lang=" + self.owmLanguage + "&appid=" + self.owmAPIKey
         req = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
         self.nam = QtNetwork.QNetworkAccessManager()
         self.nam.finished.connect(self.handleOWMResponse)
@@ -222,7 +222,7 @@ class WeatherWidget(QtWidgets.QWidget):
             self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background,
                          label=label)
         else:
-            error_string = "Error occured: {}, {}".format(er, reply.errorString())
+            error_string = "Error occurred: {}, {}".format(er, reply.errorString())
             print(error_string)
 
     def readConfig(self):
@@ -240,6 +240,3 @@ class WeatherWidget(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
         painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(self.bg))
-
-
-import resources_rc

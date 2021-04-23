@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+### Changed
+- fixed crash when OWM API responds with strange JSON
+- OWM API uses https now
+
 ## [0.9.3]
 ### Added
 - Alt-S now resets stream timer
