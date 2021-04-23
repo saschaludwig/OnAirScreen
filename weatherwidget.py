@@ -201,14 +201,19 @@ class WeatherWidget(QtWidgets.QWidget):
         er = reply.error()
         if er == QtNetwork.QNetworkReply.NoError:
             bytes_string = reply.readAll()
-            replyString = str(bytes_string, 'utf-8')
-            weatherJson = (json.loads(replyString))
-            main_weather = weatherJson["weather"][0]["main"]
-            condition = weatherJson["weather"][0]["description"]
-            city = weatherJson["name"]
+            reply_string = str(bytes_string, 'utf-8')
+            try:
+                weather_json = (json.loads(reply_string))
+            except:
+                error_string = "Unexpected JSON payload in OWM Response: {}".format(reply_string)
+                print(error_string)
+                return
+            main_weather = weather_json["weather"][0]["main"]
+            condition = weather_json["weather"][0]["description"]
+            city = weather_json["name"]
             unit_symbol = self.owm_units_abbrev.get(self.owmUnit)
-            temp = "{:.0f}{}".format(weatherJson["main"]["temp"], unit_symbol)
-            icon = weatherJson["weather"][0]["icon"]
+            temp = "{:.0f}{}".format(weather_json["main"]["temp"], unit_symbol)
+            icon = weather_json["weather"][0]["icon"]
             background = icon
             if self.owmLanguage == "de":
                 label = "WETTER"
@@ -217,8 +222,8 @@ class WeatherWidget(QtWidgets.QWidget):
             self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background,
                          label=label)
         else:
-            errorString = "Error occured: {}, {}".format(er, reply.errorString())
-            print(errorString)
+            error_string = "Error occured: {}, {}".format(er, reply.errorString())
+            print(error_string)
 
     def readConfig(self):
         # settings
