@@ -168,7 +168,8 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def updateWeather(self):
         print("update weather called")
-        self.makeOWMApiCall()
+        if self.widgetEnabled:
+            self.makeOWMApiCall()
 
     def setData(self, city, temperature, condition, icon="01d", background=None, label="WEATHER"):
         print("Weather:", icon, background)
