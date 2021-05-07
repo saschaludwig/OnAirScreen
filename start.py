@@ -682,7 +682,6 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.beginGroup("WeatherWidget")
         if settings.value('owmWidgetEnabled', False, type=bool):
-            pass
             self.weatherWidget.show()
         else:
             self.weatherWidget.hide()
