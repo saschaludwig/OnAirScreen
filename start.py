@@ -809,8 +809,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if minute == 45:
                     string = "Het is kwart voor %d:00" % hour
                 if (31 <= minute <= 44) or (46 <= minute <= 59):
-                    string = "Het is %d minute%s voor %d:00" % (
-                        remain_min, 'n' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
+                    string = "Het is %d minu%s voor %d:00" % (
+                        remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
             else:
                 # english textclock
                 if is_am_pm:
