@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 - fixed crash when OWM API responds with strange JSON
 - OWM API uses https now
 - fixed calling API error when WeatherWidget is disabled
+- added dutch language support
 
 ## [0.9.3]
 ### Added
