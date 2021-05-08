@@ -283,7 +283,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         v6addrs = list()
         for address in QNetworkInterface().allAddresses():
             if address.protocol() == 0:
-                v4addrs.append(address.toString())
+                if address.toString()[:3] != '127':
+                    v4addrs.append(address.toString())
             # if address.protocol() == 1:
             #    v6addrs.append(address.toString())
 
