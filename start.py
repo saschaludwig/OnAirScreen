@@ -60,9 +60,10 @@ class MainScreen(QWidget, Ui_MainScreen):
     getTimeWindow: QDialog
     ntpHadWarning: bool
     ntpWarnMessage: str
-    textLocale: str     # for text language
-    languages = { "German": 'de_DE',
-                  "Dutch" : 'nl_NL'}
+    textLocale: str  # for text language
+    languages = {"English": 'en_US',
+                 "German": 'de_DE',
+                 "Dutch": 'nl_NL'}
 
     def __init__(self):
         QWidget.__init__(self)
@@ -681,7 +682,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         settings.beginGroup("Formatting")
         self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
-        self.textLocale=settings.value('textClockLanguage', 'English')
+        self.textLocale = settings.value('textClockLanguage', 'English')
         settings.endGroup()
 
         settings.beginGroup("WeatherWidget")
@@ -710,7 +711,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             self.AirLED_4.show()
         settings.endGroup()
-
 
         settings.beginGroup("Fonts")
         self.buttonLED1.setFont(QFont(settings.value('LED1FontName', "FreeSans"),
@@ -757,8 +757,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Formatting")
         set_language = settings.value('textClockLanguage', 'English')
-        lang=QLocale(self.languages[set_language] if set_language in self.languages else 'en_US')
-        self.set_left_text(lang.toString(QDate.currentDate(),settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
+        lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
+        self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
         settings.endGroup()
 
     def update_backtiming_text(self):
