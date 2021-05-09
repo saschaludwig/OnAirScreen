@@ -801,7 +801,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if minute == 0:
                     string = "Het is %d uur" % hour
                 if (0 < minute < 15) or (16 <= minute <= 29):
-                    string = "Het is %d minute%s over %d:00" % (minute, 'n' if minute > 1 else '', hour)
+                    string = "Het is %d minu%s over %d:00" % (minute, 'ten' if minute > 1 else 'ut', hour)
                 if minute == 15:
                     string = "Het is kwart over %d:00" % hour
                 if minute == 30:
