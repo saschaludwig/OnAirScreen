@@ -1,12 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [TBA]
+## [0.9.4]
 ### Changed
 - fixed crash when OWM API responds with strange JSON
 - OWM API uses https now
 - fixed calling API error when WeatherWidget is disabled (Thanks to https://github.com/ywiskerke)
 - added dutch language support (Thanks to https://github.com/ywiskerke)
+- fixed wrong hour in xx:45 textclock display
 
 ## [0.9.3]
 ### Added

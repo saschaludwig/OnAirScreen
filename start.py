@@ -807,7 +807,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if minute == 30:
                     string = "Het is half %d:00" % (hour + 1)
                 if minute == 45:
-                    string = "Het is kwart voor %d:00" % hour
+                    string = "Het is kwart voor %d:00" % (hour + 1)
                 if (31 <= minute <= 44) or (46 <= minute <= 59):
                     string = "Het is %d minu%s voor %d:00" % (
                         remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
@@ -825,7 +825,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if minute == 30:
                     string = "it's half past %d:00" % hour
                 if minute == 45:
-                    string = "it's a quarter to %d:00" % hour
+                    string = "it's a quarter to %d:00" % (hour + 1)
                 if (31 <= minute <= 44) or (46 <= minute <= 59):
                     string = "it's %d minute%s to %d:00" % (
                         remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
