@@ -99,7 +99,7 @@ class Settings(QWidget, Ui_Settings):
         Ui_Settings.__init__(self)
 
         # available text clock languages
-        self.textClockLanguages = ["English", "German", "Dutch"]
+        self.textClockLanguages = ["English", "German", "Dutch", "French"]
 
         # available Weather Widget languages
         # self.owmLanguages = {"Arabic": "ar", "Bulgarian": "bg", "Catalan": "ca", "Czech": "cz", "German": "de",
