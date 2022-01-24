@@ -63,7 +63,8 @@ class MainScreen(QWidget, Ui_MainScreen):
     textLocale: str  # for text language
     languages = {"English": 'en_US',
                  "German": 'de_DE',
-                 "Dutch": 'nl_NL'}
+                 "Dutch": 'nl_NL',
+                 "French": 'fr_FR'}
 
     def __init__(self):
         QWidget.__init__(self)
@@ -792,43 +793,67 @@ class MainScreen(QWidget, Ui_MainScreen):
             if minute == 0:
                 string = '%d:00 Uhr' % hour
 
-        else:
+        elif text_clock_language == "Dutch":
             # Dutch textclock
-            if text_clock_language == "Dutch":
-                if is_am_pm:
-                    if hour > 12:
-                        hour -= 12
+            if is_am_pm:
+                if hour > 12:
+                    hour -= 12
+            if minute == 0:
+                string = "Het is %d uur" % hour
+            if (0 < minute < 15) or (16 <= minute <= 29):
+                string = "Het is %d minu%s over %d:00" % (minute, 'ten' if minute > 1 else 'ut', hour)
+            if minute == 15:
+                string = "Het is kwart over %d:00" % hour
+            if minute == 30:
+                string = "Het is half %d:00" % (hour + 1)
+            if minute == 45:
+                string = "Het is kwart voor %d:00" % (hour + 1)
+            if (31 <= minute <= 44) or (46 <= minute <= 59):
+                string = "Het is %d minu%s voor %d:00" % (
+                    remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
+
+        elif text_clock_language == "French":
+            # French textclock
+            # https://www.qtcentre.org/threads/49221-Number-to-Text
+            # https://www.lawlessfrench.com/grammar/telling-time/
+            if hour > 12:
+                hour -= 12
+            if 0 < minute < 59:
+                string = F"{hour} {'heures' if hour > 1 else 'heure'} et {minute}"
+            if minute == 0:
+                string = F"{hour} {'heures' if hour > 1 else 'heure'}"
+            if minute == 15:
+                string = F"{hour} {'heures' if hour > 1 else 'heure'} et quart"
+            if minute == 30:
+                string = F"{hour} {'heures' if hour > 1 else 'heure'} et demie"
+            if hour == 0:
+                if 0 < minute < 59:
+                    string = F"minuit et {minute}"
                 if minute == 0:
-                    string = "Het is %d uur" % hour
-                if (0 < minute < 15) or (16 <= minute <= 29):
-                    string = "Het is %d minu%s over %d:00" % (minute, 'ten' if minute > 1 else 'ut', hour)
+                    string = F"minuit"
                 if minute == 15:
-                    string = "Het is kwart over %d:00" % hour
+                    string = F"minuit et quart"
                 if minute == 30:
-                    string = "Het is half %d:00" % (hour + 1)
-                if minute == 45:
-                    string = "Het is kwart voor %d:00" % (hour + 1)
-                if (31 <= minute <= 44) or (46 <= minute <= 59):
-                    string = "Het is %d minu%s voor %d:00" % (
-                        remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
-            else:
-                # english textclock
-                if is_am_pm:
-                    if hour > 12:
-                        hour -= 12
-                if minute == 0:
-                    string = "it's %d o'clock" % hour
-                if (0 < minute < 15) or (16 <= minute <= 29):
-                    string = "it's %d minute%s past %d:00" % (minute, 's' if minute > 1 else '', hour)
-                if minute == 15:
-                    string = "it's a quarter past %d:00" % hour
-                if minute == 30:
-                    string = "it's half past %d:00" % hour
-                if minute == 45:
-                    string = "it's a quarter to %d:00" % (hour + 1)
-                if (31 <= minute <= 44) or (46 <= minute <= 59):
-                    string = "it's %d minute%s to %d:00" % (
-                        remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
+                    string = F"minuit et demie"
+
+        else:
+            # english textclock
+            if is_am_pm:
+                if hour > 12:
+                    hour -= 12
+            if minute == 0:
+                string = "it's %d o'clock" % hour
+            if (0 < minute < 15) or (16 <= minute <= 29):
+                string = "it's %d minute%s past %d:00" % (minute, 's' if minute > 1 else '', hour)
+            if minute == 15:
+                string = "it's a quarter past %d:00" % hour
+            if minute == 30:
+                string = "it's half past %d:00" % hour
+            if minute == 45:
+                string = "it's a quarter to %d:00" % (hour + 1)
+            if (31 <= minute <= 44) or (46 <= minute <= 59):
+                string = "it's %d minute%s to %d:00" % (
+                    remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
         self.set_right_text(string)
 
