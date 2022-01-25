@@ -402,7 +402,7 @@ class Settings(QWidget, Ui_Settings):
         self.ExampleFont_StationName.setText(f"{settings.value('StationNameFontName', 'FreeSans')}, "
                                              f"{settings.value('StationNameFontSize', 24, type=int)}pt")
         self.ExampleFont_Slogan.setText(f"{settings.value('SloganFontName', 'FreeSans')}, "
-                                        f"{settings.value('SloganFontSize', 24, type=int)}pt")
+                                        f"{settings.value('SloganFontSize', 18, type=int)}pt")
         settings.endGroup()
 
     def getSettingsFromDialog(self):
