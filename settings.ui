@@ -1261,32 +1261,17 @@
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_22">
                <item>
-                <widget class="QCheckBox" name="enableAIR1">
-                 <property name="text">
-                  <string>Timer AIR1 (Mic)</string>
+                <spacer name="verticalSpacer_10">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
                  </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="enableAIR2">
-                 <property name="text">
-                  <string>Timer AIR2 (Phone)</string>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
                  </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="enableAIR3">
-                 <property name="text">
-                  <string>Timer AIR3 (Timer)</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="enableAIR4">
-                 <property name="text">
-                  <string>Timer AIR4 (Stream)</string>
-                 </property>
-                </widget>
+                </spacer>
                </item>
               </layout>
              </item>
@@ -1482,13 +1467,19 @@ p, li { white-space: pre-wrap; }
            <item>
             <widget class="QLabel" name="label_27">
              <property name="text">
-              <string>http://astrastudio.de/wiki/onairscreen#weather-widget</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://www.astrastudio.de/wiki/onairscreen#weather-widget&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0069d9;&quot;&gt;WeatherWidget Guide&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="textFormat">
-              <enum>Qt::PlainText</enum>
+              <enum>Qt::AutoText</enum>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
              <property name="openExternalLinks">
               <bool>true</bool>
+             </property>
+             <property name="textInteractionFlags">
+              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
              </property>
             </widget>
            </item>
@@ -1717,6 +1708,354 @@ p, li { white-space: pre-wrap; }
           <widget class="QLineEdit" name="httpport"/>
          </item>
         </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_timers">
+      <attribute name="title">
+       <string>Timers</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_27">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_18">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_23">
+           <item>
+            <widget class="QCheckBox" name="enableAIR1">
+             <property name="text">
+              <string>Timer AIR1 (Mic)</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="AIR1Text">
+             <property name="text">
+              <string>AIR 1 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="AIR1Demo">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>50</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="text">
+              <string>AIR 1 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR1BGColor">
+             <property name="text">
+              <string>Active BG Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR1FGColor">
+             <property name="text">
+              <string>Active Text Color</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_26">
+           <item>
+            <widget class="QCheckBox" name="enableAIR2">
+             <property name="text">
+              <string>Timer AIR2 (Phone)</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="AIR2Text">
+             <property name="text">
+              <string>AIR 2 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="AIR2Demo">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>50</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="text">
+              <string>AIR 1 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR2BGColor">
+             <property name="text">
+              <string>Active BG Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR2FGColor">
+             <property name="text">
+              <string>Active Text Color</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_24">
+           <item>
+            <widget class="QCheckBox" name="enableAIR3">
+             <property name="text">
+              <string>Timer AIR3 (Timer)</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="AIR3Text">
+             <property name="text">
+              <string>AIR 3 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="AIR3Demo">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>50</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="text">
+              <string>AIR 1 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR3BGColor">
+             <property name="text">
+              <string>Active BG Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR3FGColor">
+             <property name="text">
+              <string>Active Text Color</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_25">
+           <item>
+            <widget class="QCheckBox" name="enableAIR4">
+             <property name="text">
+              <string>Timer AIR4 (Stream)</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="AIR4Text">
+             <property name="text">
+              <string>AIR 4 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="AIR4Demo">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>50</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="text">
+              <string>AIR 1 DEMO</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR4BGColor">
+             <property name="text">
+              <string>Active BG Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR4FGColor">
+             <property name="text">
+              <string>Active Text Color</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_19">
+         <item>
+          <widget class="QLabel" name="label_39">
+           <property name="text">
+            <string>Minimum Timer Width</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="AIRMinWidth">
+           <property name="suffix">
+            <string> px</string>
+           </property>
+           <property name="minimum">
+            <number>60</number>
+           </property>
+           <property name="maximum">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_9">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -3130,10 +3469,6 @@ Parts of analog clockwidget:
   <tabstop>staticColon</tabstop>
   <tabstop>useTextclock</tabstop>
   <tabstop>plainTextEdit</tabstop>
-  <tabstop>enableAIR1</tabstop>
-  <tabstop>enableAIR2</tabstop>
-  <tabstop>enableAIR3</tabstop>
-  <tabstop>enableAIR4</tabstop>
   <tabstop>LED1</tabstop>
   <tabstop>LED1Text</tabstop>
   <tabstop>LED2</tabstop>
@@ -4062,6 +4397,326 @@ Parts of analog clockwidget:
     <hint type="destinationlabel">
      <x>399</x>
      <y>628</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR1Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>120</x>
+     <y>38</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>129</x>
+     <y>64</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR1Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>179</x>
+     <y>36</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>176</x>
+     <y>104</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR1BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>158</x>
+     <y>36</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>158</x>
+     <y>157</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR1</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR1FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>97</x>
+     <y>36</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>105</x>
+     <y>192</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR2Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>276</x>
+     <y>33</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>276</x>
+     <y>58</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR2Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>251</x>
+     <y>38</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>251</x>
+     <y>96</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR2BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>240</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>239</x>
+     <y>157</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR2</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR2FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>319</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>317</x>
+     <y>186</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR3Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>426</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>426</x>
+     <y>59</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR3Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>400</x>
+     <y>37</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>400</x>
+     <y>94</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR3BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>474</x>
+     <y>37</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>461</x>
+     <y>162</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR3</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR3FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>488</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>486</x>
+     <y>186</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR4Text</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>572</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>572</x>
+     <y>58</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR4Demo</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>607</x>
+     <y>36</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>607</x>
+     <y>98</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR4BGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>648</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>643</x>
+     <y>159</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enableAIR4</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>AIR4FGColor</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>622</x>
+     <y>38</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>623</x>
+     <y>190</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AIR1Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>AIR1Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>86</x>
+     <y>61</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>86</x>
+     <y>101</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AIR2Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>AIR2Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>324</x>
+     <y>64</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>328</x>
+     <y>108</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AIR3Text</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>AIR3Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>454</x>
+     <y>62</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>454</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>AIR4Text</sender>
+   <signal>textEdited(QString)</signal>
+   <receiver>AIR4Demo</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>543</x>
+     <y>61</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>545</x>
+     <y>102</y>
     </hint>
    </hints>
   </connection>
