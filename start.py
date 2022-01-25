@@ -781,17 +781,17 @@ class MainScreen(QWidget, Ui_MainScreen):
             if hour > 12:
                 hour -= 12
             if 0 < minute < 25:
-                string = '%d Minute%s nach %d:00' % (minute, 'n' if minute > 1 else '', hour)
+                string = '%d Minute%s nach %d' % (minute, 'n' if minute > 1 else '', hour)
             if 25 <= minute < 30:
-                string = '%d Minute%s vor halb %d:00' % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
+                string = '%d Minute%s vor halb %d' % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
             if 30 <= minute <= 39:
-                string = '%d Minute%s nach halb %d:00' % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
+                string = '%d Minute%s nach halb %d' % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
             if 40 <= minute <= 59:
-                string = '%d Minute%s vor %d:00' % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
+                string = '%d Minute%s vor %d' % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
             if minute == 30:
-                string = 'halb %d:00' % (hour + 1)
+                string = 'halb %d' % (hour + 1)
             if minute == 0:
-                string = '%d:00 Uhr' % hour
+                string = '%d Uhr' % hour
 
         elif text_clock_language == "Dutch":
             # Dutch textclock
@@ -801,25 +801,23 @@ class MainScreen(QWidget, Ui_MainScreen):
             if minute == 0:
                 string = "Het is %d uur" % hour
             if (0 < minute < 15) or (16 <= minute <= 29):
-                string = "Het is %d minu%s over %d:00" % (minute, 'ten' if minute > 1 else 'ut', hour)
+                string = "Het is %d minu%s over %d" % (minute, 'ten' if minute > 1 else 'ut', hour)
             if minute == 15:
-                string = "Het is kwart over %d:00" % hour
+                string = "Het is kwart over %d" % hour
             if minute == 30:
                 string = "Het is half %d:00" % (hour + 1)
             if minute == 45:
-                string = "Het is kwart voor %d:00" % (hour + 1)
+                string = "Het is kwart voor %d" % (hour + 1)
             if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = "Het is %d minu%s voor %d:00" % (
+                string = "Het is %d minu%s voor %d" % (
                     remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
 
         elif text_clock_language == "French":
             # French textclock
-            # https://www.qtcentre.org/threads/49221-Number-to-Text
-            # https://www.lawlessfrench.com/grammar/telling-time/
-            #if hour > 12:
-            #    hour -= 12
-            if 0 < minute < 59:
-                string = F"{hour} {'heures' if hour > 1 else 'heure'} et {minute}"
+            if hour > 12:
+                hour -= 12
+            if 0 < minute < 60:
+                string = F"{hour} {'heures' if hour > 1 else 'heure'} {minute}"
             if minute == 0:
                 string = F"{hour} {'heures' if hour > 1 else 'heure'}"
             if minute == 15:
@@ -828,7 +826,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                 string = F"{hour} {'heures' if hour > 1 else 'heure'} et demie"
             if hour == 0:
                 if 0 < minute < 59:
-                    string = F"minuit et {minute}"
+                    string = F"minuit {minute}"
                 if minute == 0:
                     string = F"minuit"
                 if minute == 15:
@@ -844,15 +842,15 @@ class MainScreen(QWidget, Ui_MainScreen):
             if minute == 0:
                 string = "it's %d o'clock" % hour
             if (0 < minute < 15) or (16 <= minute <= 29):
-                string = "it's %d minute%s past %d:00" % (minute, 's' if minute > 1 else '', hour)
+                string = "it's %d minute%s past %d" % (minute, 's' if minute > 1 else '', hour)
             if minute == 15:
-                string = "it's a quarter past %d:00" % hour
+                string = "it's a quarter past %d" % hour
             if minute == 30:
-                string = "it's half past %d:00" % hour
+                string = "it's half past %d" % hour
             if minute == 45:
-                string = "it's a quarter to %d:00" % (hour + 1)
+                string = "it's a quarter to %d" % (hour + 1)
             if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = "it's %d minute%s to %d:00" % (
+                string = "it's %d minute%s to %d" % (
                     remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
 
         self.set_right_text(string)
