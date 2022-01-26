@@ -3543,12 +3543,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>403</x>
-     <y>730</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -3575,12 +3575,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>89</x>
-     <y>477</y>
+     <x>125</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -3591,12 +3591,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>108</x>
-     <y>513</y>
+     <x>144</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -3623,12 +3623,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>235</x>
-     <y>591</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -3959,12 +3959,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>285</x>
-     <y>446</y>
+     <x>321</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4023,12 +4023,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>98</x>
-     <y>583</y>
+     <x>134</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4151,12 +4151,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>193</x>
-     <y>553</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4231,12 +4231,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>241</x>
-     <y>477</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4295,12 +4295,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>73</x>
-     <y>549</y>
+     <x>109</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4327,12 +4327,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>198</x>
-     <y>517</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4375,12 +4375,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>404</x>
-     <y>418</y>
+     <x>145</x>
+     <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>94</x>
-     <y>446</y>
+     <x>130</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>
@@ -4391,12 +4391,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>403</x>
-     <y>590</y>
+     <x>135</x>
+     <y>38</y>
     </hint>
     <hint type="destinationlabel">
-     <x>399</x>
-     <y>628</y>
+     <x>132</x>
+     <y>53</y>
     </hint>
    </hints>
   </connection>
@@ -4407,12 +4407,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>120</x>
-     <y>38</y>
+     <x>161</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>129</x>
-     <y>64</y>
+     <x>172</x>
+     <y>59</y>
     </hint>
    </hints>
   </connection>
@@ -4423,8 +4423,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>179</x>
-     <y>36</y>
+     <x>199</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>176</x>
@@ -4439,8 +4439,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>158</x>
-     <y>36</y>
+     <x>199</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>158</x>
@@ -4455,8 +4455,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>97</x>
-     <y>36</y>
+     <x>138</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>105</x>
@@ -4471,8 +4471,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>276</x>
-     <y>33</y>
+     <x>363</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>276</x>
@@ -4487,8 +4487,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>251</x>
-     <y>38</y>
+     <x>363</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>251</x>
@@ -4503,8 +4503,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>240</x>
-     <y>35</y>
+     <x>363</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>239</x>
@@ -4519,8 +4519,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>319</x>
-     <y>35</y>
+     <x>363</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>317</x>
@@ -4535,8 +4535,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>426</x>
-     <y>34</y>
+     <x>526</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>426</x>
@@ -4551,8 +4551,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>400</x>
-     <y>37</y>
+     <x>526</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>400</x>
@@ -4567,12 +4567,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>474</x>
-     <y>37</y>
+     <x>526</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>461</x>
-     <y>162</y>
+     <x>523</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>
@@ -4583,8 +4583,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>488</x>
-     <y>35</y>
+     <x>526</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>486</x>
@@ -4599,8 +4599,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>572</x>
-     <y>34</y>
+     <x>689</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>572</x>
@@ -4615,8 +4615,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>607</x>
-     <y>36</y>
+     <x>689</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>607</x>
@@ -4631,8 +4631,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>648</x>
-     <y>34</y>
+     <x>689</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>643</x>
@@ -4647,8 +4647,8 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>622</x>
-     <y>38</y>
+     <x>689</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>623</x>
@@ -4663,8 +4663,8 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>86</x>
-     <y>61</y>
+     <x>129</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
      <x>86</x>
@@ -4679,8 +4679,8 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>324</x>
-     <y>64</y>
+     <x>354</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
      <x>328</x>
@@ -4695,8 +4695,8 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>454</x>
-     <y>62</y>
+     <x>517</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
      <x>454</x>
@@ -4706,13 +4706,13 @@ Parts of analog clockwidget:
   </connection>
   <connection>
    <sender>AIR4Text</sender>
-   <signal>textEdited(QString)</signal>
+   <signal>textChanged(QString)</signal>
    <receiver>AIR4Demo</receiver>
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>543</x>
-     <y>61</y>
+     <x>680</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
      <x>545</x>

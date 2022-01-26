@@ -350,6 +350,13 @@ class Settings(QWidget, Ui_Settings):
         self.enableAIR2.setChecked(settings.value('TimerAIR2Enabled', True, type=bool))
         self.enableAIR3.setChecked(settings.value('TimerAIR3Enabled', True, type=bool))
         self.enableAIR4.setChecked(settings.value('TimerAIR4Enabled', True, type=bool))
+
+        self.AIR1Text.setText(settings.value('TimerAIR1Text', 'Mic'))
+        self.AIR2Text.setText(settings.value('TimerAIR2Text', 'Phone'))
+        self.AIR3Text.setText(settings.value('TimerAIR3Text', 'Timer'))
+        self.AIR4Text.setText(settings.value('TimerAIR4Text', 'Stream'))
+
+        self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', 60, type=int))
         settings.endGroup()
 
         settings.beginGroup("Fonts")
@@ -502,6 +509,14 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('TimerAIR2Enabled', self.enableAIR2.isChecked())
         settings.setValue('TimerAIR3Enabled', self.enableAIR3.isChecked())
         settings.setValue('TimerAIR4Enabled', self.enableAIR4.isChecked())
+
+        settings.setValue('TimerAIR1Text', self.AIR1Text.text())
+        settings.setValue('TimerAIR2Text', self.AIR2Text.text())
+        settings.setValue('TimerAIR3Text', self.AIR3Text.text())
+        settings.setValue('TimerAIR4Text', self.AIR4Text.text())
+
+        settings.setValue('TimerAIRMinWidth', self.AIRMinWidth.value())
+
         settings.endGroup()
 
         settings.beginGroup("Fonts")
