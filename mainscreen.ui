@@ -1102,12 +1102,6 @@ color: rgb(255, 255, 255);</string>
        <height>135</height>
       </size>
      </property>
-     <property name="maximumSize">
-      <size>
-       <width>221</width>
-       <height>16777215</height>
-      </size>
-     </property>
     </widget>
    </item>
   </layout>
