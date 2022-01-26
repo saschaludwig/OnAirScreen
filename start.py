@@ -736,6 +736,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.AirIcon_4.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             self.AirLED_4.show()
+        # set minimum left LED width
+        min_width = settings.value('TimerAIRMinWidth', '60')
+        self.AirLED_1.setMinimumWidth(min_width)
+        self.AirLED_2.setMinimumWidth(min_width)
+        self.AirLED_3.setMinimumWidth(min_width)
+        self.AirLED_4.setMinimumWidth(min_width)
         settings.endGroup()
 
         settings.beginGroup("Fonts")
