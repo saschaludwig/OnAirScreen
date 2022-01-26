@@ -699,18 +699,42 @@ class MainScreen(QWidget, Ui_MainScreen):
         if not settings.value('TimerAIR1Enabled', True, type=bool):
             self.AirLED_1.hide()
         else:
+            label_text = settings.value('TimerAIR1Text', 'Mic')
+            self.AirLabel_1.setText(F"{label_text}\n0:00")
+            self.AirLabel_1.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_1.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             self.AirLED_1.show()
         if not settings.value('TimerAIR2Enabled', True, type=bool):
             self.AirLED_2.hide()
         else:
+            label_text = settings.value('TimerAIR2Text', 'Phone')
+            self.AirLabel_2.setText(F"{label_text}\n0:00")
+            self.AirLabel_2.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_2.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             self.AirLED_2.show()
         if not settings.value('TimerAIR3Enabled', True, type=bool):
             self.AirLED_3.hide()
         else:
+            label_text = settings.value('TimerAIR3Text', 'Timer')
+            self.AirLabel_3.setText(F"{label_text}\n0:00")
+            self.AirLabel_3.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_3.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             self.AirLED_3.show()
         if not settings.value('TimerAIR4Enabled', True, type=bool):
             self.AirLED_4.hide()
         else:
+            label_text = settings.value('TimerAIR4Text', 'Stream')
+            self.AirLabel_4.setText(F"{label_text}\n0:00")
+            self.AirLabel_4.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_4.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             self.AirLED_4.show()
         settings.endGroup()
 
@@ -884,82 +908,103 @@ class MainScreen(QWidget, Ui_MainScreen):
     def set_air1(self, action):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
+            settings.beginGroup("Timers")
             self.Air1Seconds = 0
-            self.AirLabel_1.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirIcon_1.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds / 60, self.Air1Seconds % 60))
+            self.AirLabel_1.setStyleSheet(F"color:{settings.value('AIR1activetextcolor', '#FFFFFF')};"
+                                          F"background-color:{settings.value('AIR1activebgcolor', '#FF0000')}")
+            self.AirIcon_1.setStyleSheet(F"color:{settings.value('AIR1activetextcolor', '#FFFFFF')};"
+                                         F"background-color:{settings.value('AIR1activebgcolor', '#FF0000')}")
+            label_text = settings.value('TimerAIR1Text', 'Mic')
+            self.AirLabel_1.setText(F"{label_text}\n{int(self.Air1Seconds/60)}:{self.Air1Seconds%60:02d}")
             self.statusAIR1 = True
             # AIR1 timer
             self.timerAIR1.start(1000)
+            settings.endGroup()
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_1.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            self.AirLabel_1.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
+            self.AirLabel_1.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_1.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             settings.endGroup()
             self.statusAIR1 = False
             self.timerAIR1.stop()
 
     def update_air1_seconds(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Timers")
         self.Air1Seconds += 1
-        self.AirLabel_1.setText("Mic\n%d:%02d" % (self.Air1Seconds / 60, self.Air1Seconds % 60))
+        label_text = settings.value('TimerAIR1Text', 'Mic')
+        self.AirLabel_1.setText(F"{label_text}\n{int(self.Air1Seconds/60)}:{self.Air1Seconds%60:02d}")
+        settings.endGroup()
 
     def set_air2(self, action):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
+            settings.beginGroup("Timers")
             self.Air2Seconds = 0
-            self.AirLabel_2.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirIcon_2.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds / 60, self.Air2Seconds % 60))
+            self.AirLabel_2.setStyleSheet(F"color:{settings.value('AIR2activetextcolor', '#FFFFFF')};"
+                                          F"background-color:{settings.value('AIR2activebgcolor', '#FF0000')}")
+            self.AirIcon_2.setStyleSheet(F"color:{settings.value('AIR2activetextcolor', '#FFFFFF')};"
+                                         F"background-color:{settings.value('AIR2activebgcolor', '#FF0000')}")
+            label_text = settings.value('TimerAIR2Text', 'Phone')
+            self.AirLabel_2.setText(F"{label_text}\n{int(self.Air2Seconds/60)}:{self.Air2Seconds%60:02d}")
             self.statusAIR2 = True
             # AIR2 timer
             self.timerAIR2.start(1000)
+            settings.endGroup()
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_2.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            self.AirLabel_2.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
+            self.AirLabel_2.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_2.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             settings.endGroup()
             self.statusAIR2 = False
             self.timerAIR2.stop()
 
     def update_air2_seconds(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Timers")
         self.Air2Seconds += 1
-        self.AirLabel_2.setText("Phone\n%d:%02d" % (self.Air2Seconds / 60, self.Air2Seconds % 60))
+        label_text = settings.value('TimerAIR2Text', 'Phone')
+        self.AirLabel_2.setText(F"{label_text}\n{int(self.Air2Seconds/60)}:{self.Air2Seconds%60:02d}")
+        settings.endGroup()
 
     def reset_air3(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Timers")
         self.timerAIR3.stop()
         self.Air3Seconds = 0
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
+        label_text = settings.value('TimerAIR3Text', 'Timer')
+        self.AirLabel_3.setText(F"{label_text}\n{int(self.Air3Seconds/60)}:{self.Air3Seconds%60:02d}")
         if self.statusAIR3:
             self.timerAIR3.start(1000)
+        settings.endGroup()
 
     def set_air3(self, action):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
-            self.AirLabel_3.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirIcon_3.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
+            settings.beginGroup("Timers")
+            self.AirLabel_3.setStyleSheet(F"color:{settings.value('AIR3activetextcolor', '#FFFFFF')};"
+                                          F"background-color:{settings.value('AIR3activebgcolor', '#FF0000')}")
+            self.AirIcon_3.setStyleSheet(F"color:{settings.value('AIR3activetextcolor', '#FFFFFF')};"
+                                         F"background-color:{settings.value('AIR3activebgcolor', '#FF0000')}")
+            label_text = settings.value('TimerAIR3Text', 'Timer')
+            self.AirLabel_3.setText(F"{label_text}\n{int(self.Air3Seconds/60)}:{self.Air3Seconds%60:02d}")
             self.statusAIR3 = True
             # subtract initial second on countdown with display update
             if self.radioTimerMode == 1 and self.Air3Seconds > 1:
                 self.update_air3_seconds()
             # AIR3 timer
             self.timerAIR3.start(1000)
+            settings.endGroup()
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_3.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            self.AirLabel_3.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
+            self.AirLabel_3.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_3.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             settings.endGroup()
             self.statusAIR3 = False
             self.timerAIR3.stop()
@@ -977,6 +1022,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_air3(False)
 
     def update_air3_seconds(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Timers")
         if self.radioTimerMode == 0:  # count up mode
             self.Air3Seconds += 1
         else:
@@ -984,35 +1031,44 @@ class MainScreen(QWidget, Ui_MainScreen):
             if self.Air3Seconds < 1:
                 self.stop_air3()
                 self.radioTimerMode = 0
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
+        label_text = settings.value('TimerAIR3Text', 'Timer')
+        self.AirLabel_3.setText(F"{label_text}\n{int(self.Air3Seconds/60)}:{self.Air3Seconds%60:02d}")
+        settings.endGroup()
 
     def reset_air4(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Timers")
         self.timerAIR4.stop()
         self.Air4Seconds = 0
-        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
+        label_text = settings.value('TimerAIR4Text', 'Stream')
+        self.AirLabel_4.setText(F"{label_text}\n{int(self.Air4Seconds/60)}:{self.Air4Seconds%60:02d}")
         if self.statusAIR4:
             self.timerAIR4.start(1000)
+        settings.endGroup()
 
     def set_air4(self, action):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         if action:
-            self.AirLabel_4.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirIcon_4.setStyleSheet("color: #000000; background-color: #FF0000")
-            self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
+            settings.beginGroup("Timers")
+            self.AirLabel_4.setStyleSheet(F"color:{settings.value('AIR4activetextcolor', '#FFFFFF')};"
+                                          F"background-color:{settings.value('AIR4activebgcolor', '#FF0000')}")
+            self.AirIcon_4.setStyleSheet(F"color:{settings.value('AIR4activetextcolor', '#FFFFFF')};"
+                                         F"background-color:{settings.value('AIR4activebgcolor', '#FF0000')}")
+            label_text = settings.value('TimerAIR4Text', 'Stream')
+            self.AirLabel_4.setText(F"{label_text}\n{int(self.Air4Seconds/60)}:{self.Air4Seconds%60:02d}")
             self.statusAIR4 = True
             # substract initial second on countdown with display update
             if self.streamTimerMode == 1 and self.Air4Seconds > 1:
                 self.update_air4_seconds()
             # AIR4 timer
             self.timerAIR4.start(1000)
+            settings.endGroup()
         else:
             settings.beginGroup("LEDS")
-            self.AirIcon_4.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                   '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            self.AirLabel_4.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
+            self.AirLabel_4.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
+            self.AirIcon_4.setStyleSheet(F"color:{settings.value('inactivetextcolor', '#555555')};"
+                                         F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             settings.endGroup()
             self.statusAIR4 = False
             self.timerAIR4.stop()
@@ -1030,6 +1086,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_air4(False)
 
     def update_air4_seconds(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("Timers")
         if self.streamTimerMode == 0:  # count up mode
             self.Air4Seconds += 1
         else:
@@ -1037,7 +1095,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             if self.Air4Seconds < 1:
                 self.stop_air4()
                 self.radioTimerMode = 0
-        self.AirLabel_4.setText("Stream\n%d:%02d" % (self.Air4Seconds / 60, self.Air4Seconds % 60))
+        label_text = settings.value('TimerAIR4Text', 'Stream')
+        self.AirLabel_4.setText(F"{label_text}\n{int(self.Air4Seconds/60)}:{self.Air4Seconds%60:02d}")
+        settings.endGroup()
 
     def trigger_ntp_check(self):
         print("NTP Check triggered")
