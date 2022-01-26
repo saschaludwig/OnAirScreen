@@ -232,12 +232,12 @@ class Settings(QWidget, Ui_Settings):
         return json.dumps(self.settings.config)
 
     def restoreSettingsFromConfig(self):
-        if self.oacmode == True:
+        if self.oacmode:
             settings = self.settings
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
 
-        # polulate text clock languages
+        # populate text clock languages
         self.textClockLanguage.clear()
         self.textClockLanguage.addItems(self.textClockLanguages)
 
@@ -261,6 +261,8 @@ class Settings(QWidget, Ui_Settings):
         self.checkBox_IncludeBetaVersions.setEnabled(settings.value('updatecheck', False, type=bool))
         self.updateKey.setText(settings.value('updatekey', ''))
         self.checkBox_IncludeBetaVersions.setChecked(settings.value('updateincludebeta', False, type=bool))
+        self.replaceNOW.setChecked(settings.value('replacenow', False, type=bool))
+        self.replaceNOWText.setText(settings.value('replacenowtext', ''))
         settings.endGroup()
 
         settings.beginGroup("NTP")
@@ -440,6 +442,8 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
         settings.setValue('updatekey', self.updateKey.displayText())
         settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
+        settings.setValue('replacenow', self.replaceNOW.isChecked())
+        settings.setValue('replacenowtext', self.replaceNOWText.displayText())
         settings.endGroup()
 
         settings.beginGroup("NTP")
