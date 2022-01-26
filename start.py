@@ -783,13 +783,13 @@ class MainScreen(QWidget, Ui_MainScreen):
             if 0 < minute < 25:
                 string = '%d Minute%s nach %d' % (minute, 'n' if minute > 1 else '', hour)
             if 25 <= minute < 30:
-                string = '%d Minute%s vor halb %d' % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', hour + 1)
-            if 30 <= minute <= 39:
-                string = '%d Minute%s nach halb %d' % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', hour + 1)
+                string = '%d Minute%s vor halb %d' % (remain_min - 30, 'n' if remain_min - 30 > 1 else '', 1 if hour == 12 else hour + 1)
+            if 31 <= minute <= 39:
+                string = '%d Minute%s nach halb %d' % (30 - remain_min, 'n' if 30 - remain_min > 1 else '', 1 if hour == 12 else hour + 1)
             if 40 <= minute <= 59:
-                string = '%d Minute%s vor %d' % (remain_min, 'n' if remain_min > 1 else '', hour + 1)
+                string = '%d Minute%s vor %d' % (remain_min, 'n' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
             if minute == 30:
-                string = 'halb %d' % (hour + 1)
+                string = 'halb %d' % (hour+1 if (hour+1) < 13 else 1)
             if minute == 0:
                 string = '%d Uhr' % hour
 
@@ -805,9 +805,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             if minute == 15:
                 string = "Het is kwart over %d" % hour
             if minute == 30:
-                string = "Het is half %d:00" % (hour + 1)
+                string = "Het is half %d" % (1 if hour == 12 else hour + 1)
             if minute == 45:
-                string = "Het is kwart voor %d" % (hour + 1)
+                string = "Het is kwart voor %d" % (hour+1 if (hour+1) < 13 else 1)
             if (31 <= minute <= 44) or (46 <= minute <= 59):
                 string = "Het is %d minu%s voor %d" % (
                     remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
