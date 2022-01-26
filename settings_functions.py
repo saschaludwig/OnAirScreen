@@ -305,8 +305,8 @@ class Settings(QWidget, Ui_Settings):
 
         settings.beginGroup("LED4")
         self.LED4.setChecked(settings.value('used', True, type=bool))
-        self.LED4Text.setText(settings.value('text', 'ARI'))
-        self.LED4Demo.setText(settings.value('text', 'ARI'))
+        self.LED4Text.setText(settings.value('text', 'EAS ACTIVE'))
+        self.LED4Demo.setText(settings.value('text', 'EAS ACTIVE'))
         self.setLED4BGColor(self.getColorFromName(settings.value('activebgcolor', '#FF00FF')))
         self.setLED4FGColor(self.getColorFromName(settings.value('activetextcolor', '#FFFFFF')))
         self.LED4Autoflash.setChecked(settings.value('autoflash', False, type=bool))
