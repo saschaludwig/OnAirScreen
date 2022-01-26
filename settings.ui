@@ -1261,6 +1261,26 @@
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_22">
                <item>
+                <widget class="QCheckBox" name="replaceNOW">
+                 <property name="text">
+                  <string>Replace &quot;IPs&quot; after 10s</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="replaceNOWText">
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="placeholderText">
+                  <string>Replace with this text</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <spacer name="verticalSpacer_10">
                  <property name="orientation">
                   <enum>Qt::Vertical</enum>
@@ -4407,12 +4427,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>161</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>172</x>
-     <y>59</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4423,12 +4443,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>199</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>176</x>
-     <y>104</y>
+     <x>145</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4439,12 +4459,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>199</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>158</x>
-     <y>157</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4459,8 +4479,8 @@ Parts of analog clockwidget:
      <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>105</x>
-     <y>192</y>
+     <x>141</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4471,12 +4491,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>276</x>
-     <y>58</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4487,12 +4507,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>251</x>
-     <y>96</y>
+     <x>145</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4503,12 +4523,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>239</x>
-     <y>157</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4519,12 +4539,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>317</x>
-     <y>186</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4535,12 +4555,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>426</x>
-     <y>59</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4551,12 +4571,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>400</x>
-     <y>94</y>
+     <x>145</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4567,12 +4587,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>523</x>
-     <y>161</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4583,12 +4603,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>486</x>
-     <y>186</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4599,12 +4619,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>572</x>
-     <y>58</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4615,12 +4635,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>607</x>
-     <y>98</y>
+     <x>145</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4631,12 +4651,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>643</x>
-     <y>159</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4647,12 +4667,12 @@ Parts of analog clockwidget:
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>32</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>623</x>
-     <y>190</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -4663,12 +4683,12 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>129</x>
-     <y>59</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>86</x>
-     <y>101</y>
+     <x>122</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4679,12 +4699,12 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>354</x>
-     <y>59</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>328</x>
-     <y>108</y>
+     <x>145</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4695,12 +4715,12 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>517</x>
-     <y>59</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>454</x>
-     <y>100</y>
+     <x>145</x>
+     <y>61</y>
     </hint>
    </hints>
   </connection>
@@ -4711,12 +4731,28 @@ Parts of analog clockwidget:
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>680</x>
-     <y>59</y>
+     <x>145</x>
+     <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>545</x>
-     <y>102</y>
+     <x>145</x>
+     <y>61</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>replaceNOW</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>replaceNOWText</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>612</x>
+     <y>396</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>612</x>
+     <y>422</y>
     </hint>
    </hints>
   </connection>
