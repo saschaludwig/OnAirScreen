@@ -179,6 +179,14 @@ class Settings(QWidget, Ui_Settings):
         self.LED3FGColor.clicked.connect(self.setLED3FGColor)
         self.LED4BGColor.clicked.connect(self.setLED4BGColor)
         self.LED4FGColor.clicked.connect(self.setLED4FGColor)
+        self.AIR1BGColor.clicked.connect(self.setAIR1BGColor)
+        self.AIR1FGColor.clicked.connect(self.setAIR1FGColor)
+        self.AIR2BGColor.clicked.connect(self.setAIR2BGColor)
+        self.AIR2FGColor.clicked.connect(self.setAIR2FGColor)
+        self.AIR3BGColor.clicked.connect(self.setAIR3BGColor)
+        self.AIR3FGColor.clicked.connect(self.setAIR3FGColor)
+        self.AIR4BGColor.clicked.connect(self.setAIR4BGColor)
+        self.AIR4FGColor.clicked.connect(self.setAIR4FGColor)
         self.ResetSettingsButton.clicked.connect(self.resetSettings)
 
         self.DigitalHourColorButton.clicked.connect(self.setDigitalHourColor)
@@ -350,12 +358,18 @@ class Settings(QWidget, Ui_Settings):
         self.enableAIR2.setChecked(settings.value('TimerAIR2Enabled', True, type=bool))
         self.enableAIR3.setChecked(settings.value('TimerAIR3Enabled', True, type=bool))
         self.enableAIR4.setChecked(settings.value('TimerAIR4Enabled', True, type=bool))
-
         self.AIR1Text.setText(settings.value('TimerAIR1Text', 'Mic'))
         self.AIR2Text.setText(settings.value('TimerAIR2Text', 'Phone'))
         self.AIR3Text.setText(settings.value('TimerAIR3Text', 'Timer'))
         self.AIR4Text.setText(settings.value('TimerAIR4Text', 'Stream'))
-
+        self.setAIR1BGColor(self.getColorFromName(settings.value('AIR1activebgcolor', '#FF0000')))
+        self.setAIR1FGColor(self.getColorFromName(settings.value('AIR1activetextcolor', '#FFFFFF')))
+        self.setAIR2BGColor(self.getColorFromName(settings.value('AIR2activebgcolor', '#FF0000')))
+        self.setAIR2FGColor(self.getColorFromName(settings.value('AIR2activetextcolor', '#FFFFFF')))
+        self.setAIR3BGColor(self.getColorFromName(settings.value('AIR3activebgcolor', '#FF0000')))
+        self.setAIR3FGColor(self.getColorFromName(settings.value('AIR3activetextcolor', '#FFFFFF')))
+        self.setAIR4BGColor(self.getColorFromName(settings.value('AIR4activebgcolor', '#FF0000')))
+        self.setAIR4FGColor(self.getColorFromName(settings.value('AIR4activetextcolor', '#FFFFFF')))
         self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', 60, type=int))
         settings.endGroup()
 
@@ -509,14 +523,19 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('TimerAIR2Enabled', self.enableAIR2.isChecked())
         settings.setValue('TimerAIR3Enabled', self.enableAIR3.isChecked())
         settings.setValue('TimerAIR4Enabled', self.enableAIR4.isChecked())
-
         settings.setValue('TimerAIR1Text', self.AIR1Text.text())
         settings.setValue('TimerAIR2Text', self.AIR2Text.text())
         settings.setValue('TimerAIR3Text', self.AIR3Text.text())
         settings.setValue('TimerAIR4Text', self.AIR4Text.text())
-
+        settings.setValue('AIR1activebgcolor', self.getAIR1BGColor().name())
+        settings.setValue('AIR1activetextcolor', self.getAIR1FGColor().name())
+        settings.setValue('AIR2activebgcolor', self.getAIR2BGColor().name())
+        settings.setValue('AIR2activetextcolor', self.getAIR2FGColor().name())
+        settings.setValue('AIR3activebgcolor', self.getAIR3BGColor().name())
+        settings.setValue('AIR3activetextcolor', self.getAIR3FGColor().name())
+        settings.setValue('AIR4activebgcolor', self.getAIR4BGColor().name())
+        settings.setValue('AIR4activetextcolor', self.getAIR4FGColor().name())
         settings.setValue('TimerAIRMinWidth', self.AIRMinWidth.value())
-
         settings.endGroup()
 
         settings.beginGroup("Fonts")
@@ -743,6 +762,70 @@ class Settings(QWidget, Ui_Settings):
         palette.setColor(QPalette.WindowText, newcolor)
         self.LED4Demo.setPalette(palette)
 
+    def setAIR1FGColor(self, newcolor=False):
+        palette = self.AIR1Demo.palette()
+        oldcolor = palette.windowText().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.AIR1Demo.setPalette(palette)
+
+    def setAIR2FGColor(self, newcolor=False):
+        palette = self.AIR2Demo.palette()
+        oldcolor = palette.windowText().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.AIR2Demo.setPalette(palette)
+
+    def setAIR3FGColor(self, newcolor=False):
+        palette = self.AIR3Demo.palette()
+        oldcolor = palette.windowText().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.AIR3Demo.setPalette(palette)
+
+    def setAIR4FGColor(self, newcolor=False):
+        palette = self.AIR4Demo.palette()
+        oldcolor = palette.windowText().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.WindowText, newcolor)
+        self.AIR4Demo.setPalette(palette)
+
+    def setAIR1BGColor(self, newcolor=False):
+        palette = self.AIR1Demo.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.Window, newcolor)
+        self.AIR1Demo.setPalette(palette)
+
+    def setAIR2BGColor(self, newcolor=False):
+        palette = self.AIR2Demo.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.Window, newcolor)
+        self.AIR2Demo.setPalette(palette)
+
+    def setAIR3BGColor(self, newcolor=False):
+        palette = self.AIR3Demo.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.Window, newcolor)
+        self.AIR3Demo.setPalette(palette)
+
+    def setAIR4BGColor(self, newcolor=False):
+        palette = self.AIR4Demo.palette()
+        oldcolor = palette.window().color()
+        if not newcolor:
+            newcolor = self.openColorDialog(oldcolor)
+        palette.setColor(QPalette.Window, newcolor)
+        self.AIR4Demo.setPalette(palette)
+
     def setStationNameColor(self, newcolor=False):
         palette = self.StationNameDemo.palette()
         oldcolor = palette.windowText().color()
@@ -817,6 +900,46 @@ class Settings(QWidget, Ui_Settings):
     def getLED4FGColor(self):
         palette = self.LED4Demo.palette()
         color = palette.windowText().color()
+        return color
+
+    def getAIR1FGColor(self):
+        palette = self.AIR1Demo.palette()
+        color = palette.windowText().color()
+        return color
+
+    def getAIR2FGColor(self):
+        palette = self.AIR2Demo.palette()
+        color = palette.windowText().color()
+        return color
+
+    def getAIR3FGColor(self):
+        palette = self.AIR3Demo.palette()
+        color = palette.windowText().color()
+        return color
+
+    def getAIR4FGColor(self):
+        palette = self.AIR4Demo.palette()
+        color = palette.windowText().color()
+        return color
+
+    def getAIR1BGColor(self):
+        palette = self.AIR1Demo.palette()
+        color = palette.window().color()
+        return color
+
+    def getAIR2BGColor(self):
+        palette = self.AIR2Demo.palette()
+        color = palette.window().color()
+        return color
+
+    def getAIR3BGColor(self):
+        palette = self.AIR3Demo.palette()
+        color = palette.window().color()
+        return color
+
+    def getAIR4BGColor(self):
+        palette = self.AIR4Demo.palette()
+        color = palette.window().color()
         return color
 
     def getDigitalHourColor(self):

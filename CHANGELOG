@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+### Changed
+- fixed textclock when hour == 12
+- fixed wrong default font size for slogan
+- refactored text clock code
+
+### Added
+- french localization for textclock
+- left LEDs are now customizable (text/color)
+
 ## [0.9.4]
 ### Changed
 - fixed crash when OWM API responds with strange JSON
