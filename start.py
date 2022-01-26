@@ -799,18 +799,17 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if hour > 12:
                     hour -= 12
             if minute == 0:
-                string = "Het is %d uur" % hour
-            if (0 < minute < 15) or (16 <= minute <= 29):
-                string = "Het is %d minu%s over %d" % (minute, 'ten' if minute > 1 else 'ut', hour)
+                string = F"Het is {hour} uur"
+            if (1 <= minute <= 14) or (16 <= minute <= 29):
+                string = F"Het is {minute} minu{'ten' if minute>1 else 'ut'} over {hour}"
             if minute == 15:
-                string = "Het is kwart over %d" % hour
+                string = F"Het is kwart over {hour}"
             if minute == 30:
-                string = "Het is half %d" % (1 if hour == 12 else hour + 1)
+                string = F"Het is half {1 if hour==12 else hour+1}"
             if minute == 45:
-                string = "Het is kwart voor %d" % (hour+1 if (hour+1) < 13 else 1)
+                string = F"Het is kwart voor {1 if hour==12 else hour+1}"
             if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = "Het is %d minu%s voor %d" % (
-                    remain_min, 'ten' if remain_min > 1 else 'ut', 1 if hour == 12 else hour + 1)
+                string = F"Het is {remain_min} minu{'ten' if minute>1 else 'ut'} voor {1 if hour==12 else hour+1}"
 
         elif text_clock_language == "French":
             # French textclock
