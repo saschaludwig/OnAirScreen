@@ -737,7 +737,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                                          F"background-color:{settings.value('inactivebgcolor', '#222222')}")
             self.AirLED_4.show()
         # set minimum left LED width
-        min_width = settings.value('TimerAIRMinWidth', '60')
+        min_width = settings.value('TimerAIRMinWidth', 200, type=int)
         self.AirLED_1.setMinimumWidth(min_width)
         self.AirLED_2.setMinimumWidth(min_width)
         self.AirLED_3.setMinimumWidth(min_width)
