@@ -370,7 +370,7 @@ class Settings(QWidget, Ui_Settings):
         self.setAIR3FGColor(self.getColorFromName(settings.value('AIR3activetextcolor', '#FFFFFF')))
         self.setAIR4BGColor(self.getColorFromName(settings.value('AIR4activebgcolor', '#FF0000')))
         self.setAIR4FGColor(self.getColorFromName(settings.value('AIR4activetextcolor', '#FFFFFF')))
-        self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', 60, type=int))
+        self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', 200, type=int))
         settings.endGroup()
 
         settings.beginGroup("Fonts")
