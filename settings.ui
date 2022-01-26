@@ -2005,7 +2005,7 @@ p, li { white-space: pre-wrap; }
          <item>
           <widget class="QLabel" name="label_39">
            <property name="text">
-            <string>Minimum Timer Width</string>
+            <string>Miminum Timer Width</string>
            </property>
           </widget>
          </item>
@@ -2015,10 +2015,10 @@ p, li { white-space: pre-wrap; }
             <string> px</string>
            </property>
            <property name="minimum">
-            <number>60</number>
+            <number>200</number>
            </property>
            <property name="maximum">
-            <number>150</number>
+            <number>500</number>
            </property>
           </widget>
          </item>
