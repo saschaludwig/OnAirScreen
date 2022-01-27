@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - french localization for textclock
 - left LEDs are now customizable (text/color)
 - settings for left LEDs minimum width
+- IPs can be automatically replaced with custom text after 10s
 
 ## [0.9.4]
 ### Changed

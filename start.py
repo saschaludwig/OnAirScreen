@@ -181,6 +181,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         # initial check
         self.timerNTP.start(1000)
 
+        self.replacenowTimer = QTimer()
+        self.replacenowTimer.timeout.connect(self.replace_now_next)
+
         # Setup UDP Socket
         self.udpsock = QUdpSocket()
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -291,6 +294,13 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         self.set_current_song_text(", ".join(["%s" % addr for addr in v4addrs]))
         self.set_news_text(", ".join(["%s" % addr for addr in v6addrs]))
+
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        if settings.value('replacenow', True, type=bool):
+            self.replacenowTimer.setSingleShot(True)
+            self.replacenowTimer.start(10000)
+        settings.endGroup()
 
     def parse_cmd(self, data):
         try:
@@ -1105,6 +1115,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.AirLabel_4.setText(F"{label_text}\n{int(self.Air4Seconds/60)}:{self.Air4Seconds%60:02d}")
         settings.endGroup()
 
+    def replace_now_next(self):
+        settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings.beginGroup("General")
+        self.set_current_song_text(settings.value('replacenowtext', ""))
+        self.set_news_text("")
+        settings.endGroup()
+
     def trigger_ntp_check(self):
         print("NTP Check triggered")
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
@@ -1229,6 +1246,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def process_warnings(self):
         warning_available = False
+        last_warning = None
 
         for warning in self.warnings:
             if len(warning) > 0:
@@ -1260,7 +1278,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         app.exit()
 
-    def config_closed(self):
+    @staticmethod
+    def config_closed():
         global app
         # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
