@@ -6,12 +6,16 @@ All notable changes to this project will be documented in this file.
 - fixed textclock when hour == 12
 - fixed wrong default font size for slogan
 - refactored text clock code
+- fixed crash when using API to configure boolean fields
+- API: you can now use colors in web notation (#00FF00) and hex notation (0x00FF00)
 
 ### Added
 - french localization for textclock
 - left LEDs are now customizable (text/color)
 - settings for left LEDs minimum width
 - IPs can be automatically replaced with custom text after 10s
+- API commands for added functions
+- New Hotkey "I" to display IPs for 10 seconds
 
 ## [0.9.4]
 ### Changed
