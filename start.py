@@ -45,7 +45,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import unquote
 
 import ntplib
-from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QVariant, QDate, QLocale, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread, pyqtSignal
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
@@ -118,6 +118,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         QShortcut(QKeySequence("P"), self, self.toggle_air2)
         QShortcut(QKeySequence("*"), self, self.toggle_air2)
         QShortcut(QKeySequence("S"), self, self.toggle_air4)
+        QShortcut(QKeySequence("I"), self, self.display_ips)
         QShortcut(QKeySequence("Alt+S"), self, self.stream_timer_reset)
 
         QShortcut(QKeySequence("Enter"), self, self.get_timer_dialog)
@@ -391,7 +392,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             try:
                 (group, paramvalue) = value.split(':', 1)
                 (param, content) = paramvalue.split('=', 1)
-                # print "CONF:", param, content
+                # print(F"CONF: {param}, {content}")
             except ValueError:
                 return
 
@@ -401,65 +402,105 @@ class MainScreen(QWidget, Ui_MainScreen):
                 elif param == "slogan":
                     self.settings.Slogan.setText(content)
                 elif param == "stationcolor":
-                    self.settings.setStationNameColor(self.settings.getColorFromName(content))
+                    self.settings.setStationNameColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "slogancolor":
-                    self.settings.setSloganColor(self.settings.getColorFromName(content))
+                    self.settings.setSloganColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "replacenow":
+                    self.settings.replaceNOW.setChecked(content == "True")
+                elif param == "replacenowtext":
+                    self.settings.replaceNOWText.setText(content)
 
             elif group == "LED1":
                 if param == "used":
-                    self.settings.LED1.setChecked(QVariant(content).toBool())
+                    self.settings.LED1.setChecked(content == "True")
                 elif param == "text":
                     self.settings.LED1Text.setText(content)
                 elif param == "activebgcolor":
-                    self.settings.setLED1BGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED1BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "activetextcolor":
-                    self.settings.setLED1FGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED1FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "autoflash":
-                    self.settings.LED1Autoflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED1Autoflash.setChecked(content == "True")
                 elif param == "timedflash":
-                    self.settings.LED1Timedflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED1Timedflash.setChecked(content == "True")
 
             elif group == "LED2":
                 if param == "used":
-                    self.settings.LED2.setChecked(QVariant(content).toBool())
+                    self.settings.LED2.setChecked(content == "True")
                 elif param == "text":
                     self.settings.LED2Text.setText(content)
                 elif param == "activebgcolor":
-                    self.settings.setLED2BGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED2BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "activetextcolor":
-                    self.settings.setLED2FGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED2FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "autoflash":
-                    self.settings.LED2Autoflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED2Autoflash.setChecked(content == "True")
                 elif param == "timedflash":
-                    self.settings.LED2Timedflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED2Timedflash.setChecked(content == "True")
 
             elif group == "LED3":
                 if param == "used":
-                    self.settings.LED3.setChecked(QVariant(content).toBool())
+                    self.settings.LED3.setChecked(content == "True")
                 elif param == "text":
                     self.settings.LED3Text.setText(content)
                 elif param == "activebgcolor":
-                    self.settings.setLED3BGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED3BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "activetextcolor":
-                    self.settings.setLED3FGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED3FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "autoflash":
-                    self.settings.LED3Autoflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED3Autoflash.setChecked(content == "True")
                 elif param == "timedflash":
-                    self.settings.LED3Timedflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED3Timedflash.setChecked(content == "True")
 
             elif group == "LED4":
                 if param == "used":
-                    self.settings.LED4.setChecked(QVariant(content).toBool())
+                    self.settings.LED4.setChecked(content == "True")
                 elif param == "text":
                     self.settings.LED4Text.setText(content)
                 elif param == "activebgcolor":
-                    self.settings.setLED4BGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED4BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "activetextcolor":
-                    self.settings.setLED4FGColor(self.settings.getColorFromName(content))
+                    self.settings.setLED4FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "autoflash":
-                    self.settings.LED4Autoflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED4Autoflash.setChecked(content == "True")
                 elif param == "timedflash":
-                    self.settings.LED4Timedflash.setChecked(QVariant(content).toBool())
+                    self.settings.LED4Timedflash.setChecked(content == "True")
+
+            elif group == "Timers":
+                if param == "TimerAIR1Enabled":
+                    self.settings.enableAIR1.setChecked(content == "True")
+                elif param == "TimerAIR2Enabled":
+                    self.settings.enableAIR2.setChecked(content == "True")
+                elif param == "TimerAIR3Enabled":
+                    self.settings.enableAIR3.setChecked(content == "True")
+                elif param == "TimerAIR4Enabled":
+                    self.settings.enableAIR4.setChecked(content == "True")
+                elif param == "TimerAIR1Text":
+                    self.settings.AIR1Text.setText(content)
+                elif param == "TimerAIR2Text":
+                    self.settings.AIR2Text.setText(content)
+                elif param == "TimerAIR3Text":
+                    self.settings.AIR3Text.setText(content)
+                elif param == "TimerAIR4Text":
+                    self.settings.AIR4Text.setText(content)
+                elif param == "AIR1activebgcolor":
+                    self.settings.setAIR1BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR1activetextcolor":
+                    self.settings.setAIR1FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR2activebgcolor":
+                    self.settings.setAIR2BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR2activetextcolor":
+                    self.settings.setAIR2FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR3activebgcolor":
+                    self.settings.setAIR3BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR3activetextcolor":
+                    self.settings.setAIR3FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR4activebgcolor":
+                    self.settings.setAIR4BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR4activetextcolor":
+                    self.settings.setAIR4FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "TimerAIRMinWidth":
+                    self.settings.AIRMinWidth.setValue(int(content))
 
             elif group == "Clock":
                 if param == "digital":
@@ -480,11 +521,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                     elif content == "False":
                         self.settings.staticColon.setChecked(False)
                 elif param == "digitalhourcolor":
-                    self.settings.setDigitalHourColor(self.settings.getColorFromName(content))
+                    self.settings.setDigitalHourColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "digitalsecondcolor":
-                    self.settings.setDigitalSecondColor(self.settings.getColorFromName(content))
+                    self.settings.setDigitalSecondColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "digitaldigitcolor":
-                    self.settings.setDigitalDigitColor(self.settings.getColorFromName(content))
+                    self.settings.setDigitalDigitColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "logopath":
                     self.settings.setLogoPath(content)
 
@@ -572,6 +613,11 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.set_air4(False)
         else:
             self.set_air4(True)
+
+    def display_ips(self):
+        self.display_all_hostaddresses()
+        self.replacenowTimer.setSingleShot(True)
+        self.replacenowTimer.start(10000)
 
     def unset_led1(self):
         self.led_logic(1, False)
