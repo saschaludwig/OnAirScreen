@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - refactored text clock code
 - fixed crash when using API to configure boolean fields
 - API: you can now use colors in web notation (#00FF00) and hex notation (0x00FF00)
+- fixed slogan font in settings
 
 ### Added
 - french localization for textclock

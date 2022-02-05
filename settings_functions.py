@@ -403,9 +403,9 @@ class Settings(QWidget, Ui_Settings):
         self.ExampleFont_StationName.setFont(QFont(settings.value('StationNameFontName', "FreeSans"),
                                                    settings.value('StationNameFontSize', 24, type=int),
                                                    settings.value('StationNameFontWeight', QFont.Bold, type=int)))
-        self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganNameFontName', "FreeSans"),
-                                              settings.value('SloganNameFontSize', 18, type=int),
-                                              settings.value('SloganNameFontWeight', QFont.Bold, type=int)))
+        self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganFontName', "FreeSans"),
+                                              settings.value('SloganFontSize', 18, type=int),
+                                              settings.value('SloganFontWeight', QFont.Bold, type=int)))
         self.ExampleFont_LED1.setText(f"{settings.value('LED1FontName', 'FreeSans')}, "
                                       f"{settings.value('LED1FontSize', 24, type=int)}pt")
         self.ExampleFont_LED2.setText(f"{settings.value('LED2FontName', 'FreeSans')}, "
