@@ -45,7 +45,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import unquote
 
 import ntplib
-from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
