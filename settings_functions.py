@@ -331,6 +331,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Network")
         self.udpport.setText(settings.value('udpport', '3310'))
         self.httpport.setText(settings.value('httpport', '8010'))
+        self.multicast_group.setText(settings.value('multicast_address', "239.194.0.1"))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
@@ -506,6 +507,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Network")
         settings.setValue('udpport', self.udpport.displayText())
         settings.setValue('httpport', self.httpport.displayText())
+        settings.setValue('multicast_address', self.multicast_group.displayText())
         settings.endGroup()
 
         settings.beginGroup("Formatting")
