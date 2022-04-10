@@ -47,7 +47,7 @@ from urllib.parse import unquote
 import ntplib
 from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont
-from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface
+from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface, QHostAddress
 from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
 
 from mainscreen import Ui_MainScreen
@@ -185,13 +185,17 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.replacenowTimer = QTimer()
         self.replacenowTimer.timeout.connect(self.replace_now_next)
 
-        # Setup UDP Socket
+        # Setup UDP Socket and join Multicast Group
         self.udpsock = QUdpSocket()
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
         port = int(settings.value('udpport', 3310))
+        multicast_address = settings.value('multicast_address', "239.194.0.1")
         settings.endGroup()
-        self.udpsock.bind(port, QUdpSocket.ShareAddress)
+        self.udpsock.bind(QHostAddress.AnyIPv4, port, QUdpSocket.ShareAddress)
+        if QHostAddress(multicast_address).isMulticast():
+            print(multicast_address, "is Multicast, joining multicast group")
+            self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
         self.udpsock.readyRead.connect(self.udp_cmd_handler)
 
         # Setup HTTP Server
