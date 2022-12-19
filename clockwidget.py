@@ -112,6 +112,7 @@ class ClockWidget(QtWidgets.QWidget):
         self.showSeconds = False
         self.staticColon = False
         self.counter = 0
+        self.one_line_time = False
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update)
@@ -182,6 +183,18 @@ class ClockWidget(QtWidgets.QWidget):
         return self.showSeconds
 
     clockShowSeconds = QtCore.pyqtProperty("int", getShowSeconds, setShowSeconds, resetShowSeconds)
+
+    @QtCore.pyqtSlot(bool)
+    def setOneLineTime(self, value):
+        self.one_line_time = value
+
+    def resetOneLineTime(self):
+        self.one_line_time = False
+
+    def getOneLineTime(self):
+        return self.one_line_time
+
+    clockOneLineTime = QtCore.pyqtProperty("int", getOneLineTime, setOneLineTime, resetOneLineTime)
 
     @QtCore.pyqtSlot(bool)
     def setStaticColon(self, value):
@@ -313,38 +326,60 @@ class ClockWidget(QtWidgets.QWidget):
     def paintDigital(self, painter):
         # digital clock mode
         time = self.time
-        dotSize = 1.6
 
         # draw digits and colon
         painter.setPen(QtCore.Qt.NoPen)
         painter.setBrush(self.digiDigitColor)
         painter.setPen(self.digiDigitColor)
 
-        digitSpacing = 28
-        digitSpacingY = 45
-        secondsOffsetX = -3.5
-
         if self.isAmPm and time.hour() > 12:
             if time.hour() >= 12:
-                hourStr = "%02d" % (time.hour() - 12)
+                hour_str = "%02d" % (time.hour() - 12)
             else:
-                hourStr = "%02d" % time.hour()
+                hour_str = "%02d" % time.hour()
         else:
-            hourStr = "%02d" % time.hour()
-        self.drawDigit(painter, digitSpacing * -2, 0, hourStr[0:1])
-        self.drawDigit(painter, digitSpacing * -1, 0, hourStr[1:2])
+            hour_str = "%02d" % time.hour()
 
-        self.drawColon(painter, 0, 0)
+        minute_str = "%02d" % time.minute()
+        second_str = "%02d" % time.second()
 
-        minuteStr = "%02d" % time.minute()
-        self.drawDigit(painter, digitSpacing * 1, 0, minuteStr[0:1])
-        self.drawDigit(painter, digitSpacing * 2, 0, minuteStr[1:2])
+        if self.one_line_time:
+            digit_spacing = 20
+            dot_size = 1
+            dot_offset = 3.5
 
-        if self.showSeconds:
-            secondStr = "%02d" % time.second()
-            self.drawDigit(painter, (digitSpacing * -0.3) + secondsOffsetX, digitSpacingY, secondStr[0:1], 0.8, 3)
-            self.drawDigit(painter, (digitSpacing * 0.3) + secondsOffsetX, digitSpacingY, secondStr[1:2], 0.8, 3)
+            self.drawDigit(painter, digit_spacing * -3, 0, hour_str[0:1], dot_size, dot_offset)
+            self.drawDigit(painter, digit_spacing * -2, 0, hour_str[1:2], dot_size, dot_offset)
 
+            self.drawColon(painter, digit_spacing * -1.25, 0, dot_size, dot_offset)
+            self.drawColon(painter, digit_spacing * 1.25, 0, dot_size, dot_offset)
+
+            self.drawDigit(painter, digit_spacing * -0.5, 0, minute_str[0:1], dot_size, dot_offset)
+            self.drawDigit(painter, digit_spacing * 0.5, 0, minute_str[1:2], dot_size, dot_offset)
+
+            self.drawDigit(painter, digit_spacing * 2, 0, second_str[0:1], dot_size, dot_offset)
+            self.drawDigit(painter, digit_spacing * 3, 0, second_str[1:2], dot_size, dot_offset)
+
+        else:
+            digit_spacing = 28
+            digit_spacing_y = 45
+            seconds_offset_x = -3.5
+
+            self.drawDigit(painter, digit_spacing * -2, 0, hour_str[0:1])
+            self.drawDigit(painter, digit_spacing * -1, 0, hour_str[1:2])
+
+            self.drawColon(painter, 0, 0)
+
+            minute_str = "%02d" % time.minute()
+            self.drawDigit(painter, digit_spacing * 1, 0, minute_str[0:1])
+            self.drawDigit(painter, digit_spacing * 2, 0, minute_str[1:2])
+
+            if self.showSeconds:
+                second_str = "%02d" % time.second()
+                self.drawDigit(painter, (digit_spacing * -0.3) + seconds_offset_x, digit_spacing_y, second_str[0:1], 0.8, 3)
+                self.drawDigit(painter, (digit_spacing * 0.3) + seconds_offset_x, digit_spacing_y, second_str[1:2], 0.8, 3)
+
+        dot_size = 1.6
         # set painter to 12 o'clock position
         painter.rotate(-90.0)
         painter.setPen(QtCore.Qt.NoPen)
@@ -354,7 +389,7 @@ class ClockWidget(QtWidgets.QWidget):
         # draw hour marks
         painter.save()
         for i in range(12):
-            painter.drawEllipse(QtCore.QPointF(95, 0), dotSize, dotSize)
+            painter.drawEllipse(QtCore.QPointF(95, 0), dot_size, dot_size)
             painter.rotate(30.0)
         painter.restore()
 
@@ -365,12 +400,12 @@ class ClockWidget(QtWidgets.QWidget):
         # draw seconds
         painter.save()
         # draw zero second
-        # painter.drawEllipse(QtCore.QPointF(88,0), dotSize, dotSize)
+        # painter.drawEllipse(QtCore.QPointF(88,0), dot_size, dot_size)
         # painter.rotate(6.0)
         second = time.second() + 1
         if second == 0: second = 60
         for j in range(0, second):
-            painter.drawEllipse(QtCore.QPointF(88, 0), dotSize, dotSize)
+            painter.drawEllipse(QtCore.QPointF(88, 0), dot_size, dot_size)
             painter.rotate(6.0)
         painter.restore()
 
@@ -408,22 +443,20 @@ class ClockWidget(QtWidgets.QWidget):
 
         # end digital clock mode
 
-    def drawColon(self, painter, digitStartPosX=0, digitStartPosY=0):
+    def drawColon(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, dotSize=1.6, dotOffset=4.5, slant=15):
         # paint colon only half a second
         if self.time.msec() < 500 or self.staticColon:
-            dotSize = 1.6
-            dotOffset = 4.5  # spacing between the dots
-            dotSlant = dotOffset / 15  # horizontal slant of each row
-            currentRow = +1.5
+            dot_slant = dotOffset / slant  # horizontal slant of each row
+            current_row = +1.5
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX + (dotSlant * 2 * currentRow), digitStartPosY - (dotOffset * currentRow)),
+                QtCore.QPointF(digitStartPosX + (dot_slant * 2 * current_row), digitStartPosY - (dotOffset * current_row)),
                 dotSize, dotSize)
-            currentRow = -1.2
+            current_row = -1.2
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX + (dotSlant * 2 * currentRow), digitStartPosY - (dotOffset * currentRow)),
+                QtCore.QPointF(digitStartPosX + (dot_slant * 2 * current_row), digitStartPosY - (dotOffset * current_row)),
                 dotSize, dotSize)
 
-    def drawDigit(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, value=8, dotSize=1.6, dotOffset=4.5, slant=19):
+    def drawDigit(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, value=8, dotSize=1.6, dotOffset=5, slant=19):
         value = int(value)
         # draw dots from one 7segment digit
         dotSlant = dotOffset / slant  # horizontal slant of each row
@@ -564,5 +597,6 @@ if __name__ == '__main__':
     widget.setAmPm(False)
     widget.setShowSeconds(True)
     widget.setStaticColon(False)
+    widget.setOneLineTime(False)
     widget.show()
     sys.exit(app.exec_())
