@@ -80,9 +80,11 @@
 import time as pytime
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtGui import QColor
 
 
 class ClockWidget(QtWidgets.QWidget):
+    digiDigitColor: QColor
     __pyqtSignals__ = ("timeChanged(QTime)", "timeZoneChanged(int)")
 
     # default color scheme
@@ -92,6 +94,9 @@ class ClockWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ClockWidget, self).__init__(parent)
 
+        self.timeChanged = None
+        self.timeZoneChanged = None
+        
         # astrastudio color scheme
         self.digiHourColor = QtGui.QColor(50, 50, 255, 255)
         self.digiSecondColor = QtGui.QColor(255, 153, 0, 255)
@@ -102,9 +107,9 @@ class ClockWidget(QtWidgets.QWidget):
         self.minuteColor = QtGui.QColor(220, 220, 220, 255)
         self.circleColor = QtGui.QColor(220, 220, 220, 255)
 
-        self.imagepath = ""
+        self.image_path = ""
 
-        self.setLogo()
+        self.set_logo()
 
         self.timeZoneOffset = 0
         self.clockMode = 1
@@ -116,133 +121,135 @@ class ClockWidget(QtWidgets.QWidget):
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update)
-        self.resyncTime()
+        self.resync_time()
 
-    def resyncTime(self):
+    def resync_time(self):
         # sync local timer with system clock
         while QtCore.QTime.currentTime().msec() > 5:
             pytime.sleep(0.001)
         self.timer.start(500)
 
-    def updateTime(self):
+    def update_time(self):
         self.timeChanged.emit(QtCore.QTime.currentTime())
 
     @QtCore.pyqtSlot(int)
-    def getTimeZone(self):
+    def get_time_zone(self):
         return self.timeZoneOffset
 
-    def setTimeZone(self, value):
+    def set_time_zone(self, value):
         if value != self.timeZoneOffset:
             self.timeZoneOffset = value
             self.timeZoneChanged.emit(value)
             self.update()
 
-    def resetTimeZone(self):
+    def reset_time_zone(self):
         if self.timeZoneOffset != 0:
             self.timeZoneOffset = 0
             self.timeZoneChanged.emit(0)
             self.update()
 
-    timeZone = QtCore.pyqtProperty("int", getTimeZone, setTimeZone, resetTimeZone)
+    timeZone = QtCore.pyqtProperty("int", get_time_zone, set_time_zone, reset_time_zone)
 
     @QtCore.pyqtSlot(int)
-    def setClockMode(self, mode):
+    def set_clock_mode(self, mode):
         if mode == 1:
             self.clockMode = 1
         else:
             self.clockMode = 0
 
-    def resetClockMode(self):
+    def reset_clock_code(self):
         self.clockMode = 1
 
-    def getClockMode(self):
+    def get_clock_mode(self):
         return self.clockMode
 
-    clockType = QtCore.pyqtProperty("int", getClockMode, setClockMode, resetClockMode)
+    clockType = QtCore.pyqtProperty("int", get_clock_mode, set_clock_mode, reset_clock_code)
 
     @QtCore.pyqtSlot(bool)
-    def setAmPm(self, mode):
+    def set_am_pm(self, mode):
         self.isAmPm = mode
 
-    def resetAmPm(self):
+    def reset_am_pm(self):
         self.isAmPm = False
 
-    def getAmPm(self):
+    def get_am_pm(self):
         return self.isAmPm
 
-    clockAmPm = QtCore.pyqtProperty("int", getAmPm, setAmPm, resetAmPm)
+    clockAmPm = QtCore.pyqtProperty("int", get_am_pm, set_am_pm, reset_am_pm)
 
     @QtCore.pyqtSlot(bool)
-    def setShowSeconds(self, value):
+    def set_show_seconds(self, value):
         self.showSeconds = value
 
-    def resetShowSeconds(self):
+    def reset_show_seconds(self):
         self.showSeconds = False
 
-    def getShowSeconds(self):
+    def get_show_seconds(self):
         return self.showSeconds
 
-    clockShowSeconds = QtCore.pyqtProperty("int", getShowSeconds, setShowSeconds, resetShowSeconds)
+    clockShowSeconds = QtCore.pyqtProperty("int", get_show_seconds, set_show_seconds, reset_show_seconds)
 
     @QtCore.pyqtSlot(bool)
-    def setOneLineTime(self, value):
+    def set_one_line_time(self, value):
         self.one_line_time = value
 
-    def resetOneLineTime(self):
+    def reset_one_line_time(self):
         self.one_line_time = False
 
-    def getOneLineTime(self):
+    def get_one_line_time(self):
         return self.one_line_time
 
-    clockOneLineTime = QtCore.pyqtProperty("int", getOneLineTime, setOneLineTime, resetOneLineTime)
+    clockOneLineTime = QtCore.pyqtProperty("int", get_one_line_time, set_one_line_time, reset_one_line_time)
 
     @QtCore.pyqtSlot(bool)
-    def setStaticColon(self, value):
+    def set_static_colon(self, value):
         self.staticColon = value
 
-    def resetStaticColon(self):
+    def reset_static_colon(self):
         self.staticColon = False
 
-    def getStaticColon(self):
+    def get_static_colon(self):
         return self.staticColon
 
-    clockStaticColon = QtCore.pyqtProperty("int", getStaticColon, setStaticColon, resetStaticColon)
+    clockStaticColon = QtCore.pyqtProperty("int", get_static_colon, set_static_colon, reset_static_colon)
 
     @QtCore.pyqtSlot(QtGui.QColor)
-    def setDigiHourColor(self, color=QtGui.QColor(50, 50, 255, 255)):
+    def set_digi_hour_color(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiHourColor = color
 
-    def resetDigiHourColor(self):
+    def reset_digi_hour_color(self):
         self.digiHourColor = QtGui.QColor(50, 50, 255, 255)
 
-    def getDigiHourColor(self):
+    def get_digi_hour_color(self):
         return self.digiHourColor
 
-    colorDigiHour = QtCore.pyqtProperty(QtGui.QColor, getDigiHourColor, setDigiHourColor, resetDigiHourColor)
+    colorDigiHour = QtCore.pyqtProperty(QtGui.QColor, get_digi_hour_color, set_digi_hour_color, reset_digi_hour_color)
 
     @QtCore.pyqtSlot(QtGui.QColor)
-    def setDigiSecondColor(self, color=QtGui.QColor(50, 50, 255, 255)):
+    def set_digi_second_color(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiSecondColor = color
 
-    def resetDigiSecondColor(self):
+    def reset_digi_second_color(self):
         self.digiSecondColor = QtGui.QColor(50, 50, 255, 255)
 
-    def getDigiSecondColor(self):
+    def get_digi_second_color(self):
         return self.digiSecondColor
 
-    colorDigiSecond = QtCore.pyqtProperty(QtGui.QColor, getDigiSecondColor, setDigiSecondColor, resetDigiSecondColor)
+    colorDigiSecond = QtCore.pyqtProperty(QtGui.QColor, get_digi_second_color, set_digi_second_color,
+                                          reset_digi_second_color)
 
     @QtCore.pyqtSlot(QtGui.QColor)
-    def setDigiDigitColor(self, color=QtGui.QColor(50, 50, 255, 255)):
+    def set_digi_digit_color(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiDigitColor = color
 
-    def resetDigiDigitColor(self):
+    def reset_digi_digit_color(self):
         self.digiDigitColor = QtGui.QColor(50, 50, 255, 255)
 
-    def getDigiDigitColor(self):
+    def get_digi_digit_color(self):
         return self.digiDigitColor
 
-    colorDigiDigit = QtCore.pyqtProperty(QtGui.QColor, getDigiDigitColor, setDigiDigitColor, resetDigiDigitColor)
+    colorDigiDigit = QtCore.pyqtProperty(QtGui.QColor, get_digi_digit_color, set_digi_digit_color,
+                                         reset_digi_digit_color)
 
     def paintEvent(self, event):
         side = min(self.width(), self.height())
@@ -254,11 +261,11 @@ class ClockWidget(QtWidgets.QWidget):
         painter.scale(side / 200.0, side / 200.0)
 
         if self.clockMode == 0:
-            self.paintAnalog(painter)
+            self.paint_analog(painter)
         else:
-            self.paintDigital(painter)
+            self.paint_digital(painter)
 
-    def paintAnalog(self, painter):
+    def paint_analog(self, painter):
         time = self.time
         # analog clock mode
         painter.setPen(QtCore.Qt.NoPen)
@@ -311,19 +318,19 @@ class ClockWidget(QtWidgets.QWidget):
         # end analog clock mode
 
     @QtCore.pyqtSlot(str)
-    def setLogo(self, logofile=""):
-        self.imagepath = logofile
-        self.image = QtGui.QImage(logofile)
+    def set_logo(self, logo_file=""):
+        self.image_path = logo_file
+        self.image = QtGui.QImage(logo_file)
 
-    def getLogo(self):
-        return self.imagepath
+    def get_logo(self):
+        return self.image_path
 
-    def resetLogo(self):
-        self.setLogo()
+    def reset_logo(self):
+        self.set_logo()
 
-    logoFile = QtCore.pyqtProperty(str, getLogo, setLogo, resetLogo)
+    logoFile = QtCore.pyqtProperty(str, get_logo, set_logo, reset_logo)
 
-    def paintDigital(self, painter):
+    def paint_digital(self, painter):
         # digital clock mode
         time = self.time
 
@@ -348,36 +355,38 @@ class ClockWidget(QtWidgets.QWidget):
             dot_size = 1
             dot_offset = 3.5
 
-            self.drawDigit(painter, digit_spacing * -3, 0, hour_str[0:1], dot_size, dot_offset)
-            self.drawDigit(painter, digit_spacing * -2, 0, hour_str[1:2], dot_size, dot_offset)
+            self.draw_digit(painter, digit_spacing * -3, 0, int(hour_str[0:1]), dot_size, dot_offset)
+            self.draw_digit(painter, digit_spacing * -2, 0, int(hour_str[1:2]), dot_size, dot_offset)
 
-            self.drawColon(painter, digit_spacing * -1.25, 0, dot_size, dot_offset)
-            self.drawColon(painter, digit_spacing * 1.25, 0, dot_size, dot_offset)
+            self.draw_colon(painter, digit_spacing * -1.25, 0, dot_size, dot_offset)
+            self.draw_colon(painter, digit_spacing * 1.25, 0, dot_size, dot_offset)
 
-            self.drawDigit(painter, digit_spacing * -0.5, 0, minute_str[0:1], dot_size, dot_offset)
-            self.drawDigit(painter, digit_spacing * 0.5, 0, minute_str[1:2], dot_size, dot_offset)
+            self.draw_digit(painter, digit_spacing * -0.5, 0, int(minute_str[0:1]), dot_size, dot_offset)
+            self.draw_digit(painter, digit_spacing * 0.5, 0, int(minute_str[1:2]), dot_size, dot_offset)
 
-            self.drawDigit(painter, digit_spacing * 2, 0, second_str[0:1], dot_size, dot_offset)
-            self.drawDigit(painter, digit_spacing * 3, 0, second_str[1:2], dot_size, dot_offset)
+            self.draw_digit(painter, digit_spacing * 2, 0, int(second_str[0:1]), dot_size, dot_offset)
+            self.draw_digit(painter, digit_spacing * 3, 0, int(second_str[1:2]), dot_size, dot_offset)
 
         else:
             digit_spacing = 28
             digit_spacing_y = 45
             seconds_offset_x = -3.5
 
-            self.drawDigit(painter, digit_spacing * -2, 0, hour_str[0:1])
-            self.drawDigit(painter, digit_spacing * -1, 0, hour_str[1:2])
+            self.draw_digit(painter, digit_spacing * -2, 0, int(hour_str[0:1]))
+            self.draw_digit(painter, digit_spacing * -1, 0, int(hour_str[1:2]))
 
-            self.drawColon(painter, 0, 0)
+            self.draw_colon(painter, 0, 0)
 
             minute_str = "%02d" % time.minute()
-            self.drawDigit(painter, digit_spacing * 1, 0, minute_str[0:1])
-            self.drawDigit(painter, digit_spacing * 2, 0, minute_str[1:2])
+            self.draw_digit(painter, digit_spacing * 1, 0, int(minute_str[0:1]))
+            self.draw_digit(painter, digit_spacing * 2, 0, int(minute_str[1:2]))
 
             if self.showSeconds:
                 second_str = "%02d" % time.second()
-                self.drawDigit(painter, (digit_spacing * -0.3) + seconds_offset_x, digit_spacing_y, second_str[0:1], 0.8, 3)
-                self.drawDigit(painter, (digit_spacing * 0.3) + seconds_offset_x, digit_spacing_y, second_str[1:2], 0.8, 3)
+                self.draw_digit(painter, (digit_spacing * -0.3) + seconds_offset_x, digit_spacing_y,
+                                int(second_str[0:1]), 0.8, 3)
+                self.draw_digit(painter, (digit_spacing * 0.3) + seconds_offset_x, digit_spacing_y,
+                                int(second_str[1:2]), 0.8, 3)
 
         dot_size = 1.6
         # set painter to 12 o'clock position
@@ -403,7 +412,8 @@ class ClockWidget(QtWidgets.QWidget):
         # painter.drawEllipse(QtCore.QPointF(88,0), dot_size, dot_size)
         # painter.rotate(6.0)
         second = time.second() + 1
-        if second == 0: second = 60
+        if second == 0:
+            second = 60
         for j in range(0, second):
             painter.drawEllipse(QtCore.QPointF(88, 0), dot_size, dot_size)
             painter.rotate(6.0)
@@ -443,23 +453,25 @@ class ClockWidget(QtWidgets.QWidget):
 
         # end digital clock mode
 
-    def drawColon(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, dotSize=1.6, dotOffset=4.5, slant=15):
+    def draw_colon(self, painter, digit_start_pos_x=0.0, digit_start_pos_y=0.0, dot_size=1.6, dot_offset=4.5, slant=15):
         # paint colon only half a second
         if self.time.msec() < 500 or self.staticColon:
-            dot_slant = dotOffset / slant  # horizontal slant of each row
+            dot_slant = dot_offset / slant  # horizontal slant of each row
             current_row = +1.5
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX + (dot_slant * 2 * current_row), digitStartPosY - (dotOffset * current_row)),
-                dotSize, dotSize)
+                QtCore.QPointF(digit_start_pos_x + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - (dot_offset * current_row)), dot_size, dot_size)
             current_row = -1.2
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX + (dot_slant * 2 * current_row), digitStartPosY - (dotOffset * current_row)),
-                dotSize, dotSize)
+                QtCore.QPointF(digit_start_pos_x + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - (dot_offset * current_row)), dot_size, dot_size)
 
-    def drawDigit(self, painter, digitStartPosX=0.0, digitStartPosY=0.0, value=8, dotSize=1.6, dotOffset=5, slant=19):
+    @staticmethod
+    def draw_digit(painter, digit_start_pos_x=0.0, digit_start_pos_y=0.0, value=8, dot_size=1.6, dot_offset=5.0,
+                   slant=19.0):
         value = int(value)
         # draw dots from one 7segment digit
-        dotSlant = dotOffset / slant  # horizontal slant of each row
+        dot_slant = dot_offset / slant  # horizontal slant of each row
 
         # decimal to segment conversion table
         segments = [0b0111111, 0b0000110, 0b1011011, 0b1001111, 0b1100110, 0b1101101, 0b1111101, 0b0000111, 0b1111111,
@@ -467,123 +479,123 @@ class ClockWidget(QtWidgets.QWidget):
 
         if segments[value] & 1 << 6:
             # segment g
-            currentRow = 0  # center row
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX - (dotOffset * 1.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX - (dotOffset * 0.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX + (dotOffset * 0.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX + (dotOffset * 1.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
+            current_row = 0  # center row
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 1.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 0.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 0.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 1.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
 
         if segments[value] & 1 << 0:
             # segment a
-            currentRow = 9  # top row
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX - (dotOffset * 1.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX - (dotOffset * 0.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX + (dotOffset * 0.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX + (dotOffset * 1.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
+            current_row = 9  # top row
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 1.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 0.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 0.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 1.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
 
         if segments[value] & 1 << 3:
             # segment d
-            currentRow = -9  # bottom row
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX - (dotOffset * 1.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX - (dotOffset * 0.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX + (dotOffset * 0.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
-            painter.drawEllipse(QtCore.QPointF(digitStartPosX + (dotOffset * 1.5) + (dotSlant * currentRow),
-                                               digitStartPosY - (dotOffset / 2 * currentRow)), dotSize, dotSize)
+            current_row = -9  # bottom row
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 1.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 0.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 0.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 1.5) + (dot_slant * current_row),
+                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
 
         if segments[value] & 1 << 5:
             # segment f
             yOffset = -0.75
             xOffset = +0.75
-            currentRow = 1
+            current_row = 1
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = 2
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = 2
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = 3
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = 3
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = 4
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = 4
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
 
         if segments[value] & 1 << 1:
             # segment b
             yOffset = -1.2
             xOffset = -0.5
-            currentRow = 1
+            current_row = 1
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = 2
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = 2
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = 3
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = 3
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = 4
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = 4
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
 
         if segments[value] & 1 << 4:
             # segment e
             yOffset = +1.2
             xOffset = +0.5
-            currentRow = -1
+            current_row = -1
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = -2
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = -2
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = -3
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = -3
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = -4
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = -4
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset - (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
+                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
 
         if segments[value] & 1 << 2:
             # segment c
             yOffset = +0.75
             xOffset = -0.75
-            currentRow = -1
+            current_row = -1
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = -2
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = -2
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = -3
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = -3
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
-            currentRow = -4
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+            current_row = -4
             painter.drawEllipse(
-                QtCore.QPointF(digitStartPosX - xOffset + (dotOffset * 2.0) + (dotSlant * 2 * currentRow),
-                               digitStartPosY - yOffset - (dotOffset * currentRow)), dotSize, dotSize)
+                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
+                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
 
 
 if __name__ == '__main__':
@@ -593,10 +605,10 @@ if __name__ == '__main__':
     widget = ClockWidget()
     widget.setStyleSheet("background-color:black;")
     widget.resize(500, 500)
-    widget.setClockMode(1)
-    widget.setAmPm(False)
-    widget.setShowSeconds(True)
-    widget.setStaticColon(False)
-    widget.setOneLineTime(False)
+    widget.set_clock_mode(1)
+    widget.set_am_pm(False)
+    widget.set_show_seconds(True)
+    widget.set_static_colon(False)
+    widget.set_one_line_time(False)
     widget.show()
     sys.exit(app.exec_())

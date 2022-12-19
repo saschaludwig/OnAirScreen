@@ -728,22 +728,22 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("Clock")
-        self.clockWidget.setClockMode(settings.value('digital', True, type=bool))
-        self.clockWidget.setDigiHourColor(
+        self.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
+        self.clockWidget.set_digi_hour_color(
             self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
-        self.clockWidget.setDigiSecondColor(
+        self.clockWidget.set_digi_second_color(
             self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
-        self.clockWidget.setDigiDigitColor(
+        self.clockWidget.set_digi_digit_color(
             self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
-        self.clockWidget.setLogo(
+        self.clockWidget.set_logo(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
-        self.clockWidget.setShowSeconds(settings.value('showSeconds', False, type=bool))
-        self.clockWidget.setStaticColon(settings.value('staticColon', False, type=bool))
+        self.clockWidget.set_show_seconds(settings.value('showSeconds', False, type=bool))
+        self.clockWidget.set_static_colon(settings.value('staticColon', False, type=bool))
         self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
         settings.endGroup()
 
         settings.beginGroup("Formatting")
-        self.clockWidget.setAmPm(settings.value('isAmPm', False, type=bool))
+        self.clockWidget.set_am_pm(settings.value('isAmPm', False, type=bool))
         self.textLocale = settings.value('textClockLanguage', 'English')
         settings.endGroup()
 
