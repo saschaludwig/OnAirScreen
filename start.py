@@ -517,9 +517,21 @@ class MainScreen(QWidget, Ui_MainScreen):
                 elif param == "showseconds":
                     if content == "True":
                         self.settings.showSeconds.setChecked(True)
+                        self.settings.seconds_in_one_line.setChecked(False)
+                        self.settings.seconds_separate.setChecked(True)
                     elif content == "False":
                         self.settings.showSeconds.setChecked(False)
-                # TODO: implement "in one line" API call
+                        self.settings.seconds_in_one_line.setChecked(False)
+                        self.settings.seconds_separate.setChecked(True)
+                elif param == "secondsinoneline":
+                    if content == "True":
+                        self.settings.showSeconds.setChecked(True)
+                        self.settings.seconds_in_one_line.setChecked(True)
+                        self.settings.seconds_separate.setChecked(False)
+                    elif content == "False":
+                        self.settings.showSeconds.setChecked(False)
+                        self.settings.seconds_in_one_line.setChecked(False)
+                        self.settings.seconds_separate.setChecked(True)
                 elif param == "staticcolon":
                     if content == "True":
                         self.settings.staticColon.setChecked(True)
