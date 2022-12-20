@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>790</height>
+    <height>846</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -1087,6 +1087,9 @@
                <property name="checked">
                 <bool>true</bool>
                </property>
+               <attribute name="buttonGroup">
+                <string notr="true">buttonGroup_clock_mode</string>
+               </attribute>
               </widget>
              </item>
              <item>
@@ -1094,6 +1097,9 @@
                <property name="text">
                 <string>Analog</string>
                </property>
+               <attribute name="buttonGroup">
+                <string notr="true">buttonGroup_clock_mode</string>
+               </attribute>
               </widget>
              </item>
             </layout>
@@ -1255,7 +1261,40 @@
                  <property name="text">
                   <string>Show seconds</string>
                  </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
                 </widget>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="verticalLayout_28">
+                 <property name="leftMargin">
+                  <number>18</number>
+                 </property>
+                 <item>
+                  <widget class="QRadioButton" name="seconds_separate">
+                   <property name="text">
+                    <string>separate</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">buttonGroup_show_seconds</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QRadioButton" name="seconds_in_one_line">
+                   <property name="text">
+                    <string>in one line</string>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">buttonGroup_show_seconds</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                </layout>
                </item>
                <item>
                 <widget class="QCheckBox" name="staticColon">
@@ -4817,5 +4856,41 @@ Parts of analog clockwidget:
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>showSeconds</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>seconds_separate</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>433</x>
+     <y>396</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>437</x>
+     <y>422</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>showSeconds</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>seconds_in_one_line</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>433</x>
+     <y>396</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>437</x>
+     <y>441</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <buttongroups>
+  <buttongroup name="buttonGroup_show_seconds"/>
+  <buttongroup name="buttonGroup_clock_mode"/>
+ </buttongroups>
 </ui>

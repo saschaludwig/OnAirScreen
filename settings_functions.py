@@ -319,6 +319,10 @@ class Settings(QWidget, Ui_Settings):
         self.clockDigital.setChecked(settings.value('digital', True, type=bool))
         self.clockAnalog.setChecked(not settings.value('digital', True, type=bool))
         self.showSeconds.setChecked(settings.value('showSeconds', False, type=bool))
+        self.seconds_in_one_line.setChecked(settings.value('showSecondsInOneLine', False, type=bool))
+        if not settings.value('showSeconds', False, type=bool):
+            self.seconds_in_one_line.setDisabled(True)
+            self.seconds_separate.setDisabled(True)
         self.staticColon.setChecked(settings.value('staticColon', False, type=bool))
         self.useTextclock.setChecked(settings.value('useTextClock', True, type=bool))
         self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
@@ -496,6 +500,7 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Clock")
         settings.setValue('digital', self.clockDigital.isChecked())
         settings.setValue('showSeconds', self.showSeconds.isChecked())
+        settings.setValue('showSecondsInOneLine', self.seconds_in_one_line.isChecked())
         settings.setValue('staticColon', self.staticColon.isChecked())
         settings.setValue('useTextClock', self.useTextclock.isChecked())
         settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())

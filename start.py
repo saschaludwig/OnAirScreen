@@ -519,6 +519,7 @@ class MainScreen(QWidget, Ui_MainScreen):
                         self.settings.showSeconds.setChecked(True)
                     elif content == "False":
                         self.settings.showSeconds.setChecked(False)
+                # TODO: implement "in one line" API call
                 elif param == "staticcolon":
                     if content == "True":
                         self.settings.staticColon.setChecked(True)
@@ -738,6 +739,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.clockWidget.set_logo(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
         self.clockWidget.set_show_seconds(settings.value('showSeconds', False, type=bool))
+        self.clockWidget.set_one_line_time(settings.value('showSecondsInOneLine', False, type=bool) &
+                                           settings.value('showSeconds', False, type=bool))
         self.clockWidget.set_static_colon(settings.value('staticColon', False, type=bool))
         self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
         settings.endGroup()

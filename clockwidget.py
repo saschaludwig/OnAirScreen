@@ -430,7 +430,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.save()
             painter.rotate(90)
 
-            if self.showSeconds:
+            if self.showSeconds and not self.one_line_time:
                 # logo position and width when showing seconds
                 paint_x = 0
                 paint_y = -50
