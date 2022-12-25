@@ -80,6 +80,7 @@
 import time as pytime
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QColor
 
 
@@ -103,8 +104,9 @@ class ClockWidget(QtWidgets.QWidget):
         self.digiDigitColor = QtGui.QColor(50, 50, 255, 255)
 
         # analog mode colors
-        self.hourColor = QtGui.QColor(200, 200, 200, 255)
+        self.hourColor = QtGui.QColor(190, 190, 190, 255)
         self.minuteColor = QtGui.QColor(220, 220, 220, 255)
+        self.secondColor = QtGui.QColor(200, 200, 200, 255)
         self.circleColor = QtGui.QColor(220, 220, 220, 255)
 
         self.image_path = ""
@@ -268,22 +270,45 @@ class ClockWidget(QtWidgets.QWidget):
     def paint_analog(self, painter):
         time = self.time
         # analog clock mode
+
+        # add logo
+        image_max_h = 40
+        image_max_w = 100
+        image = self.image
+        image_w = image.width()
+        image_h = image.height()
+
+        if image_w > 0 and image_h > 1:
+            painter.save()
+
+            # logo position and width without seconds
+            paint_x = 0
+            paint_y = 50
+
+            if image_w > image_h:
+                # calculate height from aspect ratio
+                paint_w = image_max_w
+                paint_h = (float(image_h) / float(image_w)) * paint_w
+            else:
+                # calculate width from aspect ratio
+                paint_h = image_max_h
+                paint_w = (float(image_h) / float(image_w)) * paint_h
+
+            painter.drawImage(QtCore.QRectF(paint_x - (paint_w / 2), paint_y - (paint_h / 2), paint_w, paint_h), image)
+            painter.restore()
+
         painter.setPen(QtCore.Qt.NoPen)
         painter.setBrush(self.hourColor)
         # set hour hand length and minute hand length
-        hhl = -65  # -50
-        mhl = -85  # -75
+        hhl = -70  # -50
+        mhl = -80  # -75
         shl = -85  # -75
+
         # draw hour hand
         painter.save()
         painter.rotate(30.0 * (time.hour() + time.minute() / 60.0))
-        painter.drawRoundedRect(-4, 4, 8, hhl, 4.0, 4.0)
-        painter.restore()
-
-        # draw second hand
-        painter.save()
-        painter.rotate(6.0 * time.second())
-        painter.drawRoundedRect(-1, 1, 2, shl, 1.0, 1.0)
+        painter.drawEllipse(-4, hhl, 8, 8)
+        painter.drawRect(-4, 4, 8, hhl)
         painter.restore()
 
         painter.setPen(self.hourColor)
@@ -296,11 +321,18 @@ class ClockWidget(QtWidgets.QWidget):
         painter.setBrush(self.minuteColor)
 
         # draw minute hand
-        sizefactor = 1.3
         painter.save()
         painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
-        painter.drawRoundedRect(-4 / sizefactor, 4 / sizefactor, 8 / sizefactor, mhl, 4.0 / sizefactor,
-                                4.0 / sizefactor)
+        painter.drawEllipse(-3, mhl, 6, 6)
+        painter.drawRect(-3, 3, 6, mhl)
+        painter.restore()
+
+        # draw second hand
+        painter.setBrush(self.secondColor)
+        painter.save()
+        painter.rotate(6.0 * time.second())
+        painter.drawEllipse(-1, shl, 2, 2)
+        painter.drawRect(-1, 1, 2, shl)
         painter.restore()
 
         # draw center circle
@@ -605,10 +637,11 @@ if __name__ == '__main__':
     widget = ClockWidget()
     widget.setStyleSheet("background-color:black;")
     widget.resize(500, 500)
-    widget.set_clock_mode(1)
+    widget.set_clock_mode(0)
     widget.set_am_pm(False)
     widget.set_show_seconds(True)
     widget.set_static_colon(False)
     widget.set_one_line_time(False)
+    widget.set_logo("images/astrastudio_transparent.png")
     widget.show()
     sys.exit(app.exec_())

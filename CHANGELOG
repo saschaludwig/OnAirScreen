@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [TBA]
+## [0.9.5]
 ### Changed
 - fixed textclock when hour == 12
 - fixed wrong default font size for slogan
@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - fixed crash when using API to configure boolean fields
 - API: you can now use colors in web notation (#00FF00) and hex notation (0x00FF00)
 - fixed slogan font in settings
+- fixed analog clock style
 
 ### Added
 - french localization for textclock
@@ -17,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - IPs can be automatically replaced with custom text after 10s
 - API commands for added functions
 - New Hotkey "I" to display IPs for 10 seconds
+- added option to select between no/separate/combined seconds display
+- added logo to analog clock
 
 ## [0.9.4]
 ### Changed
