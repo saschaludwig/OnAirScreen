@@ -545,6 +545,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.settings.setDigitalDigitColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "logopath":
                     self.settings.setLogoPath(content)
+                elif param == "logoupper":
+                    if content == "True":
+                        self.settings.setLogoUpper(True)
+                    elif content == "False":
+                        self.settings.setLogoUpper(False)
 
             elif group == "Network":
                 if param == "udpport":
@@ -754,6 +759,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.clockWidget.set_one_line_time(settings.value('showSecondsInOneLine', False, type=bool) &
                                            settings.value('showSeconds', False, type=bool))
         self.clockWidget.set_static_colon(settings.value('staticColon', False, type=bool))
+        self.clockWidget.set_logo_upper(settings.value('logoUpper', False, type=bool))
         self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
         settings.endGroup()
 

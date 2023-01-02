@@ -9,6 +9,11 @@ echo  "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
 echo  "CONF:Clock:secondsinoneline=False" | nc -w 1 -u 127.0.0.1 3310
 echo  "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
 
+echo  "CONF:Clock:logoupper=True" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:Clock:logoupper=False" | nc -w 1 -u 127.0.0.1 3310
+echo  "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
+
 echo  "NOW:The Testers - Test around the clock" | nc -w 1 -u 127.0.0.1 3310
 echo  "NEXT:coming up next: the foo the bar and the generic" | nc -w 1 -u 127.0.0.1 3310
 

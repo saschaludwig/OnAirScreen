@@ -993,6 +993,29 @@
             </layout>
            </item>
            <item>
+            <widget class="QRadioButton" name="radioButton_logo_upper">
+             <property name="text">
+              <string>Prefer logo in upper part of clock</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">buttonGroup_logo_position</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButton_logo_lower">
+             <property name="text">
+              <string>Prefer logo in lower part of clock</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">buttonGroup_logo_position</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_20">
@@ -4892,5 +4915,6 @@ Parts of analog clockwidget:
  <buttongroups>
   <buttongroup name="buttonGroup_show_seconds"/>
   <buttongroup name="buttonGroup_clock_mode"/>
+  <buttongroup name="buttonGroup_logo_position"/>
  </buttongroups>
 </ui>
