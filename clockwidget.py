@@ -120,6 +120,7 @@ class ClockWidget(QtWidgets.QWidget):
         self.staticColon = False
         self.counter = 0
         self.one_line_time = False
+        self.logo_upper = False
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update)
@@ -281,9 +282,12 @@ class ClockWidget(QtWidgets.QWidget):
         if image_w > 0 and image_h > 1:
             painter.save()
 
-            # logo position and width without seconds
+            # logo position
             paint_x = 0
-            paint_y = 50
+            if self.logo_upper:
+                paint_y = -50
+            else:
+                paint_y = 50
 
             if image_w > image_h:
                 # calculate height from aspect ratio
@@ -361,6 +365,18 @@ class ClockWidget(QtWidgets.QWidget):
         self.set_logo()
 
     logoFile = QtCore.pyqtProperty(str, get_logo, set_logo, reset_logo)
+
+    @QtCore.pyqtSlot(bool)
+    def set_logo_upper(self, state=True):
+        self.logo_upper = state
+
+    def get_logo_upper(self):
+        return self.logoUpper
+
+    def reset_logo_upper(self):
+        self.set_logo_upper(False)
+
+    logoUpper = QtCore.pyqtProperty(bool, get_logo_upper, set_logo_upper, reset_logo_upper)
 
     def paint_digital(self, painter):
         # digital clock mode
@@ -462,7 +478,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.save()
             painter.rotate(90)
 
-            if self.showSeconds and not self.one_line_time:
+            if (self.showSeconds and not self.one_line_time) or self.logo_upper:
                 # logo position and width when showing seconds
                 paint_x = 0
                 paint_y = -50
@@ -637,11 +653,12 @@ if __name__ == '__main__':
     widget = ClockWidget()
     widget.setStyleSheet("background-color:black;")
     widget.resize(500, 500)
-    widget.set_clock_mode(0)
+    widget.set_clock_mode(1)
     widget.set_am_pm(False)
-    widget.set_show_seconds(True)
+    widget.set_show_seconds(False)
     widget.set_static_colon(False)
-    widget.set_one_line_time(False)
+    widget.set_one_line_time(True)
     widget.set_logo("images/astrastudio_transparent.png")
+    widget.set_logo_upper(True)
     widget.show()
     sys.exit(app.exec_())

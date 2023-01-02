@@ -330,6 +330,12 @@ class Settings(QWidget, Ui_Settings):
         self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
         self.logoPath.setText(
             settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
+        if settings.value('logoUpper', False, type=bool):
+            self.radioButton_logo_upper.setChecked(True)
+            self.radioButton_logo_lower.setChecked(False)
+        else:
+            self.radioButton_logo_upper.setChecked(False)
+            self.radioButton_logo_lower.setChecked(True)
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -507,6 +513,7 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
         settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
         settings.setValue('logopath', self.logoPath.text())
+        settings.setValue('logoUpper', self.radioButton_logo_upper.isChecked())
         settings.endGroup()
 
         settings.beginGroup("Network")
@@ -1015,6 +1022,10 @@ class Settings(QWidget, Ui_Settings):
 
     def setLogoPath(self, path):
         self.logoPath.setText(path)
+
+    def setLogoUpper(self, state):
+        self.radioButton_logo_upper.setChecked(state)
+        self.radioButton_logo_lower.setChecked(not state)
 
     def setOASFontLED1(self):
         current_font = self.ExampleFont_LED1.font()

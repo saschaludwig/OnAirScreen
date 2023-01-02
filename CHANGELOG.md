@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.9.6 beta1]
+### Added
+- option for preferred logo position 
+
 ## [0.9.5]
 ### Changed
 - fixed textclock when hour == 12
