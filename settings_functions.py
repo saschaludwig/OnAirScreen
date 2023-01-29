@@ -209,6 +209,16 @@ class Settings(QWidget, Ui_Settings):
         self.SetFont_AIR2.clicked.connect(self.setOASFontAIR2)
         self.SetFont_AIR3.clicked.connect(self.setOASFontAIR3)
         self.SetFont_AIR4.clicked.connect(self.setOASFontAIR4)
+
+        self.AIR1IconSelectButton.clicked.connect(self.openAIR1IconPathSelector)
+        self.AIR1IconResetButton.clicked.connect(self.resetAIR1Icon)
+        self.AIR2IconSelectButton.clicked.connect(self.openAIR2IconPathSelector)
+        self.AIR2IconResetButton.clicked.connect(self.resetAIR2Icon)
+        self.AIR3IconSelectButton.clicked.connect(self.openAIR3IconPathSelector)
+        self.AIR3IconResetButton.clicked.connect(self.resetAIR3Icon)
+        self.AIR4IconSelectButton.clicked.connect(self.openAIR4IconPathSelector)
+        self.AIR4IconResetButton.clicked.connect(self.resetAIR4Icon)
+
         self.SetFont_StationName.clicked.connect(self.setOASFontStationName)
         self.SetFont_Slogan.clicked.connect(self.setOASFontSlogan)
 
@@ -383,6 +393,12 @@ class Settings(QWidget, Ui_Settings):
         self.setAIR3FGColor(self.getColorFromName(settings.value('AIR3activetextcolor', '#FFFFFF')))
         self.setAIR4BGColor(self.getColorFromName(settings.value('AIR4activebgcolor', '#FF0000')))
         self.setAIR4FGColor(self.getColorFromName(settings.value('AIR4activetextcolor', '#FFFFFF')))
+
+        self.AIR1IconPath.setText(settings.value('air1iconpath', ':/mic_icon.png/images/mic_icon.png'))
+        self.AIR2IconPath.setText(settings.value('air2iconpath', ':/phone_icon/images/phone_icon.png'))
+        self.AIR3IconPath.setText(settings.value('air3iconpath', ':/timer_icon/images/timer_icon.png'))
+        self.AIR4IconPath.setText(settings.value('air4iconpath', ':/stream_icon/images/antenna2.png'))
+
         self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', 200, type=int))
         settings.endGroup()
 
@@ -553,6 +569,12 @@ class Settings(QWidget, Ui_Settings):
         settings.setValue('AIR3activetextcolor', self.getAIR3FGColor().name())
         settings.setValue('AIR4activebgcolor', self.getAIR4BGColor().name())
         settings.setValue('AIR4activetextcolor', self.getAIR4FGColor().name())
+
+        settings.setValue('air1iconpath', self.AIR1IconPath.text())
+        settings.setValue('air2iconpath', self.AIR2IconPath.text())
+        settings.setValue('air3iconpath', self.AIR3IconPath.text())
+        settings.setValue('air4iconpath', self.AIR4IconPath.text())
+
         settings.setValue('TimerAIRMinWidth', self.AIRMinWidth.value())
         settings.endGroup()
 
@@ -1106,3 +1128,48 @@ class Settings(QWidget, Ui_Settings):
             print(new_font.toString())
             self.ExampleFont_Slogan.setFont(new_font)
             self.ExampleFont_Slogan.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+
+    def openAIR1IconPathSelector(self):
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
+        if filename:
+            self.AIR1IconPath.setText(filename)
+
+    def resetAIR1Icon(self):
+        self.AIR1IconPath.setText(":/mic_icon.png/images/mic_icon.png")
+
+    def setAIR1IconPath(self, path):
+        self.AIR1IconPath.setText(path)
+
+    def openAIR2IconPathSelector(self):
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
+        if filename:
+            self.AIR2IconPath.setText(filename)
+
+    def resetAIR2Icon(self):
+        self.AIR2IconPath.setText(":/phone_icon/images/phone_icon.png")
+
+    def setAIR2IconPath(self, path):
+        self.AIR2IconPath.setText(path)
+
+    def openAIR3IconPathSelector(self):
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
+        if filename:
+            self.AIR3IconPath.setText(filename)
+
+    def resetAIR3Icon(self):
+        self.AIR3IconPath.setText(":/timer_icon/images/timer_icon.png")
+
+    def setAIR3IconPath(self, path):
+        self.AIR3IconPath.setText(path)
+
+    def openAIR4IconPathSelector(self):
+        filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
+        if filename:
+            self.AIR4IconPath.setText(filename)
+
+    def resetAIR4Icon(self):
+        self.AIR4IconPath.setText(":/stream_icon/images/antenna2.png")
+
+    def setAIR4IconPath(self, path):
+        self.AIR4IconPath.setText(path)
+
