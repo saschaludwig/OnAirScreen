@@ -1905,6 +1905,23 @@ p, li { white-space: pre-wrap; }
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QLineEdit" name="AIR1IconPath"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR1IconSelectButton">
+             <property name="text">
+              <string>Select Icon</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR1IconResetButton">
+             <property name="text">
+              <string>Reset Icon</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -1969,6 +1986,23 @@ p, li { white-space: pre-wrap; }
             <widget class="QPushButton" name="AIR2FGColor">
              <property name="text">
               <string>Active Text Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="AIR2IconPath"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR2IconSelectButton">
+             <property name="text">
+              <string>Select Icon</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR2IconResetButton">
+             <property name="text">
+              <string>Reset Icon</string>
              </property>
             </widget>
            </item>
@@ -2039,6 +2073,23 @@ p, li { white-space: pre-wrap; }
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QLineEdit" name="AIR3IconPath"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR3IconSelectButton">
+             <property name="text">
+              <string>Select Icon</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR3IconResetButton">
+             <property name="text">
+              <string>Reset Icon</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -2103,6 +2154,23 @@ p, li { white-space: pre-wrap; }
             <widget class="QPushButton" name="AIR4FGColor">
              <property name="text">
               <string>Active Text Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="AIR4IconPath"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR4IconSelectButton">
+             <property name="text">
+              <string>Select Icon</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="AIR4IconResetButton">
+             <property name="text">
+              <string>Reset Icon</string>
              </property>
             </widget>
            </item>
@@ -4913,8 +4981,8 @@ Parts of analog clockwidget:
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="buttonGroup_show_seconds"/>
   <buttongroup name="buttonGroup_clock_mode"/>
   <buttongroup name="buttonGroup_logo_position"/>
+  <buttongroup name="buttonGroup_show_seconds"/>
  </buttongroups>
 </ui>

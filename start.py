@@ -823,6 +823,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.AirLED_2.setMinimumWidth(min_width)
         self.AirLED_3.setMinimumWidth(min_width)
         self.AirLED_4.setMinimumWidth(min_width)
+
+        self.AirIcon_1.setPixmap(QPixmap(settings.value('air1iconpath', ':/mic_icon.png/images/mic_icon.png')))
+        self.AirIcon_2.setPixmap(QPixmap(settings.value('air2iconpath', ':/phone_icon/images/phone_icon.png')))
+        self.AirIcon_3.setPixmap(QPixmap(settings.value('air3iconpath', ':/timer_icon/images/timer_icon.png')))
+        self.AirIcon_4.setPixmap(QPixmap(settings.value('air4iconpath', ':/stream_icon/images/antenna2.png')))
+
         settings.endGroup()
 
         settings.beginGroup("Fonts")
