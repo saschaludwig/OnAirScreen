@@ -503,6 +503,14 @@ class MainScreen(QWidget, Ui_MainScreen):
                     self.settings.setAIR4BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
                 elif param == "AIR4activetextcolor":
                     self.settings.setAIR4FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
+                elif param == "AIR1iconpath":
+                    self.settings.setAIR1IconPath(content)
+                elif param == "AIR2iconpath":
+                    self.settings.setAIR2IconPath(content)
+                elif param == "AIR3iconpath":
+                    self.settings.setAIR3IconPath(content)
+                elif param == "AIR4iconpath":
+                    self.settings.setAIR4IconPath(content)
                 elif param == "TimerAIRMinWidth":
                     self.settings.AIRMinWidth.setValue(int(content))
 
