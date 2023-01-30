@@ -1,10 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [TBA]
+## [0.9.6 beta2]
 ### Added
-- options to change icons on all 4 timers 
-
+- options to change icons on all 4 timers
 
 ## [0.9.6 beta1]
 ### Added

@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2022 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2023 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # utils.py
