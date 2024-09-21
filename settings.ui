@@ -2521,7 +2521,7 @@ p, li { white-space: pre-wrap; }
        <property name="bottomMargin">
         <number>0</number>
        </property>
-       <item row="4" column="0">
+       <item row="5" column="0">
         <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -2534,7 +2534,7 @@ p, li { white-space: pre-wrap; }
          </property>
         </spacer>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <spacer name="verticalSpacer_2">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -2567,14 +2567,17 @@ p, li { white-space: pre-wrap; }
        <item row="1" column="0">
         <widget class="QLabel" name="versionLabel">
          <property name="text">
-          <string>Version ???</string>
+          <string>Version: ???</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
          </property>
+         <property name="textInteractionFlags">
+          <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+         </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="label_8">
          <property name="text">
           <string/>
@@ -2587,7 +2590,7 @@ p, li { white-space: pre-wrap; }
          </property>
         </widget>
        </item>
-       <item row="10" column="0">
+       <item row="12" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2764,7 +2767,7 @@ p, li { white-space: pre-wrap; }
            <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>© 2012-2022 Sascha Ludwig</string>
+              <string>© 2012-2024 Sascha Ludwig</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2775,7 +2778,7 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item row="6" column="0">
+       <item row="8" column="0">
         <widget class="QPushButton" name="ResetSettingsButton">
          <property name="enabled">
           <bool>false</bool>
@@ -2785,10 +2788,33 @@ p, li { white-space: pre-wrap; }
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
+       <item row="7" column="0">
         <widget class="QCheckBox" name="enableResetButton">
          <property name="text">
           <string>Enable Reset all settings button</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="distributionLabel">
+         <property name="text">
+          <string>Distribution: ???</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="settingspathLabel">
+         <property name="text">
+          <string>Settings Path: ???</string>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -2817,7 +2843,7 @@ p, li { white-space: pre-wrap; }
           <string>##################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2022 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # You may use this file under the terms of the BSD license as follows:
@@ -4981,8 +5007,8 @@ Parts of analog clockwidget:
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="buttonGroup_clock_mode"/>
   <buttongroup name="buttonGroup_logo_position"/>
   <buttongroup name="buttonGroup_show_seconds"/>
+  <buttongroup name="buttonGroup_clock_mode"/>
  </buttongroups>
 </ui>

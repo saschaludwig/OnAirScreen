@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen Analog Clock QtDesigner Plugin
-# Copyright (c) 2012-2022 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 

@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2023 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # settings_functions.py
@@ -80,6 +80,9 @@ class OASSettings:
         except KeyError:
             return QVariant(default)
 
+    def fileName(self):
+        return "OAC Mode"
+
 
 class Settings(QWidget, Ui_Settings):
     sigConfigChanged = pyqtSignal(int, str)
@@ -94,6 +97,7 @@ class Settings(QWidget, Ui_Settings):
     sigCheckForUpdate = pyqtSignal()
 
     def __init__(self, oacmode=False):
+        self.settingsPath = None
         self.row = -1
         QWidget.__init__(self)
         Ui_Settings.__init__(self)
@@ -123,12 +127,18 @@ class Settings(QWidget, Ui_Settings):
         self.sigConfigFinished.emit()
 
         # set version string
-        self.versionLabel.setText("Version %s" % versionString)
+        self.versionLabel.setText("Version: %s" % versionString)
+        # set distribution string
+        self.distributionLabel.setText("Distribution: %s" % distributionString)
+        # set settings path
+        self.settingspathLabel.setText("Settings Path: %s" % self.settingsPath )
         # set update check mode
         self.manual_update_check = False
         self.sigCheckForUpdate.connect(self.check_for_updates)
 
-    def showsettings(self):
+    def show_settings(self):
+        self.restoreSettingsFromConfig()
+        self.sigConfigFinished.emit()
         self.show()
 
     def closeEvent(self, event):
@@ -136,7 +146,7 @@ class Settings(QWidget, Ui_Settings):
         self.sigConfigFinished.emit()
         self.sigConfigClosed.emit()
 
-    def exitOnAirScreen(self):
+    def exit_on_air_screen(self):
         if not self.oacmode:
             # emit app close signal
             self.sigExitOAS.emit()
@@ -166,7 +176,7 @@ class Settings(QWidget, Ui_Settings):
     def _connectSlots(self):
         self.ApplyButton.clicked.connect(self.applySettings)
         self.CloseButton.clicked.connect(self.closeSettings)
-        self.ExitButton.clicked.connect(self.exitOnAirScreen)
+        self.ExitButton.clicked.connect(self.exit_on_air_screen)
         self.RebootButton.clicked.connect(self.rebootHost)
         self.ShutdownButton.clicked.connect(self.shutdownHost)
         self.LEDInactiveBGColor.clicked.connect(self.setLEDInactiveBGColor)
@@ -246,6 +256,8 @@ class Settings(QWidget, Ui_Settings):
             settings = self.settings
         else:
             settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+            
+        self.settingsPath = settings.fileName()
 
         # populate text clock languages
         self.textClockLanguage.clear()
@@ -349,8 +361,8 @@ class Settings(QWidget, Ui_Settings):
         settings.endGroup()
 
         settings.beginGroup("Network")
-        self.udpport.setText(settings.value('udpport', '3310'))
-        self.httpport.setText(settings.value('httpport', '8010'))
+        self.udpport.setText(str(settings.value('udpport', '3310')))
+        self.httpport.setText(str(settings.value('httpport', '8010')))
         self.multicast_group.setText(settings.value('multicast_address', "239.194.0.1"))
         settings.endGroup()
 
