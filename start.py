@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2023 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -48,7 +48,7 @@ import ntplib
 from PyQt5.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread
 from PyQt5.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont
 from PyQt5.QtNetwork import QUdpSocket, QNetworkInterface, QHostAddress
-from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QShortcut, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox
 
 from mainscreen import Ui_MainScreen
 from settings_functions import Settings, versionString
@@ -189,10 +189,18 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.udpsock = QUdpSocket()
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
-        port = int(settings.value('udpport', 3310))
+        try:
+            port = int(settings.value('udpport', "3310"))
+        except ValueError:
+            port = "3310"
+            settings.setValue('udpport', "3310")
         multicast_address = settings.value('multicast_address', "239.194.0.1")
+        if not QHostAddress(multicast_address).isMulticast():
+            multicast_address = "239.194.0.1"
+            settings.setValue('multicast_address', "239.194.0.1")
         settings.endGroup()
-        self.udpsock.bind(QHostAddress.AnyIPv4, port, QUdpSocket.ShareAddress)
+
+        self.udpsock.bind(QHostAddress.AnyIPv4, int(port), QUdpSocket.ShareAddress)
         if QHostAddress(multicast_address).isMulticast():
             print(multicast_address, "is Multicast, joining multicast group")
             self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
@@ -285,7 +293,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         # un-hide mouse cursor
         app.setOverrideCursor(QCursor(Qt.ArrowCursor))
-        self.settings.showsettings()
+        self.settings.show_settings()
 
     def display_all_hostaddresses(self):
         v4addrs = list()
@@ -1448,7 +1456,11 @@ class HttpDaemon(QThread):
     def run(self):
         settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Network")
-        port = int(settings.value('httpport', 8010))
+        try:
+            port = int(settings.value('httpport', "8010"))
+        except ValueError:
+            port = 8010
+            settings.setValue("httpport", "8010")
         settings.endGroup()
 
         try:
@@ -1492,7 +1504,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
 
                 settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
                 settings.beginGroup("Network")
-                port = int(settings.value('udpport', 3310))
+                port = int(settings.value('udpport', "3310"))
                 settings.endGroup()
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

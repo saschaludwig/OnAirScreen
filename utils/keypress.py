@@ -4,7 +4,7 @@
 #
 # OnAirScreen Keypress Tool
 # tool to display keyboard keycodes
-# Copyright (c) 2012-2023 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # keypress.py

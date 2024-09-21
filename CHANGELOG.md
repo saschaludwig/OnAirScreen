@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+### Added
+- Show version, distribution and settings path in about dialog
+### Changed
+- fixed crash when UDP/HTTP ports are empty
+- update copyright strings
+
 ## [0.9.6 beta2]
 ### Added
 - options to change icons on all 4 timers
