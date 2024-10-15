@@ -4,6 +4,8 @@ http://saschaludwig.github.io/OnAirScreen/
 
 <a href="https://www.buymeacoffee.com/saschaludwig" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Thanks%20for%20OnAirScreen&emoji=%E2%98%95&slug=saschaludwig&button_colour=FFDD00&font_colour=000000&font_family=Arial&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" height="45px"></a>
 
+<a href='https://ko-fi.com/L3L8BKHYT' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 #### Precompiled Linux/Win/Mac versions
 If you need ready-to-run Linux/Win/Mac executables, please visit https://www.astrastudio.de/software/onairscreen/.
 You can purchase the Windows .exe versions of the latest build including updates.
@@ -117,6 +119,8 @@ curl http://127.0.0.1:8010/?cmd=LED1:ON
 Do you like OnAirScreen?
 Feel free to donate.
 
-<span class="badge-flattr"><a href="https://flattr.com/profile/saschaludwig" title="Donate to this project using Flattr"><img src="https://img.shields.io/badge/flattr-donate-yellow.svg" alt="Flattr donate button" /></a></span>
 <span class="badge-paypal"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YCQKC82DLCHMG" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-yellow.svg" alt="PayPal donate button" /></a></span>
+
 <a href="https://www.buymeacoffee.com/saschaludwig" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Thanks%20for%20OnAirScreen&emoji=%E2%98%95&slug=saschaludwig&button_colour=FFDD00&font_colour=000000&font_family=Arial&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" height="45px"></a>
+
+<a href='https://ko-fi.com/L3L8BKHYT' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
