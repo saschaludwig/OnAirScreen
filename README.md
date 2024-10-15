@@ -7,8 +7,8 @@ http://saschaludwig.github.io/OnAirScreen/
 <a href='https://ko-fi.com/L3L8BKHYT' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 #### Precompiled Linux/Win/Mac versions
-If you need ready-to-run Linux/Win/Mac executables, please visit https://www.astrastudio.de/shop/.
-I also have a RaspberryPi version and a ready-to-run RaspberryPi SD-Card image in my shop.
+If you need ready-to-run Linux/Win/Mac executables, please visit https://www.astrastudio.de/shop/. \
+I also have a RaspberryPi version and a ready-to-run RaspberryPi SD-Card image in my shop. \
 And if you need extended support, please contact me.
 
 #### Screenshots
