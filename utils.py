@@ -36,9 +36,32 @@
 #############################################################################
 
 import webbrowser
+from contextlib import contextmanager
 
 from PyQt6 import QtCore
 from PyQt6 import QtWidgets
+from PyQt6.QtCore import QSettings
+
+
+@contextmanager
+def settings_group(settings: QSettings, group_name: str):
+    """
+    Context manager for QSettings group operations
+    
+    Ensures that endGroup() is always called, even if an exception occurs.
+    
+    Args:
+        settings: QSettings instance
+        group_name: Name of the group to begin
+        
+    Yields:
+        QSettings instance with the group active
+    """
+    settings.beginGroup(group_name)
+    try:
+        yield settings
+    finally:
+        settings.endGroup()
 
 
 class TimerUpdateMessageBox(QtWidgets.QMessageBox):

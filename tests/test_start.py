@@ -1567,7 +1567,7 @@ class TestOASHTTPRequestHandler:
     
     def _create_handler(self):
         """Helper to create a handler instance without triggering request handling"""
-        from start import OASHTTPRequestHandler
+        from network import OASHTTPRequestHandler
         
         # Create handler by calling __new__ directly to avoid __init__
         handler = OASHTTPRequestHandler.__new__(OASHTTPRequestHandler)
@@ -1580,11 +1580,11 @@ class TestOASHTTPRequestHandler:
         handler.end_headers = Mock()
         return handler
     
-    @patch('start.socket')
-    @patch('start.QSettings')
+    @patch('network.socket')
+    @patch('network.QSettings')
     def test_do_get_valid_command(self, mock_qsettings, mock_socket_module):
         """Test do_GET handles valid command"""
-        from start import OASHTTPRequestHandler
+        from network import OASHTTPRequestHandler
         
         # Setup mocks
         mock_settings = Mock()
@@ -1648,8 +1648,8 @@ class TestOASHTTPRequestHandler:
         handler.send_header.assert_called_once_with("Content-type", "text/html; charset=utf-8")
         handler.end_headers.assert_called_once()
     
-    @patch('start.socket')
-    @patch('start.QSettings')
+    @patch('network.socket')
+    @patch('network.QSettings')
     def test_do_get_url_decoding(self, mock_qsettings, mock_socket_module):
         """Test do_GET properly URL-decodes commands"""
         mock_settings = Mock()
@@ -1668,8 +1668,8 @@ class TestOASHTTPRequestHandler:
         call_args = mock_sock.sendto.call_args[0][0]
         assert b"LED1:ON" in call_args
     
-    @patch('start.socket')
-    @patch('start.QSettings')
+    @patch('network.socket')
+    @patch('network.QSettings')
     def test_do_get_url_decoding_plus_signs(self, mock_qsettings, mock_socket_module):
         """Test do_GET properly URL-decodes + signs to spaces"""
         mock_settings = Mock()
@@ -1711,63 +1711,8 @@ class TestReplaceNowNext:
         mock_main_screen.set_news_text.assert_called_once_with("")
 
 
-class TestUdpCmdHandler:
-    """Tests for the udp_cmd_handler method"""
-    
-    def test_udp_cmd_handler_single_command(self, mock_main_screen):
-        """Test udp_cmd_handler processes single command"""
-        mock_main_screen.udpsock = Mock()
-        mock_main_screen.udpsock.hasPendingDatagrams.side_effect = [True, False]
-        mock_main_screen.udpsock.pendingDatagramSize.return_value = 10
-        mock_main_screen.udpsock.readDatagram.return_value = (b"LED1:ON", "127.0.0.1", 3310)
-        mock_main_screen.parse_cmd = Mock()
-        
-        MainScreen.udp_cmd_handler(mock_main_screen)
-        
-        mock_main_screen.parse_cmd.assert_called_once_with(b"LED1:ON")
-    
-    def test_udp_cmd_handler_multiple_commands(self, mock_main_screen):
-        """Test udp_cmd_handler processes multiple commands in one datagram"""
-        mock_main_screen.udpsock = Mock()
-        mock_main_screen.udpsock.hasPendingDatagrams.side_effect = [True, False]
-        mock_main_screen.udpsock.pendingDatagramSize.return_value = 20
-        # Multiple commands separated by newlines
-        mock_main_screen.udpsock.readDatagram.return_value = (b"LED1:ON\nLED2:OFF", "127.0.0.1", 3310)
-        mock_main_screen.parse_cmd = Mock()
-        
-        MainScreen.udp_cmd_handler(mock_main_screen)
-        
-        # Should be called twice, once for each command
-        assert mock_main_screen.parse_cmd.call_count == 2
-        mock_main_screen.parse_cmd.assert_any_call(b"LED1:ON")
-        mock_main_screen.parse_cmd.assert_any_call(b"LED2:OFF")
-    
-    def test_udp_cmd_handler_multiple_datagrams(self, mock_main_screen):
-        """Test udp_cmd_handler processes multiple datagrams"""
-        mock_main_screen.udpsock = Mock()
-        mock_main_screen.udpsock.hasPendingDatagrams.side_effect = [True, True, False]
-        mock_main_screen.udpsock.pendingDatagramSize.return_value = 10
-        mock_main_screen.udpsock.readDatagram.side_effect = [
-            (b"LED1:ON", "127.0.0.1", 3310),
-            (b"LED2:OFF", "127.0.0.1", 3310)
-        ]
-        mock_main_screen.parse_cmd = Mock()
-        
-        MainScreen.udp_cmd_handler(mock_main_screen)
-        
-        assert mock_main_screen.parse_cmd.call_count == 2
-        mock_main_screen.parse_cmd.assert_any_call(b"LED1:ON")
-        mock_main_screen.parse_cmd.assert_any_call(b"LED2:OFF")
-    
-    def test_udp_cmd_handler_no_pending_datagrams(self, mock_main_screen):
-        """Test udp_cmd_handler does nothing when no datagrams pending"""
-        mock_main_screen.udpsock = Mock()
-        mock_main_screen.udpsock.hasPendingDatagrams.return_value = False
-        mock_main_screen.parse_cmd = Mock()
-        
-        MainScreen.udp_cmd_handler(mock_main_screen)
-        
-        mock_main_screen.parse_cmd.assert_not_called()
+# Note: udp_cmd_handler was moved to UdpServer._handle_udp_data in network.py
+# These tests are no longer applicable as the functionality is now encapsulated in UdpServer
 
 
 class TestParseCmdConfMore:

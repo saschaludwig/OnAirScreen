@@ -42,14 +42,11 @@ import signal
 import socket
 import sys
 from datetime import datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import unquote_plus
 
 import ntplib
-from contextlib import contextmanager
 from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread
 from PyQt6.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont, QShortcut, QFontDatabase
-from PyQt6.QtNetwork import QUdpSocket, QNetworkInterface, QHostAddress
+from PyQt6.QtNetwork import QNetworkInterface
 from PyQt6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox
 
 # Import resources FIRST to register them with Qt before UI files are loaded
@@ -57,8 +54,8 @@ import resources_rc  # noqa: F401
 from mainscreen import Ui_MainScreen
 from settings_functions import Settings, versionString
 from command_handler import CommandHandler
-
-HOST = '0.0.0.0'
+from network import UdpServer, HttpDaemon
+from utils import settings_group
 
 # Configure logging
 logging.basicConfig(
@@ -66,27 +63,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-
-@contextmanager
-def settings_group(settings: QSettings, group_name: str):
-    """
-    Context manager for QSettings group operations
-    
-    Ensures that endGroup() is always called, even if an exception occurs.
-    
-    Args:
-        settings: QSettings instance
-        group_name: Name of the group to begin
-        
-    Yields:
-        QSettings instance with the group active
-    """
-    settings.beginGroup(group_name)
-    try:
-        yield settings
-    finally:
-        settings.endGroup()
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -119,7 +95,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigShutdownHost.connect(self.shutdown_host)
         self.settings.sigConfigFinished.connect(self.config_finished)
         self.settings.sigConfigClosed.connect(self.config_closed)
-        
+
         # Initialize command handler
         self.command_handler = CommandHandler(self)
 
@@ -227,28 +203,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.replacenowTimer = QTimer()
         self.replacenowTimer.timeout.connect(self.replace_now_next)
 
-        # Setup UDP Socket and join Multicast Group
-        self.udpsock = QUdpSocket()
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        with settings_group(settings, "Network"):
-            try:
-                port = int(settings.value('udpport', "3310"))
-            except ValueError:
-                port = "3310"
-                settings.setValue('udpport', "3310")
-            multicast_address = settings.value('multicast_address', "239.194.0.1")
-            if not QHostAddress(multicast_address).isMulticast():
-                multicast_address = "239.194.0.1"
-                settings.setValue('multicast_address', "239.194.0.1")
-
-        self.udpsock.bind(QHostAddress.SpecialAddress.AnyIPv4, int(port), QUdpSocket.BindFlag.ShareAddress)
-        if QHostAddress(multicast_address).isMulticast():
-            logger.info(f"{multicast_address} is Multicast, joining multicast group")
-            self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
-        self.udpsock.readyRead.connect(self.udp_cmd_handler)
+        # Setup UDP Server
+        self.udp_server = UdpServer(self.parse_cmd)
 
         # Setup HTTP Server
-        self.httpd = HttpDaemon(self)
+        self.httpd = HttpDaemon()
         self.httpd.start()
 
         # display all host addresses
@@ -585,13 +544,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         """
         return self.command_handler.parse_cmd(data)
 
-    def udp_cmd_handler(self) -> None:
-        """Handle incoming UDP commands"""
-        while self.udpsock.hasPendingDatagrams():
-            data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
-            lines = data.splitlines()
-            for line in lines:
-                self.parse_cmd(line)
 
     def manual_toggle_led1(self) -> None:
         """Toggle LED1 using led_logic (manual toggle)"""
@@ -853,11 +805,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                     
                     led_widget.show()
             
-            # Set minimum left LED width
-            min_width = settings.value('TimerAIRMinWidth', 200, type=int)
-            for air_num in range(1, 5):
-                led_widget = getattr(self, f'AirLED_{air_num}')
-                led_widget.setMinimumWidth(min_width)
+        # Set minimum left LED width
+        min_width = settings.value('TimerAIRMinWidth', 200, type=int)
+        for air_num in range(1, 5):
+            led_widget = getattr(self, f'AirLED_{air_num}')
+            led_widget.setMinimumWidth(min_width)
 
     def _restore_font_settings(self, settings: QSettings) -> None:
         """Restore font settings for all widgets"""
@@ -895,8 +847,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Formatting"):
             set_language = settings.value('textClockLanguage', 'English')
-            lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
-            self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
+        lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
+        self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
 
     def update_backtiming_text(self) -> None:
         """Update the text clock display based on current time and language"""
@@ -1415,95 +1367,6 @@ class CheckNTPOffsetThread(QThread):
 
     def stop(self):
         self.quit()
-
-
-class HttpDaemon(QThread):
-    """
-    HTTP server thread for handling HTTP-based commands
-    
-    Runs a simple HTTP server that accepts GET requests with commands
-    and forwards them to the UDP command handler.
-    """
-    def run(self):
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        with settings_group(settings, "Network"):
-            try:
-                port = int(settings.value('httpport', "8010"))
-            except ValueError:
-                port = 8010
-                settings.setValue("httpport", "8010")
-
-        try:
-            handler = OASHTTPRequestHandler
-            self._server = HTTPServer((HOST, port), handler)
-            self._server.serve_forever()
-        except OSError as error:
-            logger.error(f"ERROR: Starting HTTP Server on port {port}: {error}")
-
-    def stop(self):
-        self._server.shutdown()
-        self._server.socket.close()
-        self.wait()
-
-
-class OASHTTPRequestHandler(BaseHTTPRequestHandler):
-    """
-    HTTP request handler for OnAirScreen commands
-    
-    Handles GET requests with command parameters and forwards them
-    to the UDP command handler.
-    """
-    server_version = f"OnAirScreen/{versionString}"
-
-    # handle HEAD request
-    def do_HEAD(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html; charset=utf-8")
-        self.end_headers()
-
-    # handle GET command
-    def do_GET(self):
-        logger.debug(f"HTTP request path: {self.path}")
-        if self.path.startswith('/?cmd'):
-            try:
-                # Parse the query string: /?cmd=COMMAND:VALUE
-                # First split to get cmd=COMMAND:VALUE
-                query_string = str(self.path)[5:]  # Remove '/?cmd'
-                if '=' in query_string:
-                    cmd, message = query_string.split("=", 1)
-                    # URL-decode the message part (value after =)
-                    # unquote_plus also decodes + signs to spaces
-                    message = unquote_plus(message)
-                else:
-                    self.send_error(400, 'no command was given')
-                    return
-            except ValueError:
-                self.send_error(400, 'no command was given')
-                return
-
-            if len(message) > 0:
-                self.send_response(200)
-
-                # send header first
-                self.send_header('Content-type', 'text-html; charset=utf-8')
-                self.end_headers()
-
-                settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-                with settings_group(settings, "Network"):
-                    port = int(settings.value('udpport', "3310"))
-
-                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                sock.sendto(message.encode(), ("127.0.0.1", port))
-
-                # send file content to client
-                self.wfile.write(message.encode())
-                self.wfile.write("\n".encode())
-                return
-            else:
-                self.send_error(400, 'no command was given')
-                return
-
-        self.send_error(404, 'file not found')
 
 
 ###################################
