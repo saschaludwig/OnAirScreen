@@ -251,11 +251,29 @@ class MainScreen(QWidget, Ui_MainScreen):
     def radio_timer_start_stop(self):
         self.start_stop_air3()
 
-    def radio_timer_reset(self):
-        self.reset_air3()
-        self.radioTimerMode = 0  # count up mode
+    def radio_timer_reset(self) -> None:
+        """Reset radio timer"""
+        self._reset_timer('radio', 3)
 
-    def radio_timer_set(self, seconds):
+    def _reset_timer(self, timer_type: str, air_num: int) -> None:
+        """
+        Generic method to reset timer
+        
+        Args:
+            timer_type: Type of timer ('radio' or 'stream')
+            air_num: AIR number (3 or 4)
+        """
+        if timer_type == 'radio':
+            self.reset_air3()
+            self.radioTimerMode = 0  # count up mode
+        elif timer_type == 'stream':
+            self.reset_air4()
+            self.streamTimerMode = 0  # count up mode
+        else:
+            logger.warning(f"Invalid timer type: {timer_type}")
+
+    def radio_timer_set(self, seconds: int) -> None:
+        """Set radio timer seconds"""
         self.Air3Seconds = seconds
         if seconds > 0:
             self.radioTimerMode = 1  # count down mode
@@ -302,9 +320,9 @@ class MainScreen(QWidget, Ui_MainScreen):
     def stream_timer_start_stop(self):
         self.start_stop_air4()
 
-    def stream_timer_reset(self):
-        self.reset_air4()
-        self.streamTimerMode = 0  # count up mode
+    def stream_timer_reset(self) -> None:
+        """Reset stream timer"""
+        self._reset_timer('stream', 4)
 
     def _ensure_air_icons_are_set(self) -> None:
         """Helper method to ensure all AIR icons are set correctly"""
@@ -1464,35 +1482,59 @@ class MainScreen(QWidget, Ui_MainScreen):
             settings.endGroup()
             setattr(self, status_attr, False)
 
-    def set_station(self, text):
-        self.labelStation.setText(text)
+    def set_station(self, text: str) -> None:
+        """Set station name text"""
+        self._set_text('labelStation', text)
 
-    def set_slogan(self, text):
-        self.labelSlogan.setText(text)
+    def set_slogan(self, text: str) -> None:
+        """Set slogan text"""
+        self._set_text('labelSlogan', text)
 
-    def set_left_text(self, text):
-        self.labelTextLeft.setText(text)
+    def set_left_text(self, text: str) -> None:
+        """Set left text label"""
+        self._set_text('labelTextLeft', text)
 
-    def set_right_text(self, text):
-        self.labelTextRight.setText(text)
+    def set_right_text(self, text: str) -> None:
+        """Set right text label"""
+        self._set_text('labelTextRight', text)
 
-    def set_led1_text(self, text):
-        self.buttonLED1.setText(text)
+    def set_led1_text(self, text: str) -> None:
+        """Set LED1 button text"""
+        self._set_text('buttonLED1', text)
 
-    def set_led2_text(self, text):
-        self.buttonLED2.setText(text)
+    def set_led2_text(self, text: str) -> None:
+        """Set LED2 button text"""
+        self._set_text('buttonLED2', text)
 
-    def set_led3_text(self, text):
-        self.buttonLED3.setText(text)
+    def set_led3_text(self, text: str) -> None:
+        """Set LED3 button text"""
+        self._set_text('buttonLED3', text)
 
-    def set_led4_text(self, text):
-        self.buttonLED4.setText(text)
+    def set_led4_text(self, text: str) -> None:
+        """Set LED4 button text"""
+        self._set_text('buttonLED4', text)
 
-    def set_current_song_text(self, text):
-        self.labelCurrentSong.setText(text)
+    def set_current_song_text(self, text: str) -> None:
+        """Set current song text"""
+        self._set_text('labelCurrentSong', text)
 
-    def set_news_text(self, text):
-        self.labelNews.setText(text)
+    def set_news_text(self, text: str) -> None:
+        """Set news text"""
+        self._set_text('labelNews', text)
+
+    def _set_text(self, widget_name: str, text: str) -> None:
+        """
+        Generic method to set text on a widget
+        
+        Args:
+            widget_name: Name of the widget attribute
+            text: Text to set
+        """
+        widget = getattr(self, widget_name, None)
+        if widget:
+            widget.setText(text)
+        else:
+            logger.warning(f"Widget '{widget_name}' not found for set_text")
 
     def set_backtiming_secs(self, value):
         pass
