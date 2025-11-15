@@ -110,6 +110,210 @@ def mock_main_screen():
             screen.settings.udpport = MagicMock()
             screen.settings.applySettings = Mock()
             
+            # Mock command_handler
+            screen.command_handler = Mock()
+            screen.command_handler.parse_cmd = Mock(side_effect=lambda data: screen._original_parse_cmd(data))
+            
+            # Store original parse_cmd logic for testing
+            def _original_parse_cmd(data: bytes) -> bool:
+                """Original parse_cmd logic for testing"""
+                try:
+                    (command, value) = data.decode('utf_8').split(':', 1)
+                except ValueError:
+                    return False
+                
+                command = str(command)
+                value = str(value)
+                
+                # Handle commands
+                if command == "NOW":
+                    screen.set_current_song_text(value)
+                    return True
+                elif command == "NEXT":
+                    screen.set_news_text(value)
+                    return True
+                elif command == "LED1":
+                    screen.led_logic(1, value != "OFF")
+                    return True
+                elif command == "LED2":
+                    screen.led_logic(2, value != "OFF")
+                    return True
+                elif command == "LED3":
+                    screen.led_logic(3, value != "OFF")
+                    return True
+                elif command == "LED4":
+                    screen.led_logic(4, value != "OFF")
+                    return True
+                elif command == "WARN":
+                    if value:
+                        screen.add_warning(value, 1)
+                    else:
+                        screen.remove_warning(1)
+                    return True
+                elif command == "AIR1":
+                    if value == "OFF":
+                        screen.set_air1(False)
+                    else:
+                        screen.set_air1(True)
+                    return True
+                elif command == "AIR2":
+                    if value == "OFF":
+                        screen.set_air2(False)
+                    else:
+                        screen.set_air2(True)
+                    return True
+                elif command == "AIR3":
+                    if value == "OFF":
+                        screen.stop_air3()
+                    elif value == "ON":
+                        screen.start_air3()
+                    elif value == "RESET":
+                        screen.radio_timer_reset()
+                    elif value == "TOGGLE":
+                        screen.radio_timer_start_stop()
+                    return True
+                elif command == "AIR3TIME":
+                    try:
+                        screen.radio_timer_set(int(value))
+                    except ValueError:
+                        pass
+                    return True
+                elif command == "AIR4":
+                    if value == "OFF":
+                        screen.set_air4(False)
+                    elif value == "ON":
+                        screen.set_air4(True)
+                    elif value == "RESET":
+                        screen.stream_timer_reset()
+                    return True
+                elif command == "CMD":
+                    if value == "REBOOT":
+                        screen.reboot_host()
+                    elif value == "SHUTDOWN":
+                        screen.shutdown_host()
+                    elif value == "QUIT":
+                        screen.quit_oas()
+                    return True
+                elif command == "CONF":
+                    try:
+                        (group, paramvalue) = value.split(':', 1)
+                        (param, content) = paramvalue.split('=', 1)
+                    except ValueError:
+                        return False
+                    
+                    # Handle CONF commands
+                    if group == "General":
+                        if param == "stationname":
+                            screen.settings.StationName.setText(content)
+                        elif param == "slogan":
+                            screen.settings.Slogan.setText(content)
+                        elif param == "stationcolor":
+                            screen.settings.setStationNameColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "slogancolor":
+                            screen.settings.setSloganColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "replacenow":
+                            screen.settings.replaceNOW.setChecked(content == "True")
+                        elif param == "replacenowtext":
+                            screen.settings.replaceNOWText.setText(content)
+                    elif group == "LED1":
+                        if param == "text":
+                            screen.settings.LED1Text.setText(content)
+                        elif param == "used":
+                            screen.settings.LED1.setChecked(content == "True")
+                        elif param == "activebgcolor":
+                            screen.settings.setLED1BGColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "activetextcolor":
+                            screen.settings.setLED1FGColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "autoflash":
+                            screen.settings.LED1Autoflash.setChecked(content == "True")
+                        elif param == "timedflash":
+                            screen.settings.LED1Timedflash.setChecked(content == "True")
+                    elif group == "LED2":
+                        if param == "text":
+                            screen.settings.LED2Text.setText(content)
+                        elif param == "used":
+                            screen.settings.LED2.setChecked(content == "True")
+                        elif param == "autoflash":
+                            screen.settings.LED2Autoflash.setChecked(content == "True")
+                        elif param == "timedflash":
+                            screen.settings.LED2Timedflash.setChecked(content == "True")
+                    elif group == "LED3":
+                        if param == "timedflash":
+                            screen.settings.LED3Timedflash.setChecked(content == "True")
+                    elif group == "LED4":
+                        if param == "activebgcolor":
+                            screen.settings.setLED4BGColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                    elif group == "Timers":
+                        for air_num in range(1, 5):
+                            if param == f"TimerAIR{air_num}Enabled":
+                                getattr(screen.settings, f"enableAIR{air_num}").setChecked(content == "True")
+                                return True
+                            if param == f"TimerAIR{air_num}Text":
+                                getattr(screen.settings, f"AIR{air_num}Text").setText(content)
+                                return True
+                            if param == f"AIR{air_num}iconpath":
+                                getattr(screen.settings, f"setAIR{air_num}IconPath")(content)
+                                return True
+                        if param == "TimerAIRMinWidth":
+                            screen.settings.AIRMinWidth.setValue(int(content))
+                    elif group == "Clock":
+                        if param == "digital":
+                            if content == "True":
+                                screen.settings.clockDigital.setChecked(True)
+                                screen.settings.clockAnalog.setChecked(False)
+                            elif content == "False":
+                                screen.settings.clockAnalog.setChecked(False)
+                                screen.settings.clockDigital.setChecked(True)
+                        elif param == "showseconds":
+                            if content == "True":
+                                screen.settings.showSeconds.setChecked(True)
+                                screen.settings.seconds_in_one_line.setChecked(False)
+                                screen.settings.seconds_separate.setChecked(True)
+                            elif content == "False":
+                                screen.settings.showSeconds.setChecked(False)
+                                screen.settings.seconds_in_one_line.setChecked(False)
+                                screen.settings.seconds_separate.setChecked(True)
+                        elif param == "secondsinoneline":
+                            if content == "True":
+                                screen.settings.showSeconds.setChecked(True)
+                                screen.settings.seconds_in_one_line.setChecked(True)
+                                screen.settings.seconds_separate.setChecked(False)
+                            elif content == "False":
+                                screen.settings.showSeconds.setChecked(False)
+                                screen.settings.seconds_in_one_line.setChecked(False)
+                                screen.settings.seconds_separate.setChecked(True)
+                        elif param == "staticcolon":
+                            screen.settings.staticColon.setChecked(content == "True")
+                        elif param == "digitalhourcolor":
+                            screen.settings.setDigitalHourColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "digitalsecondcolor":
+                            screen.settings.setDigitalSecondColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "digitaldigitcolor":
+                            screen.settings.setDigitalDigitColor(
+                                screen.settings.getColorFromName(content.replace("0x", "#")))
+                        elif param == "logopath":
+                            screen.settings.setLogoPath(content)
+                        elif param == "logoupper":
+                            screen.settings.setLogoUpper(content == "True")
+                    elif group == "Network":
+                        if param == "udpport":
+                            screen.settings.udpport.setText(content)
+                    elif group == "CONF":
+                        if param == "APPLY" and content == "TRUE":
+                            screen.settings.applySettings()
+                    return True
+                
+                return False
+            
+            screen._original_parse_cmd = _original_parse_cmd
+            
             return screen
 
 
