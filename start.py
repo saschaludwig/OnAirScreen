@@ -948,15 +948,25 @@ class MainScreen(QWidget, Ui_MainScreen):
             timer.stop()
             setattr(self, led_on_attr, state)
 
-    def set_station_color(self, newcolor):
-        palette = self.labelStation.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
-        self.labelStation.setPalette(palette)
+    def set_station_color(self, newcolor) -> None:
+        """Set the station label color"""
+        self._set_label_color(self.labelStation, newcolor)
 
-    def set_slogan_color(self, newcolor):
-        palette = self.labelSlogan.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
-        self.labelSlogan.setPalette(palette)
+    def set_slogan_color(self, newcolor) -> None:
+        """Set the slogan label color"""
+        self._set_label_color(self.labelSlogan, newcolor)
+
+    def _set_label_color(self, widget, color) -> None:
+        """
+        Generic method to set label color
+        
+        Args:
+            widget: The label widget to set color for
+            color: The color to set
+        """
+        palette = widget.palette()
+        palette.setColor(QPalette.ColorRole.WindowText, color)
+        widget.setPalette(palette)
 
     def restore_settings_from_config(self) -> None:
         """Restore all settings from configuration"""
