@@ -1357,10 +1357,8 @@ class MainScreen(QWidget, Ui_MainScreen):
     def config_finished(self):
         self.restore_settings_from_config()
         self.weatherWidget.readConfig()
-        self.weatherWidget.makeOWMApiCall()
-        # Ensure icons are still set after config is finished
-        # Icons are already set in restore_settings_from_config() after each setStyleSheet()
-        # No need to set them again here to prevent flickering
+        self.weatherWidget.updateWeather()
+
 
     def reboot_host(self):
         self.add_warning("SYSTEM REBOOT IN PROGRESS", 2)

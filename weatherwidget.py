@@ -172,9 +172,11 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def updateWeather(self) -> None:
         """Update weather data from OpenWeatherMap API"""
-        if self.widgetEnabled:
+        if self.widgetEnabled and self.owmAPIKey:
             logger.debug("update weather called")
             self.makeOWMApiCall()
+        else:
+            logger.debug("Weather update skipped: widget disabled or no API key")
 
     def setData(self, city: str, temperature: str, condition: str, icon: str = "01d", background: str = None, label: str = "WEATHER") -> None:
         """
@@ -219,6 +221,14 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def makeOWMApiCall(self) -> None:
         """Make API call to OpenWeatherMap to fetch current weather"""
+        # Check if widget is enabled and API key is present
+        if not self.widgetEnabled:
+            logger.debug("OWM API call skipped: widget is disabled")
+            return
+        if not self.owmAPIKey or self.owmAPIKey.strip() == "":
+            logger.debug("OWM API call skipped: no API key configured")
+            return
+        
         logger.debug("OWM API Call")
         url = "https://api.openweathermap.org/data/2.5/weather?id=" + self.owmCityID + "&units=" + self.owmUnit + "&lang=" + self.owmLanguage + "&appid=" + self.owmAPIKey
         req = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
