@@ -951,8 +951,19 @@ class MainScreen(QWidget, Ui_MainScreen):
         palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.labelSlogan.setPalette(palette)
 
-    def restore_settings_from_config(self):
+    def restore_settings_from_config(self) -> None:
+        """Restore all settings from configuration"""
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        self._restore_general_settings(settings)
+        self._restore_led_settings(settings)
+        self._restore_clock_settings(settings)
+        self._restore_formatting_settings(settings)
+        self._restore_weather_settings(settings)
+        self._restore_timer_settings(settings)
+        self._restore_font_settings(settings)
+
+    def _restore_general_settings(self, settings: QSettings) -> None:
+        """Restore general settings (station name, slogan, colors)"""
         settings.beginGroup("General")
         self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
         self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
@@ -960,26 +971,23 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
         settings.endGroup()
 
-        settings.beginGroup("LED1")
-        self.set_led1_text(settings.value('text', 'ON AIR'))
-        self.buttonLED1.setVisible(settings.value('used', True, type=bool))
-        settings.endGroup()
+    def _restore_led_settings(self, settings: QSettings) -> None:
+        """Restore LED settings (text, visibility)"""
+        led_configs = [
+            (1, 'ON AIR'),
+            (2, 'PHONE'),
+            (3, 'DOORBELL'),
+            (4, 'EAS ACTIVE'),
+        ]
+        
+        for led_num, default_text in led_configs:
+            settings.beginGroup(f"LED{led_num}")
+            getattr(self, f'set_led{led_num}_text')(settings.value('text', default_text))
+            getattr(self, f'buttonLED{led_num}').setVisible(settings.value('used', True, type=bool))
+            settings.endGroup()
 
-        settings.beginGroup("LED2")
-        self.set_led2_text(settings.value('text', 'PHONE'))
-        self.buttonLED2.setVisible(settings.value('used', True, type=bool))
-        settings.endGroup()
-
-        settings.beginGroup("LED3")
-        self.set_led3_text(settings.value('text', 'DOORBELL'))
-        self.buttonLED3.setVisible(settings.value('used', True, type=bool))
-        settings.endGroup()
-
-        settings.beginGroup("LED4")
-        self.set_led4_text(settings.value('text', 'EAS ACTIVE'))
-        self.buttonLED4.setVisible(settings.value('used', True, type=bool))
-        settings.endGroup()
-
+    def _restore_clock_settings(self, settings: QSettings) -> None:
+        """Restore clock widget settings"""
         settings.beginGroup("Clock")
         self.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
         self.clockWidget.set_digi_hour_color(
@@ -998,19 +1006,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
         settings.endGroup()
 
+    def _restore_formatting_settings(self, settings: QSettings) -> None:
+        """Restore formatting settings (AM/PM, text clock language)"""
         settings.beginGroup("Formatting")
         self.clockWidget.set_am_pm(settings.value('isAmPm', False, type=bool))
         self.textLocale = settings.value('textClockLanguage', 'English')
         settings.endGroup()
 
+    def _restore_weather_settings(self, settings: QSettings) -> None:
+        """Restore weather widget settings"""
         settings.beginGroup("WeatherWidget")
         if settings.value('owmWidgetEnabled', False, type=bool):
             self.weatherWidget.show()
         else:
             self.weatherWidget.hide()
-
         settings.endGroup()
 
+    def _restore_timer_settings(self, settings: QSettings) -> None:
+        """Restore timer/AIR settings"""
         settings.beginGroup("Timers")
         # Configuration for each AIR timer
         air_timer_configs = [
@@ -1050,17 +1063,17 @@ class MainScreen(QWidget, Ui_MainScreen):
                     icon_widget.update()
                 
                 led_widget.show()
-        # set minimum left LED width
+        
+        # Set minimum left LED width
         min_width = settings.value('TimerAIRMinWidth', 200, type=int)
         for air_num in range(1, 5):
             led_widget = getattr(self, f'AirLED_{air_num}')
             led_widget.setMinimumWidth(min_width)
-
-        # Icons are already set directly after each setStyleSheet() call above
-        # No need to set them again here to prevent flickering
-
+        
         settings.endGroup()
 
+    def _restore_font_settings(self, settings: QSettings) -> None:
+        """Restore font settings for all widgets"""
         settings.beginGroup("Fonts")
         # Font configuration for widgets
         font_configs = [
