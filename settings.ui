@@ -897,13 +897,6 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="LEDFont">
-             <property name="text">
-              <string>Set LED Font</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <spacer name="verticalSpacer_5">
              <property name="orientation">
               <enum>Qt::Orientation::Vertical</enum>
@@ -4367,7 +4360,6 @@ Public License instead of this License.  But first, please read
   <tabstop>SloganColor</tabstop>
   <tabstop>LEDInactiveBGColor</tabstop>
   <tabstop>LEDInactiveFGColor</tabstop>
-  <tabstop>LEDFont</tabstop>
   <tabstop>checkBox_NTPCheck</tabstop>
   <tabstop>NTPCheckServer</tabstop>
   <tabstop>clockDigital</tabstop>
