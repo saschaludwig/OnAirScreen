@@ -55,6 +55,7 @@ from mainscreen import Ui_MainScreen
 from settings_functions import Settings, versionString
 from command_handler import CommandHandler
 from network import UdpServer, HttpDaemon
+from timer_manager import TimerManager
 from utils import settings_group
 
 # Configure logging
@@ -152,42 +153,35 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.LED3on = False
         self.LED4on = False
 
-        # Setup and start timers
+        # Setup and start constant update timer
         self.ctimer = QTimer()
         self.ctimer.timeout.connect(self.constant_update)
         self.ctimer.start(100)
-        # LED timers
-        self.timerLED1 = QTimer()
-        self.timerLED1.timeout.connect(self.toggle_led1)
-        self.timerLED2 = QTimer()
-        self.timerLED2.timeout.connect(self.toggle_led2)
-        self.timerLED3 = QTimer()
-        self.timerLED3.timeout.connect(self.toggle_led3)
-        self.timerLED4 = QTimer()
-        self.timerLED4.timeout.connect(self.toggle_led4)
-
-        # Setup OnAir Timers
-        self.timerAIR1 = QTimer()
-        self.timerAIR1.timeout.connect(self.update_air1_seconds)
+        
+        # Initialize timer manager
+        self.timer_manager = TimerManager(self)
+        
+        # AIR timer state
         self.Air1Seconds = 0
         self.statusAIR1 = False
-
-        self.timerAIR2 = QTimer()
-        self.timerAIR2.timeout.connect(self.update_air2_seconds)
         self.Air2Seconds = 0
         self.statusAIR2 = False
-
-        self.timerAIR3 = QTimer()
-        self.timerAIR3.timeout.connect(self.update_air3_seconds)
         self.Air3Seconds = 0
         self.statusAIR3 = False
         self.radioTimerMode = 0  # count up mode
-
-        self.timerAIR4 = QTimer()
-        self.timerAIR4.timeout.connect(self.update_air4_seconds)
         self.Air4Seconds = 0
         self.statusAIR4 = False
         self.streamTimerMode = 0  # count up mode
+        
+        # Expose timer objects for backward compatibility
+        self.timerLED1 = self.timer_manager.timerLED1
+        self.timerLED2 = self.timer_manager.timerLED2
+        self.timerLED3 = self.timer_manager.timerLED3
+        self.timerLED4 = self.timer_manager.timerLED4
+        self.timerAIR1 = self.timer_manager.timerAIR1
+        self.timerAIR2 = self.timer_manager.timerAIR2
+        self.timerAIR3 = self.timer_manager.timerAIR3
+        self.timerAIR4 = self.timer_manager.timerAIR4
 
         # Setup NTP Check Thread
         self.checkNTPOffset = CheckNTPOffsetThread(self)
