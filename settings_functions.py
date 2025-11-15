@@ -162,6 +162,9 @@ class Settings(QWidget, Ui_Settings):
         # set update check mode
         self.manual_update_check = False
         self.sigCheckForUpdate.connect(self.check_for_updates)
+        
+        # Set tooltips for all settings widgets
+        self._setup_tooltips()
 
     def show_settings(self):
         self.restoreSettingsFromConfig()
@@ -1185,4 +1188,108 @@ class Settings(QWidget, Ui_Settings):
 
     def setAIR4IconPath(self, path):
         self.AIR4IconPath.setText(path)
+    
+    def _setup_tooltips(self) -> None:
+        """
+        Setup tooltips for all settings widgets
+        
+        This method sets helpful tooltips for all configuration options
+        in the settings dialog to improve user experience.
+        """
+        # General settings
+        self.StationName.setToolTip("Enter the name of your radio station")
+        self.Slogan.setToolTip("Enter your station's slogan or tagline")
+        self.StationNameColor.setToolTip("Click to select the color for the station name")
+        self.SloganColor.setToolTip("Click to select the color for the slogan")
+        self.checkBox_UpdateCheck.setToolTip("Enable automatic update checking on startup")
+        self.updateKey.setToolTip("Enter your update key for automatic updates (if applicable)")
+        self.checkBox_IncludeBetaVersions.setToolTip("Include beta versions when checking for updates")
+        self.updateCheckNowButton.setToolTip("Manually check for updates now")
+        self.replaceNOW.setToolTip("Replace the 'NOW' text with custom text after 10 seconds")
+        self.replaceNOWText.setToolTip("Custom text to display after IP addresses are shown")
+        
+        # NTP settings
+        self.checkBox_NTPCheck.setToolTip("Enable NTP (Network Time Protocol) synchronization check")
+        self.NTPCheckServer.setToolTip("NTP server address to check time synchronization against")
+        
+        # LED settings (inactive)
+        self.LEDInactiveBGColor.setToolTip("Background color for inactive LEDs")
+        self.LEDInactiveFGColor.setToolTip("Text color for inactive LEDs")
+        
+        # LED1-4 settings
+        for led_num in range(1, 5):
+            getattr(self, f'LED{led_num}').setToolTip(f"Enable or disable LED{led_num} display")
+            getattr(self, f'LED{led_num}Text').setToolTip(f"Text to display on LED{led_num}")
+            getattr(self, f'LED{led_num}BGColor').setToolTip(f"Background color for LED{led_num} when active")
+            getattr(self, f'LED{led_num}FGColor').setToolTip(f"Text color for LED{led_num} when active")
+            getattr(self, f'LED{led_num}Autoflash').setToolTip(f"Enable automatic flashing for LED{led_num} (blinks every 500ms)")
+            getattr(self, f'LED{led_num}Timedflash').setToolTip(f"Enable timed flash for LED{led_num} (flashes for 20 seconds then turns off)")
+        
+        # Clock settings
+        self.clockDigital.setToolTip("Display digital clock (HH:MM format)")
+        self.clockAnalog.setToolTip("Display analog clock (traditional clock face)")
+        self.showSeconds.setToolTip("Show seconds in the clock display")
+        self.seconds_in_one_line.setToolTip("Display seconds on the same line as hours and minutes")
+        self.seconds_separate.setToolTip("Display seconds separately below the main time")
+        self.staticColon.setToolTip("Use static colon (:) instead of blinking colon in digital clock")
+        self.useTextclock.setToolTip("Enable text-based clock display (e.g., 'it's 3 o'clock')")
+        self.DigitalHourColorButton.setToolTip("Color for the hour digits in digital clock")
+        self.DigitalSecondColorButton.setToolTip("Color for the seconds display in digital clock")
+        self.DigitalDigitColorButton.setToolTip("Color for all digits in digital clock")
+        self.logoPath.setToolTip("Path to the logo image file")
+        self.logoButton.setToolTip("Browse for a logo image file")
+        self.resetLogoButton.setToolTip("Reset logo to default")
+        self.radioButton_logo_upper.setToolTip("Display logo in the upper part of the clock")
+        self.radioButton_logo_lower.setToolTip("Display logo in the lower part of the clock")
+        
+        # Network settings
+        self.udpport.setToolTip("UDP port for receiving commands (default: 3310)")
+        self.httpport.setToolTip("HTTP port for receiving commands (default: 8010)")
+        self.multicast_group.setToolTip("Multicast address for UDP commands (default: 239.194.0.1)")
+        
+        # Formatting settings
+        self.dateFormat.setToolTip("Date format string (e.g., 'dddd, dd. MMMM yyyy' for 'Monday, 01. January 2024')")
+        self.textClockLanguage.setToolTip("Language for text-based clock display")
+        self.time_am_pm.setToolTip("Use 12-hour format with AM/PM")
+        self.time_24h.setToolTip("Use 24-hour format")
+        
+        # Weather Widget settings
+        self.owmWidgetEnabled.setToolTip("Enable the weather widget display")
+        self.owmAPIKey.setToolTip("OpenWeatherMap API key (get one at openweathermap.org)")
+        self.owmCityID.setToolTip("OpenWeatherMap City ID (find your city ID on openweathermap.org)")
+        self.owmLanguage.setToolTip("Language for weather descriptions")
+        self.owmUnit.setToolTip("Temperature unit (Celsius, Fahrenheit, or Kelvin)")
+        self.owmTestAPI.setToolTip("Test the OpenWeatherMap API connection with current settings")
+        
+        # Timer/AIR settings
+        for air_num in range(1, 5):
+            getattr(self, f'enableAIR{air_num}').setToolTip(f"Enable or disable AIR{air_num} timer display")
+            getattr(self, f'AIR{air_num}Text').setToolTip(f"Text label for AIR{air_num} timer")
+            getattr(self, f'AIR{air_num}BGColor').setToolTip(f"Background color for AIR{air_num} when active")
+            getattr(self, f'AIR{air_num}FGColor').setToolTip(f"Text color for AIR{air_num} when active")
+            getattr(self, f'AIR{air_num}IconPath').setToolTip(f"Path to icon image for AIR{air_num}")
+            getattr(self, f'AIR{air_num}IconSelectButton').setToolTip(f"Browse for an icon image for AIR{air_num}")
+            getattr(self, f'AIR{air_num}IconResetButton').setToolTip(f"Reset AIR{air_num} icon to default")
+        
+        self.AIRMinWidth.setToolTip("Minimum width for AIR timer displays (in pixels)")
+        
+        # Font settings
+        self.SetFont_LED1.setToolTip("Set font for LED1 text")
+        self.SetFont_LED2.setToolTip("Set font for LED2 text")
+        self.SetFont_LED3.setToolTip("Set font for LED3 text")
+        self.SetFont_LED4.setToolTip("Set font for LED4 text")
+        self.SetFont_AIR1.setToolTip("Set font for AIR1 timer text")
+        self.SetFont_AIR2.setToolTip("Set font for AIR2 timer text")
+        self.SetFont_AIR3.setToolTip("Set font for AIR3 timer text")
+        self.SetFont_AIR4.setToolTip("Set font for AIR4 timer text")
+        self.SetFont_StationName.setToolTip("Set font for station name")
+        self.SetFont_Slogan.setToolTip("Set font for slogan")
+        
+        # Action buttons
+        self.ApplyButton.setToolTip("Apply all settings and close the dialog")
+        self.CloseButton.setToolTip("Close the settings dialog without applying changes")
+        self.ExitButton.setToolTip("Exit OnAirScreen application")
+        self.RebootButton.setToolTip("Reboot the host system")
+        self.ShutdownButton.setToolTip("Shutdown the host system")
+        self.ResetSettingsButton.setToolTip("Reset all settings to default values (this cannot be undone)")
 
