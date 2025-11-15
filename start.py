@@ -1072,36 +1072,27 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings.endGroup()
 
         settings.beginGroup("Fonts")
-        self.buttonLED1.setFont(QFont(settings.value('LED1FontName', "FreeSans"),
-                                      settings.value('LED1FontSize', 24, type=int),
-                                      settings.value('LED1FontWeight', QFont.Weight.Bold, type=int)))
-        self.buttonLED2.setFont(QFont(settings.value('LED2FontName', "FreeSans"),
-                                      settings.value('LED2FontSize', 24, type=int),
-                                      settings.value('LED2FontWeight', QFont.Weight.Bold, type=int)))
-        self.buttonLED3.setFont(QFont(settings.value('LED3FontName', "FreeSans"),
-                                      settings.value('LED3FontSize', 24, type=int),
-                                      settings.value('LED3FontWeight', QFont.Weight.Bold, type=int)))
-        self.buttonLED4.setFont(QFont(settings.value('LED4FontName', "FreeSans"),
-                                      settings.value('LED4FontSize', 24, type=int),
-                                      settings.value('LED4FontWeight', QFont.Weight.Bold, type=int)))
-        self.AirLabel_1.setFont(QFont(settings.value('AIR1FontName', "FreeSans"),
-                                      settings.value('AIR1FontSize', 24, type=int),
-                                      settings.value('AIR1FontWeight', QFont.Weight.Bold, type=int)))
-        self.AirLabel_2.setFont(QFont(settings.value('AIR2FontName', "FreeSans"),
-                                      settings.value('AIR2FontSize', 24, type=int),
-                                      settings.value('AIR2FontWeight', QFont.Weight.Bold, type=int)))
-        self.AirLabel_3.setFont(QFont(settings.value('AIR3FontName', "FreeSans"),
-                                      settings.value('AIR3FontSize', 24, type=int),
-                                      settings.value('AIR3FontWeight', QFont.Weight.Bold, type=int)))
-        self.AirLabel_4.setFont(QFont(settings.value('AIR4FontName', "FreeSans"),
-                                      settings.value('AIR4FontSize', 24, type=int),
-                                      settings.value('AIR4FontWeight', QFont.Weight.Bold, type=int)))
-        self.labelStation.setFont(QFont(settings.value('StationNameFontName', "FreeSans"),
-                                        settings.value('StationNameFontSize', 24, type=int),
-                                        settings.value('StationNameFontWeight', QFont.Weight.Bold, type=int)))
-        self.labelSlogan.setFont(QFont(settings.value('SloganFontName', "FreeSans"),
-                                       settings.value('SloganFontSize', 24, type=int),
-                                       settings.value('SloganFontWeight', QFont.Weight.Bold, type=int)))
+        # Font configuration for widgets
+        font_configs = [
+            ('LED1', 'buttonLED1'),
+            ('LED2', 'buttonLED2'),
+            ('LED3', 'buttonLED3'),
+            ('LED4', 'buttonLED4'),
+            ('AIR1', 'AirLabel_1'),
+            ('AIR2', 'AirLabel_2'),
+            ('AIR3', 'AirLabel_3'),
+            ('AIR4', 'AirLabel_4'),
+            ('StationName', 'labelStation'),
+            ('Slogan', 'labelSlogan'),
+        ]
+        
+        for font_prefix, widget_name in font_configs:
+            widget = getattr(self, widget_name)
+            font_name = settings.value(f'{font_prefix}FontName', "FreeSans")
+            font_size = settings.value(f'{font_prefix}FontSize', 24, type=int)
+            font_weight = settings.value(f'{font_prefix}FontWeight', QFont.Weight.Bold, type=int)
+            widget.setFont(QFont(font_name, font_size, font_weight))
+        
         settings.endGroup()
 
     def constant_update(self):
