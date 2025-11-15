@@ -56,6 +56,7 @@ from settings_functions import Settings, versionString
 from command_handler import CommandHandler
 from network import UdpServer, HttpDaemon
 from timer_manager import TimerManager
+from event_logger import EventLogger
 from utils import settings_group
 
 # Configure logging
@@ -99,6 +100,9 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # Initialize command handler
         self.command_handler = CommandHandler(self)
+        
+        # Initialize event logger
+        self.event_logger = EventLogger()
 
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "General"):
@@ -197,12 +201,20 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.replacenowTimer = QTimer()
         self.replacenowTimer.timeout.connect(self.replace_now_next)
 
-        # Setup UDP Server
-        self.udp_server = UdpServer(self.parse_cmd)
+        # Setup UDP Server with source tracking
+        def udp_command_callback(data: bytes) -> None:
+            self._parse_cmd_with_source(data, "udp")
+        
+        self.udp_server = UdpServer(udp_command_callback)
 
         # Setup HTTP Server
+        # HTTP commands are forwarded to local UDP, so we need to track HTTP source
+        # We'll modify the HTTP handler to use a special callback
         self.httpd = HttpDaemon()
         self.httpd.start()
+        
+        # Log application start
+        self.event_logger.log_system_event("Application started")
 
         # display all host addresses
         self.display_all_hostaddresses()
@@ -220,6 +232,7 @@ class MainScreen(QWidget, Ui_MainScreen):
     def quit_oas(self):
         # do cleanup here
         logger.info("Quitting, cleaning up...")
+        self.event_logger.log_system_event("Application quit")
         self.checkNTPOffset.stop()
         self.httpd.stop()
         QCoreApplication.instance().quit()
@@ -253,9 +266,14 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.Air3Seconds = seconds
         if seconds > 0:
             self.radioTimerMode = 1  # count down mode
+            mode = "count_down"
         else:
             self.radioTimerMode = 0  # count up mode
+            mode = "count_up"
         self.AirLabel_3.setText(f"Timer\n{int(self.Air3Seconds / 60)}:{int(self.Air3Seconds % 60):02d}")
+        
+        # Log timer set event
+        self.event_logger.log_timer_set(3, seconds, mode)
 
     def get_timer_dialog(self):
         # generate and display timer input window
@@ -424,6 +442,9 @@ class MainScreen(QWidget, Ui_MainScreen):
                 timer = getattr(self, timer_attr)
                 timer.start(1000)
                 
+                # Log AIR started event
+                self.event_logger.log_air_started(air_num, "manual")
+                
                 # Special handling for AIR3 and AIR4 countdown mode
                 if 'special_mode' in config:
                     mode_attr = config['special_mode']
@@ -454,6 +475,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             setattr(self, status_attr, False)
             timer = getattr(self, timer_attr)
             timer.stop()
+            
+            # Log AIR stopped event
+            self.event_logger.log_air_stopped(air_num, "manual")
 
     def _update_air_seconds(self, air_num: int) -> None:
         """
@@ -526,6 +550,26 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.replacenowTimer.setSingleShot(True)
                 self.replacenowTimer.start(10000)
 
+    def _parse_cmd_with_source(self, data: bytes, source: str = "udp") -> None:
+        """
+        Parse and execute a command with source tracking
+        
+        Args:
+            data: Command string in format "COMMAND:VALUE"
+            source: Source of command ('udp' or 'http')
+        """
+        try:
+            command_str = data.decode('utf-8') if isinstance(data, bytes) else str(data)
+            if ':' in command_str:
+                command, value = command_str.split(':', 1)
+                # Log command received event with source
+                self.event_logger.log_command_received(command, value, source)
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            pass
+        
+        # Forward to actual command handler
+        self.command_handler.parse_cmd(data if isinstance(data, bytes) else data.encode())
+    
     def parse_cmd(self, data: bytes) -> bool:
         """
         Parse and execute a command from UDP/HTTP input
@@ -536,7 +580,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         Returns:
             True if command was parsed successfully, False otherwise
         """
-        return self.command_handler.parse_cmd(data)
+        # Default to unknown source for backward compatibility
+        self._parse_cmd_with_source(data, "unknown")
+        return True
 
 
     def manual_toggle_led1(self) -> None:
@@ -649,6 +695,18 @@ class MainScreen(QWidget, Ui_MainScreen):
         autoflash_attr = f'LED{led}Autoflash'
         timedflash_attr = f'LED{led}Timedflash'
         
+        # Determine source for logging
+        source = "manual"
+        if state:
+            timer = getattr(self, timer_attr)
+            autoflash = getattr(self.settings, autoflash_attr)
+            timedflash = getattr(self.settings, timedflash_attr)
+            
+            if autoflash.isChecked() and timer.isActive():
+                source = "autoflash"
+            elif timedflash.isChecked():
+                source = "timedflash"
+        
         if state:
             # Turn LED on
             timer = getattr(self, timer_attr)
@@ -671,6 +729,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             timer = getattr(self, timer_attr)
             timer.stop()
             setattr(self, led_on_attr, state)
+        
+        # Log LED change event
+        self.event_logger.log_led_changed(led, state, source)
 
     def set_station_color(self, newcolor) -> None:
         """Set the station label color"""
@@ -1030,6 +1091,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             seconds = getattr(self, seconds_attr)
             label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
             
+            # Log AIR reset event
+            self.event_logger.log_air_reset(air_num, "manual")
+            
             if getattr(self, status_attr):
                 timer.start(1000)
 
@@ -1227,10 +1291,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         # self.labelSeconds.setText( str(value) )
 
     def add_warning(self, text, priority=0):
+        # Only log if warning actually changed
+        old_text = self.warnings[priority]
         self.warnings[priority] = text
+        if old_text != text:
+            # Log warning added/updated event only if it changed
+            if text:
+                self.event_logger.log_warning_added(text, priority)
+            elif old_text:
+                # Warning was removed (text is now empty)
+                self.event_logger.log_warning_removed(priority)
 
     def remove_warning(self, priority=0):
-        self.warnings[priority] = ""
+        # Only log if warning was actually present
+        old_text = self.warnings[priority]
+        if old_text:
+            self.warnings[priority] = ""
+            # Log warning removed event only if there was a warning
+            self.event_logger.log_warning_removed(priority)
 
     def process_warnings(self):
         warning_available = False
@@ -1286,6 +1364,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def reboot_host(self):
         self.add_warning("SYSTEM REBOOT IN PROGRESS", 2)
+        self.event_logger.log_system_event("System reboot initiated")
         if os.name == "posix":
             cmd = "sudo reboot"
             os.system(cmd)
@@ -1295,6 +1374,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def shutdown_host(self):
         self.add_warning("SYSTEM SHUTDOWN IN PROGRESS", 2)
+        self.event_logger.log_system_event("System shutdown initiated")
         if os.name == "posix":
             cmd = "sudo halt"
             os.system(cmd)

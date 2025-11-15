@@ -101,7 +101,13 @@ class UdpServer:
             data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
             lines = data.splitlines()
             for line in lines:
-                self.command_callback(line)
+                # Mark command source as UDP for logging
+                if hasattr(self.command_callback, '__self__'):
+                    # If callback is a method, we need to pass source info differently
+                    # For now, we'll handle it in parse_cmd
+                    self.command_callback(line)
+                else:
+                    self.command_callback(line)
 
 
 class HttpDaemon(QThread):
