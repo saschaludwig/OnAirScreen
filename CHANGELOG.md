@@ -1,12 +1,38 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [TBA]
+## [0.9.7beta2]
 ### Added
-- Show version, distribution and settings path in about dialog
+- Event logging system for tracking LED changes, AIR timer events, commands, warnings, and system events
+- Tooltips for all settings widgets to improve user experience
+
 ### Changed
-- fixed crash when UDP/HTTP ports are empty
-- update copyright strings
+- Fixed weather widget API calls when widget is disabled or no API key is configured
+- Removed unused font button
+
+## [0.9.7beta1]
+### Added
+- Command test scripts for HTTP and UDP testing (utils/cmdtest_http.sh, utils/cmdtest_udp.sh)
+- Show version, distribution and settings path in about dialog
+- Fonts/COPYING file
+
+### Changed
+- Major code refactoring: extracted command handler, network module, and timer manager to separate modules
+- Use context manager for QSettings groups
+- Consolidated text setters and timer reset methods
+- Consolidated AIR reset and start_stop methods
+- Consolidated LED toggle methods
+- Consolidated set_station_color() and set_slogan_color() methods
+- Consolidated set_led1-4() methods into generic method
+- Split restore_settings_from_config() into smaller methods
+- Optimized led_logic() method
+- Optimized font setup in restore_settings_from_config()
+- Modernized string formatting to f-strings
+- Refactored parse_cmd() using command pattern
+- Added logging, type hints, and docstrings throughout codebase
+- Fixed crash when UDP/HTTP ports are empty
+- Updated copyright strings
+- Updated settings.ui
 
 ## [0.9.6 beta2]
 ### Added
