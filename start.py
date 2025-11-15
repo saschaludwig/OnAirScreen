@@ -1114,95 +1114,116 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
         settings.endGroup()
 
-    def update_backtiming_text(self):
+    def update_backtiming_text(self) -> None:
+        """Update the text clock display based on current time and language"""
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Formatting")
         text_clock_language = settings.value('textClockLanguage', 'English')
         is_am_pm = settings.value('isAmPm', False, type=bool)
         settings.endGroup()
 
-        string = ""
         now = datetime.now()
         hour = now.hour
         minute = now.minute
         remain_min = 60 - minute
 
-        if text_clock_language == "German":
-            # german textclock
-            if hour > 12:
-                hour -= 12
-            if 0 < minute < 25:
-                string = F"{minute} Minute{'n' if minute>1 else ''} nach {hour}"
-            if 25 <= minute < 30:
-                string = F"{remain_min-30} Minute{'n' if remain_min-30>1 else ''} vor halb {1 if hour==12 else hour+1}"
-            if 31 <= minute <= 39:
-                string = F"{30-remain_min} Minute{'n' if 30-remain_min>1 else ''} nach halb {1 if hour==12 else hour+1}"
-            if 40 <= minute <= 59:
-                string = F"{remain_min} Minute{'n' if remain_min>1 else ''} vor {1 if hour==12 else hour+1}"
-            if minute == 30:
-                string = F"halb {1 if hour==12 else hour+1}"
-            if minute == 0:
-                string = F"{hour} Uhr"
-
-        elif text_clock_language == "Dutch":
-            # Dutch textclock
-            if is_am_pm:
-                if hour > 12:
-                    hour -= 12
-            if minute == 0:
-                string = F"Het is {hour} uur"
-            if (1 <= minute <= 14) or (16 <= minute <= 29):
-                string = F"Het is {minute} minu{'ten' if minute>1 else 'ut'} over {hour}"
-            if minute == 15:
-                string = F"Het is kwart over {hour}"
-            if minute == 30:
-                string = F"Het is half {1 if hour==12 else hour+1}"
-            if minute == 45:
-                string = F"Het is kwart voor {1 if hour==12 else hour+1}"
-            if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = F"Het is {remain_min} minu{'ten' if minute>1 else 'ut'} voor {1 if hour==12 else hour+1}"
-
-        elif text_clock_language == "French":
-            # French textclock
-            if hour > 12:
-                hour -= 12
-            if 0 < minute < 60:
-                string = F"{hour} {'heures' if hour > 1 else 'heure'} {minute}"
-            if minute == 0:
-                string = F"{hour} {'heures' if hour > 1 else 'heure'}"
-            if minute == 15:
-                string = F"{hour} {'heures' if hour > 1 else 'heure'} et quart"
-            if minute == 30:
-                string = F"{hour} {'heures' if hour > 1 else 'heure'} et demie"
-            if hour == 0:
-                if 0 < minute < 59:
-                    string = F"minuit {minute}"
-                if minute == 0:
-                    string = F"minuit"
-                if minute == 15:
-                    string = F"minuit et quart"
-                if minute == 30:
-                    string = F"minuit et demie"
-
-        else:
-            # english textclock
-            if is_am_pm:
-                if hour > 12:
-                    hour -= 12
-            if minute == 0:
-                string = f"it's {hour} o'clock"
-            if (0 < minute < 15) or (16 <= minute <= 29):
-                string = f"it's {minute} minute{'s' if minute > 1 else ''} past {hour}"
-            if minute == 15:
-                string = f"it's a quarter past {hour}"
-            if minute == 30:
-                string = f"it's half past {hour}"
-            if minute == 45:
-                string = f"it's a quarter to {hour + 1}"
-            if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = f"it's {remain_min} minute{'s' if remain_min > 1 else ''} to {1 if hour == 12 else hour + 1}"
-
+        # Dispatch to language-specific formatters
+        language_formatters = {
+            "German": self._format_time_german,
+            "Dutch": self._format_time_dutch,
+            "French": self._format_time_french,
+        }
+        
+        formatter = language_formatters.get(text_clock_language, self._format_time_english)
+        string = formatter(hour, minute, remain_min, is_am_pm)
+        
         self.set_right_text(string)
+
+    def _format_time_german(self, hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
+        """Format time in German text clock style"""
+        if hour > 12:
+            hour -= 12
+        
+        if minute == 0:
+            return f"{hour} Uhr"
+        elif minute == 30:
+            return f"halb {1 if hour == 12 else hour + 1}"
+        elif 0 < minute < 25:
+            return f"{minute} Minute{'n' if minute > 1 else ''} nach {hour}"
+        elif 25 <= minute < 30:
+            return f"{remain_min - 30} Minute{'n' if remain_min - 30 > 1 else ''} vor halb {1 if hour == 12 else hour + 1}"
+        elif 31 <= minute <= 39:
+            return f"{30 - remain_min} Minute{'n' if 30 - remain_min > 1 else ''} nach halb {1 if hour == 12 else hour + 1}"
+        elif 40 <= minute <= 59:
+            return f"{remain_min} Minute{'n' if remain_min > 1 else ''} vor {1 if hour == 12 else hour + 1}"
+        else:
+            return f"{hour} Uhr"
+
+    def _format_time_dutch(self, hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
+        """Format time in Dutch text clock style"""
+        if is_am_pm and hour > 12:
+            hour -= 12
+        
+        if minute == 0:
+            return f"Het is {hour} uur"
+        elif minute == 15:
+            return f"Het is kwart over {hour}"
+        elif minute == 30:
+            return f"Het is half {1 if hour == 12 else hour + 1}"
+        elif minute == 45:
+            return f"Het is kwart voor {1 if hour == 12 else hour + 1}"
+        elif (1 <= minute <= 14) or (16 <= minute <= 29):
+            return f"Het is {minute} minu{'ten' if minute > 1 else 'ut'} over {hour}"
+        elif (31 <= minute <= 44) or (46 <= minute <= 59):
+            return f"Het is {remain_min} minu{'ten' if minute > 1 else 'ut'} voor {1 if hour == 12 else hour + 1}"
+        else:
+            return f"Het is {hour} uur"
+
+    def _format_time_french(self, hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
+        """Format time in French text clock style"""
+        if hour > 12:
+            hour -= 12
+        
+        if hour == 0:
+            if minute == 0:
+                return "minuit"
+            elif minute == 15:
+                return "minuit et quart"
+            elif minute == 30:
+                return "minuit et demie"
+            elif 0 < minute < 59:
+                return f"minuit {minute}"
+        
+        if minute == 0:
+            return f"{hour} {'heures' if hour > 1 else 'heure'}"
+        elif minute == 15:
+            return f"{hour} {'heures' if hour > 1 else 'heure'} et quart"
+        elif minute == 30:
+            return f"{hour} {'heures' if hour > 1 else 'heure'} et demie"
+        elif 0 < minute < 60:
+            return f"{hour} {'heures' if hour > 1 else 'heure'} {minute}"
+        else:
+            return f"{hour} {'heures' if hour > 1 else 'heure'}"
+
+    def _format_time_english(self, hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
+        """Format time in English text clock style"""
+        if is_am_pm and hour > 12:
+            hour -= 12
+        
+        if minute == 0:
+            return f"it's {hour} o'clock"
+        elif minute == 15:
+            return f"it's a quarter past {hour}"
+        elif minute == 30:
+            return f"it's half past {hour}"
+        elif minute == 45:
+            return f"it's a quarter to {hour + 1}"
+        elif (0 < minute < 15) or (16 <= minute <= 29):
+            return f"it's {minute} minute{'s' if minute > 1 else ''} past {hour}"
+        elif (31 <= minute <= 44) or (46 <= minute <= 59):
+            return f"it's {remain_min} minute{'s' if remain_min > 1 else ''} to {1 if hour == 12 else hour + 1}"
+        else:
+            return f"it's {hour} o'clock"
 
     def update_backtiming_seconds(self):
         now = datetime.now()
