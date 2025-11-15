@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen Analog / Digital Clock implementation
-# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -79,9 +79,9 @@
 
 import time as pytime
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QRectF
-from PyQt5.QtGui import QColor
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import QRectF
+from PyQt6.QtGui import QColor
 
 
 class ClockWidget(QtWidgets.QWidget):
@@ -259,7 +259,7 @@ class ClockWidget(QtWidgets.QWidget):
         self.time = QtCore.QTime.currentTime()
 
         painter = QtGui.QPainter(self)
-        painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         painter.translate(self.width() / 2, self.height() / 2)
         painter.scale(side / 200.0, side / 200.0)
 
@@ -301,7 +301,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.drawImage(QtCore.QRectF(paint_x - (paint_w / 2), paint_y - (paint_h / 2), paint_w, paint_h), image)
             painter.restore()
 
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
         painter.setBrush(self.hourColor)
         # set hour hand length and minute hand length
         hhl = -70  # -50
@@ -321,7 +321,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.drawRoundedRect(88, -1, 8, 2, 1.0, 1.0)
             painter.rotate(30.0)
 
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
         painter.setBrush(self.minuteColor)
 
         # draw minute hand
@@ -383,7 +383,7 @@ class ClockWidget(QtWidgets.QWidget):
         time = self.time
 
         # draw digits and colon
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
         painter.setBrush(self.digiDigitColor)
         painter.setPen(self.digiDigitColor)
 
@@ -439,7 +439,7 @@ class ClockWidget(QtWidgets.QWidget):
         dot_size = 1.6
         # set painter to 12 o'clock position
         painter.rotate(-90.0)
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
         painter.setBrush(self.digiHourColor)
         painter.setPen(self.digiHourColor)
 
@@ -450,7 +450,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.rotate(30.0)
         painter.restore()
 
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
         painter.setBrush(self.digiSecondColor)
         painter.setPen(self.digiSecondColor)
 
