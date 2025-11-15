@@ -36,6 +36,7 @@
 #############################################################################
 
 import json
+import logging
 import textwrap
 from collections import defaultdict
 from uuid import getnode
@@ -56,35 +57,55 @@ except ModuleNotFoundError:
     distributionString = "OpenSource"
     update_url = "https://customer.astrastudio.de/updatemanager/c"
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 
 # class OASSettings for use from OAC
 class OASSettings:
-    def __init__(self):
-        self.config = defaultdict(dict)
-        self.currentgroup = None
+    """
+    Settings class for OAC (OnAirScreen Control) mode
+    
+    Provides a QSettings-like interface for in-memory configuration
+    storage when running in OAC mode.
+    """
+    def __init__(self) -> None:
+        """Initialize OASSettings with empty configuration"""
+        self.config: dict = defaultdict(dict)
+        self.currentgroup: str | None = None
 
-    def beginGroup(self, group):
+    def beginGroup(self, group: str) -> None:
+        """Begin a settings group"""
         self.currentgroup = group
 
-    def endGroup(self):
+    def endGroup(self) -> None:
+        """End the current settings group"""
         self.currentgroup = None
 
-    def setValue(self, name, value):
+    def setValue(self, name: str, value) -> None:
+        """Set a value in the current group"""
         if self.currentgroup:
             self.config[self.currentgroup][name] = value
-        pass
 
-    def value(self, name, default=None):
+    def value(self, name: str, default=None) -> QVariant:
+        """Get a value from the current group"""
         try:
             return QVariant(self.config[self.currentgroup][name])
         except KeyError:
             return QVariant(default)
 
-    def fileName(self):
+    def fileName(self) -> str:
+        """Return the settings file name (for compatibility)"""
         return "OAC Mode"
 
 
 class Settings(QWidget, Ui_Settings):
+    """
+    Settings dialog for OnAirScreen
+    
+    Provides a comprehensive settings interface for configuring
+    all aspects of the OnAirScreen application.
+    """
     sigConfigChanged = pyqtSignal(int, str)
     sigExitOAS = pyqtSignal()
     sigRebootHost = pyqtSignal()
@@ -96,7 +117,13 @@ class Settings(QWidget, Ui_Settings):
     sigShutdownRemoteHost = pyqtSignal(int)
     sigCheckForUpdate = pyqtSignal()
 
-    def __init__(self, oacmode=False):
+    def __init__(self, oacmode: bool = False) -> None:
+        """
+        Initialize the Settings dialog
+        
+        Args:
+            oacmode: If True, run in OAC (OnAirScreen Control) mode
+        """
         self.settingsPath = None
         self.row = -1
         QWidget.__init__(self)
@@ -643,7 +670,7 @@ class Settings(QWidget, Ui_Settings):
         if mac1 == mac2:
             mac = ":".join(textwrap.wrap(format(mac1, 'x').zfill(12).upper(), 2))
         else:
-            print("ERROR: Could not get a valid mac address")
+            logger.error("ERROR: Could not get a valid mac address")
             mac = "00:00:00:00:00:00"
         return mac
 
@@ -653,7 +680,7 @@ class Settings(QWidget, Ui_Settings):
 
     def check_for_updates(self):
         if self.checkBox_UpdateCheck.isChecked():
-            print("check for updates")
+            logger.debug("check for updates")
             update_key = self.updateKey.displayText()
             if len(update_key) == 50:
                 data = QUrlQuery()
@@ -669,7 +696,7 @@ class Settings(QWidget, Ui_Settings):
                 self.nam_update_check.finished.connect(self.handle_update_check_response)
                 self.nam_update_check.post(req, data.toString(QUrl.FullyEncoded).encode("UTF-8"))
             else:
-                print("error, update key in wrong format")
+                logger.error("error, update key in wrong format")
                 self.error_dialog = QErrorMessage()
                 self.error_dialog.setWindowTitle("Update Check Error")
                 self.error_dialog.showMessage('Update key is in the wrong format!', 'UpdateKeyError')
@@ -1061,85 +1088,59 @@ class Settings(QWidget, Ui_Settings):
         self.radioButton_logo_upper.setChecked(state)
         self.radioButton_logo_lower.setChecked(not state)
 
-    def setOASFontLED1(self):
-        current_font = self.ExampleFont_LED1.font()
+    def _set_font_for_widget(self, widget_name: str) -> None:
+        """
+        Generic method to set font for a widget
+        
+        Args:
+            widget_name: Name of the widget (e.g., 'ExampleFont_LED1')
+        """
+        widget = getattr(self, widget_name)
+        current_font = widget.font()
         new_font, ok = QFontDialog.getFont(current_font)
         if ok:
-            print(new_font.toString())
-            self.ExampleFont_LED1.setFont(new_font)
-            self.ExampleFont_LED1.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+            widget.setFont(new_font)
+            widget.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+
+    def setOASFontLED1(self):
+        """Set font for LED1"""
+        self._set_font_for_widget('ExampleFont_LED1')
 
     def setOASFontLED2(self):
-        current_font = self.ExampleFont_LED2.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_LED2.setFont(new_font)
-            self.ExampleFont_LED2.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for LED2"""
+        self._set_font_for_widget('ExampleFont_LED2')
 
     def setOASFontLED3(self):
-        current_font = self.ExampleFont_LED3.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_LED3.setFont(new_font)
-            self.ExampleFont_LED3.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for LED3"""
+        self._set_font_for_widget('ExampleFont_LED3')
 
     def setOASFontLED4(self):
-        current_font = self.ExampleFont_LED4.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_LED4.setFont(new_font)
-            self.ExampleFont_LED4.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for LED4"""
+        self._set_font_for_widget('ExampleFont_LED4')
 
     def setOASFontAIR1(self):
-        current_font = self.ExampleFont_AIR1.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_AIR1.setFont(new_font)
-            self.ExampleFont_AIR1.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for AIR1"""
+        self._set_font_for_widget('ExampleFont_AIR1')
 
     def setOASFontAIR2(self):
-        current_font = self.ExampleFont_AIR2.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_AIR2.setFont(new_font)
-            self.ExampleFont_AIR2.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for AIR2"""
+        self._set_font_for_widget('ExampleFont_AIR2')
 
     def setOASFontAIR3(self):
-        current_font = self.ExampleFont_AIR3.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_AIR3.setFont(new_font)
-            self.ExampleFont_AIR3.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for AIR3"""
+        self._set_font_for_widget('ExampleFont_AIR3')
 
     def setOASFontAIR4(self):
-        current_font = self.ExampleFont_AIR4.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_AIR4.setFont(new_font)
-            self.ExampleFont_AIR4.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for AIR4"""
+        self._set_font_for_widget('ExampleFont_AIR4')
 
     def setOASFontStationName(self):
-        current_font = self.ExampleFont_StationName.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_StationName.setFont(new_font)
-            self.ExampleFont_StationName.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for Station Name"""
+        self._set_font_for_widget('ExampleFont_StationName')
 
     def setOASFontSlogan(self):
-        current_font = self.ExampleFont_Slogan.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            print(new_font.toString())
-            self.ExampleFont_Slogan.setFont(new_font)
-            self.ExampleFont_Slogan.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+        """Set font for Slogan"""
+        self._set_font_for_widget('ExampleFont_Slogan')
 
     def openAIR1IconPathSelector(self):
         filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
