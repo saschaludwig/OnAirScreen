@@ -1,12 +1,58 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [TBA]
+## [0.9.7beta3]
 ### Added
-- Show version, distribution and settings path in about dialog
+- Web-UI: Complete web-based remote control interface accessible via HTTP
+- Web-UI: Real-time status display for LEDs, AIR timers, and text fields (NOW/NEXT/WARN)
+- Web-UI: LED control buttons with toggle functionality
+- Web-UI: AIR timer controls with start/stop and reset (for AIR3/AIR4) buttons
+- Web-UI: Text input controls for NOW, NEXT, and WARN messages
+- Web-UI: REST-style API endpoints (/api/status, /api/command)
+- Web-UI: Version and distribution information displayed in top-right corner
+- Web-UI: Modal dialog with overlay for connection errors (always visible, dims background)
+- Web-UI: Clear buttons for NOW/NEXT text inputs
+- Web-UI: Current NOW/NEXT/WARN texts displayed in status panel
+- API: Status endpoint now includes version and distribution information
+
 ### Changed
-- fixed crash when UDP/HTTP ports are empty
-- update copyright strings
+- Web-UI: HTML template moved from network.py to separate templates/web_ui.html file for better maintainability
+- Web-UI: Connection error modal now disables all controls when connection is lost
+- Network: HTTP server now supports Web-UI in addition to command API
+- Network: Improved thread-safety for GUI operations from HTTP thread using pyqtSignal
+
+## [0.9.7beta2]
+### Added
+- Event logging system for tracking LED changes, AIR timer events, commands, warnings, and system events
+- Tooltips for all settings widgets to improve user experience
+
+### Changed
+- Fixed weather widget API calls when widget is disabled or no API key is configured
+- Removed unused font button
+
+## [0.9.7beta1]
+### Added
+- Command test scripts for HTTP and UDP testing (utils/cmdtest_http.sh, utils/cmdtest_udp.sh)
+- Show version, distribution and settings path in about dialog
+- Fonts/COPYING file
+
+### Changed
+- Major code refactoring: extracted command handler, network module, and timer manager to separate modules
+- Use context manager for QSettings groups
+- Consolidated text setters and timer reset methods
+- Consolidated AIR reset and start_stop methods
+- Consolidated LED toggle methods
+- Consolidated set_station_color() and set_slogan_color() methods
+- Consolidated set_led1-4() methods into generic method
+- Split restore_settings_from_config() into smaller methods
+- Optimized led_logic() method
+- Optimized font setup in restore_settings_from_config()
+- Modernized string formatting to f-strings
+- Refactored parse_cmd() using command pattern
+- Added logging, type hints, and docstrings throughout codebase
+- Fixed crash when UDP/HTTP ports are empty
+- Updated copyright strings
+- Updated settings.ui
 
 ## [0.9.6 beta2]
 ### Added

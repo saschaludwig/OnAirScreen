@@ -44,7 +44,7 @@ import sys
 from datetime import datetime
 
 import ntplib
-from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread
+from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread, pyqtSignal, QObject
 from PyQt6.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont, QShortcut, QFontDatabase
 from PyQt6.QtNetwork import QNetworkInterface
 from PyQt6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox
@@ -52,7 +52,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayo
 # Import resources FIRST to register them with Qt before UI files are loaded
 import resources_rc  # noqa: F401
 from mainscreen import Ui_MainScreen
-from settings_functions import Settings, versionString
+from settings_functions import Settings, versionString, distributionString
 from command_handler import CommandHandler
 from network import UdpServer, HttpDaemon
 from timer_manager import TimerManager
@@ -65,6 +65,11 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class CommandSignal(QObject):
+    """Signal object for thread-safe command execution"""
+    command_received = pyqtSignal(bytes, str)
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -201,16 +206,18 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.replacenowTimer = QTimer()
         self.replacenowTimer.timeout.connect(self.replace_now_next)
 
+        # Setup command signal for thread-safe HTTP command execution
+        self.command_signal = CommandSignal()
+        self.command_signal.command_received.connect(self._parse_cmd_with_source)
+        
         # Setup UDP Server with source tracking
         def udp_command_callback(data: bytes) -> None:
             self._parse_cmd_with_source(data, "udp")
         
         self.udp_server = UdpServer(udp_command_callback)
 
-        # Setup HTTP Server
-        # HTTP commands are forwarded to local UDP, so we need to track HTTP source
-        # We'll modify the HTTP handler to use a special callback
-        self.httpd = HttpDaemon()
+        # Setup HTTP Server with reference to MainScreen for status API and command signal
+        self.httpd = HttpDaemon(self, self.command_signal)
         self.httpd.start()
         
         # Log application start
@@ -1359,7 +1366,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.weatherWidget.readConfig()
         self.weatherWidget.updateWeather()
 
-
     def reboot_host(self):
         self.add_warning("SYSTEM REBOOT IN PROGRESS", 2)
         self.event_logger.log_system_event("System reboot initiated")
@@ -1380,6 +1386,63 @@ class MainScreen(QWidget, Ui_MainScreen):
             cmd = "shutdown -f -t 0"
             os.system(cmd)
 
+    def get_status_json(self) -> dict:
+        """
+        Get current status as JSON-serializable dictionary
+        
+        Returns:
+            Dictionary containing current LED, AIR timer status, and text fields
+        """
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        
+        # Get LED status
+        leds = {}
+        for led_num in range(1, 5):
+            status_attr = f'statusLED{led_num}'
+            with settings_group(settings, f"LED{led_num}"):
+                led_text = settings.value('text', f'LED{led_num}')
+            leds[led_num] = {
+                'status': getattr(self, status_attr, False),
+                'text': led_text
+            }
+        
+        # Get AIR timer status
+        air = {}
+        for air_num in range(1, 5):
+            status_attr = f'statusAIR{air_num}'
+            seconds_attr = f'Air{air_num}Seconds'
+            with settings_group(settings, "Timers"):
+                air_text = settings.value(f'TimerAIR{air_num}Text', f'AIR{air_num}')
+            air[air_num] = {
+                'status': getattr(self, status_attr, False),
+                'seconds': getattr(self, seconds_attr, 0),
+                'text': air_text
+            }
+        
+        # Get text field values
+        now_text = ""
+        next_text = ""
+        warn_text = ""
+        
+        if hasattr(self, 'labelCurrentSong'):
+            now_text = self.labelCurrentSong.text() or ""
+        if hasattr(self, 'labelNews'):
+            next_text = self.labelNews.text() or ""
+        if hasattr(self, 'labelWarning'):
+            warn_text = self.labelWarning.text() or ""
+        
+        return {
+            'leds': leds,
+            'air': air,
+            'texts': {
+                'now': now_text,
+                'next': next_text,
+                'warn': warn_text
+            },
+            'version': versionString,
+            'distribution': distributionString
+        }
+    
     def closeEvent(self, event):
         self.httpd.stop()
         self.checkNTPOffset.stop()
