@@ -815,88 +815,95 @@ class MainScreen(QWidget, Ui_MainScreen):
             for line in lines:
                 self.parse_cmd(line)
 
-    def manual_toggle_led1(self):
-        if self.LED1on:
-            self.led_logic(1, False)
-        else:
-            self.led_logic(1, True)
+    def manual_toggle_led1(self) -> None:
+        """Toggle LED1 using led_logic (manual toggle)"""
+        self._manual_toggle_led(1)
 
-    def manual_toggle_led2(self):
-        if self.LED2on:
-            self.led_logic(2, False)
-        else:
-            self.led_logic(2, True)
+    def manual_toggle_led2(self) -> None:
+        """Toggle LED2 using led_logic (manual toggle)"""
+        self._manual_toggle_led(2)
 
-    def manual_toggle_led3(self):
-        if self.LED3on:
-            self.led_logic(3, False)
-        else:
-            self.led_logic(3, True)
+    def manual_toggle_led3(self) -> None:
+        """Toggle LED3 using led_logic (manual toggle)"""
+        self._manual_toggle_led(3)
 
-    def manual_toggle_led4(self):
-        if self.LED4on:
-            self.led_logic(4, False)
-        else:
-            self.led_logic(4, True)
+    def manual_toggle_led4(self) -> None:
+        """Toggle LED4 using led_logic (manual toggle)"""
+        self._manual_toggle_led(4)
 
-    def toggle_led1(self):
-        if self.statusLED1:
-            self.set_led1(False)
-        else:
-            self.set_led1(True)
+    def _manual_toggle_led(self, led_num: int) -> None:
+        """Generic method to toggle LED using led_logic"""
+        led_on_attr = f'LED{led_num}on'
+        current_state = getattr(self, led_on_attr, False)
+        self.led_logic(led_num, not current_state)
 
-    def toggle_led2(self):
-        if self.statusLED2:
-            self.set_led2(False)
-        else:
-            self.set_led2(True)
+    def toggle_led1(self) -> None:
+        """Toggle LED1 using set_led1"""
+        self._toggle_led(1)
 
-    def toggle_led3(self):
-        if self.statusLED3:
-            self.set_led3(False)
-        else:
-            self.set_led3(True)
+    def toggle_led2(self) -> None:
+        """Toggle LED2 using set_led2"""
+        self._toggle_led(2)
 
-    def toggle_led4(self):
-        if self.statusLED4:
-            self.set_led4(False)
-        else:
-            self.set_led4(True)
+    def toggle_led3(self) -> None:
+        """Toggle LED3 using set_led3"""
+        self._toggle_led(3)
 
-    def toggle_air1(self):
-        if self.statusAIR1:
-            self.set_air1(False)
-        else:
-            self.set_air1(True)
+    def toggle_led4(self) -> None:
+        """Toggle LED4 using set_led4"""
+        self._toggle_led(4)
 
-    def toggle_air2(self):
-        if self.statusAIR2:
-            self.set_air2(False)
-        else:
-            self.set_air2(True)
+    def _toggle_led(self, led_num: int) -> None:
+        """Generic method to toggle LED using set_led"""
+        status_attr = f'statusLED{led_num}'
+        current_state = getattr(self, status_attr, False)
+        set_led_method = getattr(self, f'set_led{led_num}')
+        set_led_method(not current_state)
 
-    def toggle_air4(self):
-        if self.statusAIR4:
-            self.set_air4(False)
-        else:
-            self.set_air4(True)
+    def toggle_air1(self) -> None:
+        """Toggle AIR1"""
+        self._toggle_air(1)
 
-    def display_ips(self):
+    def toggle_air2(self) -> None:
+        """Toggle AIR2"""
+        self._toggle_air(2)
+
+    def toggle_air4(self) -> None:
+        """Toggle AIR4"""
+        self._toggle_air(4)
+
+    def _toggle_air(self, air_num: int) -> None:
+        """Generic method to toggle AIR"""
+        status_attr = f'statusAIR{air_num}'
+        current_state = getattr(self, status_attr, False)
+        set_air_method = getattr(self, f'set_air{air_num}')
+        set_air_method(not current_state)
+
+    def display_ips(self) -> None:
+        """Display all host IP addresses"""
         self.display_all_hostaddresses()
         self.replacenowTimer.setSingleShot(True)
         self.replacenowTimer.start(10000)
 
-    def unset_led1(self):
-        self.led_logic(1, False)
+    def unset_led1(self) -> None:
+        """Turn off LED1"""
+        self._unset_led(1)
 
-    def unset_led2(self):
-        self.led_logic(2, False)
+    def unset_led2(self) -> None:
+        """Turn off LED2"""
+        self._unset_led(2)
 
-    def unset_led3(self):
-        self.led_logic(3, False)
+    def unset_led3(self) -> None:
+        """Turn off LED3"""
+        self._unset_led(3)
 
-    def unset_led4(self):
-        self.led_logic(4, False)
+    def unset_led4(self) -> None:
+        """Turn off LED4"""
+        self._unset_led(4)
+
+    def _unset_led(self, led_num: int) -> None:
+        """Generic method to turn off LED"""
+        self.led_logic(led_num, False)
 
     def led_logic(self, led: int, state: bool) -> None:
         """
