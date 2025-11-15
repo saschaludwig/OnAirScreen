@@ -1358,73 +1358,60 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.checkNTPOffset.start()
             self.timerNTP.start(60000)
 
-    def set_led1(self, action):
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        if action:
-            settings.beginGroup("LED1")
-            self.buttonLED1.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#FF0000'))
-            settings.endGroup()
-            self.statusLED1 = True
-        else:
-            settings.beginGroup("LEDS")
-            self.buttonLED1.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            settings.endGroup()
-            self.statusLED1 = False
+    def set_led1(self, action: bool) -> None:
+        """Set LED1 state (active/inactive)"""
+        self._set_led(1, action)
 
-    def set_led2(self, action):
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        if action:
-            settings.beginGroup("LED2")
-            self.buttonLED2.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#DCDC00'))
-            settings.endGroup()
-            self.statusLED2 = True
-        else:
-            settings.beginGroup("LEDS")
-            self.buttonLED2.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            settings.endGroup()
-            self.statusLED2 = False
+    def set_led2(self, action: bool) -> None:
+        """Set LED2 state (active/inactive)"""
+        self._set_led(2, action)
 
-    def set_led3(self, action):
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        if action:
-            settings.beginGroup("LED3")
-            self.buttonLED3.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#00C8C8'))
-            settings.endGroup()
-            self.statusLED3 = True
-        else:
-            settings.beginGroup("LEDS")
-            self.buttonLED3.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
-            settings.endGroup()
-            self.statusLED3 = False
+    def set_led3(self, action: bool) -> None:
+        """Set LED3 state (active/inactive)"""
+        self._set_led(3, action)
 
-    def set_led4(self, action):
+    def set_led4(self, action: bool) -> None:
+        """Set LED4 state (active/inactive)"""
+        self._set_led(4, action)
+
+    def _set_led(self, led_num: int, action: bool) -> None:
+        """
+        Generic method to set LED state (active/inactive)
+        
+        Args:
+            led_num: LED number (1-4)
+            action: True for active, False for inactive
+        """
+        if led_num < 1 or led_num > 4:
+            logger.warning(f"Invalid LED number: {led_num}")
+            return
+        
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        button_widget = getattr(self, f'buttonLED{led_num}')
+        status_attr = f'statusLED{led_num}'
+        
+        # Default active background colors for each LED
+        default_active_colors = {
+            1: '#FF0000',  # Red
+            2: '#DCDC00',  # Yellow
+            3: '#00C8C8',  # Cyan
+            4: '#FF00FF',  # Magenta
+        }
+        
         if action:
-            settings.beginGroup("LED4")
-            self.buttonLED4.setStyleSheet("color:" + settings.value('activetextcolor',
-                                                                    '#FFFFFF') + ";background-color:" + settings.value(
-                'activebgcolor', '#FF00FF'))
+            settings.beginGroup(f"LED{led_num}")
+            active_text_color = settings.value('activetextcolor', '#FFFFFF')
+            active_bg_color = settings.value('activebgcolor', default_active_colors[led_num])
+            button_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
             settings.endGroup()
-            self.statusLED4 = True
+            setattr(self, status_attr, True)
         else:
             settings.beginGroup("LEDS")
-            self.buttonLED4.setStyleSheet("color:" + settings.value('inactivetextcolor',
-                                                                    '#555555') + ";background-color:" + settings.value(
-                'inactivebgcolor', '#222222'))
+            inactive_text_color = settings.value('inactivetextcolor', '#555555')
+            inactive_bg_color = settings.value('inactivebgcolor', '#222222')
+            button_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
             settings.endGroup()
-            self.statusLED4 = False
+            setattr(self, status_attr, False)
 
     def set_station(self, text):
         self.labelStation.setText(text)
