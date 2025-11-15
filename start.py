@@ -558,267 +558,261 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         command = str(command)
         value = str(value)
-        # print("command: >" + command + "<")
-        # print("value: >" + value + "<")
-        if command == "NOW":
-            self.set_current_song_text(value)
-        elif command == "NEXT":
-            self.set_news_text(value)
-        elif command == "LED1":
-            if value == "OFF":
-                self.led_logic(1, False)
-            else:
-                self.led_logic(1, True)
-        elif command == "LED2":
-            if value == "OFF":
-                self.led_logic(2, False)
-            else:
-                self.led_logic(2, True)
-        elif command == "LED3":
-            if value == "OFF":
-                self.led_logic(3, False)
-            else:
-                self.led_logic(3, True)
-        elif command == "LED4":
-            if value == "OFF":
-                self.led_logic(4, False)
-            else:
-                self.led_logic(4, True)
-        elif command == "WARN":
-            if value:
-                self.add_warning(value, 1)
-            else:
-                self.remove_warning(1)
+        
+        # Use command dispatch map for simple commands
+        handler = self._get_command_handler(command)
+        if handler:
+            handler(value)
+            return True
+        
+        # Handle complex commands
+        if command == "CONF":
+            return self._handle_conf_command(value)
+        
+        # Unknown command
+        logger.warning(f"Unknown command: {command}")
+        return False
 
-        elif command == "AIR1":
-            if value == "OFF":
-                self.set_air1(False)
-            else:
-                self.set_air1(True)
+    def _get_command_handler(self, command: str):
+        """
+        Get command handler function for a given command
+        
+        Args:
+            command: Command name
+            
+        Returns:
+            Handler function or None if command not found
+        """
+        command_handlers = {
+            "NOW": lambda v: self.set_current_song_text(v),
+            "NEXT": lambda v: self.set_news_text(v),
+            "LED1": lambda v: self._handle_led_command(1, v),
+            "LED2": lambda v: self._handle_led_command(2, v),
+            "LED3": lambda v: self._handle_led_command(3, v),
+            "LED4": lambda v: self._handle_led_command(4, v),
+            "WARN": lambda v: self._handle_warn_command(v),
+            "AIR1": lambda v: self._handle_air_simple_command(1, v),
+            "AIR2": lambda v: self._handle_air_simple_command(2, v),
+            "AIR3": lambda v: self._handle_air3_command(v),
+            "AIR3TIME": lambda v: self._handle_air3time_command(v),
+            "AIR4": lambda v: self._handle_air4_command(v),
+            "CMD": lambda v: self._handle_cmd_command(v),
+        }
+        return command_handlers.get(command)
 
-        elif command == "AIR2":
-            if value == "OFF":
-                self.set_air2(False)
-            else:
-                self.set_air2(True)
+    def _handle_led_command(self, led_num: int, value: str) -> None:
+        """Handle LED command (LED1-4)"""
+        self.led_logic(led_num, value != "OFF")
 
-        elif command == "AIR3":
-            if value == "OFF":
-                self.stop_air3()
-            if value == "ON":
-                self.start_air3()
-            if value == "RESET":
-                self.radio_timer_reset()
-            if value == "TOGGLE":
-                self.radio_timer_start_stop()
+    def _handle_warn_command(self, value: str) -> None:
+        """Handle WARN command"""
+        if value:
+            self.add_warning(value, 1)
+        else:
+            self.remove_warning(1)
 
-        elif command == "AIR3TIME":
-            try:
-                self.radio_timer_set(int(value))
-            except ValueError as e:
-                logger.error(f"ERROR: invalid value: {e}")
+    def _handle_air_simple_command(self, air_num: int, value: str) -> None:
+        """Handle simple AIR command (AIR1, AIR2)"""
+        if value == "OFF":
+            getattr(self, f"set_air{air_num}")(False)
+        else:
+            getattr(self, f"set_air{air_num}")(True)
 
-        elif command == "AIR4":
-            if value == "OFF":
-                self.set_air4(False)
-            if value == "ON":
-                self.set_air4(True)
-            if value == "RESET":
-                self.stream_timer_reset()
+    def _handle_air3_command(self, value: str) -> None:
+        """Handle AIR3 command with multiple actions"""
+        if value == "OFF":
+            self.stop_air3()
+        elif value == "ON":
+            self.start_air3()
+        elif value == "RESET":
+            self.radio_timer_reset()
+        elif value == "TOGGLE":
+            self.radio_timer_start_stop()
 
-        elif command == "CMD":
-            if value == "REBOOT":
-                self.reboot_host()
-            if value == "SHUTDOWN":
-                self.shutdown_host()
-            if value == "QUIT":
-                self.quit_oas()
+    def _handle_air3time_command(self, value: str) -> None:
+        """Handle AIR3TIME command"""
+        try:
+            self.radio_timer_set(int(value))
+        except ValueError as e:
+            logger.error(f"ERROR: invalid value: {e}")
 
-        elif command == "CONF":
-            # split group, config and values and apply them
-            try:
-                (group, paramvalue) = value.split(':', 1)
-                (param, content) = paramvalue.split('=', 1)
-                # print(F"CONF: {param}, {content}")
-            except ValueError:
+    def _handle_air4_command(self, value: str) -> None:
+        """Handle AIR4 command"""
+        if value == "OFF":
+            self.set_air4(False)
+        elif value == "ON":
+            self.set_air4(True)
+        elif value == "RESET":
+            self.stream_timer_reset()
+
+    def _handle_cmd_command(self, value: str) -> None:
+        """Handle CMD command"""
+        if value == "REBOOT":
+            self.reboot_host()
+        elif value == "SHUTDOWN":
+            self.shutdown_host()
+        elif value == "QUIT":
+            self.quit_oas()
+
+    def _handle_conf_command(self, value: str) -> bool:
+        """
+        Handle CONF command (configuration updates)
+        
+        Args:
+            value: Configuration string in format "GROUP:PARAM=VALUE"
+            
+        Returns:
+            True if command was handled successfully, False otherwise
+        """
+        try:
+            (group, paramvalue) = value.split(':', 1)
+            (param, content) = paramvalue.split('=', 1)
+        except ValueError:
+            return False
+
+        group_handlers = {
+            "General": self._handle_conf_general,
+            "LED1": lambda p, c: self._handle_conf_led(1, p, c),
+            "LED2": lambda p, c: self._handle_conf_led(2, p, c),
+            "LED3": lambda p, c: self._handle_conf_led(3, p, c),
+            "LED4": lambda p, c: self._handle_conf_led(4, p, c),
+            "Timers": self._handle_conf_timers,
+            "Clock": self._handle_conf_clock,
+            "Network": self._handle_conf_network,
+            "CONF": self._handle_conf_apply,
+        }
+        
+        handler = group_handlers.get(group)
+        if handler:
+            handler(param, content)
+            return True
+        
+        logger.warning(f"Unknown CONF group: {group}")
+        return False
+
+    def _handle_conf_general(self, param: str, content: str) -> None:
+        """Handle CONF General group"""
+        handlers = {
+            "stationname": lambda c: self.settings.StationName.setText(c),
+            "slogan": lambda c: self.settings.Slogan.setText(c),
+            "stationcolor": lambda c: self.settings.setStationNameColor(
+                self.settings.getColorFromName(c.replace("0x", "#"))),
+            "slogancolor": lambda c: self.settings.setSloganColor(
+                self.settings.getColorFromName(c.replace("0x", "#"))),
+            "replacenow": lambda c: self.settings.replaceNOW.setChecked(c == "True"),
+            "replacenowtext": lambda c: self.settings.replaceNOWText.setText(c),
+        }
+        handler = handlers.get(param)
+        if handler:
+            handler(content)
+
+    def _handle_conf_led(self, led_num: int, param: str, content: str) -> None:
+        """Handle CONF LED group (LED1-4)"""
+        handlers = {
+            "used": lambda c: getattr(self.settings, f"LED{led_num}").setChecked(c == "True"),
+            "text": lambda c: getattr(self.settings, f"LED{led_num}Text").setText(c),
+            "activebgcolor": lambda c: getattr(self.settings, f"setLED{led_num}BGColor")(
+                self.settings.getColorFromName(c.replace("0x", "#"))),
+            "activetextcolor": lambda c: getattr(self.settings, f"setLED{led_num}FGColor")(
+                self.settings.getColorFromName(c.replace("0x", "#"))),
+            "autoflash": lambda c: getattr(self.settings, f"LED{led_num}Autoflash").setChecked(c == "True"),
+            "timedflash": lambda c: getattr(self.settings, f"LED{led_num}Timedflash").setChecked(c == "True"),
+        }
+        handler = handlers.get(param)
+        if handler:
+            handler(content)
+
+    def _handle_conf_timers(self, param: str, content: str) -> None:
+        """Handle CONF Timers group"""
+        # Handle AIR enabled flags
+        for air_num in range(1, 5):
+            if param == f"TimerAIR{air_num}Enabled":
+                getattr(self.settings, f"enableAIR{air_num}").setChecked(content == "True")
                 return
+        
+        # Handle AIR text
+        for air_num in range(1, 5):
+            if param == f"TimerAIR{air_num}Text":
+                getattr(self.settings, f"AIR{air_num}Text").setText(content)
+                return
+        
+        # Handle AIR colors
+        for air_num in range(1, 5):
+            if param == f"AIR{air_num}activebgcolor":
+                getattr(self.settings, f"setAIR{air_num}BGColor")(
+                    self.settings.getColorFromName(content.replace("0x", "#")))
+                return
+            if param == f"AIR{air_num}activetextcolor":
+                getattr(self.settings, f"setAIR{air_num}FGColor")(
+                    self.settings.getColorFromName(content.replace("0x", "#")))
+                return
+        
+        # Handle AIR icon paths
+        for air_num in range(1, 5):
+            if param == f"AIR{air_num}iconpath":
+                getattr(self.settings, f"setAIR{air_num}IconPath")(content)
+                return
+        
+        # Handle TimerAIRMinWidth
+        if param == "TimerAIRMinWidth":
+            self.settings.AIRMinWidth.setValue(int(content))
 
-            if group == "General":
-                if param == "stationname":
-                    self.settings.StationName.setText(content)
-                elif param == "slogan":
-                    self.settings.Slogan.setText(content)
-                elif param == "stationcolor":
-                    self.settings.setStationNameColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "slogancolor":
-                    self.settings.setSloganColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "replacenow":
-                    self.settings.replaceNOW.setChecked(content == "True")
-                elif param == "replacenowtext":
-                    self.settings.replaceNOWText.setText(content)
+    def _handle_conf_clock(self, param: str, content: str) -> None:
+        """Handle CONF Clock group"""
+        if param == "digital":
+            if content == "True":
+                self.settings.clockDigital.setChecked(True)
+                self.settings.clockAnalog.setChecked(False)
+            elif content == "False":
+                self.settings.clockAnalog.setChecked(False)
+                self.settings.clockDigital.setChecked(True)
+        elif param == "showseconds":
+            if content == "True":
+                self.settings.showSeconds.setChecked(True)
+                self.settings.seconds_in_one_line.setChecked(False)
+                self.settings.seconds_separate.setChecked(True)
+            elif content == "False":
+                self.settings.showSeconds.setChecked(False)
+                self.settings.seconds_in_one_line.setChecked(False)
+                self.settings.seconds_separate.setChecked(True)
+        elif param == "secondsinoneline":
+            if content == "True":
+                self.settings.showSeconds.setChecked(True)
+                self.settings.seconds_in_one_line.setChecked(True)
+                self.settings.seconds_separate.setChecked(False)
+            elif content == "False":
+                self.settings.showSeconds.setChecked(False)
+                self.settings.seconds_in_one_line.setChecked(False)
+                self.settings.seconds_separate.setChecked(True)
+        elif param == "staticcolon":
+            self.settings.staticColon.setChecked(content == "True")
+        elif param == "digitalhourcolor":
+            self.settings.setDigitalHourColor(self.settings.getColorFromName(content.replace("0x", "#")))
+        elif param == "digitalsecondcolor":
+            self.settings.setDigitalSecondColor(self.settings.getColorFromName(content.replace("0x", "#")))
+        elif param == "digitaldigitcolor":
+            self.settings.setDigitalDigitColor(self.settings.getColorFromName(content.replace("0x", "#")))
+        elif param == "logopath":
+            self.settings.setLogoPath(content)
+        elif param == "logoupper":
+            self.settings.setLogoUpper(content == "True")
 
-            elif group == "LED1":
-                if param == "used":
-                    self.settings.LED1.setChecked(content == "True")
-                elif param == "text":
-                    self.settings.LED1Text.setText(content)
-                elif param == "activebgcolor":
-                    self.settings.setLED1BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "activetextcolor":
-                    self.settings.setLED1FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "autoflash":
-                    self.settings.LED1Autoflash.setChecked(content == "True")
-                elif param == "timedflash":
-                    self.settings.LED1Timedflash.setChecked(content == "True")
+    def _handle_conf_network(self, param: str, content: str) -> None:
+        """Handle CONF Network group"""
+        if param == "udpport":
+            self.settings.udpport.setText(content)
 
-            elif group == "LED2":
-                if param == "used":
-                    self.settings.LED2.setChecked(content == "True")
-                elif param == "text":
-                    self.settings.LED2Text.setText(content)
-                elif param == "activebgcolor":
-                    self.settings.setLED2BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "activetextcolor":
-                    self.settings.setLED2FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "autoflash":
-                    self.settings.LED2Autoflash.setChecked(content == "True")
-                elif param == "timedflash":
-                    self.settings.LED2Timedflash.setChecked(content == "True")
+    def _handle_conf_apply(self, param: str, content: str) -> None:
+        """Handle CONF APPLY command"""
+        if param == "APPLY" and content == "TRUE":
+            self.settings.applySettings()
 
-            elif group == "LED3":
-                if param == "used":
-                    self.settings.LED3.setChecked(content == "True")
-                elif param == "text":
-                    self.settings.LED3Text.setText(content)
-                elif param == "activebgcolor":
-                    self.settings.setLED3BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "activetextcolor":
-                    self.settings.setLED3FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "autoflash":
-                    self.settings.LED3Autoflash.setChecked(content == "True")
-                elif param == "timedflash":
-                    self.settings.LED3Timedflash.setChecked(content == "True")
-
-            elif group == "LED4":
-                if param == "used":
-                    self.settings.LED4.setChecked(content == "True")
-                elif param == "text":
-                    self.settings.LED4Text.setText(content)
-                elif param == "activebgcolor":
-                    self.settings.setLED4BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "activetextcolor":
-                    self.settings.setLED4FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "autoflash":
-                    self.settings.LED4Autoflash.setChecked(content == "True")
-                elif param == "timedflash":
-                    self.settings.LED4Timedflash.setChecked(content == "True")
-
-            elif group == "Timers":
-                if param == "TimerAIR1Enabled":
-                    self.settings.enableAIR1.setChecked(content == "True")
-                elif param == "TimerAIR2Enabled":
-                    self.settings.enableAIR2.setChecked(content == "True")
-                elif param == "TimerAIR3Enabled":
-                    self.settings.enableAIR3.setChecked(content == "True")
-                elif param == "TimerAIR4Enabled":
-                    self.settings.enableAIR4.setChecked(content == "True")
-                elif param == "TimerAIR1Text":
-                    self.settings.AIR1Text.setText(content)
-                elif param == "TimerAIR2Text":
-                    self.settings.AIR2Text.setText(content)
-                elif param == "TimerAIR3Text":
-                    self.settings.AIR3Text.setText(content)
-                elif param == "TimerAIR4Text":
-                    self.settings.AIR4Text.setText(content)
-                elif param == "AIR1activebgcolor":
-                    self.settings.setAIR1BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR1activetextcolor":
-                    self.settings.setAIR1FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR2activebgcolor":
-                    self.settings.setAIR2BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR2activetextcolor":
-                    self.settings.setAIR2FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR3activebgcolor":
-                    self.settings.setAIR3BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR3activetextcolor":
-                    self.settings.setAIR3FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR4activebgcolor":
-                    self.settings.setAIR4BGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR4activetextcolor":
-                    self.settings.setAIR4FGColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "AIR1iconpath":
-                    self.settings.setAIR1IconPath(content)
-                elif param == "AIR2iconpath":
-                    self.settings.setAIR2IconPath(content)
-                elif param == "AIR3iconpath":
-                    self.settings.setAIR3IconPath(content)
-                elif param == "AIR4iconpath":
-                    self.settings.setAIR4IconPath(content)
-                elif param == "TimerAIRMinWidth":
-                    self.settings.AIRMinWidth.setValue(int(content))
-
-            elif group == "Clock":
-                if param == "digital":
-                    if content == "True":
-                        self.settings.clockDigital.setChecked(True)
-                        self.settings.clockAnalog.setChecked(False)
-                    elif content == "False":
-                        self.settings.clockAnalog.setChecked(False)
-                        self.settings.clockDigital.setChecked(True)
-                elif param == "showseconds":
-                    if content == "True":
-                        self.settings.showSeconds.setChecked(True)
-                        self.settings.seconds_in_one_line.setChecked(False)
-                        self.settings.seconds_separate.setChecked(True)
-                    elif content == "False":
-                        self.settings.showSeconds.setChecked(False)
-                        self.settings.seconds_in_one_line.setChecked(False)
-                        self.settings.seconds_separate.setChecked(True)
-                elif param == "secondsinoneline":
-                    if content == "True":
-                        self.settings.showSeconds.setChecked(True)
-                        self.settings.seconds_in_one_line.setChecked(True)
-                        self.settings.seconds_separate.setChecked(False)
-                    elif content == "False":
-                        self.settings.showSeconds.setChecked(False)
-                        self.settings.seconds_in_one_line.setChecked(False)
-                        self.settings.seconds_separate.setChecked(True)
-                elif param == "staticcolon":
-                    if content == "True":
-                        self.settings.staticColon.setChecked(True)
-                    elif content == "False":
-                        self.settings.staticColon.setChecked(False)
-                elif param == "digitalhourcolor":
-                    self.settings.setDigitalHourColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "digitalsecondcolor":
-                    self.settings.setDigitalSecondColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "digitaldigitcolor":
-                    self.settings.setDigitalDigitColor(self.settings.getColorFromName(content.replace("0x", "#")))
-                elif param == "logopath":
-                    self.settings.setLogoPath(content)
-                elif param == "logoupper":
-                    if content == "True":
-                        self.settings.setLogoUpper(True)
-                    elif content == "False":
-                        self.settings.setLogoUpper(False)
-
-            elif group == "Network":
-                if param == "udpport":
-                    self.settings.udpport.setText(content)
-
-            elif group == "CONF":
-                if param == "APPLY":
-                    if content == "TRUE":
-                        # apply and save settings
-                        self.settings.applySettings()
-
-    def udp_cmd_handler(self):
+    def udp_cmd_handler(self) -> None:
+        """Handle incoming UDP commands"""
         while self.udpsock.hasPendingDatagrams():
             data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
-            # print("DATA: ", data)
             lines = data.splitlines()
             for line in lines:
-                # print("Line:", line)
                 self.parse_cmd(line)
 
     def manual_toggle_led1(self):
