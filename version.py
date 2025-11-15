@@ -1,1 +1,1 @@
-versionString = "0.9.7beta2"
+versionString = "0.9.7beta3"

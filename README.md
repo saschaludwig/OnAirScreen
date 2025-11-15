@@ -26,6 +26,10 @@ And if you need extended support, please contact me.
  * runs on RaspberryPi
  * runs on Windows, Mac, Linux
  * controlled via keyboard and network
+ * Web-UI for remote control via browser
+ * REST-style API endpoints (/api/status, /api/command)
+ * Event logging system for tracking all actions
+ * Tooltips for all settings widgets
  * Weather Widget
  * static or blinking colon in digital clock mode
  * OnAir Timer, Stopwatch, Countdown and more
@@ -72,7 +76,36 @@ Set LED1 Text to "FOO" and switch LED1 on:
 ```Shell
 curl http://127.0.0.1:8010/?cmd=CONF:LED1:text=FOO
 curl http://127.0.0.1:8010/?cmd=LED1:ON
-```  
+```
+
+##### Web-UI
+
+OnAirScreen provides a complete web-based remote control interface accessible via your browser.<br>
+Simply open `http://127.0.0.1:8010/` (or the IP address of your OnAirScreen instance) in any modern web browser.
+
+The Web-UI provides:
+ * Real-time status display for LEDs, AIR timers, and text fields (NOW/NEXT/WARN)
+ * LED control buttons with toggle functionality
+ * AIR timer controls with start/stop and reset buttons
+ * Text input controls for NOW, NEXT, and WARN messages
+ * Version and distribution information display
+ * Connection error handling with modal dialog
+
+##### REST-style API
+
+OnAirScreen also provides REST-style API endpoints:
+
+**Status Endpoint:**
+```Shell
+curl http://127.0.0.1:8010/api/status
+```
+Returns JSON with current LED status, AIR timer status, text field values, version, and distribution information.
+
+**Command Endpoint:**
+```Shell
+curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
+```
+Sends commands and returns JSON response with status confirmation.  
 
 ##### API Commands
 

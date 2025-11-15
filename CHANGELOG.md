@@ -1,6 +1,26 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.9.7beta3]
+### Added
+- Web-UI: Complete web-based remote control interface accessible via HTTP
+- Web-UI: Real-time status display for LEDs, AIR timers, and text fields (NOW/NEXT/WARN)
+- Web-UI: LED control buttons with toggle functionality
+- Web-UI: AIR timer controls with start/stop and reset (for AIR3/AIR4) buttons
+- Web-UI: Text input controls for NOW, NEXT, and WARN messages
+- Web-UI: REST-style API endpoints (/api/status, /api/command)
+- Web-UI: Version and distribution information displayed in top-right corner
+- Web-UI: Modal dialog with overlay for connection errors (always visible, dims background)
+- Web-UI: Clear buttons for NOW/NEXT text inputs
+- Web-UI: Current NOW/NEXT/WARN texts displayed in status panel
+- API: Status endpoint now includes version and distribution information
+
+### Changed
+- Web-UI: HTML template moved from network.py to separate templates/web_ui.html file for better maintainability
+- Web-UI: Connection error modal now disables all controls when connection is lost
+- Network: HTTP server now supports Web-UI in addition to command API
+- Network: Improved thread-safety for GUI operations from HTTP thread using pyqtSignal
+
 ## [0.9.7beta2]
 ### Added
 - Event logging system for tracking LED changes, AIR timer events, commands, warnings, and system events
