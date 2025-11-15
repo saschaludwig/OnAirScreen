@@ -844,7 +844,7 @@ class TestUpdateAirSeconds:
         MainScreen.update_air4_seconds(mock_main_screen)
         
         assert mock_main_screen.Air4Seconds == 0
-        assert mock_main_screen.radioTimerMode == 0  # reset to count up
+        assert mock_main_screen.streamTimerMode == 0  # reset to count up
         mock_main_screen.stop_air4.assert_called_once()
 
 
