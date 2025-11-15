@@ -898,58 +898,48 @@ class MainScreen(QWidget, Ui_MainScreen):
     def unset_led4(self):
         self.led_logic(4, False)
 
-    def led_logic(self, led, state):
+    def led_logic(self, led: int, state: bool) -> None:
+        """
+        Handle LED logic (on/off, autoflash, timedflash)
+        
+        Args:
+            led: LED number (1-4)
+            state: True to turn on, False to turn off
+        """
+        if led < 1 or led > 4:
+            logger.warning(f"Invalid LED number: {led}")
+            return
+        
+        # Get LED-specific attributes
+        timer_attr = f'timerLED{led}'
+        set_led_attr = f'set_led{led}'
+        unset_led_attr = f'unset_led{led}'
+        led_on_attr = f'LED{led}on'
+        autoflash_attr = f'LED{led}Autoflash'
+        timedflash_attr = f'LED{led}Timedflash'
+        
         if state:
-            if led == 1:
-                if self.settings.LED1Autoflash.isChecked():
-                    self.timerLED1.start(500)
-                if self.settings.LED1Timedflash.isChecked():
-                    self.timerLED1.start(500)
-                    QTimer.singleShot(20000, self.unset_led1)
-                self.set_led1(state)
-                self.LED1on = state
-            if led == 2:
-                if self.settings.LED2Autoflash.isChecked():
-                    self.timerLED2.start(500)
-                if self.settings.LED2Timedflash.isChecked():
-                    self.timerLED2.start(500)
-                    QTimer.singleShot(20000, self.unset_led2)
-                self.set_led2(state)
-                self.LED2on = state
-            if led == 3:
-                if self.settings.LED3Autoflash.isChecked():
-                    self.timerLED3.start(500)
-                if self.settings.LED3Timedflash.isChecked():
-                    self.timerLED3.start(500)
-                    QTimer.singleShot(20000, self.unset_led3)
-                self.set_led3(state)
-                self.LED3on = state
-            if led == 4:
-                if self.settings.LED4Autoflash.isChecked():
-                    self.timerLED4.start(500)
-                if self.settings.LED4Timedflash.isChecked():
-                    self.timerLED4.start(500)
-                    QTimer.singleShot(20000, self.unset_led4)
-                self.set_led4(state)
-                self.LED4on = state
-
-        if not state:
-            if led == 1:
-                self.set_led1(state)
-                self.timerLED1.stop()
-                self.LED1on = state
-            if led == 2:
-                self.set_led2(state)
-                self.timerLED2.stop()
-                self.LED2on = state
-            if led == 3:
-                self.set_led3(state)
-                self.timerLED3.stop()
-                self.LED3on = state
-            if led == 4:
-                self.set_led4(state)
-                self.timerLED4.stop()
-                self.LED4on = state
+            # Turn LED on
+            timer = getattr(self, timer_attr)
+            autoflash = getattr(self.settings, autoflash_attr)
+            timedflash = getattr(self.settings, timedflash_attr)
+            
+            if autoflash.isChecked():
+                timer.start(500)
+            if timedflash.isChecked():
+                timer.start(500)
+                QTimer.singleShot(20000, getattr(self, unset_led_attr))
+            
+            set_led_method = getattr(self, set_led_attr)
+            set_led_method(state)
+            setattr(self, led_on_attr, state)
+        else:
+            # Turn LED off
+            set_led_method = getattr(self, set_led_attr)
+            set_led_method(state)
+            timer = getattr(self, timer_attr)
+            timer.stop()
+            setattr(self, led_on_attr, state)
 
     def set_station_color(self, newcolor):
         palette = self.labelStation.palette()
