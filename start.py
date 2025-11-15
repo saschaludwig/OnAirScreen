@@ -261,7 +261,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.radioTimerMode = 1  # count down mode
         else:
             self.radioTimerMode = 0  # count up mode
-        self.AirLabel_3.setText("Timer\n%d:%02d" % (self.Air3Seconds / 60, self.Air3Seconds % 60))
+        self.AirLabel_3.setText(f"Timer\n{int(self.Air3Seconds / 60)}:{int(self.Air3Seconds % 60):02d}")
 
     def get_timer_dialog(self):
         # generate and display timer input window
@@ -531,8 +531,8 @@ class MainScreen(QWidget, Ui_MainScreen):
             # if address.protocol() == 1:
             #    v6addrs.append(address.toString())
 
-        self.set_current_song_text(", ".join(["%s" % addr for addr in v4addrs]))
-        self.set_news_text(", ".join(["%s" % addr for addr in v6addrs]))
+        self.set_current_song_text(", ".join([str(addr) for addr in v4addrs]))
+        self.set_news_text(", ".join([str(addr) for addr in v6addrs]))
 
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("General")
@@ -1196,18 +1196,17 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if hour > 12:
                     hour -= 12
             if minute == 0:
-                string = "it's %d o'clock" % hour
+                string = f"it's {hour} o'clock"
             if (0 < minute < 15) or (16 <= minute <= 29):
-                string = "it's %d minute%s past %d" % (minute, 's' if minute > 1 else '', hour)
+                string = f"it's {minute} minute{'s' if minute > 1 else ''} past {hour}"
             if minute == 15:
-                string = "it's a quarter past %d" % hour
+                string = f"it's a quarter past {hour}"
             if minute == 30:
-                string = "it's half past %d" % hour
+                string = f"it's half past {hour}"
             if minute == 45:
-                string = "it's a quarter to %d" % (hour + 1)
+                string = f"it's a quarter to {hour + 1}"
             if (31 <= minute <= 44) or (46 <= minute <= 59):
-                string = "it's %d minute%s to %d" % (
-                    remain_min, 's' if remain_min > 1 else '', 1 if hour == 12 else hour + 1)
+                string = f"it's {remain_min} minute{'s' if remain_min > 1 else ''} to {1 if hour == 12 else hour + 1}"
 
         self.set_right_text(string)
 
@@ -1615,7 +1614,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     Handles GET requests with command parameters and forwards them
     to the UDP command handler.
     """
-    server_version = "OnAirScreen/%s" % versionString
+    server_version = f"OnAirScreen/{versionString}"
 
     # handle HEAD request
     def do_HEAD(self):
