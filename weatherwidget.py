@@ -253,13 +253,31 @@ class WeatherWidget(QtWidgets.QWidget):
                 error_string = f"Unexpected JSON payload in OWM Response: {reply_string}"
                 logger.error(f"{error_string}: {e}")
                 return
-            main_weather = weather_json["weather"][0]["main"]
-            condition = weather_json["weather"][0]["description"]
-            city = weather_json["name"]
-            unit_symbol = self.owm_units_abbrev.get(self.owmUnit)
-            temp = "{:.0f}{}".format(weather_json["main"]["temp"], unit_symbol)
-            icon = weather_json["weather"][0]["icon"]
-            background = icon
+            
+            # Validate JSON structure to prevent KeyError/IndexError
+            try:
+                if "weather" not in weather_json or len(weather_json["weather"]) == 0:
+                    logger.error("OWM response missing weather array")
+                    return
+                if "main" not in weather_json:
+                    logger.error("OWM response missing main data")
+                    return
+                if "name" not in weather_json:
+                    logger.error("OWM response missing city name")
+                    return
+                
+                main_weather = weather_json["weather"][0]["main"]
+                condition = weather_json["weather"][0]["description"]
+                city = weather_json["name"]
+                unit_symbol = self.owm_units_abbrev.get(self.owmUnit, "°C")  # Default to °C if not found
+                if unit_symbol is None:
+                    unit_symbol = "°C"
+                temp = "{:.0f}{}".format(weather_json["main"]["temp"], unit_symbol)
+                icon = weather_json["weather"][0]["icon"]
+                background = icon
+            except (KeyError, IndexError, TypeError) as e:
+                logger.error(f"OWM response has unexpected structure: {e}")
+                return
             if self.owmLanguage == "de":
                 label = "WETTER"
             else:

@@ -280,11 +280,11 @@ class TestCheckNTPOffsetThread:
 class TestHttpDaemon:
     """Tests for HttpDaemon"""
     
-    @patch('start.HTTPServer')
-    @patch('start.QSettings')
+    @patch('network.HTTPServer')
+    @patch('network.QSettings')
     def test_http_daemon_run(self, mock_qsettings, mock_httpserver_class):
         """Test HttpDaemon.run starts HTTP server"""
-        from start import HttpDaemon, HOST
+        from network import HttpDaemon
         
         mock_settings = Mock()
         mock_settings.value.return_value = "8010"
@@ -301,11 +301,11 @@ class TestHttpDaemon:
         # but we can verify the structure
         assert hasattr(daemon, 'run')
     
-    @patch('start.HTTPServer')
-    @patch('start.QSettings')
+    @patch('network.HTTPServer')
+    @patch('network.QSettings')
     def test_http_daemon_run_port_error(self, mock_qsettings, mock_httpserver_class):
         """Test HttpDaemon.run handles port errors"""
-        from start import HttpDaemon
+        from network import HttpDaemon
         
         mock_settings = Mock()
         mock_settings.value.return_value = "8010"
@@ -322,7 +322,7 @@ class TestHttpDaemon:
     
     def test_http_daemon_stop(self):
         """Test HttpDaemon.stop stops server"""
-        from start import HttpDaemon
+        from network import HttpDaemon
         
         daemon = HttpDaemon.__new__(HttpDaemon)
         daemon._server = Mock()

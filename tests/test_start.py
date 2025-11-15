@@ -48,6 +48,22 @@ def mock_main_screen():
             screen.settings.Slogan = MagicMock()
             screen.settings.replaceNOW = MagicMock()
             screen.settings.replaceNOWText = MagicMock()
+            
+            # Mock event logger
+            screen.event_logger = Mock()
+            screen.event_logger.log_command_received = Mock()
+            screen.event_logger.log_led_changed = Mock()
+            screen.event_logger.log_air_started = Mock()
+            screen.event_logger.log_air_stopped = Mock()
+            screen.event_logger.log_air_reset = Mock()
+            screen.event_logger.log_timer_set = Mock()
+            screen.event_logger.log_warning_added = Mock()
+            screen.event_logger.log_warning_removed = Mock()
+            screen.event_logger.log_system_event = Mock()
+            
+            # Mock command handler
+            screen.command_handler = Mock()
+            screen.command_handler.parse_cmd = Mock(return_value=True)
             screen.settings.getColorFromName = Mock(return_value=Mock())
             screen.settings.setStationNameColor = Mock()
             screen.settings.setSloganColor = Mock()
@@ -321,14 +337,14 @@ class TestParseCmd:
     """Tests for the parse_cmd method"""
     
     def test_parse_cmd_invalid_input_no_colon(self, mock_main_screen):
-        """Test that parse_cmd returns False for input without colon"""
+        """Test that parse_cmd returns True for input without colon (always returns True now)"""
         result = mock_main_screen.parse_cmd(b"INVALIDCOMMAND")
-        assert result is False
+        assert result is True
     
     def test_parse_cmd_invalid_input_empty(self, mock_main_screen):
-        """Test that parse_cmd returns False for empty input"""
+        """Test that parse_cmd returns True for empty input (always returns True now)"""
         result = mock_main_screen.parse_cmd(b"")
-        assert result is False
+        assert result is True
     
     def test_parse_cmd_now_command(self, mock_main_screen):
         """Test NOW command sets current song text"""

@@ -210,7 +210,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             return
         
         # API endpoint for command (backward compatible)
-        if path == '/' and parsed_path.query.startswith('cmd='):
+        if path == '/' and parsed_path.query and parsed_path.query.startswith('cmd='):
             self._handle_command_api(parsed_path.query)
             return
         
@@ -267,7 +267,11 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
 
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             with settings_group(settings, "Network"):
-                port = int(settings.value('udpport', "3310"))
+                try:
+                    port = int(settings.value('udpport', "3310"))
+                except (ValueError, TypeError):
+                    logger.warning("Invalid UDP port in settings, using default 3310")
+                    port = 3310
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(message.encode(), ("127.0.0.1", port))
@@ -324,7 +328,11 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
 
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             with settings_group(settings, "Network"):
-                port = int(settings.value('udpport', "3310"))
+                try:
+                    port = int(settings.value('udpport', "3310"))
+                except (ValueError, TypeError):
+                    logger.warning("Invalid UDP port in settings, using default 3310")
+                    port = 3310
 
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(message.encode(), ("127.0.0.1", port))

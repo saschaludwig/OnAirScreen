@@ -413,6 +413,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             }
         }
         
+        if air_num not in air_configs:
+            logger.warning(f"Invalid AIR number: {air_num}, must be 1-4")
+            return
+        
         config = air_configs[air_num]
         label_widget = getattr(self, config['label_widget'])
         icon_widget = getattr(self, config['icon_widget'])
@@ -1424,12 +1428,21 @@ class MainScreen(QWidget, Ui_MainScreen):
         next_text = ""
         warn_text = ""
         
-        if hasattr(self, 'labelCurrentSong'):
-            now_text = self.labelCurrentSong.text() or ""
-        if hasattr(self, 'labelNews'):
-            next_text = self.labelNews.text() or ""
-        if hasattr(self, 'labelWarning'):
-            warn_text = self.labelWarning.text() or ""
+        if hasattr(self, 'labelCurrentSong') and self.labelCurrentSong:
+            try:
+                now_text = self.labelCurrentSong.text() or ""
+            except (AttributeError, RuntimeError):
+                now_text = ""
+        if hasattr(self, 'labelNews') and self.labelNews:
+            try:
+                next_text = self.labelNews.text() or ""
+            except (AttributeError, RuntimeError):
+                next_text = ""
+        if hasattr(self, 'labelWarning') and self.labelWarning:
+            try:
+                warn_text = self.labelWarning.text() or ""
+            except (AttributeError, RuntimeError):
+                warn_text = ""
         
         return {
             'leds': leds,
@@ -1444,8 +1457,18 @@ class MainScreen(QWidget, Ui_MainScreen):
         }
     
     def closeEvent(self, event):
-        self.httpd.stop()
-        self.checkNTPOffset.stop()
+        """Handle window close event"""
+        try:
+            if hasattr(self, 'httpd') and self.httpd:
+                self.httpd.stop()
+        except Exception as e:
+            logger.error(f"Error stopping HTTP daemon: {e}")
+        
+        try:
+            if hasattr(self, 'checkNTPOffset') and self.checkNTPOffset:
+                self.checkNTPOffset.stop()
+        except Exception as e:
+            logger.error(f"Error stopping NTP check: {e}")
 
 
 class CheckNTPOffsetThread(QThread):
