@@ -5,8 +5,8 @@ Unit tests for utils.py
 """
 
 import pytest
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import QTimer
 
 from utils import TimerUpdateMessageBox
 
@@ -110,7 +110,7 @@ class TestTimerUpdateMessageBox:
     
     def test_closeEvent_stops_timer(self, qapp):
         """Test that closeEvent stops the timer"""
-        from PyQt5.QtGui import QCloseEvent
+        from PyQt6.QtGui import QCloseEvent
         
         json_reply = {
             'Message': 'Test',

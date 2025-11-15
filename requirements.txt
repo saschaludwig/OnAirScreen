@@ -1,5 +1,4 @@
-PyQt5
+PyQt6
 ntplib
 PyInstaller
-pyqt-distutils
 pytest
