@@ -2,3 +2,4 @@ PyQt5
 ntplib
 PyInstaller
 pyqt-distutils
+pytest
