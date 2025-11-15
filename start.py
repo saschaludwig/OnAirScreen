@@ -1285,62 +1285,103 @@ class MainScreen(QWidget, Ui_MainScreen):
         """Update AIR2 seconds display"""
         self._update_air_seconds(2)
 
-    def reset_air3(self):
+    def reset_air3(self) -> None:
+        """Reset AIR3 timer"""
+        self._reset_air(3)
+
+    def _reset_air(self, air_num: int) -> None:
+        """
+        Generic method to reset AIR timer
+        
+        Args:
+            air_num: AIR number (3 or 4)
+        """
+        if air_num not in [3, 4]:
+            logger.warning(f"Invalid AIR number for reset: {air_num}")
+            return
+        
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("Timers")
-        self.timerAIR3.stop()
-        self.Air3Seconds = 0
-        label_text = settings.value('TimerAIR3Text', 'Timer')
-        self.AirLabel_3.setText(F"{label_text}\n{int(self.Air3Seconds/60)}:{self.Air3Seconds%60:02d}")
-        if self.statusAIR3:
-            self.timerAIR3.start(1000)
+        
+        timer_attr = f'timerAIR{air_num}'
+        seconds_attr = f'Air{air_num}Seconds'
+        status_attr = f'statusAIR{air_num}'
+        label_attr = f'AirLabel_{air_num}'
+        
+        default_texts = {3: 'Timer', 4: 'Stream'}
+        text_key = f'TimerAIR{air_num}Text'
+        
+        timer = getattr(self, timer_attr)
+        timer.stop()
+        setattr(self, seconds_attr, 0)
+        
+        label_text = settings.value(text_key, default_texts[air_num])
+        label_widget = getattr(self, label_attr)
+        seconds = getattr(self, seconds_attr)
+        label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+        
+        if getattr(self, status_attr):
+            timer.start(1000)
+        
         settings.endGroup()
 
     def set_air3(self, action: bool) -> None:
         """Set AIR3 state (active/inactive)"""
         self._set_air_state(3, action)
 
-    def start_stop_air3(self):
-        if not self.statusAIR3:
-            self.start_air3()
-        else:
-            self.stop_air3()
+    def start_stop_air3(self) -> None:
+        """Toggle AIR3 start/stop"""
+        self._start_stop_air(3)
 
-    def start_air3(self):
+    def _start_stop_air(self, air_num: int) -> None:
+        """
+        Generic method to toggle AIR start/stop
+        
+        Args:
+            air_num: AIR number (3 or 4)
+        """
+        if air_num not in [3, 4]:
+            logger.warning(f"Invalid AIR number for start_stop: {air_num}")
+            return
+        
+        status_attr = f'statusAIR{air_num}'
+        current_state = getattr(self, status_attr, False)
+        
+        if not current_state:
+            getattr(self, f'start_air{air_num}')()
+        else:
+            getattr(self, f'stop_air{air_num}')()
+
+    def start_air3(self) -> None:
+        """Start AIR3"""
         self.set_air3(True)
 
-    def stop_air3(self):
+    def stop_air3(self) -> None:
+        """Stop AIR3"""
         self.set_air3(False)
 
     def update_air3_seconds(self) -> None:
         """Update AIR3 seconds display"""
         self._update_air_seconds(3)
 
-    def reset_air4(self):
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Timers")
-        self.timerAIR4.stop()
-        self.Air4Seconds = 0
-        label_text = settings.value('TimerAIR4Text', 'Stream')
-        self.AirLabel_4.setText(F"{label_text}\n{int(self.Air4Seconds/60)}:{self.Air4Seconds%60:02d}")
-        if self.statusAIR4:
-            self.timerAIR4.start(1000)
-        settings.endGroup()
+    def reset_air4(self) -> None:
+        """Reset AIR4 timer"""
+        self._reset_air(4)
 
     def set_air4(self, action: bool) -> None:
         """Set AIR4 state (active/inactive)"""
         self._set_air_state(4, action)
 
-    def start_stop_air4(self):
-        if not self.statusAIR4:
-            self.start_air4()
-        else:
-            self.stop_air4()
+    def start_stop_air4(self) -> None:
+        """Toggle AIR4 start/stop"""
+        self._start_stop_air(4)
 
-    def start_air4(self):
+    def start_air4(self) -> None:
+        """Start AIR4"""
         self.set_air4(True)
 
-    def stop_air4(self):
+    def stop_air4(self) -> None:
+        """Stop AIR4"""
         self.set_air4(False)
 
     def update_air4_seconds(self) -> None:
