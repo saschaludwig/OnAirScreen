@@ -1414,9 +1414,17 @@ class CheckNTPOffsetThread(QThread):
     def __init__(self, oas):
         self.oas = oas
         QThread.__init__(self)
+        self._initialized = True  # Mark that __init__ was called
 
     def __del__(self):
-        self.wait()
+        try:
+            # Only call wait() if the thread was properly initialized
+            # This prevents errors when the object is created with __new__() in tests
+            if hasattr(self, '_initialized') and self._initialized:
+                self.wait()
+        except (RuntimeError, AttributeError):
+            # Thread was never initialized or already destroyed
+            pass
 
     def run(self):
         print("entered CheckNTPOffsetThread.run")
