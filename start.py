@@ -46,6 +46,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import unquote_plus
 
 import ntplib
+from contextlib import contextmanager
 from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread
 from PyQt6.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont, QShortcut, QFontDatabase
 from PyQt6.QtNetwork import QUdpSocket, QNetworkInterface, QHostAddress
@@ -64,6 +65,27 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def settings_group(settings: QSettings, group_name: str):
+    """
+    Context manager for QSettings group operations
+    
+    Ensures that endGroup() is always called, even if an exception occurs.
+    
+    Args:
+        settings: QSettings instance
+        group_name: Name of the group to begin
+        
+    Yields:
+        QSettings instance with the group active
+    """
+    settings.beginGroup(group_name)
+    try:
+        yield settings
+    finally:
+        settings.endGroup()
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -98,11 +120,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigConfigClosed.connect(self.config_closed)
 
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-        if settings.value('fullscreen', True, type=bool):
-            self.showFullScreen()
-            app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            if settings.value('fullscreen', True, type=bool):
+                self.showFullScreen()
+                app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
         logger.info(f"Loaded settings from: {settings.fileName()}")
 
         self.labelWarning.hide()
@@ -205,17 +226,16 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Setup UDP Socket and join Multicast Group
         self.udpsock = QUdpSocket()
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Network")
-        try:
-            port = int(settings.value('udpport', "3310"))
-        except ValueError:
-            port = "3310"
-            settings.setValue('udpport', "3310")
-        multicast_address = settings.value('multicast_address', "239.194.0.1")
-        if not QHostAddress(multicast_address).isMulticast():
-            multicast_address = "239.194.0.1"
-            settings.setValue('multicast_address', "239.194.0.1")
-        settings.endGroup()
+        with settings_group(settings, "Network"):
+            try:
+                port = int(settings.value('udpport', "3310"))
+            except ValueError:
+                port = "3310"
+                settings.setValue('udpport', "3310")
+            multicast_address = settings.value('multicast_address', "239.194.0.1")
+            if not QHostAddress(multicast_address).isMulticast():
+                multicast_address = "239.194.0.1"
+                settings.setValue('multicast_address', "239.194.0.1")
 
         self.udpsock.bind(QHostAddress.SpecialAddress.AnyIPv4, int(port), QUdpSocket.BindFlag.ShareAddress)
         if QHostAddress(multicast_address).isMulticast():
@@ -232,11 +252,10 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # set NTP warning
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("NTP")
-        if settings.value('ntpcheck', True, type=bool):
-            self.ntpHadWarning = True
-            self.ntpWarnMessage = "waiting for NTP status check"
-        settings.endGroup()
+        with settings_group(settings, "NTP"):
+            if settings.value('ntpcheck', True, type=bool):
+                self.ntpHadWarning = True
+                self.ntpWarnMessage = "waiting for NTP status check"
 
         # do initial update check
         self.settings.sigCheckForUpdate.emit()
@@ -327,21 +346,20 @@ class MainScreen(QWidget, Ui_MainScreen):
     def _ensure_air_icons_are_set(self) -> None:
         """Helper method to ensure all AIR icons are set correctly"""
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("AIR")
-        air_configs = [
-            (1, 'air1iconpath', ':/mic_icon/images/mic_icon.png'),
-            (2, 'air2iconpath', ':/phone_icon/images/phone_icon.png'),
-            (3, 'air3iconpath', ':/timer_icon/images/timer_icon.png'),
-            (4, 'air4iconpath', ':/stream_icon/images/antenna2.png')
-        ]
-        for air_num, icon_key, default_path in air_configs:
-            icon_path = settings.value(icon_key, default_path)
-            if icon_path:
-                pixmap = QPixmap(icon_path)
-                icon_widget = getattr(self, f'AirIcon_{air_num}')
-                icon_widget.setPixmap(pixmap)
-                icon_widget.update()
-        settings.endGroup()
+        with settings_group(settings, "AIR"):
+            air_configs = [
+                (1, 'air1iconpath', ':/mic_icon/images/mic_icon.png'),
+                (2, 'air2iconpath', ':/phone_icon/images/phone_icon.png'),
+                (3, 'air3iconpath', ':/timer_icon/images/timer_icon.png'),
+                (4, 'air4iconpath', ':/stream_icon/images/antenna2.png')
+            ]
+            for air_num, icon_key, default_path in air_configs:
+                icon_path = settings.value(icon_key, default_path)
+                if icon_path:
+                    pixmap = QPixmap(icon_path)
+                    icon_widget = getattr(self, f'AirIcon_{air_num}')
+                    icon_widget.setPixmap(pixmap)
+                    icon_widget.update()
 
     def _set_air_state(self, air_num: int, action: bool) -> None:
         """
@@ -421,59 +439,54 @@ class MainScreen(QWidget, Ui_MainScreen):
         timer_attr = config['timer_attr']
         
         if action:
-            settings.beginGroup("Timers")
-            if config.get('reset_seconds', False):
-                setattr(self, seconds_attr, 0)
-            
-            # Set active styles
-            active_text_color = settings.value(config['active_text_color'], '#FFFFFF')
-            active_bg_color = settings.value(config['active_bg_color'], '#FF0000')
-            label_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
-            
-            # Set icon with active styles
-            settings.beginGroup("AIR")
-            icon_path = settings.value(config['icon_key'], config['icon_default'])
-            if icon_path:
-                pixmap = QPixmap(icon_path)
-                icon_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
-                icon_widget.setPixmap(pixmap)
-                icon_widget.update()
-            settings.endGroup()
-            
-            # Set label text
-            label_text = settings.value(config['label'], config['label_default'])
-            seconds = getattr(self, seconds_attr)
-            label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
-            
-            # Set status and start timer
-            setattr(self, status_attr, True)
-            timer = getattr(self, timer_attr)
-            timer.start(1000)
-            
-            # Special handling for AIR3 and AIR4 countdown mode
-            if 'special_mode' in config:
-                mode_attr = config['special_mode']
-                mode = getattr(self, mode_attr, 0)
-                if mode == 1 and seconds > 1:
-                    update_method = getattr(self, f'update_air{air_num}_seconds')
-                    update_method()
-            
-            settings.endGroup()
+            with settings_group(settings, "Timers"):
+                if config.get('reset_seconds', False):
+                    setattr(self, seconds_attr, 0)
+                
+                # Set active styles
+                active_text_color = settings.value(config['active_text_color'], '#FFFFFF')
+                active_bg_color = settings.value(config['active_bg_color'], '#FF0000')
+                label_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
+                
+                # Set icon with active styles
+                with settings_group(settings, "AIR"):
+                    icon_path = settings.value(config['icon_key'], config['icon_default'])
+                    if icon_path:
+                        pixmap = QPixmap(icon_path)
+                        icon_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
+                        icon_widget.setPixmap(pixmap)
+                        icon_widget.update()
+                
+                # Set label text
+                label_text = settings.value(config['label'], config['label_default'])
+                seconds = getattr(self, seconds_attr)
+                label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+                
+                # Set status and start timer
+                setattr(self, status_attr, True)
+                timer = getattr(self, timer_attr)
+                timer.start(1000)
+                
+                # Special handling for AIR3 and AIR4 countdown mode
+                if 'special_mode' in config:
+                    mode_attr = config['special_mode']
+                    mode = getattr(self, mode_attr, 0)
+                    if mode == 1 and seconds > 1:
+                        update_method = getattr(self, f'update_air{air_num}_seconds')
+                        update_method()
         else:
-            settings.beginGroup("LEDS")
-            inactive_text_color = settings.value('inactivetextcolor', '#555555')
-            inactive_bg_color = settings.value('inactivebgcolor', '#222222')
-            
-            # Save icon before setStyleSheet to prevent flickering
-            settings.beginGroup("AIR")
-            icon_path = settings.value(config['icon_key'], config['icon_default'])
-            icon_pixmap = QPixmap(icon_path) if icon_path else None
-            settings.endGroup()
-            
-            # Set inactive styles
-            label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-            icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-            settings.endGroup()
+            with settings_group(settings, "LEDS"):
+                inactive_text_color = settings.value('inactivetextcolor', '#555555')
+                inactive_bg_color = settings.value('inactivebgcolor', '#222222')
+                
+                # Save icon before setStyleSheet to prevent flickering
+                with settings_group(settings, "AIR"):
+                    icon_path = settings.value(config['icon_key'], config['icon_default'])
+                    icon_pixmap = QPixmap(icon_path) if icon_path else None
+                
+                # Set inactive styles
+                label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
+                icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
             
             # Restore icon immediately after styleSheet change to prevent flickering
             if icon_pixmap and not icon_pixmap.isNull():
@@ -493,7 +506,6 @@ class MainScreen(QWidget, Ui_MainScreen):
             air_num: AIR number (1-4)
         """
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Timers")
         
         air_configs = {
             1: {'label': 'TimerAIR1Text', 'label_default': 'Mic', 'seconds_attr': 'Air1Seconds', 'label_widget': 'AirLabel_1'},
@@ -525,11 +537,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             setattr(self, seconds_attr, getattr(self, seconds_attr) + 1)
         
         # Update label text
-        label_text = settings.value(config['label'], config['label_default'])
-        seconds = getattr(self, seconds_attr)
-        label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
-        
-        settings.endGroup()
+        with settings_group(settings, "Timers"):
+            label_text = settings.value(config['label'], config['label_default'])
+            seconds = getattr(self, seconds_attr)
+            label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
 
     def show_settings(self):
         global app
@@ -553,11 +564,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_news_text(", ".join([str(addr) for addr in v6addrs]))
 
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-        if settings.value('replacenow', True, type=bool):
-            self.replacenowTimer.setSingleShot(True)
-            self.replacenowTimer.start(10000)
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            if settings.value('replacenow', True, type=bool):
+                self.replacenowTimer.setSingleShot(True)
+                self.replacenowTimer.start(10000)
 
     def parse_cmd(self, data: bytes) -> bool:
         """
@@ -999,12 +1009,11 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def _restore_general_settings(self, settings: QSettings) -> None:
         """Restore general settings (station name, slogan, colors)"""
-        settings.beginGroup("General")
-        self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
-        self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
-        self.set_station_color(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
-        self.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
+            self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
+            self.set_station_color(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
+            self.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
 
     def _restore_led_settings(self, settings: QSettings) -> None:
         """Restore LED settings (text, visibility)"""
@@ -1016,122 +1025,113 @@ class MainScreen(QWidget, Ui_MainScreen):
         ]
         
         for led_num, default_text in led_configs:
-            settings.beginGroup(f"LED{led_num}")
-            getattr(self, f'set_led{led_num}_text')(settings.value('text', default_text))
-            getattr(self, f'buttonLED{led_num}').setVisible(settings.value('used', True, type=bool))
-            settings.endGroup()
+            with settings_group(settings, f"LED{led_num}"):
+                getattr(self, f'set_led{led_num}_text')(settings.value('text', default_text))
+                getattr(self, f'buttonLED{led_num}').setVisible(settings.value('used', True, type=bool))
 
     def _restore_clock_settings(self, settings: QSettings) -> None:
         """Restore clock widget settings"""
-        settings.beginGroup("Clock")
-        self.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
-        self.clockWidget.set_digi_hour_color(
-            self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
-        self.clockWidget.set_digi_second_color(
-            self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
-        self.clockWidget.set_digi_digit_color(
-            self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
-        self.clockWidget.set_logo(
-            settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
-        self.clockWidget.set_show_seconds(settings.value('showSeconds', False, type=bool))
-        self.clockWidget.set_one_line_time(settings.value('showSecondsInOneLine', False, type=bool) &
-                                           settings.value('showSeconds', False, type=bool))
-        self.clockWidget.set_static_colon(settings.value('staticColon', False, type=bool))
-        self.clockWidget.set_logo_upper(settings.value('logoUpper', False, type=bool))
-        self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
-        settings.endGroup()
+        with settings_group(settings, "Clock"):
+            self.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
+            self.clockWidget.set_digi_hour_color(
+                self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
+            self.clockWidget.set_digi_second_color(
+                self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
+            self.clockWidget.set_digi_digit_color(
+                self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
+            self.clockWidget.set_logo(
+                settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
+            self.clockWidget.set_show_seconds(settings.value('showSeconds', False, type=bool))
+            self.clockWidget.set_one_line_time(settings.value('showSecondsInOneLine', False, type=bool) &
+                                               settings.value('showSeconds', False, type=bool))
+            self.clockWidget.set_static_colon(settings.value('staticColon', False, type=bool))
+            self.clockWidget.set_logo_upper(settings.value('logoUpper', False, type=bool))
+            self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
 
     def _restore_formatting_settings(self, settings: QSettings) -> None:
         """Restore formatting settings (AM/PM, text clock language)"""
-        settings.beginGroup("Formatting")
-        self.clockWidget.set_am_pm(settings.value('isAmPm', False, type=bool))
-        self.textLocale = settings.value('textClockLanguage', 'English')
-        settings.endGroup()
+        with settings_group(settings, "Formatting"):
+            self.clockWidget.set_am_pm(settings.value('isAmPm', False, type=bool))
+            self.textLocale = settings.value('textClockLanguage', 'English')
 
     def _restore_weather_settings(self, settings: QSettings) -> None:
         """Restore weather widget settings"""
-        settings.beginGroup("WeatherWidget")
-        if settings.value('owmWidgetEnabled', False, type=bool):
-            self.weatherWidget.show()
-        else:
-            self.weatherWidget.hide()
-        settings.endGroup()
+        with settings_group(settings, "WeatherWidget"):
+            if settings.value('owmWidgetEnabled', False, type=bool):
+                self.weatherWidget.show()
+            else:
+                self.weatherWidget.hide()
 
     def _restore_timer_settings(self, settings: QSettings) -> None:
         """Restore timer/AIR settings"""
-        settings.beginGroup("Timers")
-        # Configuration for each AIR timer
-        air_timer_configs = [
-            (1, 'TimerAIR1Enabled', 'TimerAIR1Text', 'Mic', 'air1iconpath', ':/mic_icon/images/mic_icon.png'),
-            (2, 'TimerAIR2Enabled', 'TimerAIR2Text', 'Phone', 'air2iconpath', ':/phone_icon/images/phone_icon.png'),
-            (3, 'TimerAIR3Enabled', 'TimerAIR3Text', 'Timer', 'air3iconpath', ':/timer_icon/images/timer_icon.png'),
-            (4, 'TimerAIR4Enabled', 'TimerAIR4Text', 'Stream', 'air4iconpath', ':/stream_icon/images/antenna2.png')
-        ]
-        
-        for air_num, enabled_key, text_key, text_default, icon_key, icon_default in air_timer_configs:
-            if not settings.value(enabled_key, True, type=bool):
+        with settings_group(settings, "Timers"):
+            # Configuration for each AIR timer
+            air_timer_configs = [
+                (1, 'TimerAIR1Enabled', 'TimerAIR1Text', 'Mic', 'air1iconpath', ':/mic_icon/images/mic_icon.png'),
+                (2, 'TimerAIR2Enabled', 'TimerAIR2Text', 'Phone', 'air2iconpath', ':/phone_icon/images/phone_icon.png'),
+                (3, 'TimerAIR3Enabled', 'TimerAIR3Text', 'Timer', 'air3iconpath', ':/timer_icon/images/timer_icon.png'),
+                (4, 'TimerAIR4Enabled', 'TimerAIR4Text', 'Stream', 'air4iconpath', ':/stream_icon/images/antenna2.png')
+            ]
+            
+            for air_num, enabled_key, text_key, text_default, icon_key, icon_default in air_timer_configs:
+                if not settings.value(enabled_key, True, type=bool):
+                    led_widget = getattr(self, f'AirLED_{air_num}')
+                    led_widget.hide()
+                else:
+                    label_text = settings.value(text_key, text_default)
+                    label_widget = getattr(self, f'AirLabel_{air_num}')
+                    icon_widget = getattr(self, f'AirIcon_{air_num}')
+                    led_widget = getattr(self, f'AirLED_{air_num}')
+                    
+                    label_widget.setText(f"{label_text}\n0:00")
+                    inactive_text_color = settings.value('inactivetextcolor', '#555555')
+                    inactive_bg_color = settings.value('inactivebgcolor', '#222222')
+                    
+                    # Save icon before setStyleSheet to prevent flickering
+                    with settings_group(settings, "AIR"):
+                        icon_path = settings.value(icon_key, icon_default)
+                        icon_pixmap = QPixmap(icon_path) if icon_path else None
+                    
+                    # Set inactive styles
+                    label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
+                    icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
+                    
+                    # Restore icon immediately after styleSheet change to prevent flickering
+                    if icon_pixmap and not icon_pixmap.isNull():
+                        icon_widget.setPixmap(icon_pixmap)
+                        icon_widget.update()
+                    
+                    led_widget.show()
+            
+            # Set minimum left LED width
+            min_width = settings.value('TimerAIRMinWidth', 200, type=int)
+            for air_num in range(1, 5):
                 led_widget = getattr(self, f'AirLED_{air_num}')
-                led_widget.hide()
-            else:
-                label_text = settings.value(text_key, text_default)
-                label_widget = getattr(self, f'AirLabel_{air_num}')
-                icon_widget = getattr(self, f'AirIcon_{air_num}')
-                led_widget = getattr(self, f'AirLED_{air_num}')
-                
-                label_widget.setText(f"{label_text}\n0:00")
-                inactive_text_color = settings.value('inactivetextcolor', '#555555')
-                inactive_bg_color = settings.value('inactivebgcolor', '#222222')
-                
-                # Save icon before setStyleSheet to prevent flickering
-                settings.beginGroup("AIR")
-                icon_path = settings.value(icon_key, icon_default)
-                icon_pixmap = QPixmap(icon_path) if icon_path else None
-                settings.endGroup()
-                
-                # Set inactive styles
-                label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-                icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-                
-                # Restore icon immediately after styleSheet change to prevent flickering
-                if icon_pixmap and not icon_pixmap.isNull():
-                    icon_widget.setPixmap(icon_pixmap)
-                    icon_widget.update()
-                
-                led_widget.show()
-        
-        # Set minimum left LED width
-        min_width = settings.value('TimerAIRMinWidth', 200, type=int)
-        for air_num in range(1, 5):
-            led_widget = getattr(self, f'AirLED_{air_num}')
-            led_widget.setMinimumWidth(min_width)
-        
-        settings.endGroup()
+                led_widget.setMinimumWidth(min_width)
 
     def _restore_font_settings(self, settings: QSettings) -> None:
         """Restore font settings for all widgets"""
-        settings.beginGroup("Fonts")
-        # Font configuration for widgets
-        font_configs = [
-            ('LED1', 'buttonLED1'),
-            ('LED2', 'buttonLED2'),
-            ('LED3', 'buttonLED3'),
-            ('LED4', 'buttonLED4'),
-            ('AIR1', 'AirLabel_1'),
-            ('AIR2', 'AirLabel_2'),
-            ('AIR3', 'AirLabel_3'),
-            ('AIR4', 'AirLabel_4'),
-            ('StationName', 'labelStation'),
-            ('Slogan', 'labelSlogan'),
-        ]
-        
-        for font_prefix, widget_name in font_configs:
-            widget = getattr(self, widget_name)
-            font_name = settings.value(f'{font_prefix}FontName', "FreeSans")
-            font_size = settings.value(f'{font_prefix}FontSize', 24, type=int)
-            font_weight = settings.value(f'{font_prefix}FontWeight', QFont.Weight.Bold, type=int)
-            widget.setFont(QFont(font_name, font_size, font_weight))
-        
-        settings.endGroup()
+        with settings_group(settings, "Fonts"):
+            # Font configuration for widgets
+            font_configs = [
+                ('LED1', 'buttonLED1'),
+                ('LED2', 'buttonLED2'),
+                ('LED3', 'buttonLED3'),
+                ('LED4', 'buttonLED4'),
+                ('AIR1', 'AirLabel_1'),
+                ('AIR2', 'AirLabel_2'),
+                ('AIR3', 'AirLabel_3'),
+                ('AIR4', 'AirLabel_4'),
+                ('StationName', 'labelStation'),
+                ('Slogan', 'labelSlogan'),
+            ]
+            
+            for font_prefix, widget_name in font_configs:
+                widget = getattr(self, widget_name)
+                font_name = settings.value(f'{font_prefix}FontName', "FreeSans")
+                font_size = settings.value(f'{font_prefix}FontSize', 24, type=int)
+                font_weight = settings.value(f'{font_prefix}FontWeight', QFont.Weight.Bold, type=int)
+                widget.setFont(QFont(font_name, font_size, font_weight))
 
     def constant_update(self):
         # slot for constant timer timeout
@@ -1143,19 +1143,17 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def update_date(self):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Formatting")
-        set_language = settings.value('textClockLanguage', 'English')
-        lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
-        self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
-        settings.endGroup()
+        with settings_group(settings, "Formatting"):
+            set_language = settings.value('textClockLanguage', 'English')
+            lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
+            self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
 
     def update_backtiming_text(self) -> None:
         """Update the text clock display based on current time and language"""
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Formatting")
-        text_clock_language = settings.value('textClockLanguage', 'English')
-        is_am_pm = settings.value('isAmPm', False, type=bool)
-        settings.endGroup()
+        with settings_group(settings, "Formatting"):
+            text_clock_language = settings.value('textClockLanguage', 'English')
+            is_am_pm = settings.value('isAmPm', False, type=bool)
 
         now = datetime.now()
         hour = now.hour
@@ -1276,16 +1274,15 @@ class MainScreen(QWidget, Ui_MainScreen):
     def toggle_full_screen(self):
         global app
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-        if not settings.value('fullscreen', True, type=bool):
-            self.showFullScreen()
-            app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
-            settings.setValue('fullscreen', True)
-        else:
-            self.showNormal()
-            app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
-            settings.setValue('fullscreen', False)
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            if not settings.value('fullscreen', True, type=bool):
+                self.showFullScreen()
+                app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
+                settings.setValue('fullscreen', True)
+            else:
+                self.showNormal()
+                app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
+                settings.setValue('fullscreen', False)
 
     def set_air1(self, action: bool) -> None:
         """Set AIR1 state (active/inactive)"""
@@ -1319,29 +1316,26 @@ class MainScreen(QWidget, Ui_MainScreen):
             return
         
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Timers")
-        
-        timer_attr = f'timerAIR{air_num}'
-        seconds_attr = f'Air{air_num}Seconds'
-        status_attr = f'statusAIR{air_num}'
-        label_attr = f'AirLabel_{air_num}'
-        
-        default_texts = {3: 'Timer', 4: 'Stream'}
-        text_key = f'TimerAIR{air_num}Text'
-        
-        timer = getattr(self, timer_attr)
-        timer.stop()
-        setattr(self, seconds_attr, 0)
-        
-        label_text = settings.value(text_key, default_texts[air_num])
-        label_widget = getattr(self, label_attr)
-        seconds = getattr(self, seconds_attr)
-        label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
-        
-        if getattr(self, status_attr):
-            timer.start(1000)
-        
-        settings.endGroup()
+        with settings_group(settings, "Timers"):
+            timer_attr = f'timerAIR{air_num}'
+            seconds_attr = f'Air{air_num}Seconds'
+            status_attr = f'statusAIR{air_num}'
+            label_attr = f'AirLabel_{air_num}'
+            
+            default_texts = {3: 'Timer', 4: 'Stream'}
+            text_key = f'TimerAIR{air_num}Text'
+            
+            timer = getattr(self, timer_attr)
+            timer.stop()
+            setattr(self, seconds_attr, 0)
+            
+            label_text = settings.value(text_key, default_texts[air_num])
+            label_widget = getattr(self, label_attr)
+            seconds = getattr(self, seconds_attr)
+            label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+            
+            if getattr(self, status_attr):
+                timer.start(1000)
 
     def set_air3(self, action: bool) -> None:
         """Set AIR3 state (active/inactive)"""
@@ -1408,17 +1402,15 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def replace_now_next(self):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-        self.set_current_song_text(settings.value('replacenowtext', ""))
-        self.set_news_text("")
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            self.set_current_song_text(settings.value('replacenowtext', ""))
+            self.set_news_text("")
 
     def trigger_ntp_check(self):
         logger.debug("NTP Check triggered")
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("NTP")
-        ntp_check = settings.value('ntpcheck', True, type=bool)
-        settings.endGroup()
+        with settings_group(settings, "NTP"):
+            ntp_check = settings.value('ntpcheck', True, type=bool)
         if not ntp_check:
             self.timerNTP.stop()
             return
@@ -1468,18 +1460,16 @@ class MainScreen(QWidget, Ui_MainScreen):
         }
         
         if action:
-            settings.beginGroup(f"LED{led_num}")
-            active_text_color = settings.value('activetextcolor', '#FFFFFF')
-            active_bg_color = settings.value('activebgcolor', default_active_colors[led_num])
-            button_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
-            settings.endGroup()
+            with settings_group(settings, f"LED{led_num}"):
+                active_text_color = settings.value('activetextcolor', '#FFFFFF')
+                active_bg_color = settings.value('activebgcolor', default_active_colors[led_num])
+                button_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
             setattr(self, status_attr, True)
         else:
-            settings.beginGroup("LEDS")
-            inactive_text_color = settings.value('inactivetextcolor', '#555555')
-            inactive_bg_color = settings.value('inactivebgcolor', '#222222')
-            button_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-            settings.endGroup()
+            with settings_group(settings, "LEDS"):
+                inactive_text_color = settings.value('inactivetextcolor', '#555555')
+                inactive_bg_color = settings.value('inactivebgcolor', '#222222')
+                button_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
             setattr(self, status_attr, False)
 
     def set_station(self, text: str) -> None:
@@ -1584,10 +1574,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         global app
         # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("General")
-        if settings.value('fullscreen', True, type=bool):
-            app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            if settings.value('fullscreen', True, type=bool):
+                app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
         # Ensure icons are still set after dialog is closed
         self._ensure_air_icons_are_set()
 
@@ -1648,9 +1637,8 @@ class CheckNTPOffsetThread(QThread):
     def run(self):
         logger.debug("entered CheckNTPOffsetThread.run")
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("NTP")
-        ntp_server = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
-        settings.endGroup()
+        with settings_group(settings, "NTP"):
+            ntp_server = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
         max_deviation = 0.3
         c = ntplib.NTPClient()
         try:
@@ -1688,13 +1676,12 @@ class HttpDaemon(QThread):
     """
     def run(self):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("Network")
-        try:
-            port = int(settings.value('httpport', "8010"))
-        except ValueError:
-            port = 8010
-            settings.setValue("httpport", "8010")
-        settings.endGroup()
+        with settings_group(settings, "Network"):
+            try:
+                port = int(settings.value('httpport', "8010"))
+            except ValueError:
+                port = 8010
+                settings.setValue("httpport", "8010")
 
         try:
             handler = OASHTTPRequestHandler
@@ -1752,9 +1739,8 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
                 settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-                settings.beginGroup("Network")
-                port = int(settings.value('udpport', "3310"))
-                settings.endGroup()
+                with settings_group(settings, "Network"):
+                    port = int(settings.value('udpport', "3310"))
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.sendto(message.encode(), ("127.0.0.1", port))
