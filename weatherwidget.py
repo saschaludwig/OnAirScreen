@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -36,8 +36,8 @@
 #############################################################################
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-import PyQt5.QtNetwork as QtNetwork
+from PyQt6 import QtCore, QtGui, QtWidgets
+import PyQt6.QtNetwork as QtNetwork
 import json
 
 
@@ -69,7 +69,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSpacing(0)
 
-        # spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        # spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         # self.verticalLayout.addItem(spacerItem)
 
         # city label
@@ -80,7 +80,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setWeight(75)
         self.cityLabel.setFont(font)
         self.cityLabel.setStyleSheet("color: #fff;")
-        self.cityLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.cityLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         cityfx = QtWidgets.QGraphicsDropShadowEffect()
         cityfx.setBlurRadius(10)
         cityfx.setColor(QtGui.QColor("#000"))
@@ -94,7 +94,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setPointSize(14)
         self.weatherLabel.setFont(font)
         self.weatherLabel.setStyleSheet("color: #fff")
-        self.weatherLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.weatherLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         weatherfx = QtWidgets.QGraphicsDropShadowEffect()
         weatherfx.setBlurRadius(10)
         weatherfx.setColor(QtGui.QColor("#000"))
@@ -103,7 +103,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.weatherLabel)
 
         # spacer
-        spacer_item1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer_item1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout.addItem(spacer_item1)
 
         self.verticalLayout_3.addLayout(self.verticalLayout)
@@ -114,7 +114,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.weatherIcon = QtWidgets.QLabel(self)
         icon_pixmap = QtGui.QPixmap()
         self.weatherIcon.setPixmap(icon_pixmap)
-        self.weatherIcon.setAlignment(QtCore.Qt.AlignCenter)
+        self.weatherIcon.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         icon_fx = QtWidgets.QGraphicsDropShadowEffect()
         icon_fx.setBlurRadius(20)
         icon_fx.setColor(QtGui.QColor("#000"))
@@ -132,7 +132,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setWeight(75)
         self.temperatureLabel.setFont(font)
         self.temperatureLabel.setStyleSheet("color: #fff;")
-        self.temperatureLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.temperatureLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         tempfx = QtWidgets.QGraphicsDropShadowEffect()
         tempfx.setBlurRadius(20)
         tempfx.setColor(QtGui.QColor("#000"))
@@ -146,7 +146,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setPointSize(13)
         self.conditionLabel.setFont(font)
         self.conditionLabel.setStyleSheet("color: #fff")
-        self.conditionLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.conditionLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         condfx = QtWidgets.QGraphicsDropShadowEffect()
         condfx.setBlurRadius(10)
         condfx.setColor(QtGui.QColor("#000"))
@@ -199,7 +199,7 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def handleOWMResponse(self, reply):
         er = reply.error()
-        if er == QtNetwork.QNetworkReply.NoError:
+        if er == QtNetwork.QNetworkReply.NetworkError.NoError:
             bytes_string = reply.readAll()
             reply_string = str(bytes_string, 'utf-8')
             try:
@@ -227,7 +227,7 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def readConfig(self):
         # settings
-        settings = QtCore.QSettings(QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+        settings = QtCore.QSettings(QtCore.QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("WeatherWidget")
         self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
         self.owmAPIKey = settings.value('owmAPIKey', "")
@@ -238,5 +238,5 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(self.bg))

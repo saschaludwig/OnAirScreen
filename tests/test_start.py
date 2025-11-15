@@ -6,7 +6,7 @@ Unit tests for start.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 
 # Import after QApplication setup
 import sys
@@ -1463,6 +1463,29 @@ class TestOASHTTPRequestHandler:
         # Verify the decoded message was sent
         call_args = mock_sock.sendto.call_args[0][0]
         assert b"LED1:ON" in call_args
+    
+    @patch('start.socket')
+    @patch('start.QSettings')
+    def test_do_get_url_decoding_plus_signs(self, mock_qsettings, mock_socket_module):
+        """Test do_GET properly URL-decodes + signs to spaces"""
+        mock_settings = Mock()
+        mock_settings.value.return_value = "3310"
+        mock_qsettings.return_value = mock_settings
+        
+        mock_sock = Mock()
+        mock_socket_module.socket.return_value = mock_sock
+        
+        handler = self._create_handler()
+        # Test with + signs (which should be decoded to spaces)
+        handler.path = "/?cmd=NOW:The+Testers+-+Test+around+the+clock"
+        
+        handler.do_GET()
+        
+        # Verify the decoded message was sent (with spaces, not + signs)
+        call_args = mock_sock.sendto.call_args[0][0]
+        decoded_message = call_args.decode('utf-8')
+        assert "NOW:The Testers - Test around the clock" == decoded_message
+        assert "+" not in decoded_message  # No + signs should remain
 
 
 class TestReplaceNowNext:

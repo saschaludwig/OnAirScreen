@@ -12,3 +12,4 @@ build/
 distribution.py
 *.build
 *.dist
+.vscode/

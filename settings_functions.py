@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # settings_functions.py
@@ -40,10 +40,10 @@ import textwrap
 from collections import defaultdict
 from uuid import getnode
 
-import PyQt5.QtNetwork as QtNetwork
-from PyQt5.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
-from PyQt5.QtGui import QPalette, QColor, QFont
-from PyQt5.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox, QFontDialog
+import PyQt6.QtNetwork as QtNetwork
+from PyQt6.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
+from PyQt6.QtGui import QPalette, QColor, QFont
+from PyQt6.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox, QFontDialog
 
 from settings import Ui_Settings
 from utils import TimerUpdateMessageBox
@@ -168,7 +168,7 @@ class Settings(QWidget, Ui_Settings):
             self.sigShutdownRemoteHost.emit(self.row)
 
     def resetSettings(self):
-        resetSettings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+        resetSettings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         resetSettings.clear()
         self.sigConfigFinished.emit()
         self.close()
@@ -255,7 +255,7 @@ class Settings(QWidget, Ui_Settings):
         if self.oacmode:
             settings = self.settings
         else:
-            settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+            settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             
         self.settingsPath = settings.fileName()
 
@@ -406,7 +406,7 @@ class Settings(QWidget, Ui_Settings):
         self.setAIR4BGColor(self.getColorFromName(settings.value('AIR4activebgcolor', '#FF0000')))
         self.setAIR4FGColor(self.getColorFromName(settings.value('AIR4activetextcolor', '#FFFFFF')))
 
-        self.AIR1IconPath.setText(settings.value('air1iconpath', ':/mic_icon.png/images/mic_icon.png'))
+        self.AIR1IconPath.setText(settings.value('air1iconpath', ':/mic_icon/images/mic_icon.png'))
         self.AIR2IconPath.setText(settings.value('air2iconpath', ':/phone_icon/images/phone_icon.png'))
         self.AIR3IconPath.setText(settings.value('air3iconpath', ':/timer_icon/images/timer_icon.png'))
         self.AIR4IconPath.setText(settings.value('air4iconpath', ':/stream_icon/images/antenna2.png'))
@@ -417,34 +417,34 @@ class Settings(QWidget, Ui_Settings):
         settings.beginGroup("Fonts")
         self.ExampleFont_LED1.setFont(QFont(settings.value('LED1FontName', "FreeSans"),
                                             settings.value('LED1FontSize', 24, type=int),
-                                            settings.value('LED1FontWeight', QFont.Bold, type=int)))
+                                            settings.value('LED1FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_LED2.setFont(QFont(settings.value('LED2FontName', "FreeSans"),
                                             settings.value('LED2FontSize', 24, type=int),
-                                            settings.value('LED2FontWeight', QFont.Bold, type=int)))
+                                            settings.value('LED2FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_LED3.setFont(QFont(settings.value('LED3FontName', "FreeSans"),
                                             settings.value('LED3FontSize', 24, type=int),
-                                            settings.value('LED3FontWeight', QFont.Bold, type=int)))
+                                            settings.value('LED3FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_LED4.setFont(QFont(settings.value('LED4FontName', "FreeSans"),
                                             settings.value('LED4FontSize', 24, type=int),
-                                            settings.value('LED4FontWeight', QFont.Bold, type=int)))
+                                            settings.value('LED4FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_AIR1.setFont(QFont(settings.value('AIR1FontName', "FreeSans"),
                                             settings.value('AIR1FontSize', 24, type=int),
-                                            settings.value('AIR1FontWeight', QFont.Bold, type=int)))
+                                            settings.value('AIR1FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_AIR2.setFont(QFont(settings.value('AIR2FontName', "FreeSans"),
                                             settings.value('AIR2FontSize', 24, type=int),
-                                            settings.value('AIR2FontWeight', QFont.Bold, type=int)))
+                                            settings.value('AIR2FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_AIR3.setFont(QFont(settings.value('AIR3FontName', "FreeSans"),
                                             settings.value('AIR3FontSize', 24, type=int),
-                                            settings.value('AIR3FontWeight', QFont.Bold, type=int)))
+                                            settings.value('AIR3FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_AIR4.setFont(QFont(settings.value('AIR4FontName', "FreeSans"),
                                             settings.value('AIR4FontSize', 24, type=int),
-                                            settings.value('AIR4FontWeight', QFont.Bold, type=int)))
+                                            settings.value('AIR4FontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_StationName.setFont(QFont(settings.value('StationNameFontName', "FreeSans"),
                                                    settings.value('StationNameFontSize', 24, type=int),
-                                                   settings.value('StationNameFontWeight', QFont.Bold, type=int)))
+                                                   settings.value('StationNameFontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganFontName', "FreeSans"),
                                               settings.value('SloganFontSize', 18, type=int),
-                                              settings.value('SloganFontWeight', QFont.Bold, type=int)))
+                                              settings.value('SloganFontWeight', QFont.Weight.Bold, type=int)))
         self.ExampleFont_LED1.setText(f"{settings.value('LED1FontName', 'FreeSans')}, "
                                       f"{settings.value('LED1FontSize', 24, type=int)}pt")
         self.ExampleFont_LED2.setText(f"{settings.value('LED2FontName', 'FreeSans')}, "
@@ -471,7 +471,7 @@ class Settings(QWidget, Ui_Settings):
         if self.oacmode:
             settings = self.settings
         else:
-            settings = QSettings(QSettings.UserScope, "astrastudio", "OnAirScreen")
+            settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
 
         settings.beginGroup("General")
         settings.setValue('stationname', self.StationName.displayText())
@@ -676,32 +676,32 @@ class Settings(QWidget, Ui_Settings):
 
     def handle_update_check_response(self, reply):
         er = reply.error()
-        if er == QtNetwork.QNetworkReply.NoError:
+        if er == QtNetwork.QNetworkReply.NetworkError.NoError:
             bytes_string = reply.readAll()
             reply_string = str(bytes_string, 'utf-8')
             json_reply = json.loads(reply_string)
 
             if json_reply['Status'] == "UPDATE":
                 self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
-                self.timer_message_box.exec_()
+                self.timer_message_box.exec()
 
             if json_reply['Status'] == "OK" and self.manual_update_check:
                 self.message_box = QMessageBox()
-                self.message_box.setIcon(QMessageBox.Information)
+                self.message_box.setIcon(QMessageBox.Icon.Information)
                 self.message_box.setWindowTitle("OnAirScreen Update Check")
                 self.message_box.setText("OnAirScreen Update Check")
                 self.message_box.setInformativeText(f"{json_reply['Message']}")
-                self.message_box.setStandardButtons(QMessageBox.Ok)
+                self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
                 self.message_box.show()
                 self.manual_update_check = False
 
             if json_reply['Status'] == "ERROR" and self.manual_update_check:
                 self.message_box = QMessageBox()
-                self.message_box.setIcon(QMessageBox.Critical)
+                self.message_box.setIcon(QMessageBox.Icon.Critical)
                 self.message_box.setWindowTitle("OnAirScreen Update Check")
                 self.message_box.setText("OnAirScreen Update Check")
                 self.message_box.setInformativeText(f"{json_reply['Message']}")
-                self.message_box.setStandardButtons(QMessageBox.Ok)
+                self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
                 self.message_box.show()
                 self.manual_update_check = False
 
@@ -726,7 +726,7 @@ class Settings(QWidget, Ui_Settings):
     def handleOWMResponse(self, reply):
         er = reply.error()
 
-        if er == QtNetwork.QNetworkReply.NoError:
+        if er == QtNetwork.QNetworkReply.NetworkError.NoError:
             bytes_string = reply.readAll()
             replyString = str(bytes_string, 'utf-8')
             self.owmTestOutput.setPlainText(replyString)
@@ -739,7 +739,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.LED1Demo.setPalette(palette)
 
     def setLEDInactiveBGColor(self, newcolor=False):
@@ -747,7 +747,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.LEDInactive.setPalette(palette)
 
     def setLEDInactiveFGColor(self, newcolor=False):
@@ -755,7 +755,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.LEDInactive.setPalette(palette)
 
     def setLED1FGColor(self, newcolor=False):
@@ -763,7 +763,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.LED1Demo.setPalette(palette)
 
     def setLED2BGColor(self, newcolor=False):
@@ -771,7 +771,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.LED2Demo.setPalette(palette)
 
     def setLED2FGColor(self, newcolor=False):
@@ -779,7 +779,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.LED2Demo.setPalette(palette)
 
     def setLED3BGColor(self, newcolor=False):
@@ -787,7 +787,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.LED3Demo.setPalette(palette)
 
     def setLED3FGColor(self, newcolor=False):
@@ -795,7 +795,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.LED3Demo.setPalette(palette)
 
     def setLED4BGColor(self, newcolor=False):
@@ -803,7 +803,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.LED4Demo.setPalette(palette)
 
     def setLED4FGColor(self, newcolor=False):
@@ -811,7 +811,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.LED4Demo.setPalette(palette)
 
     def setAIR1FGColor(self, newcolor=False):
@@ -819,7 +819,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.AIR1Demo.setPalette(palette)
 
     def setAIR2FGColor(self, newcolor=False):
@@ -827,7 +827,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.AIR2Demo.setPalette(palette)
 
     def setAIR3FGColor(self, newcolor=False):
@@ -835,7 +835,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.AIR3Demo.setPalette(palette)
 
     def setAIR4FGColor(self, newcolor=False):
@@ -843,7 +843,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.AIR4Demo.setPalette(palette)
 
     def setAIR1BGColor(self, newcolor=False):
@@ -851,7 +851,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.AIR1Demo.setPalette(palette)
 
     def setAIR2BGColor(self, newcolor=False):
@@ -859,7 +859,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.AIR2Demo.setPalette(palette)
 
     def setAIR3BGColor(self, newcolor=False):
@@ -867,7 +867,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.AIR3Demo.setPalette(palette)
 
     def setAIR4BGColor(self, newcolor=False):
@@ -875,7 +875,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.AIR4Demo.setPalette(palette)
 
     def setStationNameColor(self, newcolor=False):
@@ -883,7 +883,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.StationNameDemo.setPalette(palette)
 
     def setSloganColor(self, newcolor=False):
@@ -891,7 +891,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.windowText().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.WindowText, newcolor)
+        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
         self.SloganDemo.setPalette(palette)
 
     def getStationNameColor(self):
@@ -1014,7 +1014,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.DigitalHourColor.setPalette(palette)
 
     def setDigitalSecondColor(self, newcolor=False):
@@ -1022,7 +1022,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.DigitalSecondColor.setPalette(palette)
 
     def setDigitalDigitColor(self, newcolor=False):
@@ -1030,7 +1030,7 @@ class Settings(QWidget, Ui_Settings):
         oldcolor = palette.window().color()
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.Window, newcolor)
+        palette.setColor(QPalette.ColorRole.Window, newcolor)
         self.DigitalDigitColor.setPalette(palette)
 
     def openColorDialog(self, initcolor):
@@ -1147,7 +1147,7 @@ class Settings(QWidget, Ui_Settings):
             self.AIR1IconPath.setText(filename)
 
     def resetAIR1Icon(self):
-        self.AIR1IconPath.setText(":/mic_icon.png/images/mic_icon.png")
+        self.AIR1IconPath.setText(":/mic_icon/images/mic_icon.png")
 
     def setAIR1IconPath(self, path):
         self.AIR1IconPath.setText(path)

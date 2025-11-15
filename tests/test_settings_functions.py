@@ -5,8 +5,8 @@ Unit tests for settings_functions.py
 """
 
 import pytest
-from PyQt5.QtCore import QVariant
-from PyQt5.QtGui import QColor
+from PyQt6.QtCore import QVariant
+from PyQt6.QtGui import QColor
 
 from settings_functions import OASSettings, Settings
 
@@ -140,7 +140,7 @@ class TestSettingsHelperFunctions:
         # Create a Settings instance for the test
         # Since getColorFromName is an instance method, we need to instantiate Settings
         # But Settings requires many dependencies, so we test the logic directly
-        from PyQt5.QtGui import QColor
+        from PyQt6.QtGui import QColor
         
         color = QColor()
         color.setNamedColor("#FF0000")
@@ -156,7 +156,7 @@ class TestSettingsHelperFunctions:
     
     def test_getColorFromName_invalid_color(self):
         """Test that getColorFromName handles invalid color names"""
-        from PyQt5.QtGui import QColor
+        from PyQt6.QtGui import QColor
         
         color = QColor()
         color.setNamedColor("invalid_color_name_xyz")
