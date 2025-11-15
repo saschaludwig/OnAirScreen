@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # utils.py
@@ -36,9 +36,32 @@
 #############################################################################
 
 import webbrowser
+from contextlib import contextmanager
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
+from PyQt6 import QtCore
+from PyQt6 import QtWidgets
+from PyQt6.QtCore import QSettings
+
+
+@contextmanager
+def settings_group(settings: QSettings, group_name: str):
+    """
+    Context manager for QSettings group operations
+    
+    Ensures that endGroup() is always called, even if an exception occurs.
+    
+    Args:
+        settings: QSettings instance
+        group_name: Name of the group to begin
+        
+    Yields:
+        QSettings instance with the group active
+    """
+    settings.beginGroup(group_name)
+    try:
+        yield settings
+    finally:
+        settings.endGroup()
 
 
 class TimerUpdateMessageBox(QtWidgets.QMessageBox):
@@ -46,7 +69,7 @@ class TimerUpdateMessageBox(QtWidgets.QMessageBox):
         super(TimerUpdateMessageBox, self).__init__(parent)
         self.json_reply = json_reply
         self.time_to_wait = timeout
-        self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setIcon(QtWidgets.QMessageBox.Icon.Information)
         self.setWindowTitle("OnAirScreen Update Check")
         self.setText("OnAirScreen Update Check")
         self.setFixedWidth(200)
@@ -56,8 +79,8 @@ class TimerUpdateMessageBox(QtWidgets.QMessageBox):
         download_button = QtWidgets.QPushButton('Download')
         close_button = QtWidgets.QPushButton('Close')
         download_button.clicked.connect(self.download_latest_version)
-        self.addButton(close_button, QtWidgets.QMessageBox.NoRole)
-        self.addButton(download_button, QtWidgets.QMessageBox.ActionRole)
+        self.addButton(close_button, QtWidgets.QMessageBox.ButtonRole.NoRole)
+        self.addButton(download_button, QtWidgets.QMessageBox.ButtonRole.ActionRole)
 
         self.timer = QtCore.QTimer(self)
         self.timer.setInterval(1000)

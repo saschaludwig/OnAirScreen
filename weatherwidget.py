@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -36,9 +36,13 @@
 #############################################################################
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-import PyQt5.QtNetwork as QtNetwork
+from PyQt6 import QtCore, QtGui, QtWidgets
+import PyQt6.QtNetwork as QtNetwork
 import json
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class WeatherWidget(QtWidgets.QWidget):
@@ -69,7 +73,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSpacing(0)
 
-        # spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        # spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         # self.verticalLayout.addItem(spacerItem)
 
         # city label
@@ -80,7 +84,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setWeight(75)
         self.cityLabel.setFont(font)
         self.cityLabel.setStyleSheet("color: #fff;")
-        self.cityLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.cityLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         cityfx = QtWidgets.QGraphicsDropShadowEffect()
         cityfx.setBlurRadius(10)
         cityfx.setColor(QtGui.QColor("#000"))
@@ -94,7 +98,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setPointSize(14)
         self.weatherLabel.setFont(font)
         self.weatherLabel.setStyleSheet("color: #fff")
-        self.weatherLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.weatherLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         weatherfx = QtWidgets.QGraphicsDropShadowEffect()
         weatherfx.setBlurRadius(10)
         weatherfx.setColor(QtGui.QColor("#000"))
@@ -103,7 +107,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.weatherLabel)
 
         # spacer
-        spacer_item1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacer_item1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout.addItem(spacer_item1)
 
         self.verticalLayout_3.addLayout(self.verticalLayout)
@@ -114,7 +118,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.weatherIcon = QtWidgets.QLabel(self)
         icon_pixmap = QtGui.QPixmap()
         self.weatherIcon.setPixmap(icon_pixmap)
-        self.weatherIcon.setAlignment(QtCore.Qt.AlignCenter)
+        self.weatherIcon.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         icon_fx = QtWidgets.QGraphicsDropShadowEffect()
         icon_fx.setBlurRadius(20)
         icon_fx.setColor(QtGui.QColor("#000"))
@@ -132,7 +136,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setWeight(75)
         self.temperatureLabel.setFont(font)
         self.temperatureLabel.setStyleSheet("color: #fff;")
-        self.temperatureLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.temperatureLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         tempfx = QtWidgets.QGraphicsDropShadowEffect()
         tempfx.setBlurRadius(20)
         tempfx.setColor(QtGui.QColor("#000"))
@@ -146,7 +150,7 @@ class WeatherWidget(QtWidgets.QWidget):
         font.setPointSize(13)
         self.conditionLabel.setFont(font)
         self.conditionLabel.setStyleSheet("color: #fff")
-        self.conditionLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.conditionLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         condfx = QtWidgets.QGraphicsDropShadowEffect()
         condfx.setBlurRadius(10)
         condfx.setColor(QtGui.QColor("#000"))
@@ -166,13 +170,25 @@ class WeatherWidget(QtWidgets.QWidget):
         self.updateTimer.timeout.connect(self.updateWeather)
         self.updateTimer.start(10 * 60 * 1000)
 
-    def updateWeather(self):
+    def updateWeather(self) -> None:
+        """Update weather data from OpenWeatherMap API"""
         if self.widgetEnabled:
-            print("update weather called")
+            logger.debug("update weather called")
             self.makeOWMApiCall()
 
-    def setData(self, city, temperature, condition, icon="01d", background=None, label="WEATHER"):
-        print("Weather:", icon, background)
+    def setData(self, city: str, temperature: str, condition: str, icon: str = "01d", background: str = None, label: str = "WEATHER") -> None:
+        """
+        Set weather data to display
+        
+        Args:
+            city: City name
+            temperature: Temperature string
+            condition: Weather condition description
+            icon: Weather icon code (default: "01d")
+            background: Background image name (default: None)
+            label: Label text (default: "WEATHER")
+        """
+        logger.debug(f"Weather: icon={icon}, background={background}")
         self.cityLabel.setText(city)
         self.temperatureLabel.setText(temperature)
         self.conditionLabel.setText(condition)
@@ -180,33 +196,52 @@ class WeatherWidget(QtWidgets.QWidget):
         self.setWeatherIcon(icon)
         self.setWeatherBackground(background)
 
-    def setWeatherIcon(self, icon):
-        icon_pixmap = QtGui.QPixmap(":/weather/images/weather_icons/{}.png".format(icon))
+    def setWeatherIcon(self, icon: str) -> None:
+        """
+        Set the weather icon
+        
+        Args:
+            icon: Weather icon code (e.g., "01d")
+        """
+        icon_pixmap = QtGui.QPixmap(f":/weather/images/weather_icons/{icon}.png")
         icon_pixmap.setDevicePixelRatio(5)
         self.weatherIcon.setPixmap(icon_pixmap)
 
-    def setWeatherBackground(self, background):
-        self.bg = ":/weather_backgrounds/images/weather_backgrounds/{}.jpg".format(background)
+    def setWeatherBackground(self, background: str) -> None:
+        """
+        Set the weather background image
+        
+        Args:
+            background: Background image name
+        """
+        self.bg = f":/weather_backgrounds/images/weather_backgrounds/{background}.jpg"
         self.repaint()
 
-    def makeOWMApiCall(self):
-        print("OWM API Call")
+    def makeOWMApiCall(self) -> None:
+        """Make API call to OpenWeatherMap to fetch current weather"""
+        logger.debug("OWM API Call")
         url = "https://api.openweathermap.org/data/2.5/weather?id=" + self.owmCityID + "&units=" + self.owmUnit + "&lang=" + self.owmLanguage + "&appid=" + self.owmAPIKey
         req = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
         self.nam = QtNetwork.QNetworkAccessManager()
         self.nam.finished.connect(self.handleOWMResponse)
         self.nam.get(req)
 
-    def handleOWMResponse(self, reply):
+    def handleOWMResponse(self, reply) -> None:
+        """
+        Handle response from OpenWeatherMap API
+        
+        Args:
+            reply: QNetworkReply object containing the API response
+        """
         er = reply.error()
-        if er == QtNetwork.QNetworkReply.NoError:
+        if er == QtNetwork.QNetworkReply.NetworkError.NoError:
             bytes_string = reply.readAll()
             reply_string = str(bytes_string, 'utf-8')
             try:
                 weather_json = (json.loads(reply_string))
-            except:
-                error_string = "Unexpected JSON payload in OWM Response: {}".format(reply_string)
-                print(error_string)
+            except json.JSONDecodeError as e:
+                error_string = f"Unexpected JSON payload in OWM Response: {reply_string}"
+                logger.error(f"{error_string}: {e}")
                 return
             main_weather = weather_json["weather"][0]["main"]
             condition = weather_json["weather"][0]["description"]
@@ -222,12 +257,12 @@ class WeatherWidget(QtWidgets.QWidget):
             self.setData(city=city, condition=condition, temperature=temp, icon=icon, background=background,
                          label=label)
         else:
-            error_string = "Error occurred: {}, {}".format(er, reply.errorString())
-            print(error_string)
+            error_string = f"Error occurred: {er}, {reply.errorString()}"
+            logger.error(error_string)
 
-    def readConfig(self):
-        # settings
-        settings = QtCore.QSettings(QtCore.QSettings.UserScope, "astrastudio", "OnAirScreen")
+    def readConfig(self) -> None:
+        """Read weather widget configuration from QSettings"""
+        settings = QtCore.QSettings(QtCore.QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         settings.beginGroup("WeatherWidget")
         self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
         self.owmAPIKey = settings.value('owmAPIKey', "")
@@ -238,5 +273,5 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         painter.drawPixmap(0, 0, self.width(), self.height(), QtGui.QPixmap(self.bg))

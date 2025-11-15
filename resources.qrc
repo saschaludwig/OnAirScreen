@@ -57,7 +57,7 @@
   <qresource prefix="phone_icon">
     <file>images/phone_icon.png</file>
   </qresource>
-  <qresource prefix="mic_icon.png">
+  <qresource prefix="mic_icon">
     <file>images/mic_icon.png</file>
   </qresource>
   <qresource prefix="oas_icon_256">

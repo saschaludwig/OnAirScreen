@@ -4,7 +4,7 @@
 #
 # OnAirScreen Keypress Tool
 # tool to display keyboard keycodes
-# Copyright (c) 2012-2024 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # keypress.py
@@ -39,8 +39,8 @@
 
 import sys
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
 
 
 class myWin(QLineEdit):
