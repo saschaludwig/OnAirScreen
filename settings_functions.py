@@ -154,11 +154,11 @@ class Settings(QWidget, Ui_Settings):
         self.sigConfigFinished.emit()
 
         # set version string
-        self.versionLabel.setText("Version: %s" % versionString)
+        self.versionLabel.setText(f"Version: {versionString}")
         # set distribution string
-        self.distributionLabel.setText("Distribution: %s" % distributionString)
+        self.distributionLabel.setText(f"Distribution: {distributionString}")
         # set settings path
-        self.settingspathLabel.setText("Settings Path: %s" % self.settingsPath )
+        self.settingspathLabel.setText(f"Settings Path: {self.settingsPath}")
         # set update check mode
         self.manual_update_check = False
         self.sigCheckForUpdate.connect(self.check_for_updates)
