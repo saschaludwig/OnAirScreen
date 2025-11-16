@@ -54,6 +54,7 @@ from PyQt6.QtNetwork import QUdpSocket, QHostAddress
 
 from utils import settings_group
 from settings_functions import versionString
+from defaults import DEFAULT_UDP_PORT, DEFAULT_HTTP_PORT, DEFAULT_MULTICAST_ADDRESS
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -86,21 +87,21 @@ class UdpServer:
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Network"):
             try:
-                port = int(settings.value('udpport', "3310"))
+                port = int(settings.value('udpport', str(DEFAULT_UDP_PORT)))
                 if port < 1 or port > 65535:
-                    logger.warning(f"Invalid UDP port {port}, using default 3310")
-                    port = 3310
-                    settings.setValue('udpport', "3310")
+                    logger.warning(f"Invalid UDP port {port}, using default {DEFAULT_UDP_PORT}")
+                    port = DEFAULT_UDP_PORT
+                    settings.setValue('udpport', str(DEFAULT_UDP_PORT))
             except (ValueError, TypeError) as e:
-                logger.warning(f"Error parsing UDP port: {e}, using default 3310")
-                port = 3310
-                settings.setValue('udpport', "3310")
+                logger.warning(f"Error parsing UDP port: {e}, using default {DEFAULT_UDP_PORT}")
+                port = DEFAULT_UDP_PORT
+                settings.setValue('udpport', str(DEFAULT_UDP_PORT))
             
-            multicast_address = settings.value('multicast_address', "239.194.0.1")
+            multicast_address = settings.value('multicast_address', DEFAULT_MULTICAST_ADDRESS)
             if not QHostAddress(multicast_address).isMulticast():
-                logger.warning(f"Invalid multicast address {multicast_address}, using default 239.194.0.1")
-                multicast_address = "239.194.0.1"
-                settings.setValue('multicast_address', "239.194.0.1")
+                logger.warning(f"Invalid multicast address {multicast_address}, using default {DEFAULT_MULTICAST_ADDRESS}")
+                multicast_address = DEFAULT_MULTICAST_ADDRESS
+                settings.setValue('multicast_address', DEFAULT_MULTICAST_ADDRESS)
 
         try:
             bind_result = self.udpsock.bind(QHostAddress.SpecialAddress.AnyIPv4, int(port), QUdpSocket.BindFlag.ShareAddress)
@@ -195,15 +196,15 @@ class HttpDaemon(QThread):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Network"):
             try:
-                port = int(settings.value('httpport', "8010"))
+                port = int(settings.value('httpport', str(DEFAULT_HTTP_PORT)))
                 if port < 1 or port > 65535:
-                    logger.warning(f"Invalid HTTP port {port}, using default 8010")
-                    port = 8010
-                    settings.setValue("httpport", "8010")
+                    logger.warning(f"Invalid HTTP port {port}, using default {DEFAULT_HTTP_PORT}")
+                    port = DEFAULT_HTTP_PORT
+                    settings.setValue("httpport", str(DEFAULT_HTTP_PORT))
             except (ValueError, TypeError) as e:
-                logger.warning(f"Error parsing HTTP port: {e}, using default 8010")
-                port = 8010
-                settings.setValue("httpport", "8010")
+                logger.warning(f"Error parsing HTTP port: {e}, using default {DEFAULT_HTTP_PORT}")
+                port = DEFAULT_HTTP_PORT
+                settings.setValue("httpport", str(DEFAULT_HTTP_PORT))
 
         try:
             # Pass main_screen reference and command_signal to handler class
@@ -408,13 +409,13 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             with settings_group(settings, "Network"):
                 try:
-                    port = int(settings.value('udpport', "3310"))
+                    port = int(settings.value('udpport', str(DEFAULT_UDP_PORT)))
                     if port < 1 or port > 65535:
-                        logger.warning("Invalid UDP port in settings, using default 3310")
-                        port = 3310
+                        logger.warning(f"Invalid UDP port in settings, using default {DEFAULT_UDP_PORT}")
+                        port = DEFAULT_UDP_PORT
                 except (ValueError, TypeError) as e:
-                    logger.warning(f"Error parsing UDP port: {e}, using default 3310")
-                    port = 3310
+                    logger.warning(f"Error parsing UDP port: {e}, using default {DEFAULT_UDP_PORT}")
+                    port = DEFAULT_UDP_PORT
 
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -535,13 +536,13 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             with settings_group(settings, "Network"):
                 try:
-                    port = int(settings.value('udpport', "3310"))
+                    port = int(settings.value('udpport', str(DEFAULT_UDP_PORT)))
                     if port < 1 or port > 65535:
-                        logger.warning("Invalid UDP port in settings, using default 3310")
-                        port = 3310
+                        logger.warning(f"Invalid UDP port in settings, using default {DEFAULT_UDP_PORT}")
+                        port = DEFAULT_UDP_PORT
                 except (ValueError, TypeError) as e:
-                    logger.warning(f"Error parsing UDP port: {e}, using default 3310")
-                    port = 3310
+                    logger.warning(f"Error parsing UDP port: {e}, using default {DEFAULT_UDP_PORT}")
+                    port = DEFAULT_UDP_PORT
 
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
