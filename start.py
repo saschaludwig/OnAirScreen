@@ -55,7 +55,7 @@ import resources_rc  # noqa: F401
 from mainscreen import Ui_MainScreen
 from settings_functions import Settings, versionString, distributionString
 from command_handler import CommandHandler
-from network import UdpServer, HttpDaemon
+from network import UdpServer, HttpDaemon, WebSocketDaemon
 from timer_manager import TimerManager
 from event_logger import EventLogger
 from utils import settings_group
@@ -222,6 +222,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.httpd = HttpDaemon(self, self.command_signal)
         self.httpd.start()
         
+        # Setup WebSocket Server for real-time status updates
+        self.wsd = WebSocketDaemon(self)
+        self.wsd.start()
+        
         # Log application start
         self.event_logger.log_system_event("Application started")
 
@@ -248,6 +252,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.event_logger.log_system_event("Application quit")
         self.checkNTPOffset.stop()
         self.httpd.stop()
+        if hasattr(self, 'wsd') and self.wsd:
+            self.wsd.stop()
         QCoreApplication.instance().quit()
 
     def radio_timer_start_stop(self) -> None:
@@ -1748,6 +1754,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.httpd.stop()
         except Exception as e:
             logger.error(f"Error stopping HTTP daemon: {e}")
+        
+        try:
+            if hasattr(self, 'wsd') and self.wsd:
+                self.wsd.stop()
+        except Exception as e:
+            logger.error(f"Error stopping WebSocket daemon: {e}")
         
         try:
             if hasattr(self, 'checkNTPOffset') and self.checkNTPOffset:

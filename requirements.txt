@@ -2,3 +2,4 @@ PyQt6
 ntplib
 PyInstaller
 pytest
+websockets>=12.0

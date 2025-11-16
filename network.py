@@ -45,11 +45,13 @@ import json
 import logging
 import os
 import socket
+import asyncio
+import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Optional, Callable, TYPE_CHECKING
+from typing import Optional, Callable, TYPE_CHECKING, Set
 from urllib.parse import unquote_plus, urlparse, parse_qs
 
-from PyQt6.QtCore import QThread, QSettings
+from PyQt6.QtCore import QThread, QSettings, pyqtSignal, QObject
 from PyQt6.QtNetwork import QUdpSocket, QHostAddress
 
 from utils import settings_group
@@ -60,6 +62,16 @@ if TYPE_CHECKING:
     from start import MainScreen
 
 logger = logging.getLogger(__name__)
+
+try:
+    import websockets
+    from websockets.server import WebSocketServerProtocol
+    from websockets.exceptions import ConnectionClosed
+    WEBSOCKETS_AVAILABLE = True
+except ImportError:
+    WEBSOCKETS_AVAILABLE = False
+    WebSocketServerProtocol = None  # type: ignore
+    logger.warning("websockets library not available. WebSocket support will be disabled.")
 
 HOST = '0.0.0.0'
 
@@ -664,3 +676,235 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             logger.error(f"Error loading Web UI template: {e}")
             return f"<html><body><h1>Error loading Web UI: {e}</h1></body></html>"
+
+
+class WebSocketDaemon(QThread):
+    """
+    WebSocket server thread for real-time status updates
+    
+    Runs a WebSocket server that broadcasts status updates to connected clients.
+    This allows the Web-UI to receive real-time updates instead of polling.
+    """
+    
+    def __init__(self, main_screen: Optional["MainScreen"] = None) -> None:
+        """
+        Initialize WebSocket daemon
+        
+        Args:
+            main_screen: Reference to MainScreen instance for status queries
+        """
+        super().__init__()
+        self.main_screen = main_screen
+        self.clients: Set = set()  # Set[WebSocketServerProtocol] when websockets is available
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._server = None
+        self._stop_event = threading.Event()
+        self._broadcast_task: Optional[asyncio.Task] = None
+    
+    def run(self) -> None:
+        """
+        Start WebSocket server in a separate thread with asyncio event loop
+        
+        Raises:
+            OSError: If port is already in use or permission denied
+        """
+        if not WEBSOCKETS_AVAILABLE:
+            logger.warning("WebSocket support not available, skipping WebSocket server startup")
+            return
+        
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        with settings_group(settings, "Network"):
+            try:
+                # Use HTTP port + 1 for WebSocket port (or same port if HTTP upgrade is used)
+                http_port = int(settings.value('httpport', str(DEFAULT_HTTP_PORT)))
+                ws_port = http_port + 1
+                if ws_port > 65535:
+                    ws_port = DEFAULT_HTTP_PORT + 1
+            except (ValueError, TypeError):
+                ws_port = DEFAULT_HTTP_PORT + 1
+        
+        # Create new event loop for this thread
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        
+        try:
+            # Start WebSocket server - must be done within the event loop
+            async def start_ws_server():
+                server = await websockets.serve(
+                    self._handle_client,
+                    HOST,
+                    ws_port,
+                    ping_interval=20,
+                    ping_timeout=10
+                )
+                return server
+            
+            self._server = self._loop.run_until_complete(start_ws_server())
+            logger.info(f"WebSocket server started on {HOST}:{ws_port}")
+            
+            # Start periodic status updates
+            self._broadcast_task = self._loop.create_task(self._broadcast_status_periodically())
+            
+            # Run event loop
+            self._loop.run_forever()
+        except OSError as error:
+            if error.errno == 98 or "Address already in use" in str(error):
+                logger.error(f"WebSocket Server port {ws_port} is already in use. WebSocket support disabled.")
+            elif error.errno == 13 or "Permission denied" in str(error):
+                logger.error(f"Permission denied binding to WebSocket port {ws_port}. WebSocket support disabled.")
+            else:
+                logger.error(f"OS error starting WebSocket Server on port {ws_port}: {error}")
+        except Exception as error:
+            logger.error(f"Unexpected error starting WebSocket Server on port {ws_port}: {error}", exc_info=True)
+        finally:
+            if self._loop:
+                self._loop.close()
+    
+    async def _handle_client(self, websocket: WebSocketServerProtocol) -> None:
+        """
+        Handle new WebSocket client connection
+        
+        Args:
+            websocket: WebSocket connection
+        """
+        # Add client to set
+        self.clients.add(websocket)
+        logger.info(f"WebSocket client connected: {websocket.remote_address}")
+        
+        try:
+            # Send initial status
+            if self.main_screen:
+                status = self.main_screen.get_status_json()
+                await websocket.send(json.dumps(status))
+            
+            # Keep connection alive and handle incoming messages
+            async for message in websocket:
+                # Echo back or handle commands if needed
+                logger.debug(f"WebSocket message received: {message}")
+        except ConnectionClosed:
+            logger.debug(f"WebSocket client disconnected: {websocket.remote_address}")
+        except Exception as e:
+            logger.error(f"Error handling WebSocket client {websocket.remote_address}: {e}")
+        finally:
+            # Remove client from set
+            self.clients.discard(websocket)
+    
+    async def _broadcast_status_periodically(self) -> None:
+        """
+        Broadcast status updates to all connected clients periodically
+        """
+        while not self._stop_event.is_set():
+            try:
+                if self.main_screen and self.clients:
+                    status = self.main_screen.get_status_json()
+                    message = json.dumps(status)
+                    
+                    # Send to all connected clients
+                    disconnected = set()
+                    for client in self.clients:
+                        try:
+                            await client.send(message)
+                        except ConnectionClosed:
+                            disconnected.add(client)
+                        except Exception as e:
+                            logger.error(f"Error sending to WebSocket client: {e}")
+                            disconnected.add(client)
+                    
+                    # Remove disconnected clients
+                    self.clients -= disconnected
+                
+                # Wait 1 second before next update, but check stop event more frequently
+                for _ in range(10):  # Check every 100ms
+                    if self._stop_event.is_set():
+                        break
+                    await asyncio.sleep(0.1)
+            except asyncio.CancelledError:
+                # Task was cancelled, exit gracefully
+                break
+            except Exception as e:
+                logger.error(f"Error in periodic status broadcast: {e}")
+                if not self._stop_event.is_set():
+                    await asyncio.sleep(1.0)
+    
+    def broadcast_status(self) -> None:
+        """
+        Manually trigger status broadcast to all connected clients
+        
+        This can be called from the main thread to send immediate updates.
+        """
+        if self._loop and self._loop.is_running() and self.main_screen and self.clients:
+            status = self.main_screen.get_status_json()
+            message = json.dumps(status)
+            
+            # Schedule coroutine in event loop
+            asyncio.run_coroutine_threadsafe(self._send_to_all_clients(message), self._loop)
+    
+    async def _send_to_all_clients(self, message: str) -> None:
+        """
+        Send message to all connected clients
+        
+        Args:
+            message: JSON message to send
+        """
+        disconnected = set()
+        for client in self.clients:
+            try:
+                await client.send(message)
+            except (ConnectionClosed, Exception) as e:
+                logger.debug(f"Error sending to client: {e}")
+                disconnected.add(client)
+        
+        self.clients -= disconnected
+    
+    def stop(self) -> None:
+        """
+        Stop WebSocket server gracefully
+        
+        Shuts down the server, closes all connections, and waits for the thread to finish.
+        """
+        if not WEBSOCKETS_AVAILABLE:
+            return
+        
+        try:
+            self._stop_event.set()
+            
+            if self._loop and self._loop.is_running():
+                # Stop the server and close all clients in one async function
+                async def shutdown_all():
+                    # Cancel the broadcast task first
+                    if self._broadcast_task and not self._broadcast_task.done():
+                        self._broadcast_task.cancel()
+                        try:
+                            await self._broadcast_task
+                        except asyncio.CancelledError:
+                            pass
+                    
+                    # Close all client connections
+                    if self.clients:
+                        for client in list(self.clients):
+                            try:
+                                await client.close()
+                            except Exception as e:
+                                logger.debug(f"Error closing client connection: {e}")
+                        self.clients.clear()
+                    
+                    # Stop the server
+                    if self._server:
+                        self._server.close()
+                        await self._server.wait_closed()
+                
+                # Run shutdown and wait for it to complete
+                future = asyncio.run_coroutine_threadsafe(shutdown_all(), self._loop)
+                try:
+                    # Wait up to 2 seconds for shutdown to complete
+                    future.result(timeout=2.0)
+                except Exception as e:
+                    logger.debug(f"Shutdown timeout or error: {e}")
+                
+                # Stop the event loop
+                self._loop.call_soon_threadsafe(self._loop.stop)
+            
+            # Wait for thread to finish
+            self.wait()
+        except Exception as e:
+            logger.error(f"Error stopping WebSocket server: {e}")
