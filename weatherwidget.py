@@ -290,14 +290,14 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def readConfig(self) -> None:
         """Read weather widget configuration from QSettings"""
+        from utils import settings_group
         settings = QtCore.QSettings(QtCore.QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("WeatherWidget")
-        self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
-        self.owmAPIKey = settings.value('owmAPIKey', "")
-        self.owmCityID = settings.value('owmCityID', "2643743")
-        self.owmLanguage = self.owm_languages.get(settings.value('owmLanguage', "English"))
-        self.owmUnit = self.owm_units.get(settings.value('owmUnit', "Celsius"))
-        settings.endGroup()
+        with settings_group(settings, "WeatherWidget"):
+            self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
+            self.owmAPIKey = settings.value('owmAPIKey', "")
+            self.owmCityID = settings.value('owmCityID', "2643743")
+            self.owmLanguage = self.owm_languages.get(settings.value('owmLanguage', "English"))
+            self.owmUnit = self.owm_units.get(settings.value('owmUnit', "Celsius"))
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
