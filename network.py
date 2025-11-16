@@ -46,6 +46,7 @@ import logging
 import os
 import socket
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Optional, Callable, TYPE_CHECKING
 from urllib.parse import unquote_plus, urlparse, parse_qs
 
 from PyQt6.QtCore import QThread, QSettings
@@ -53,6 +54,9 @@ from PyQt6.QtNetwork import QUdpSocket, QHostAddress
 
 from utils import settings_group
 from settings_functions import versionString
+
+if TYPE_CHECKING:
+    from start import MainScreen
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +70,7 @@ class UdpServer:
     Handles UDP socket setup, multicast group joining, and command reception.
     """
     
-    def __init__(self, command_callback):
+    def __init__(self, command_callback: Callable[[bytes], None]) -> None:
         """
         Initialize UDP server
         
@@ -168,7 +172,7 @@ class HttpDaemon(QThread):
     and forwards them to the UDP command handler.
     """
     
-    def __init__(self, main_screen=None, command_signal=None):
+    def __init__(self, main_screen: Optional["MainScreen"] = None, command_signal: Optional[object] = None) -> None:
         """
         Initialize HTTP daemon
         
@@ -180,8 +184,14 @@ class HttpDaemon(QThread):
         self.main_screen = main_screen
         self.command_signal = command_signal
     
-    def run(self):
-        """Start HTTP server"""
+    def run(self) -> None:
+        """
+        Start HTTP server in a separate thread
+        
+        Raises:
+            OSError: If port is already in use or permission denied
+            socket.error: If socket error occurs
+        """
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Network"):
             try:
@@ -215,8 +225,13 @@ class HttpDaemon(QThread):
         except Exception as error:
             logger.error(f"Unexpected error starting HTTP Server on port {port}: {error}", exc_info=True)
 
-    def stop(self):
-        """Stop HTTP server"""
+    def stop(self) -> None:
+        """
+        Stop HTTP server gracefully
+        
+        Shuts down the server, closes the socket, and waits for the thread to finish.
+        Handles errors gracefully to allow cleanup even if server wasn't fully initialized.
+        """
         try:
             if hasattr(self, '_server') and self._server:
                 try:
@@ -251,11 +266,15 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     main_screen = None  # Will be set by HttpDaemon
     command_signal = None  # Will be set by HttpDaemon
 
-    def log_message(self, format, *args):
+    def log_message(self, format: str, *args: object) -> None:
         """
         Override log_message to use different log levels based on path
         
         /api/status requests are logged at DEBUG level to reduce noise
+        
+        Args:
+            format: Log message format string
+            *args: Arguments for format string
         """
         # Check if this is a /api/status request by checking the path
         if hasattr(self, 'path') and '/api/status' in self.path:
@@ -266,14 +285,27 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             # Use INFO level for other requests
             logger.info(f"{self.address_string()} - {format % args}")
 
-    def do_HEAD(self):
-        """Handle HEAD request"""
+    def do_HEAD(self) -> None:
+        """
+        Handle HEAD request
+        
+        Returns basic headers for CORS and content type checks.
+        """
         self.send_response(200)
         self.send_header("Content-type", "text/html; charset=utf-8")
         self.end_headers()
 
-    def do_GET(self):
-        """Handle GET request with command, API, or Web-UI"""
+    def do_GET(self) -> None:
+        """
+        Handle GET request with command, API, or Web-UI
+        
+        Routes requests to appropriate handlers:
+        - /api/status -> Status API
+        - /api/command -> Command API (REST-style)
+        - /?cmd=... or /cmd=... -> Legacy command format
+        - / or /index.html -> Web-UI
+        - Other paths -> 404 error
+        """
         logger.debug(f"HTTP request path: {self.path}")
         
         # Parse URL
@@ -309,7 +341,18 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_error(404, 'file not found')
     
     def _handle_command_api(self, query_string: str) -> None:
-        """Handle command API request (backward compatible)"""
+        """
+        Handle command API request (backward compatible format)
+        
+        Processes commands in format "cmd=COMMAND:VALUE" and forwards them
+        to the command handler via signal or UDP fallback.
+        
+        Args:
+            query_string: Query string containing command (e.g., "cmd=LED1:ON")
+            
+        Note:
+            Falls back to UDP forwarding if MainScreen/signal not available
+        """
         try:
             if '=' in query_string:
                 cmd, message = query_string.split("=", 1)
@@ -413,7 +456,20 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_error(400, 'no command was given')
     
     def _handle_api_command(self, query_string: str) -> None:
-        """Handle API command request (REST-style) - returns JSON"""
+        """
+        Handle API command request (REST-style) - returns JSON
+        
+        Processes commands in format "?cmd=COMMAND:VALUE" and returns JSON response.
+        
+        Args:
+            query_string: Query string containing command (e.g., "cmd=LED1:ON")
+            
+        Returns:
+            JSON response with status and command information
+            
+        Note:
+            Falls back to UDP forwarding if MainScreen/signal not available
+        """
         try:
             # Parse query string: ?cmd=COMMAND:VALUE
             if not query_string or 'cmd=' not in query_string:
@@ -524,7 +580,18 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_error(500, f'Error processing command: {str(e)}')
     
     def _handle_api_status(self) -> None:
-        """Handle API status request - returns JSON with current status"""
+        """
+        Handle API status request - returns JSON with current status
+        
+        Returns current status of LEDs, AIR timers, and text fields.
+        
+        Returns:
+            JSON response with current application status
+            
+        Raises:
+            503: If MainScreen is not available
+            500: If error occurs getting status
+        """
         if not self.main_screen:
             self.send_error(503, 'MainScreen not available')
             return
@@ -554,7 +621,14 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_error(500, f'Error getting status: {str(e)}')
     
     def _handle_web_ui(self) -> None:
-        """Handle Web-UI request - serves HTML interface"""
+        """
+        Handle Web-UI request - serves HTML interface
+        
+        Serves the Web-UI HTML template or fallback HTML if template is missing.
+        
+        Raises:
+            500: If error occurs serving Web-UI
+        """
         try:
             html_content = self._get_web_ui_html()
             self.send_response(200)
