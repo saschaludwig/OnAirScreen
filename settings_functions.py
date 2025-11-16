@@ -47,27 +47,10 @@ from PyQt6.QtGui import QPalette, QColor, QFont
 from PyQt6.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox, QFontDialog
 
 from settings import Ui_Settings
-from utils import TimerUpdateMessageBox
+from utils import TimerUpdateMessageBox, settings_group
 from version import versionString
 from weatherwidget import WeatherWidget as ww
-from defaults import (
-    DEFAULT_STATION_NAME, DEFAULT_SLOGAN, DEFAULT_STATION_COLOR, DEFAULT_SLOGAN_COLOR,
-    DEFAULT_REPLACE_NOW, DEFAULT_REPLACE_NOW_TEXT, DEFAULT_UPDATE_CHECK, DEFAULT_UPDATE_KEY,
-    DEFAULT_UPDATE_INCLUDE_BETA, DEFAULT_NTP_CHECK, DEFAULT_NTP_CHECK_SERVER,
-    DEFAULT_LED_TEXTS, DEFAULT_LED_USED, DEFAULT_LED_ACTIVE_BG_COLOR, DEFAULT_LED_ACTIVE_TEXT_COLOR,
-    DEFAULT_LED_INACTIVE_BG_COLOR, DEFAULT_LED_INACTIVE_TEXT_COLOR, DEFAULT_LED_AUTOFLASH,
-    DEFAULT_LED_TIMEDFLASH, DEFAULT_CLOCK_DIGITAL, DEFAULT_CLOCK_SHOW_SECONDS,
-    DEFAULT_CLOCK_SECONDS_IN_ONE_LINE, DEFAULT_CLOCK_STATIC_COLON, DEFAULT_CLOCK_DIGITAL_HOUR_COLOR,
-    DEFAULT_CLOCK_DIGITAL_SECOND_COLOR, DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR, DEFAULT_CLOCK_LOGO_PATH,
-    DEFAULT_CLOCK_LOGO_UPPER, DEFAULT_CLOCK_USE_TEXT_CLOCK, DEFAULT_UDP_PORT, DEFAULT_HTTP_PORT,
-    DEFAULT_MULTICAST_ADDRESS, DEFAULT_DATE_FORMAT, DEFAULT_TEXT_CLOCK_LANGUAGE, DEFAULT_IS_AM_PM,
-    DEFAULT_TIMER_AIR_TEXTS, DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR, DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR,
-    DEFAULT_TIMER_AIR_ICON_PATHS, DEFAULT_TIMER_AIR_MIN_WIDTH,
-    DEFAULT_WEATHER_WIDGET_ENABLED, DEFAULT_WEATHER_API_KEY, DEFAULT_WEATHER_CITY_ID,
-    DEFAULT_WEATHER_LANGUAGE, DEFAULT_WEATHER_UNIT,
-    DEFAULT_FONT_NAME, DEFAULT_FONT_SIZE_LED, DEFAULT_FONT_SIZE_STATION, DEFAULT_FONT_SIZE_SLOGAN,
-    DEFAULT_FONT_SIZE_TIMER, DEFAULT_FONT_WEIGHT_BOLD
-)
+from defaults import *  # noqa: F403, F405
 
 try:
     from distribution import distributionString, update_url
@@ -340,10 +323,9 @@ class Settings(QWidget, Ui_Settings):
         self.row = row
         conf_dict = json.loads(config)
         for group, content in conf_dict.items():
-            self.settings.beginGroup(group)
-            for key, value in content.items():
-                self.settings.setValue(key, value)
-            self.settings.endGroup()
+            with settings_group(self.settings, group):
+                for key, value in content.items():
+                    self.settings.setValue(key, value)
         self.restoreSettingsFromConfig()
 
     def readJsonFromConfig(self):
@@ -370,31 +352,28 @@ class Settings(QWidget, Ui_Settings):
         self.owmUnit.clear()
         self.owmUnit.addItems(ww.owm_units.keys())
 
-        settings.beginGroup("General")
-        self.StationName.setText(settings.value('stationname', DEFAULT_STATION_NAME))
-        self.Slogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
-        self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
-        self.setSloganColor(self.getColorFromName(settings.value('slogancolor', DEFAULT_SLOGAN_COLOR)))
-        self.checkBox_UpdateCheck.setChecked(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
-        self.updateKey.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
-        self.label_28.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
-        self.updateCheckNowButton.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
-        self.checkBox_IncludeBetaVersions.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
-        self.updateKey.setText(settings.value('updatekey', DEFAULT_UPDATE_KEY))
-        self.checkBox_IncludeBetaVersions.setChecked(settings.value('updateincludebeta', DEFAULT_UPDATE_INCLUDE_BETA, type=bool))
-        self.replaceNOW.setChecked(settings.value('replacenow', DEFAULT_REPLACE_NOW, type=bool))
-        self.replaceNOWText.setText(settings.value('replacenowtext', DEFAULT_REPLACE_NOW_TEXT))
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            self.StationName.setText(settings.value('stationname', DEFAULT_STATION_NAME))
+            self.Slogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
+            self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
+            self.setSloganColor(self.getColorFromName(settings.value('slogancolor', DEFAULT_SLOGAN_COLOR)))
+            self.checkBox_UpdateCheck.setChecked(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
+            self.updateKey.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
+            self.label_28.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
+            self.updateCheckNowButton.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
+            self.checkBox_IncludeBetaVersions.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
+            self.updateKey.setText(settings.value('updatekey', DEFAULT_UPDATE_KEY))
+            self.checkBox_IncludeBetaVersions.setChecked(settings.value('updateincludebeta', DEFAULT_UPDATE_INCLUDE_BETA, type=bool))
+            self.replaceNOW.setChecked(settings.value('replacenow', DEFAULT_REPLACE_NOW, type=bool))
+            self.replaceNOWText.setText(settings.value('replacenowtext', DEFAULT_REPLACE_NOW_TEXT))
 
-        settings.beginGroup("NTP")
-        self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', DEFAULT_NTP_CHECK, type=bool))
-        self.NTPCheckServer.setText(settings.value('ntpcheckserver', DEFAULT_NTP_CHECK_SERVER))
-        settings.endGroup()
+        with settings_group(settings, "NTP"):
+            self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', DEFAULT_NTP_CHECK, type=bool))
+            self.NTPCheckServer.setText(settings.value('ntpcheckserver', DEFAULT_NTP_CHECK_SERVER))
 
-        settings.beginGroup("LEDS")
-        self.setLEDInactiveBGColor(self.getColorFromName(settings.value('inactivebgcolor', DEFAULT_LED_INACTIVE_BG_COLOR)))
-        self.setLEDInactiveFGColor(self.getColorFromName(settings.value('inactivetextcolor', DEFAULT_LED_INACTIVE_TEXT_COLOR)))
-        settings.endGroup()
+        with settings_group(settings, "LEDS"):
+            self.setLEDInactiveBGColor(self.getColorFromName(settings.value('inactivebgcolor', DEFAULT_LED_INACTIVE_BG_COLOR)))
+            self.setLEDInactiveFGColor(self.getColorFromName(settings.value('inactivetextcolor', DEFAULT_LED_INACTIVE_TEXT_COLOR)))
 
         # LED-specific default colors (different from general defaults)
         led_default_colors = {
@@ -405,147 +384,140 @@ class Settings(QWidget, Ui_Settings):
         }
         
         for led_num in range(1, 5):
-            settings.beginGroup(f"LED{led_num}")
-            getattr(self, f'LED{led_num}').setChecked(settings.value('used', DEFAULT_LED_USED, type=bool))
-            default_text = DEFAULT_LED_TEXTS.get(led_num, f'LED{led_num}')
-            getattr(self, f'LED{led_num}Text').setText(settings.value('text', default_text))
-            getattr(self, f'LED{led_num}Demo').setText(settings.value('text', default_text))
-            default_bg_color = led_default_colors.get(led_num, DEFAULT_LED_ACTIVE_BG_COLOR)
-            getattr(self, f'setLED{led_num}BGColor')(self.getColorFromName(settings.value('activebgcolor', default_bg_color)))
-            getattr(self, f'setLED{led_num}FGColor')(self.getColorFromName(settings.value('activetextcolor', DEFAULT_LED_ACTIVE_TEXT_COLOR)))
-            getattr(self, f'LED{led_num}Autoflash').setChecked(settings.value('autoflash', DEFAULT_LED_AUTOFLASH, type=bool))
-            getattr(self, f'LED{led_num}Timedflash').setChecked(settings.value('timedflash', DEFAULT_LED_TIMEDFLASH, type=bool))
-        settings.endGroup()
+            with settings_group(settings, f"LED{led_num}"):
+                getattr(self, f'LED{led_num}').setChecked(settings.value('used', DEFAULT_LED_USED, type=bool))
+                default_text = DEFAULT_LED_TEXTS.get(led_num, f'LED{led_num}')
+                getattr(self, f'LED{led_num}Text').setText(settings.value('text', default_text))
+                getattr(self, f'LED{led_num}Demo').setText(settings.value('text', default_text))
+                default_bg_color = led_default_colors.get(led_num, DEFAULT_LED_ACTIVE_BG_COLOR)
+                getattr(self, f'setLED{led_num}BGColor')(self.getColorFromName(settings.value('activebgcolor', default_bg_color)))
+                getattr(self, f'setLED{led_num}FGColor')(self.getColorFromName(settings.value('activetextcolor', DEFAULT_LED_ACTIVE_TEXT_COLOR)))
+                getattr(self, f'LED{led_num}Autoflash').setChecked(settings.value('autoflash', DEFAULT_LED_AUTOFLASH, type=bool))
+                getattr(self, f'LED{led_num}Timedflash').setChecked(settings.value('timedflash', DEFAULT_LED_TIMEDFLASH, type=bool))
 
-        settings.beginGroup("Clock")
-        self.clockDigital.setChecked(settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
-        self.clockAnalog.setChecked(not settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
-        self.showSeconds.setChecked(settings.value('showSeconds', DEFAULT_CLOCK_SHOW_SECONDS, type=bool))
-        self.seconds_in_one_line.setChecked(settings.value('showSecondsInOneLine', DEFAULT_CLOCK_SECONDS_IN_ONE_LINE, type=bool))
-        if not settings.value('showSeconds', DEFAULT_CLOCK_SHOW_SECONDS, type=bool):
-            self.seconds_in_one_line.setDisabled(True)
-            self.seconds_separate.setDisabled(True)
-        self.staticColon.setChecked(settings.value('staticColon', DEFAULT_CLOCK_STATIC_COLON, type=bool))
-        self.useTextclock.setChecked(settings.value('useTextClock', DEFAULT_CLOCK_USE_TEXT_CLOCK, type=bool))
-        self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', DEFAULT_CLOCK_DIGITAL_HOUR_COLOR)))
-        self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', DEFAULT_CLOCK_DIGITAL_SECOND_COLOR)))
-        self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR)))
-        self.logoPath.setText(
-            settings.value('logopath', DEFAULT_CLOCK_LOGO_PATH))
-        if settings.value('logoUpper', DEFAULT_CLOCK_LOGO_UPPER, type=bool):
-            self.radioButton_logo_upper.setChecked(True)
-            self.radioButton_logo_lower.setChecked(False)
-        else:
-            self.radioButton_logo_upper.setChecked(False)
-            self.radioButton_logo_lower.setChecked(True)
-        settings.endGroup()
+        with settings_group(settings, "Clock"):
+            self.clockDigital.setChecked(settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
+            self.clockAnalog.setChecked(not settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
+            self.showSeconds.setChecked(settings.value('showSeconds', DEFAULT_CLOCK_SHOW_SECONDS, type=bool))
+            self.seconds_in_one_line.setChecked(settings.value('showSecondsInOneLine', DEFAULT_CLOCK_SECONDS_IN_ONE_LINE, type=bool))
+            if not settings.value('showSeconds', DEFAULT_CLOCK_SHOW_SECONDS, type=bool):
+                self.seconds_in_one_line.setDisabled(True)
+                self.seconds_separate.setDisabled(True)
+            self.staticColon.setChecked(settings.value('staticColon', DEFAULT_CLOCK_STATIC_COLON, type=bool))
+            self.useTextclock.setChecked(settings.value('useTextClock', DEFAULT_CLOCK_USE_TEXT_CLOCK, type=bool))
+            self.setDigitalHourColor(self.getColorFromName(settings.value('digitalhourcolor', DEFAULT_CLOCK_DIGITAL_HOUR_COLOR)))
+            self.setDigitalSecondColor(self.getColorFromName(settings.value('digitalsecondcolor', DEFAULT_CLOCK_DIGITAL_SECOND_COLOR)))
+            self.setDigitalDigitColor(self.getColorFromName(settings.value('digitaldigitcolor', DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR)))
+            self.logoPath.setText(
+                settings.value('logopath', DEFAULT_CLOCK_LOGO_PATH))
+            if settings.value('logoUpper', DEFAULT_CLOCK_LOGO_UPPER, type=bool):
+                self.radioButton_logo_upper.setChecked(True)
+                self.radioButton_logo_lower.setChecked(False)
+            else:
+                self.radioButton_logo_upper.setChecked(False)
+                self.radioButton_logo_lower.setChecked(True)
 
-        settings.beginGroup("Network")
-        self.udpport.setText(str(settings.value('udpport', str(DEFAULT_UDP_PORT))))
-        self.httpport.setText(str(settings.value('httpport', str(DEFAULT_HTTP_PORT))))
-        self.multicast_group.setText(settings.value('multicast_address', DEFAULT_MULTICAST_ADDRESS))
-        settings.endGroup()
+        with settings_group(settings, "Network"):
+            self.udpport.setText(str(settings.value('udpport', str(DEFAULT_UDP_PORT))))
+            self.httpport.setText(str(settings.value('httpport', str(DEFAULT_HTTP_PORT))))
+            self.multicast_group.setText(settings.value('multicast_address', DEFAULT_MULTICAST_ADDRESS))
 
-        settings.beginGroup("Formatting")
-        self.dateFormat.setText(settings.value('dateFormat', DEFAULT_DATE_FORMAT))
-        self.textClockLanguage.setCurrentIndex(
-            self.textClockLanguage.findText(settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)))
-        self.time_am_pm.setChecked(settings.value('isAmPm', DEFAULT_IS_AM_PM, type=bool))
-        self.time_24h.setChecked(not settings.value('isAmPm', DEFAULT_IS_AM_PM, type=bool))
-        settings.endGroup()
+        with settings_group(settings, "Formatting"):
+            self.dateFormat.setText(settings.value('dateFormat', DEFAULT_DATE_FORMAT))
+            self.textClockLanguage.setCurrentIndex(
+                self.textClockLanguage.findText(settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)))
+            self.time_am_pm.setChecked(settings.value('isAmPm', DEFAULT_IS_AM_PM, type=bool))
+            self.time_24h.setChecked(not settings.value('isAmPm', DEFAULT_IS_AM_PM, type=bool))
 
-        settings.beginGroup("WeatherWidget")
-        self.owmWidgetEnabled.setChecked(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        self.owmAPIKey.setText(settings.value('owmAPIKey', DEFAULT_WEATHER_API_KEY))
-        self.owmCityID.setText(settings.value('owmCityID', DEFAULT_WEATHER_CITY_ID))
-        self.owmLanguage.setCurrentIndex(self.owmLanguage.findText(settings.value('owmLanguage', DEFAULT_WEATHER_LANGUAGE)))
-        self.owmUnit.setCurrentIndex(self.owmUnit.findText(settings.value('owmUnit', DEFAULT_WEATHER_UNIT)))
-        self.owmAPIKey.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        self.owmCityID.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        self.owmLanguage.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        self.owmUnit.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        self.owmTestAPI.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        self.owmTestOutput.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-        settings.endGroup()
+        with settings_group(settings, "WeatherWidget"):
+            self.owmWidgetEnabled.setChecked(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            self.owmAPIKey.setText(settings.value('owmAPIKey', DEFAULT_WEATHER_API_KEY))
+            self.owmCityID.setText(settings.value('owmCityID', DEFAULT_WEATHER_CITY_ID))
+            self.owmLanguage.setCurrentIndex(self.owmLanguage.findText(settings.value('owmLanguage', DEFAULT_WEATHER_LANGUAGE)))
+            self.owmUnit.setCurrentIndex(self.owmUnit.findText(settings.value('owmUnit', DEFAULT_WEATHER_UNIT)))
+            self.owmAPIKey.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            self.owmCityID.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            self.owmLanguage.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            self.owmUnit.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            self.owmTestAPI.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            self.owmTestOutput.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
 
-        settings.beginGroup("Timers")
-        self.enableAIR1.setChecked(settings.value('TimerAIR1Enabled', True, type=bool))
-        self.enableAIR2.setChecked(settings.value('TimerAIR2Enabled', True, type=bool))
-        self.enableAIR3.setChecked(settings.value('TimerAIR3Enabled', True, type=bool))
-        self.enableAIR4.setChecked(settings.value('TimerAIR4Enabled', True, type=bool))
-        self.AIR1Text.setText(settings.value('TimerAIR1Text', DEFAULT_TIMER_AIR_TEXTS.get(1, 'Mic')))
-        self.AIR2Text.setText(settings.value('TimerAIR2Text', DEFAULT_TIMER_AIR_TEXTS.get(2, 'Phone')))
-        self.AIR3Text.setText(settings.value('TimerAIR3Text', DEFAULT_TIMER_AIR_TEXTS.get(3, 'Timer')))
-        self.AIR4Text.setText(settings.value('TimerAIR4Text', DEFAULT_TIMER_AIR_TEXTS.get(4, 'Stream')))
-        self.setAIR1BGColor(self.getColorFromName(settings.value('AIR1activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
-        self.setAIR1FGColor(self.getColorFromName(settings.value('AIR1activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
-        self.setAIR2BGColor(self.getColorFromName(settings.value('AIR2activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
-        self.setAIR2FGColor(self.getColorFromName(settings.value('AIR2activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
-        self.setAIR3BGColor(self.getColorFromName(settings.value('AIR3activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
-        self.setAIR3FGColor(self.getColorFromName(settings.value('AIR3activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
-        self.setAIR4BGColor(self.getColorFromName(settings.value('AIR4activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
-        self.setAIR4FGColor(self.getColorFromName(settings.value('AIR4activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
+        with settings_group(settings, "Timers"):
+            self.enableAIR1.setChecked(settings.value('TimerAIR1Enabled', True, type=bool))
+            self.enableAIR2.setChecked(settings.value('TimerAIR2Enabled', True, type=bool))
+            self.enableAIR3.setChecked(settings.value('TimerAIR3Enabled', True, type=bool))
+            self.enableAIR4.setChecked(settings.value('TimerAIR4Enabled', True, type=bool))
+            self.AIR1Text.setText(settings.value('TimerAIR1Text', DEFAULT_TIMER_AIR_TEXTS.get(1, 'Mic')))
+            self.AIR2Text.setText(settings.value('TimerAIR2Text', DEFAULT_TIMER_AIR_TEXTS.get(2, 'Phone')))
+            self.AIR3Text.setText(settings.value('TimerAIR3Text', DEFAULT_TIMER_AIR_TEXTS.get(3, 'Timer')))
+            self.AIR4Text.setText(settings.value('TimerAIR4Text', DEFAULT_TIMER_AIR_TEXTS.get(4, 'Stream')))
+            self.setAIR1BGColor(self.getColorFromName(settings.value('AIR1activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
+            self.setAIR1FGColor(self.getColorFromName(settings.value('AIR1activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
+            self.setAIR2BGColor(self.getColorFromName(settings.value('AIR2activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
+            self.setAIR2FGColor(self.getColorFromName(settings.value('AIR2activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
+            self.setAIR3BGColor(self.getColorFromName(settings.value('AIR3activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
+            self.setAIR3FGColor(self.getColorFromName(settings.value('AIR3activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
+            self.setAIR4BGColor(self.getColorFromName(settings.value('AIR4activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
+            self.setAIR4FGColor(self.getColorFromName(settings.value('AIR4activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
 
-        self.AIR1IconPath.setText(settings.value('air1iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(1, ':/mic_icon/images/mic_icon.png')))
-        self.AIR2IconPath.setText(settings.value('air2iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(2, ':/phone_icon/images/phone_icon.png')))
-        self.AIR3IconPath.setText(settings.value('air3iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(3, ':/timer_icon/images/timer_icon.png')))
-        self.AIR4IconPath.setText(settings.value('air4iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(4, ':/stream_icon/images/antenna2.png')))
+            self.AIR1IconPath.setText(settings.value('air1iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(1, ':/mic_icon/images/mic_icon.png')))
+            self.AIR2IconPath.setText(settings.value('air2iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(2, ':/phone_icon/images/phone_icon.png')))
+            self.AIR3IconPath.setText(settings.value('air3iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(3, ':/timer_icon/images/timer_icon.png')))
+            self.AIR4IconPath.setText(settings.value('air4iconpath', DEFAULT_TIMER_AIR_ICON_PATHS.get(4, ':/stream_icon/images/antenna2.png')))
 
-        self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', DEFAULT_TIMER_AIR_MIN_WIDTH, type=int))
-        settings.endGroup()
+            self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', DEFAULT_TIMER_AIR_MIN_WIDTH, type=int))
 
-        settings.beginGroup("Fonts")
-        self.ExampleFont_LED1.setFont(QFont(settings.value('LED1FontName', DEFAULT_FONT_NAME),
-                                            settings.value('LED1FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                            settings.value('LED1FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_LED2.setFont(QFont(settings.value('LED2FontName', DEFAULT_FONT_NAME),
-                                            settings.value('LED2FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                            settings.value('LED2FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_LED3.setFont(QFont(settings.value('LED3FontName', DEFAULT_FONT_NAME),
-                                            settings.value('LED3FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                            settings.value('LED3FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_LED4.setFont(QFont(settings.value('LED4FontName', DEFAULT_FONT_NAME),
-                                            settings.value('LED4FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                            settings.value('LED4FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_AIR1.setFont(QFont(settings.value('AIR1FontName', DEFAULT_FONT_NAME),
-                                            settings.value('AIR1FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                            settings.value('AIR1FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_AIR2.setFont(QFont(settings.value('AIR2FontName', DEFAULT_FONT_NAME),
-                                            settings.value('AIR2FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                            settings.value('AIR2FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_AIR3.setFont(QFont(settings.value('AIR3FontName', DEFAULT_FONT_NAME),
-                                            settings.value('AIR3FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                            settings.value('AIR3FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_AIR4.setFont(QFont(settings.value('AIR4FontName', DEFAULT_FONT_NAME),
-                                            settings.value('AIR4FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                            settings.value('AIR4FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_StationName.setFont(QFont(settings.value('StationNameFontName', DEFAULT_FONT_NAME),
-                                                   settings.value('StationNameFontSize', DEFAULT_FONT_SIZE_STATION, type=int),
-                                                   settings.value('StationNameFontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganFontName', DEFAULT_FONT_NAME),
-                                              settings.value('SloganFontSize', DEFAULT_FONT_SIZE_SLOGAN, type=int),
-                                              settings.value('SloganFontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-        self.ExampleFont_LED1.setText(f"{settings.value('LED1FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('LED1FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-        self.ExampleFont_LED2.setText(f"{settings.value('LED2FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('LED2FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-        self.ExampleFont_LED3.setText(f"{settings.value('LED3FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('LED3FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-        self.ExampleFont_LED4.setText(f"{settings.value('LED4FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('LED4FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-        self.ExampleFont_AIR1.setText(f"{settings.value('AIR1FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('AIR1FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-        self.ExampleFont_AIR2.setText(f"{settings.value('AIR2FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('AIR2FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-        self.ExampleFont_AIR3.setText(f"{settings.value('AIR3FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('AIR3FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-        self.ExampleFont_AIR4.setText(f"{settings.value('AIR4FontName', DEFAULT_FONT_NAME)}, "
-                                      f"{settings.value('AIR4FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-        self.ExampleFont_StationName.setText(f"{settings.value('StationNameFontName', DEFAULT_FONT_NAME)}, "
-                                             f"{settings.value('StationNameFontSize', DEFAULT_FONT_SIZE_STATION, type=int)}pt")
-        self.ExampleFont_Slogan.setText(f"{settings.value('SloganFontName', DEFAULT_FONT_NAME)}, "
-                                        f"{settings.value('SloganFontSize', DEFAULT_FONT_SIZE_SLOGAN, type=int)}pt")
-        settings.endGroup()
+        with settings_group(settings, "Fonts"):
+            self.ExampleFont_LED1.setFont(QFont(settings.value('LED1FontName', DEFAULT_FONT_NAME),
+                                                settings.value('LED1FontSize', DEFAULT_FONT_SIZE_LED, type=int),
+                                                settings.value('LED1FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_LED2.setFont(QFont(settings.value('LED2FontName', DEFAULT_FONT_NAME),
+                                                settings.value('LED2FontSize', DEFAULT_FONT_SIZE_LED, type=int),
+                                                settings.value('LED2FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_LED3.setFont(QFont(settings.value('LED3FontName', DEFAULT_FONT_NAME),
+                                                settings.value('LED3FontSize', DEFAULT_FONT_SIZE_LED, type=int),
+                                                settings.value('LED3FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_LED4.setFont(QFont(settings.value('LED4FontName', DEFAULT_FONT_NAME),
+                                                settings.value('LED4FontSize', DEFAULT_FONT_SIZE_LED, type=int),
+                                                settings.value('LED4FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_AIR1.setFont(QFont(settings.value('AIR1FontName', DEFAULT_FONT_NAME),
+                                                settings.value('AIR1FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
+                                                settings.value('AIR1FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_AIR2.setFont(QFont(settings.value('AIR2FontName', DEFAULT_FONT_NAME),
+                                                settings.value('AIR2FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
+                                                settings.value('AIR2FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_AIR3.setFont(QFont(settings.value('AIR3FontName', DEFAULT_FONT_NAME),
+                                                settings.value('AIR3FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
+                                                settings.value('AIR3FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_AIR4.setFont(QFont(settings.value('AIR4FontName', DEFAULT_FONT_NAME),
+                                                settings.value('AIR4FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
+                                                settings.value('AIR4FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_StationName.setFont(QFont(settings.value('StationNameFontName', DEFAULT_FONT_NAME),
+                                                       settings.value('StationNameFontSize', DEFAULT_FONT_SIZE_STATION, type=int),
+                                                       settings.value('StationNameFontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganFontName', DEFAULT_FONT_NAME),
+                                                  settings.value('SloganFontSize', DEFAULT_FONT_SIZE_SLOGAN, type=int),
+                                                  settings.value('SloganFontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
+            self.ExampleFont_LED1.setText(f"{settings.value('LED1FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('LED1FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
+            self.ExampleFont_LED2.setText(f"{settings.value('LED2FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('LED2FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
+            self.ExampleFont_LED3.setText(f"{settings.value('LED3FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('LED3FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
+            self.ExampleFont_LED4.setText(f"{settings.value('LED4FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('LED4FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
+            self.ExampleFont_AIR1.setText(f"{settings.value('AIR1FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('AIR1FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
+            self.ExampleFont_AIR2.setText(f"{settings.value('AIR2FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('AIR2FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
+            self.ExampleFont_AIR3.setText(f"{settings.value('AIR3FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('AIR3FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
+            self.ExampleFont_AIR4.setText(f"{settings.value('AIR4FontName', DEFAULT_FONT_NAME)}, "
+                                          f"{settings.value('AIR4FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
+            self.ExampleFont_StationName.setText(f"{settings.value('StationNameFontName', DEFAULT_FONT_NAME)}, "
+                                                 f"{settings.value('StationNameFontSize', DEFAULT_FONT_SIZE_STATION, type=int)}pt")
+            self.ExampleFont_Slogan.setText(f"{settings.value('SloganFontName', DEFAULT_FONT_NAME)}, "
+                                            f"{settings.value('SloganFontSize', DEFAULT_FONT_SIZE_SLOGAN, type=int)}pt")
 
     def getSettingsFromDialog(self):
         if self.oacmode:
@@ -553,155 +525,142 @@ class Settings(QWidget, Ui_Settings):
         else:
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
 
-        settings.beginGroup("General")
-        settings.setValue('stationname', self.StationName.displayText())
-        settings.setValue('slogan', self.Slogan.displayText())
-        settings.setValue('stationcolor', self.getStationNameColor().name())
-        settings.setValue('slogancolor', self.getSloganColor().name())
-        settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
-        settings.setValue('updatekey', self.updateKey.displayText())
-        settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
-        settings.setValue('replacenow', self.replaceNOW.isChecked())
-        settings.setValue('replacenowtext', self.replaceNOWText.displayText())
-        settings.endGroup()
+        with settings_group(settings, "General"):
+            settings.setValue('stationname', self.StationName.displayText())
+            settings.setValue('slogan', self.Slogan.displayText())
+            settings.setValue('stationcolor', self.getStationNameColor().name())
+            settings.setValue('slogancolor', self.getSloganColor().name())
+            settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
+            settings.setValue('updatekey', self.updateKey.displayText())
+            settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
+            settings.setValue('replacenow', self.replaceNOW.isChecked())
+            settings.setValue('replacenowtext', self.replaceNOWText.displayText())
 
-        settings.beginGroup("NTP")
-        settings.setValue('ntpcheck', self.checkBox_NTPCheck.isChecked())
-        settings.setValue('ntpcheckserver', self.NTPCheckServer.displayText())
-        settings.endGroup()
+        with settings_group(settings, "NTP"):
+            settings.setValue('ntpcheck', self.checkBox_NTPCheck.isChecked())
+            settings.setValue('ntpcheckserver', self.NTPCheckServer.displayText())
 
-        settings.beginGroup("LEDS")
-        settings.setValue('inactivebgcolor', self.getLEDInactiveBGColor().name())
-        settings.setValue('inactivetextcolor', self.getLEDInactiveFGColor().name())
-        settings.endGroup()
+        with settings_group(settings, "LEDS"):
+            settings.setValue('inactivebgcolor', self.getLEDInactiveBGColor().name())
+            settings.setValue('inactivetextcolor', self.getLEDInactiveFGColor().name())
 
-        settings.beginGroup("LED1")
-        settings.setValue('used', self.LED1.isChecked())
-        settings.setValue('text', self.LED1Text.displayText())
-        settings.setValue('activebgcolor', self.getLED1BGColor().name())
-        settings.setValue('activetextcolor', self.getLED1FGColor().name())
-        settings.setValue('autoflash', self.LED1Autoflash.isChecked())
-        settings.setValue('timedflash', self.LED1Timedflash.isChecked())
-        settings.endGroup()
+        with settings_group(settings, "LED1"):
+            settings.setValue('used', self.LED1.isChecked())
+            settings.setValue('text', self.LED1Text.displayText())
+            settings.setValue('activebgcolor', self.getLED1BGColor().name())
+            settings.setValue('activetextcolor', self.getLED1FGColor().name())
+            settings.setValue('autoflash', self.LED1Autoflash.isChecked())
+            settings.setValue('timedflash', self.LED1Timedflash.isChecked())
 
-        settings.beginGroup("LED2")
-        settings.setValue('used', self.LED2.isChecked())
-        settings.setValue('text', self.LED2Text.displayText())
-        settings.setValue('activebgcolor', self.getLED2BGColor().name())
-        settings.setValue('activetextcolor', self.getLED2FGColor().name())
-        settings.setValue('autoflash', self.LED2Autoflash.isChecked())
-        settings.setValue('timedflash', self.LED2Timedflash.isChecked())
-        settings.endGroup()
+        with settings_group(settings, "LED2"):
+            settings.setValue('used', self.LED2.isChecked())
+            settings.setValue('text', self.LED2Text.displayText())
+            settings.setValue('activebgcolor', self.getLED2BGColor().name())
+            settings.setValue('activetextcolor', self.getLED2FGColor().name())
+            settings.setValue('autoflash', self.LED2Autoflash.isChecked())
+            settings.setValue('timedflash', self.LED2Timedflash.isChecked())
 
-        settings.beginGroup("LED3")
-        settings.setValue('used', self.LED3.isChecked())
-        settings.setValue('text', self.LED3Text.displayText())
-        settings.setValue('activebgcolor', self.getLED3BGColor().name())
-        settings.setValue('activetextcolor', self.getLED3FGColor().name())
-        settings.setValue('autoflash', self.LED3Autoflash.isChecked())
-        settings.setValue('timedflash', self.LED3Timedflash.isChecked())
-        settings.endGroup()
+        with settings_group(settings, "LED3"):
+            settings.setValue('used', self.LED3.isChecked())
+            settings.setValue('text', self.LED3Text.displayText())
+            settings.setValue('activebgcolor', self.getLED3BGColor().name())
+            settings.setValue('activetextcolor', self.getLED3FGColor().name())
+            settings.setValue('autoflash', self.LED3Autoflash.isChecked())
+            settings.setValue('timedflash', self.LED3Timedflash.isChecked())
 
-        settings.beginGroup("LED4")
-        settings.setValue('used', self.LED4.isChecked())
-        settings.setValue('text', self.LED4Text.displayText())
-        settings.setValue('activebgcolor', self.getLED4BGColor().name())
-        settings.setValue('activetextcolor', self.getLED4FGColor().name())
-        settings.setValue('autoflash', self.LED4Autoflash.isChecked())
-        settings.setValue('timedflash', self.LED4Timedflash.isChecked())
-        settings.endGroup()
+        with settings_group(settings, "LED4"):
+            settings.setValue('used', self.LED4.isChecked())
+            settings.setValue('text', self.LED4Text.displayText())
+            settings.setValue('activebgcolor', self.getLED4BGColor().name())
+            settings.setValue('activetextcolor', self.getLED4FGColor().name())
+            settings.setValue('autoflash', self.LED4Autoflash.isChecked())
+            settings.setValue('timedflash', self.LED4Timedflash.isChecked())
 
-        settings.beginGroup("Clock")
-        settings.setValue('digital', self.clockDigital.isChecked())
-        settings.setValue('showSeconds', self.showSeconds.isChecked())
-        settings.setValue('showSecondsInOneLine', self.seconds_in_one_line.isChecked())
-        settings.setValue('staticColon', self.staticColon.isChecked())
-        settings.setValue('useTextClock', self.useTextclock.isChecked())
-        settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
-        settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
-        settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
-        settings.setValue('logopath', self.logoPath.text())
-        settings.setValue('logoUpper', self.radioButton_logo_upper.isChecked())
-        settings.endGroup()
+        with settings_group(settings, "Clock"):
+            settings.setValue('digital', self.clockDigital.isChecked())
+            settings.setValue('showSeconds', self.showSeconds.isChecked())
+            settings.setValue('showSecondsInOneLine', self.seconds_in_one_line.isChecked())
+            settings.setValue('staticColon', self.staticColon.isChecked())
+            settings.setValue('useTextClock', self.useTextclock.isChecked())
+            settings.setValue('digitalhourcolor', self.getDigitalHourColor().name())
+            settings.setValue('digitalsecondcolor', self.getDigitalSecondColor().name())
+            settings.setValue('digitaldigitcolor', self.getDigitalDigitColor().name())
+            settings.setValue('logopath', self.logoPath.text())
+            settings.setValue('logoUpper', self.radioButton_logo_upper.isChecked())
 
-        settings.beginGroup("Network")
-        settings.setValue('udpport', self.udpport.displayText())
-        settings.setValue('httpport', self.httpport.displayText())
-        settings.setValue('multicast_address', self.multicast_group.displayText())
-        settings.endGroup()
+        with settings_group(settings, "Network"):
+            settings.setValue('udpport', self.udpport.displayText())
+            settings.setValue('httpport', self.httpport.displayText())
+            settings.setValue('multicast_address', self.multicast_group.displayText())
 
-        settings.beginGroup("Formatting")
-        settings.setValue('dateFormat', self.dateFormat.displayText())
-        settings.setValue('textClockLanguage', self.textClockLanguage.currentText())
-        settings.setValue('isAmPm', self.time_am_pm.isChecked())
-        settings.endGroup()
+        with settings_group(settings, "Formatting"):
+            settings.setValue('dateFormat', self.dateFormat.displayText())
+            settings.setValue('textClockLanguage', self.textClockLanguage.currentText())
+            settings.setValue('isAmPm', self.time_am_pm.isChecked())
 
-        settings.beginGroup("WeatherWidget")
-        settings.setValue('owmWidgetEnabled', self.owmWidgetEnabled.isChecked())
-        settings.setValue('owmAPIKey', self.owmAPIKey.displayText())
-        settings.setValue('owmCityID', self.owmCityID.displayText())
-        settings.setValue('owmLanguage', self.owmLanguage.currentText())
-        settings.setValue('owmUnit', self.owmUnit.currentText())
-        settings.endGroup()
+        with settings_group(settings, "WeatherWidget"):
+            settings.setValue('owmWidgetEnabled', self.owmWidgetEnabled.isChecked())
+            settings.setValue('owmAPIKey', self.owmAPIKey.displayText())
+            settings.setValue('owmCityID', self.owmCityID.displayText())
+            settings.setValue('owmLanguage', self.owmLanguage.currentText())
+            settings.setValue('owmUnit', self.owmUnit.currentText())
 
-        settings.beginGroup("Timers")
-        settings.setValue('TimerAIR1Enabled', self.enableAIR1.isChecked())
-        settings.setValue('TimerAIR2Enabled', self.enableAIR2.isChecked())
-        settings.setValue('TimerAIR3Enabled', self.enableAIR3.isChecked())
-        settings.setValue('TimerAIR4Enabled', self.enableAIR4.isChecked())
-        settings.setValue('TimerAIR1Text', self.AIR1Text.text())
-        settings.setValue('TimerAIR2Text', self.AIR2Text.text())
-        settings.setValue('TimerAIR3Text', self.AIR3Text.text())
-        settings.setValue('TimerAIR4Text', self.AIR4Text.text())
-        settings.setValue('AIR1activebgcolor', self.getAIR1BGColor().name())
-        settings.setValue('AIR1activetextcolor', self.getAIR1FGColor().name())
-        settings.setValue('AIR2activebgcolor', self.getAIR2BGColor().name())
-        settings.setValue('AIR2activetextcolor', self.getAIR2FGColor().name())
-        settings.setValue('AIR3activebgcolor', self.getAIR3BGColor().name())
-        settings.setValue('AIR3activetextcolor', self.getAIR3FGColor().name())
-        settings.setValue('AIR4activebgcolor', self.getAIR4BGColor().name())
-        settings.setValue('AIR4activetextcolor', self.getAIR4FGColor().name())
+        with settings_group(settings, "Timers"):
+            settings.setValue('TimerAIR1Enabled', self.enableAIR1.isChecked())
+            settings.setValue('TimerAIR2Enabled', self.enableAIR2.isChecked())
+            settings.setValue('TimerAIR3Enabled', self.enableAIR3.isChecked())
+            settings.setValue('TimerAIR4Enabled', self.enableAIR4.isChecked())
+            settings.setValue('TimerAIR1Text', self.AIR1Text.text())
+            settings.setValue('TimerAIR2Text', self.AIR2Text.text())
+            settings.setValue('TimerAIR3Text', self.AIR3Text.text())
+            settings.setValue('TimerAIR4Text', self.AIR4Text.text())
+            settings.setValue('AIR1activebgcolor', self.getAIR1BGColor().name())
+            settings.setValue('AIR1activetextcolor', self.getAIR1FGColor().name())
+            settings.setValue('AIR2activebgcolor', self.getAIR2BGColor().name())
+            settings.setValue('AIR2activetextcolor', self.getAIR2FGColor().name())
+            settings.setValue('AIR3activebgcolor', self.getAIR3BGColor().name())
+            settings.setValue('AIR3activetextcolor', self.getAIR3FGColor().name())
+            settings.setValue('AIR4activebgcolor', self.getAIR4BGColor().name())
+            settings.setValue('AIR4activetextcolor', self.getAIR4FGColor().name())
 
-        settings.setValue('air1iconpath', self.AIR1IconPath.text())
-        settings.setValue('air2iconpath', self.AIR2IconPath.text())
-        settings.setValue('air3iconpath', self.AIR3IconPath.text())
-        settings.setValue('air4iconpath', self.AIR4IconPath.text())
+            settings.setValue('air1iconpath', self.AIR1IconPath.text())
+            settings.setValue('air2iconpath', self.AIR2IconPath.text())
+            settings.setValue('air3iconpath', self.AIR3IconPath.text())
+            settings.setValue('air4iconpath', self.AIR4IconPath.text())
 
-        settings.setValue('TimerAIRMinWidth', self.AIRMinWidth.value())
-        settings.endGroup()
+            settings.setValue('TimerAIRMinWidth', self.AIRMinWidth.value())
 
-        settings.beginGroup("Fonts")
-        settings.setValue("LED1FontName", self.ExampleFont_LED1.font().family())
-        settings.setValue("LED1FontSize", self.ExampleFont_LED1.font().pointSize())
-        settings.setValue("LED1FontWeight", self.ExampleFont_LED1.font().weight())
-        settings.setValue("LED2FontName", self.ExampleFont_LED2.font().family())
-        settings.setValue("LED2FontSize", self.ExampleFont_LED2.font().pointSize())
-        settings.setValue("LED2FontWeight", self.ExampleFont_LED2.font().weight())
-        settings.setValue("LED3FontName", self.ExampleFont_LED3.font().family())
-        settings.setValue("LED3FontSize", self.ExampleFont_LED3.font().pointSize())
-        settings.setValue("LED3FontWeight", self.ExampleFont_LED3.font().weight())
-        settings.setValue("LED4FontName", self.ExampleFont_LED4.font().family())
-        settings.setValue("LED4FontSize", self.ExampleFont_LED4.font().pointSize())
-        settings.setValue("LED4FontWeight", self.ExampleFont_LED4.font().weight())
-        settings.setValue("AIR1FontName", self.ExampleFont_AIR1.font().family())
-        settings.setValue("AIR1FontSize", self.ExampleFont_AIR1.font().pointSize())
-        settings.setValue("AIR1FontWeight", self.ExampleFont_AIR1.font().weight())
-        settings.setValue("AIR2FontName", self.ExampleFont_AIR2.font().family())
-        settings.setValue("AIR2FontSize", self.ExampleFont_AIR2.font().pointSize())
-        settings.setValue("AIR2FontWeight", self.ExampleFont_AIR2.font().weight())
-        settings.setValue("AIR3FontName", self.ExampleFont_AIR3.font().family())
-        settings.setValue("AIR3FontSize", self.ExampleFont_AIR3.font().pointSize())
-        settings.setValue("AIR3FontWeight", self.ExampleFont_AIR3.font().weight())
-        settings.setValue("AIR4FontName", self.ExampleFont_AIR4.font().family())
-        settings.setValue("AIR4FontSize", self.ExampleFont_AIR4.font().pointSize())
-        settings.setValue("AIR4FontWeight", self.ExampleFont_AIR4.font().weight())
-        settings.setValue("StationNameFontName", self.ExampleFont_StationName.font().family())
-        settings.setValue("StationNameFontSize", self.ExampleFont_StationName.font().pointSize())
-        settings.setValue("StationNameFontWeight", self.ExampleFont_StationName.font().weight())
-        settings.setValue("SloganFontName", self.ExampleFont_Slogan.font().family())
-        settings.setValue("SloganFontSize", self.ExampleFont_Slogan.font().pointSize())
-        settings.setValue("SloganFontWeight", self.ExampleFont_Slogan.font().weight())
-        settings.endGroup()
+        with settings_group(settings, "Fonts"):
+            settings.setValue("LED1FontName", self.ExampleFont_LED1.font().family())
+            settings.setValue("LED1FontSize", self.ExampleFont_LED1.font().pointSize())
+            settings.setValue("LED1FontWeight", self.ExampleFont_LED1.font().weight())
+            settings.setValue("LED2FontName", self.ExampleFont_LED2.font().family())
+            settings.setValue("LED2FontSize", self.ExampleFont_LED2.font().pointSize())
+            settings.setValue("LED2FontWeight", self.ExampleFont_LED2.font().weight())
+            settings.setValue("LED3FontName", self.ExampleFont_LED3.font().family())
+            settings.setValue("LED3FontSize", self.ExampleFont_LED3.font().pointSize())
+            settings.setValue("LED3FontWeight", self.ExampleFont_LED3.font().weight())
+            settings.setValue("LED4FontName", self.ExampleFont_LED4.font().family())
+            settings.setValue("LED4FontSize", self.ExampleFont_LED4.font().pointSize())
+            settings.setValue("LED4FontWeight", self.ExampleFont_LED4.font().weight())
+            settings.setValue("AIR1FontName", self.ExampleFont_AIR1.font().family())
+            settings.setValue("AIR1FontSize", self.ExampleFont_AIR1.font().pointSize())
+            settings.setValue("AIR1FontWeight", self.ExampleFont_AIR1.font().weight())
+            settings.setValue("AIR2FontName", self.ExampleFont_AIR2.font().family())
+            settings.setValue("AIR2FontSize", self.ExampleFont_AIR2.font().pointSize())
+            settings.setValue("AIR2FontWeight", self.ExampleFont_AIR2.font().weight())
+            settings.setValue("AIR3FontName", self.ExampleFont_AIR3.font().family())
+            settings.setValue("AIR3FontSize", self.ExampleFont_AIR3.font().pointSize())
+            settings.setValue("AIR3FontWeight", self.ExampleFont_AIR3.font().weight())
+            settings.setValue("AIR4FontName", self.ExampleFont_AIR4.font().family())
+            settings.setValue("AIR4FontSize", self.ExampleFont_AIR4.font().pointSize())
+            settings.setValue("AIR4FontWeight", self.ExampleFont_AIR4.font().weight())
+            settings.setValue("StationNameFontName", self.ExampleFont_StationName.font().family())
+            settings.setValue("StationNameFontSize", self.ExampleFont_StationName.font().pointSize())
+            settings.setValue("StationNameFontWeight", self.ExampleFont_StationName.font().weight())
+            settings.setValue("SloganFontName", self.ExampleFont_Slogan.font().family())
+            settings.setValue("SloganFontSize", self.ExampleFont_Slogan.font().pointSize())
+            settings.setValue("SloganFontWeight", self.ExampleFont_Slogan.font().weight())
 
         if self.oacmode:
             # send oac a signal the the config has changed
