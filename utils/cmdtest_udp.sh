@@ -121,7 +121,30 @@ echo -e "CONF:$conf" | nc -w 1 -u 127.0.0.1 3310
 echo "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
 
 echo ""
+echo "[CLEANUP] Resetting test configuration changes to defaults"
+echo "  -> Resetting General Configuration (changed in test)"
+echo -e "CONF:General:stationname=Radio Eriwan\nCONF:General:slogan=Your question is our motivation\nCONF:General:stationcolor=#FFAA00\nCONF:General:slogancolor=#FFAA00" | nc -w 1 -u 127.0.0.1 3310
+
+echo "  -> Resetting LED Configuration (changed in test)"
+echo -e "CONF:LED1:text=ON AIR\nCONF:LED2:text=PHONE\nCONF:LED3:text=DOORBELL\nCONF:LED4:text=EAS ACTIVE\nCONF:LED1:autoflash=False" | nc -w 1 -u 127.0.0.1 3310
+
+echo "  -> Resetting Clock Configuration (changed in test)"
+echo -e "CONF:Clock:digitalhourcolor=#3232FF\nCONF:Clock:digitalsecondcolor=#FF9900\nCONF:Clock:digitaldigitcolor=#3232FF" | nc -w 1 -u 127.0.0.1 3310
+
+echo "  -> Resetting Timer Configuration (changed in test)"
+echo -e "CONF:Timers:TimerAIR1Text=Mic\nCONF:Timers:TimerAIR2Text=Phone\nCONF:Timers:TimerAIR3Text=Timer\nCONF:Timers:TimerAIR4Text=Stream" | nc -w 1 -u 127.0.0.1 3310
+
+echo "  -> Clearing text fields (changed in test)"
+echo -e "NOW:\nNEXT:\nWARN:" | nc -w 1 -u 127.0.0.1 3310
+
+echo "  -> Turning off all LEDs and AIR timers (changed in test)"
+echo -e "LED1:OFF\nLED2:OFF\nLED3:OFF\nLED4:OFF\nAIR1:OFF\nAIR2:OFF\nAIR3:OFF\nAIR4:OFF\nAIR3:RESET\nAIR4:RESET" | nc -w 1 -u 127.0.0.1 3310
+
+echo "  -> Applying all configuration changes"
+echo "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
+
+echo ""
 echo "========================================="
-echo "Test completed!"
+echo "Test completed! Test configuration changes reset to defaults."
 echo "========================================="
 exit

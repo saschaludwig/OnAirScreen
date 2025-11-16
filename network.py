@@ -83,33 +83,81 @@ class UdpServer:
         with settings_group(settings, "Network"):
             try:
                 port = int(settings.value('udpport', "3310"))
-            except ValueError:
-                port = "3310"
+                if port < 1 or port > 65535:
+                    logger.warning(f"Invalid UDP port {port}, using default 3310")
+                    port = 3310
+                    settings.setValue('udpport', "3310")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error parsing UDP port: {e}, using default 3310")
+                port = 3310
                 settings.setValue('udpport', "3310")
+            
             multicast_address = settings.value('multicast_address', "239.194.0.1")
             if not QHostAddress(multicast_address).isMulticast():
+                logger.warning(f"Invalid multicast address {multicast_address}, using default 239.194.0.1")
                 multicast_address = "239.194.0.1"
                 settings.setValue('multicast_address', "239.194.0.1")
 
-        self.udpsock.bind(QHostAddress.SpecialAddress.AnyIPv4, int(port), QUdpSocket.BindFlag.ShareAddress)
+        try:
+            bind_result = self.udpsock.bind(QHostAddress.SpecialAddress.AnyIPv4, int(port), QUdpSocket.BindFlag.ShareAddress)
+            if not bind_result:
+                error_msg = f"Failed to bind UDP socket to port {port}"
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
+            logger.info(f"UDP socket bound to port {port}")
+        except Exception as e:
+            logger.error(f"Error binding UDP socket to port {port}: {e}")
+            raise
+        
         if QHostAddress(multicast_address).isMulticast():
-            logger.info(f"{multicast_address} is Multicast, joining multicast group")
-            self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
+            try:
+                join_result = self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
+                if not join_result:
+                    logger.warning(f"Failed to join multicast group {multicast_address}, continuing without multicast")
+                else:
+                    logger.info(f"{multicast_address} is Multicast, joined multicast group")
+            except Exception as e:
+                logger.warning(f"Error joining multicast group {multicast_address}: {e}, continuing without multicast")
+        
         self.udpsock.readyRead.connect(self._handle_udp_data)
     
     def _handle_udp_data(self) -> None:
         """Handle incoming UDP datagrams"""
-        while self.udpsock.hasPendingDatagrams():
-            data, host, port = self.udpsock.readDatagram(self.udpsock.pendingDatagramSize())
-            lines = data.splitlines()
-            for line in lines:
-                # Mark command source as UDP for logging
-                if hasattr(self.command_callback, '__self__'):
-                    # If callback is a method, we need to pass source info differently
-                    # For now, we'll handle it in parse_cmd
-                    self.command_callback(line)
-                else:
-                    self.command_callback(line)
+        try:
+            while self.udpsock.hasPendingDatagrams():
+                try:
+                    pending_size = self.udpsock.pendingDatagramSize()
+                    if pending_size <= 0:
+                        logger.warning("Invalid UDP datagram size, skipping")
+                        break
+                    
+                    data, host, port = self.udpsock.readDatagram(pending_size)
+                    if not data:
+                        logger.debug("Received empty UDP datagram, skipping")
+                        continue
+                    
+                    lines = data.splitlines()
+                    for line in lines:
+                        if not line:
+                            continue
+                        try:
+                            # Mark command source as UDP for logging
+                            if hasattr(self.command_callback, '__self__'):
+                                # If callback is a method, we need to pass source info differently
+                                # For now, we'll handle it in parse_cmd
+                                self.command_callback(line)
+                            else:
+                                self.command_callback(line)
+                        except Exception as callback_error:
+                            logger.error(f"Error in UDP command callback from {host}:{port}: {callback_error}")
+                except OSError as socket_error:
+                    logger.error(f"Socket error reading UDP datagram: {socket_error}")
+                    break
+                except Exception as read_error:
+                    logger.error(f"Error reading UDP datagram: {read_error}")
+                    break
+        except Exception as e:
+            logger.error(f"Unexpected error in UDP data handler: {e}")
 
 
 class HttpDaemon(QThread):
@@ -138,7 +186,12 @@ class HttpDaemon(QThread):
         with settings_group(settings, "Network"):
             try:
                 port = int(settings.value('httpport', "8010"))
-            except ValueError:
+                if port < 1 or port > 65535:
+                    logger.warning(f"Invalid HTTP port {port}, using default 8010")
+                    port = 8010
+                    settings.setValue("httpport", "8010")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error parsing HTTP port: {e}, using default 8010")
                 port = 8010
                 settings.setValue("httpport", "8010")
 
@@ -148,15 +201,43 @@ class HttpDaemon(QThread):
             OASHTTPRequestHandler.command_signal = self.command_signal
             handler = OASHTTPRequestHandler
             self._server = HTTPServer((HOST, port), handler)
+            logger.info(f"HTTP server started on {HOST}:{port}")
             self._server.serve_forever()
         except OSError as error:
-            logger.error(f"ERROR: Starting HTTP Server on port {port}: {error}")
+            if error.errno == 98 or "Address already in use" in str(error):
+                logger.error(f"HTTP Server port {port} is already in use. Please choose a different port or stop the conflicting service.")
+            elif error.errno == 13 or "Permission denied" in str(error):
+                logger.error(f"Permission denied binding to HTTP port {port}. Try using a port above 1024 or run with appropriate permissions.")
+            else:
+                logger.error(f"OS error starting HTTP Server on port {port}: {error}")
+        except socket.error as socket_error:
+            logger.error(f"Socket error starting HTTP Server on port {port}: {socket_error}")
+        except Exception as error:
+            logger.error(f"Unexpected error starting HTTP Server on port {port}: {error}", exc_info=True)
 
     def stop(self):
         """Stop HTTP server"""
-        self._server.shutdown()
-        self._server.socket.close()
-        self.wait()
+        try:
+            if hasattr(self, '_server') and self._server:
+                try:
+                    self._server.shutdown()
+                except Exception as shutdown_error:
+                    logger.warning(f"Error shutting down HTTP server: {shutdown_error}")
+                
+                try:
+                    if hasattr(self._server, 'socket') and self._server.socket:
+                        self._server.socket.close()
+                except Exception as close_error:
+                    logger.warning(f"Error closing HTTP server socket: {close_error}")
+                
+                try:
+                    self.wait()
+                except Exception as wait_error:
+                    logger.warning(f"Error waiting for HTTP server thread: {wait_error}")
+            else:
+                logger.debug("HTTP server not initialized, nothing to stop")
+        except Exception as e:
+            logger.error(f"Unexpected error stopping HTTP server: {e}")
 
 
 class OASHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -246,40 +327,88 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             if self.command_signal:
                 try:
                     # Use signal to execute command in GUI thread
-                    command_bytes = message.encode('utf-8')
+                    try:
+                        command_bytes = message.encode('utf-8')
+                    except UnicodeEncodeError as encode_error:
+                        logger.error(f"Encoding error encoding command '{message}': {encode_error}")
+                        self.send_error(400, f'Invalid character encoding in command: {str(encode_error)}')
+                        return
+                    
+                    if not self.command_signal:
+                        logger.error("Command signal not available")
+                        self.send_error(503, 'Command signal not available')
+                        return
+                    
                     self.command_signal.command_received.emit(command_bytes, "http")
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json; charset=utf-8')
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
-                    self.wfile.write(json.dumps({'status': 'ok', 'command': message}).encode('utf-8'))
+                    
+                    try:
+                        response_json = json.dumps({'status': 'ok', 'command': message})
+                        self.wfile.write(response_json.encode('utf-8'))
+                    except (TypeError, ValueError) as json_error:
+                        logger.error(f"JSON serialization error: {json_error}")
+                        self.send_error(500, 'Error serializing response')
+                        return
+                    except (OSError, BrokenPipeError) as write_error:
+                        logger.warning(f"Error writing response to client: {write_error}")
+                        # Client may have disconnected, which is not critical
                     return
                 except Exception as e:
-                    logger.error(f"Error processing command: {e}")
+                    logger.error(f"Error processing command: {e}", exc_info=True)
                     self.send_error(500, f'Error processing command: {str(e)}')
                     return
             
             # Fallback to UDP forwarding if MainScreen not available
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             with settings_group(settings, "Network"):
                 try:
                     port = int(settings.value('udpport', "3310"))
-                except (ValueError, TypeError):
-                    logger.warning("Invalid UDP port in settings, using default 3310")
+                    if port < 1 or port > 65535:
+                        logger.warning("Invalid UDP port in settings, using default 3310")
+                        port = 3310
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Error parsing UDP port: {e}, using default 3310")
                     port = 3310
 
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(message.encode(), ("127.0.0.1", port))
-            sock.close()
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    sock.sendto(message.encode('utf-8'), ("127.0.0.1", port))
+                except UnicodeEncodeError as encode_error:
+                    logger.error(f"Encoding error sending UDP command: {encode_error}")
+                    self.send_error(400, f'Invalid character encoding in command: {str(encode_error)}')
+                    return
+                except OSError as socket_error:
+                    logger.error(f"Socket error sending UDP command to 127.0.0.1:{port}: {socket_error}")
+                    self.send_error(500, f'Error forwarding command via UDP: {str(socket_error)}')
+                    return
+                finally:
+                    sock.close()
+            except Exception as udp_error:
+                logger.error(f"Error forwarding command via UDP: {udp_error}")
+                self.send_error(500, f'Error forwarding command via UDP: {str(udp_error)}')
+                return
 
             # send file content to client
-            self.wfile.write(message.encode())
-            self.wfile.write("\n".encode())
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            try:
+                self.wfile.write(message.encode('utf-8'))
+                self.wfile.write("\n".encode('utf-8'))
+            except (OSError, BrokenPipeError) as write_error:
+                logger.warning(f"Error writing response to client: {write_error}")
+                # Client may have disconnected, which is not critical
+            except UnicodeEncodeError as encode_error:
+                logger.error(f"Encoding error writing response: {encode_error}")
+                # Response already sent, can't send error
+            except Exception as write_error:
+                logger.error(f"Unexpected error writing response: {write_error}")
         else:
             self.send_error(400, 'no command was given')
     
@@ -307,16 +436,37 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             if self.command_signal:
                 try:
                     # Use signal to execute command in GUI thread
-                    command_bytes = message.encode('utf-8')
+                    try:
+                        command_bytes = message.encode('utf-8')
+                    except UnicodeEncodeError as encode_error:
+                        logger.error(f"Encoding error encoding command '{message}': {encode_error}")
+                        self.send_error(400, f'Invalid character encoding in command: {str(encode_error)}')
+                        return
+                    
+                    if not self.command_signal:
+                        logger.error("Command signal not available")
+                        self.send_error(503, 'Command signal not available')
+                        return
+                    
                     self.command_signal.command_received.emit(command_bytes, "http")
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json; charset=utf-8')
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
-                    self.wfile.write(json.dumps({'status': 'ok', 'command': message}).encode('utf-8'))
+                    
+                    try:
+                        response_json = json.dumps({'status': 'ok', 'command': message})
+                        self.wfile.write(response_json.encode('utf-8'))
+                    except (TypeError, ValueError) as json_error:
+                        logger.error(f"JSON serialization error: {json_error}")
+                        self.send_error(500, 'Error serializing response')
+                        return
+                    except (OSError, BrokenPipeError) as write_error:
+                        logger.warning(f"Error writing response to client: {write_error}")
+                        # Client may have disconnected, which is not critical
                     return
                 except Exception as e:
-                    logger.error(f"Error processing command: {e}")
+                    logger.error(f"Error processing command: {e}", exc_info=True)
                     self.send_error(500, f'Error processing command: {str(e)}')
                     return
             
@@ -330,17 +480,47 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             with settings_group(settings, "Network"):
                 try:
                     port = int(settings.value('udpport', "3310"))
-                except (ValueError, TypeError):
-                    logger.warning("Invalid UDP port in settings, using default 3310")
+                    if port < 1 or port > 65535:
+                        logger.warning("Invalid UDP port in settings, using default 3310")
+                        port = 3310
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Error parsing UDP port: {e}, using default 3310")
                     port = 3310
 
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(message.encode(), ("127.0.0.1", port))
-            sock.close()
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    sock.sendto(message.encode('utf-8'), ("127.0.0.1", port))
+                except UnicodeEncodeError as encode_error:
+                    logger.error(f"Encoding error sending UDP command: {encode_error}")
+                    raise
+                except OSError as socket_error:
+                    logger.error(f"Socket error sending UDP command to 127.0.0.1:{port}: {socket_error}")
+                    raise
+                finally:
+                    sock.close()
+            except Exception as udp_error:
+                logger.error(f"Error forwarding command via UDP: {udp_error}")
+                self.send_error(500, f'Error forwarding command via UDP: {str(udp_error)}')
+                return
 
-            self.wfile.write(json.dumps({'status': 'ok', 'command': message, 'method': 'udp_fallback'}).encode('utf-8'))
+            try:
+                response_data = json.dumps({'status': 'ok', 'command': message, 'method': 'udp_fallback'})
+                self.wfile.write(response_data.encode('utf-8'))
+            except (TypeError, ValueError) as json_error:
+                logger.error(f"JSON serialization error: {json_error}")
+                self.send_error(500, 'Error serializing response')
+                return
+            except (OSError, BrokenPipeError) as write_error:
+                logger.warning(f"Error writing response to client: {write_error}")
+                # Client may have disconnected, which is not critical
+            except Exception as write_error:
+                logger.error(f"Unexpected error writing response: {write_error}")
+        except ValueError as value_error:
+            logger.error(f"Value error in API command handler: {value_error}")
+            self.send_error(400, f'Invalid command format: {str(value_error)}')
         except Exception as e:
-            logger.error(f"Error in API command handler: {e}")
+            logger.error(f"Error in API command handler: {e}", exc_info=True)
             self.send_error(500, f'Error processing command: {str(e)}')
     
     def _handle_api_status(self) -> None:
@@ -355,19 +535,44 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json; charset=utf-8')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps(status).encode('utf-8'))
+            
+            try:
+                status_json = json.dumps(status)
+                self.wfile.write(status_json.encode('utf-8'))
+            except (TypeError, ValueError) as json_error:
+                logger.error(f"JSON serialization error for status: {json_error}")
+                self.send_error(500, 'Error serializing status response')
+                return
+            except (OSError, BrokenPipeError) as write_error:
+                logger.warning(f"Error writing status response to client: {write_error}")
+                # Client may have disconnected, which is not critical
+        except AttributeError as attr_error:
+            logger.error(f"MainScreen missing required method or attribute: {attr_error}")
+            self.send_error(500, f'Error getting status: MainScreen interface error')
         except Exception as e:
-            logger.error(f"Error getting status: {e}")
+            logger.error(f"Error getting status: {e}", exc_info=True)
             self.send_error(500, f'Error getting status: {str(e)}')
     
     def _handle_web_ui(self) -> None:
         """Handle Web-UI request - serves HTML interface"""
-        html_content = self._get_web_ui_html()
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write(html_content.encode('utf-8'))
+        try:
+            html_content = self._get_web_ui_html()
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            try:
+                self.wfile.write(html_content.encode('utf-8'))
+            except (OSError, BrokenPipeError) as write_error:
+                logger.warning(f"Error writing Web-UI HTML to client: {write_error}")
+                # Client may have disconnected, which is not critical
+            except UnicodeEncodeError as encode_error:
+                logger.error(f"Encoding error writing Web-UI HTML: {encode_error}")
+                self.send_error(500, 'Error encoding Web-UI content')
+        except Exception as e:
+            logger.error(f"Unexpected error serving Web-UI: {e}", exc_info=True)
+            self.send_error(500, f'Error serving Web-UI: {str(e)}')
     
     def _get_web_ui_html(self) -> str:
         """Load HTML content for Web-UI from template file"""

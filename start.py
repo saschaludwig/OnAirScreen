@@ -40,6 +40,7 @@ import os
 import re
 import signal
 import socket
+import subprocess
 import sys
 from datetime import datetime
 
@@ -299,24 +300,109 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.getTimeWindow.show()
 
     def parse_timer_input(self):
-        minutes = 0
-        seconds = 0
-        # hide input window
-        self.sender().parent().hide()
-        # get time string
-        text = str(self.sender().text())
-        if re.match('^[0-9]*,[0-9]*$', text):
-            (minutes, seconds) = text.split(",")
-            minutes = int(minutes)
-            seconds = int(seconds)
-        elif re.match(r'^[0-9]*\.[0-9]*$', text):
-            (minutes, seconds) = text.split(".")
-            minutes = int(minutes)
-            seconds = int(seconds)
-        elif re.match('^[0-9]*$', text):
-            seconds = int(text)
-        seconds = (minutes * 60) + seconds
-        self.radio_timer_set(seconds)
+        """
+        Parse timer input from dialog and set radio timer
+        
+        Handles formats:
+        - "2,10" or "2.10" for 2 minutes 10 seconds
+        - "30" for 30 seconds only
+        
+        Includes validation and error handling for invalid inputs.
+        """
+        try:
+            # Get sender and validate
+            sender = self.sender()
+            if not sender:
+                logger.warning("parse_timer_input: No sender found")
+                return
+            
+            # Hide input window
+            try:
+                parent = sender.parent()
+                if parent:
+                    parent.hide()
+            except (AttributeError, RuntimeError) as e:
+                logger.warning(f"Error hiding timer input window: {e}")
+            
+            # Get and validate input text
+            try:
+                text = str(sender.text()).strip()
+            except (AttributeError, RuntimeError) as e:
+                logger.error(f"Error getting timer input text: {e}")
+                return
+            
+            # Validate input is not empty
+            if not text or text == "Enter timer here":
+                logger.warning("parse_timer_input: Empty or default input, ignoring")
+                return
+            
+            minutes = 0
+            seconds = 0
+            parsed = False
+            
+            # Try comma format: "2,10" for 2 minutes 10 seconds
+            if re.match('^[0-9]+,[0-9]+$', text):
+                try:
+                    parts = text.split(",")
+                    if len(parts) == 2:
+                        minutes = int(parts[0])
+                        seconds = int(parts[1])
+                        # Validate seconds are in valid range (0-59)
+                        if seconds < 0 or seconds >= 60:
+                            logger.warning(f"parse_timer_input: Invalid seconds value {seconds}, must be 0-59")
+                            return
+                        parsed = True
+                except (ValueError, IndexError) as e:
+                    logger.error(f"parse_timer_input: Error parsing comma format '{text}': {e}")
+                    return
+            
+            # Try dot format: "2.10" for 2 minutes 10 seconds
+            elif re.match(r'^[0-9]+\.[0-9]+$', text):
+                try:
+                    parts = text.split(".")
+                    if len(parts) == 2:
+                        minutes = int(parts[0])
+                        seconds = int(parts[1])
+                        # Validate seconds are in valid range (0-59)
+                        if seconds < 0 or seconds >= 60:
+                            logger.warning(f"parse_timer_input: Invalid seconds value {seconds}, must be 0-59")
+                            return
+                        parsed = True
+                except (ValueError, IndexError) as e:
+                    logger.error(f"parse_timer_input: Error parsing dot format '{text}': {e}")
+                    return
+            
+            # Try seconds-only format: "30" for 30 seconds
+            elif re.match('^[0-9]+$', text):
+                try:
+                    seconds = int(text)
+                    if seconds < 0:
+                        logger.warning(f"parse_timer_input: Negative seconds value {seconds}")
+                        return
+                    parsed = True
+                except ValueError as e:
+                    logger.error(f"parse_timer_input: Error parsing seconds format '{text}': {e}")
+                    return
+            
+            # If no format matched, show error
+            if not parsed:
+                logger.warning(f"parse_timer_input: Invalid input format '{text}'. Expected: '2,10', '2.10', or '30'")
+                return
+            
+            # Calculate total seconds
+            total_seconds = (minutes * 60) + seconds
+            
+            # Validate total is reasonable (max 24 hours = 86400 seconds)
+            if total_seconds > 86400:
+                logger.warning(f"parse_timer_input: Timer value too large: {total_seconds} seconds (max 86400)")
+                return
+            
+            # Set the timer
+            self.radio_timer_set(total_seconds)
+            logger.info(f"parse_timer_input: Set timer to {minutes}:{seconds:02d} ({total_seconds} seconds)")
+            
+        except Exception as e:
+            logger.error(f"parse_timer_input: Unexpected error: {e}", exc_info=True)
 
     def stream_timer_start_stop(self):
         self.start_stop_air4()
@@ -1371,24 +1457,54 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.weatherWidget.updateWeather()
 
     def reboot_host(self):
+        """Reboot the host system safely using subprocess"""
         self.add_warning("SYSTEM REBOOT IN PROGRESS", 2)
         self.event_logger.log_system_event("System reboot initiated")
-        if os.name == "posix":
-            cmd = "sudo reboot"
-            os.system(cmd)
-        if os.name == "nt":
-            cmd = "shutdown -f -r -t 0"
-            os.system(cmd)
+        try:
+            if os.name == "posix":
+                # Use subprocess with explicit command list (no shell injection possible)
+                subprocess.run(["sudo", "reboot"], check=False, timeout=5)
+            elif os.name == "nt":
+                # Windows: shutdown with explicit parameters
+                subprocess.run(
+                    ["shutdown", "/f", "/r", "/t", "0"],
+                    check=False,
+                    timeout=5
+                )
+            else:
+                logger.warning(f"Unsupported OS for reboot: {os.name}")
+        except subprocess.TimeoutExpired:
+            logger.warning("Reboot command timed out (this may be expected)")
+        except FileNotFoundError:
+            logger.error("Reboot command not found on this system")
+        except Exception as e:
+            logger.error(f"Error executing reboot command: {e}")
+            self.event_logger.log_system_event(f"Reboot failed: {e}")
 
     def shutdown_host(self):
+        """Shutdown the host system safely using subprocess"""
         self.add_warning("SYSTEM SHUTDOWN IN PROGRESS", 2)
         self.event_logger.log_system_event("System shutdown initiated")
-        if os.name == "posix":
-            cmd = "sudo halt"
-            os.system(cmd)
-        if os.name == "nt":
-            cmd = "shutdown -f -t 0"
-            os.system(cmd)
+        try:
+            if os.name == "posix":
+                # Use subprocess with explicit command list (no shell injection possible)
+                subprocess.run(["sudo", "halt"], check=False, timeout=5)
+            elif os.name == "nt":
+                # Windows: shutdown with explicit parameters
+                subprocess.run(
+                    ["shutdown", "/f", "/s", "/t", "0"],
+                    check=False,
+                    timeout=5
+                )
+            else:
+                logger.warning(f"Unsupported OS for shutdown: {os.name}")
+        except subprocess.TimeoutExpired:
+            logger.warning("Shutdown command timed out (this may be expected)")
+        except FileNotFoundError:
+            logger.error("Shutdown command not found on this system")
+        except Exception as e:
+            logger.error(f"Error executing shutdown command: {e}")
+            self.event_logger.log_system_event(f"Shutdown failed: {e}")
 
     def get_status_json(self) -> dict:
         """

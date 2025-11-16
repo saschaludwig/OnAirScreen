@@ -177,6 +177,35 @@ class CommandHandler:
         elif value == "QUIT":
             self.main_screen.quit_oas()
     
+    def _handle_color_setting(self, color_str: str, setter_func: Callable, setting_name: str) -> None:
+        """
+        Handle color setting with validation
+        
+        Args:
+            color_str: Color string to validate and set
+            setter_func: Function to call with validated QColor object
+            setting_name: Name of setting for logging purposes
+        """
+        try:
+            # Normalize 0x prefix to # (for backward compatibility)
+            normalized = color_str.replace("0x", "#").replace("0X", "#")
+            
+            # Get color with validation (getColorFromName now validates)
+            color = self.main_screen.settings.getColorFromName(normalized)
+            
+            # Check if color is valid
+            if not color.isValid():
+                logger.warning(f"Invalid color value '{color_str}' for {setting_name}, using default black")
+                # Use black as fallback
+                color = self.main_screen.settings.getColorFromName("#000000")
+            
+            # Set the color
+            setter_func(color)
+            logger.debug(f"Set {setting_name} to color '{normalized}'")
+            
+        except Exception as e:
+            logger.error(f"Error setting color for {setting_name}: {e}", exc_info=True)
+    
     def _handle_conf_command(self, value: str) -> bool:
         """
         Handle CONF command (configuration updates)
@@ -218,10 +247,10 @@ class CommandHandler:
         handlers = {
             "stationname": lambda c: self.main_screen.settings.StationName.setText(c),
             "slogan": lambda c: self.main_screen.settings.Slogan.setText(c),
-            "stationcolor": lambda c: self.main_screen.settings.setStationNameColor(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
-            "slogancolor": lambda c: self.main_screen.settings.setSloganColor(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
+            "stationcolor": lambda c: self._handle_color_setting(
+                c, lambda color: self.main_screen.settings.setStationNameColor(color), "stationcolor"),
+            "slogancolor": lambda c: self._handle_color_setting(
+                c, lambda color: self.main_screen.settings.setSloganColor(color), "slogancolor"),
             "replacenow": lambda c: self.main_screen.settings.replaceNOW.setChecked(c == "True"),
             "replacenowtext": lambda c: self.main_screen.settings.replaceNOWText.setText(c),
         }
@@ -234,10 +263,12 @@ class CommandHandler:
         handlers = {
             "used": lambda c: getattr(self.main_screen.settings, f"LED{led_num}").setChecked(c == "True"),
             "text": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Text").setText(c),
-            "activebgcolor": lambda c: getattr(self.main_screen.settings, f"setLED{led_num}BGColor")(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
-            "activetextcolor": lambda c: getattr(self.main_screen.settings, f"setLED{led_num}FGColor")(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
+            "activebgcolor": lambda c: self._handle_color_setting(
+                c, lambda color: getattr(self.main_screen.settings, f"setLED{led_num}BGColor")(color),
+                f"LED{led_num}.activebgcolor"),
+            "activetextcolor": lambda c: self._handle_color_setting(
+                c, lambda color: getattr(self.main_screen.settings, f"setLED{led_num}FGColor")(color),
+                f"LED{led_num}.activetextcolor"),
             "autoflash": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Autoflash").setChecked(c == "True"),
             "timedflash": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Timedflash").setChecked(c == "True"),
         }
@@ -262,12 +293,16 @@ class CommandHandler:
         # Handle AIR colors
         for air_num in range(1, 5):
             if param == f"AIR{air_num}activebgcolor":
-                getattr(self.main_screen.settings, f"setAIR{air_num}BGColor")(
-                    self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+                self._handle_color_setting(
+                    content,
+                    lambda color: getattr(self.main_screen.settings, f"setAIR{air_num}BGColor")(color),
+                    f"AIR{air_num}.activebgcolor")
                 return
             if param == f"AIR{air_num}activetextcolor":
-                getattr(self.main_screen.settings, f"setAIR{air_num}FGColor")(
-                    self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+                self._handle_color_setting(
+                    content,
+                    lambda color: getattr(self.main_screen.settings, f"setAIR{air_num}FGColor")(color),
+                    f"AIR{air_num}.activetextcolor")
                 return
         
         # Handle AIR icon paths
@@ -310,11 +345,20 @@ class CommandHandler:
         elif param == "staticcolon":
             self.main_screen.settings.staticColon.setChecked(content == "True")
         elif param == "digitalhourcolor":
-            self.main_screen.settings.setDigitalHourColor(self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+            self._handle_color_setting(
+                content,
+                lambda color: self.main_screen.settings.setDigitalHourColor(color),
+                "digitalhourcolor")
         elif param == "digitalsecondcolor":
-            self.main_screen.settings.setDigitalSecondColor(self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+            self._handle_color_setting(
+                content,
+                lambda color: self.main_screen.settings.setDigitalSecondColor(color),
+                "digitalsecondcolor")
         elif param == "digitaldigitcolor":
-            self.main_screen.settings.setDigitalDigitColor(self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+            self._handle_color_setting(
+                content,
+                lambda color: self.main_screen.settings.setDigitalDigitColor(color),
+                "digitaldigitcolor")
         elif param == "logopath":
             self.main_screen.settings.setLogoPath(content)
         elif param == "logoupper":

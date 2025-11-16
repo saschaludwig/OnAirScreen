@@ -61,6 +61,57 @@ except ModuleNotFoundError:
 logger = logging.getLogger(__name__)
 
 
+def validate_color_value(color_str: str) -> tuple[bool, str]:
+    """
+    Validate a color value string
+    
+    Supports formats:
+    - Hex format: #RRGGBB or #RGB
+    - Hex format with 0x prefix: 0xRRGGBB or 0xRGB
+    - Named colors (Qt color names)
+    
+    Args:
+        color_str: Color string to validate
+        
+    Returns:
+        Tuple of (is_valid, normalized_color_string)
+        If invalid, normalized_color_string will be empty string
+    """
+    if not color_str or not isinstance(color_str, str):
+        return False, ""
+    
+    color_str = color_str.strip()
+    
+    # Handle 0x prefix (convert to #)
+    if color_str.startswith("0x") or color_str.startswith("0X"):
+        color_str = "#" + color_str[2:]
+    
+    # Validate hex format: #RRGGBB or #RGB
+    if color_str.startswith("#"):
+        hex_part = color_str[1:]
+        # Check if it's a valid hex string (3 or 6 digits)
+        if len(hex_part) == 3:
+            # Short format #RGB
+            if all(c in '0123456789ABCDEFabcdef' for c in hex_part):
+                return True, color_str.upper()
+        elif len(hex_part) == 6:
+            # Long format #RRGGBB
+            if all(c in '0123456789ABCDEFabcdef' for c in hex_part):
+                return True, color_str.upper()
+        # Invalid hex format
+        return False, ""
+    
+    # Check if it's a valid Qt named color
+    # Qt supports many named colors, we'll let QColor validate it
+    test_color = QColor()
+    test_color.setNamedColor(color_str)
+    if test_color.isValid():
+        return True, color_str
+    
+    # Invalid color
+    return False, ""
+
+
 # class OASSettings for use from OAC
 class OASSettings:
     """
@@ -1072,8 +1123,34 @@ class Settings(QWidget, Ui_Settings):
             return initcolor
 
     def getColorFromName(self, colorname):
+        """
+        Get QColor from color name string with validation
+        
+        Args:
+            colorname: Color string (hex format #RRGGBB, 0xRRGGBB, or named color)
+            
+        Returns:
+            QColor object, or invalid QColor if color string is invalid
+        """
+        if not colorname:
+            logger.warning("getColorFromName: Empty color name provided")
+            return QColor()  # Return invalid color
+        
+        # Validate color value
+        is_valid, normalized_color = validate_color_value(colorname)
+        if not is_valid:
+            logger.warning(f"getColorFromName: Invalid color value '{colorname}', using default black")
+            return QColor(0, 0, 0)  # Return black as fallback
+        
+        # Create color from validated string
         color = QColor()
-        color.setNamedColor(colorname)
+        color.setNamedColor(normalized_color)
+        
+        # Double-check that QColor accepted it
+        if not color.isValid():
+            logger.warning(f"getColorFromName: QColor rejected color '{normalized_color}', using default black")
+            return QColor(0, 0, 0)  # Return black as fallback
+        
         return color
 
     def openLogoPathSelector(self):
