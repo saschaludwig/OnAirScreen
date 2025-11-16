@@ -631,12 +631,31 @@ class MainScreen(QWidget, Ui_MainScreen):
     def display_all_hostaddresses(self):
         v4addrs = list()
         v6addrs = list()
-        for address in QNetworkInterface().allAddresses():
-            if address.protocol() == 0:
-                if address.toString()[:3] != '127':
-                    v4addrs.append(address.toString())
-            # if address.protocol() == 1:
-            #    v6addrs.append(address.toString())
+        
+        # Get all network interfaces
+        for interface in QNetworkInterface.allInterfaces():
+            # Skip loopback interfaces
+            if interface.flags() & QNetworkInterface.InterfaceFlag.IsLoopBack:
+                continue
+            
+            # Get all address entries for this interface
+            for entry in interface.addressEntries():
+                address = entry.ip()
+                addr_str = address.toString()
+                
+                # Check if it's IPv4 or IPv6 using toIPv4Address/toIPv6Address
+                # Both methods return a tuple: (address_value, is_valid) for IPv4, (16 bytes) for IPv6
+                ipv4_result = address.toIPv4Address()
+                ipv6_result = address.toIPv6Address()
+                
+                if len(ipv4_result) == 2 and ipv4_result[1]:  # IPv4 and valid
+                    # Skip localhost addresses
+                    if not addr_str.startswith('127.'):
+                        v4addrs.append(addr_str)
+                elif len(ipv6_result) == 16:  # IPv6 (returns 16-byte tuple)
+                    # Skip IPv6 localhost (::1) and link-local addresses (fe80::)
+                    if addr_str != '::1' and not addr_str.startswith('fe80::'):
+                        v6addrs.append(addr_str)
 
         self.set_current_song_text(", ".join([str(addr) for addr in v4addrs]))
         self.set_news_text(", ".join([str(addr) for addr in v6addrs]))
