@@ -354,8 +354,98 @@
     
     <script>
         const API_BASE = window.location.origin;
+        const WS_BASE = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.hostname;
+        const WS_PORT = parseInt(window.location.port || '8010') + 1;  // HTTP port + 1
+        const WS_URL = `${WS_BASE}:${WS_PORT}`;
         
-        // Update status every second
+        let ws = null;
+        let wsReconnectTimeout = null;
+        let useWebSocket = true;
+        let pollingInterval = null;
+        
+        // WebSocket connection management
+        function connectWebSocket() {
+            if (!useWebSocket) {
+                // Fallback to polling
+                startPolling();
+                return;
+            }
+            
+            try {
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    hideConnectionError();
+                    // Stop polling if it was running
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data && data.leds && data.air) {
+                            updateStatusDisplay(data);
+                            updateLEDButtons(data.leds);
+                            updateAIRControls(data.air);
+                            // Update version info
+                            if (data.version) {
+                                document.getElementById('versionValue').textContent = data.version;
+                            }
+                            if (data.distribution) {
+                                document.getElementById('distributionValue').textContent = data.distribution;
+                            }
+                        } else {
+                            console.error('Invalid data format:', data);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing WebSocket message:', e);
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    // Fallback to polling on error
+                    if (useWebSocket) {
+                        console.log('Falling back to polling');
+                        useWebSocket = false;
+                        startPolling();
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    ws = null;
+                    // Try to reconnect after 3 seconds
+                    if (useWebSocket) {
+                        wsReconnectTimeout = setTimeout(connectWebSocket, 3000);
+                    } else {
+                        // If WebSocket is disabled, use polling
+                        startPolling();
+                    }
+                };
+            } catch (e) {
+                console.error('Error creating WebSocket:', e);
+                // Fallback to polling
+                useWebSocket = false;
+                startPolling();
+            }
+        }
+        
+        // Polling fallback
+        function startPolling() {
+            if (pollingInterval) {
+                return;  // Already polling
+            }
+            console.log('Using polling for status updates');
+            updateStatus();  // Initial update
+            pollingInterval = setInterval(updateStatus, 1000);
+        }
+        
+        // Update status via HTTP (fallback)
         function updateStatus() {
             fetch(API_BASE + '/api/status')
                 .then(response => {
@@ -376,6 +466,7 @@
                         if (data.distribution) {
                             document.getElementById('distributionValue').textContent = data.distribution;
                         }
+                        hideConnectionError();
                     } else {
                         console.error('Invalid data format:', data);
                         showConnectionError();
@@ -734,9 +825,21 @@
             }
         });
         
-        // Initial load and periodic updates
-        updateStatus();
-        setInterval(updateStatus, 1000);
+        // Connect WebSocket for real-time updates
+        connectWebSocket();
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+            if (wsReconnectTimeout) {
+                clearTimeout(wsReconnectTimeout);
+            }
+        });
     </script>
 </body>
 </html>
