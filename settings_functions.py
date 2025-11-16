@@ -415,7 +415,7 @@ class Settings(QWidget, Ui_Settings):
             getattr(self, f'setLED{led_num}FGColor')(self.getColorFromName(settings.value('activetextcolor', DEFAULT_LED_ACTIVE_TEXT_COLOR)))
             getattr(self, f'LED{led_num}Autoflash').setChecked(settings.value('autoflash', DEFAULT_LED_AUTOFLASH, type=bool))
             getattr(self, f'LED{led_num}Timedflash').setChecked(settings.value('timedflash', DEFAULT_LED_TIMEDFLASH, type=bool))
-            settings.endGroup()
+        settings.endGroup()
 
         settings.beginGroup("Clock")
         self.clockDigital.setChecked(settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
