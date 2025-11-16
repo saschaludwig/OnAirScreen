@@ -264,14 +264,25 @@ def get_default(group: str, key: str, default: Any = None) -> Any:
     # Fonts group
     if group == "Fonts":
         if key.endswith("FontName"):
-            font_prefix = key[:-8]  # Remove "FontName" suffix
-            return DEFAULT_FONT_NAMES.get(font_prefix, default)
+            return DEFAULT_FONT_NAME
         elif key.endswith("FontSize"):
             font_prefix = key[:-8]  # Remove "FontSize" suffix
-            return DEFAULT_FONT_SIZES.get(font_prefix, default)
-        elif key.endswith("FontBold"):
-            font_prefix = key[:-8]  # Remove "FontBold" suffix
-            return DEFAULT_FONT_BOLD.get(font_prefix, default)
+            # Map font prefixes to their default sizes
+            size_map = {
+                "LED1": DEFAULT_FONT_SIZE_LED,
+                "LED2": DEFAULT_FONT_SIZE_LED,
+                "LED3": DEFAULT_FONT_SIZE_LED,
+                "LED4": DEFAULT_FONT_SIZE_LED,
+                "AIR1": DEFAULT_FONT_SIZE_TIMER,
+                "AIR2": DEFAULT_FONT_SIZE_TIMER,
+                "AIR3": DEFAULT_FONT_SIZE_TIMER,
+                "AIR4": DEFAULT_FONT_SIZE_TIMER,
+                "StationName": DEFAULT_FONT_SIZE_STATION,
+                "Slogan": DEFAULT_FONT_SIZE_SLOGAN,
+            }
+            return size_map.get(font_prefix, DEFAULT_FONT_SIZE_LED)
+        elif key.endswith("FontWeight") or key.endswith("FontBold"):
+            return DEFAULT_FONT_WEIGHT_BOLD
     
     return default
 
