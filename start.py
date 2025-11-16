@@ -40,12 +40,13 @@ import os
 import re
 import signal
 import socket
+import subprocess
 import sys
 from datetime import datetime
 
 import ntplib
 from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, QDate, QLocale, QThread, pyqtSignal, QObject
-from PyQt6.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont, QShortcut, QFontDatabase
+from PyQt6.QtGui import QCursor, QPalette, QKeySequence, QIcon, QPixmap, QFont, QShortcut, QFontDatabase, QColor
 from PyQt6.QtNetwork import QNetworkInterface
 from PyQt6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox
 
@@ -58,6 +59,20 @@ from network import UdpServer, HttpDaemon
 from timer_manager import TimerManager
 from event_logger import EventLogger
 from utils import settings_group
+from defaults import (
+    DEFAULT_STATION_NAME, DEFAULT_SLOGAN, DEFAULT_STATION_COLOR, DEFAULT_SLOGAN_COLOR,
+    DEFAULT_LED_TEXTS, DEFAULT_LED_INACTIVE_TEXT_COLOR, DEFAULT_LED_INACTIVE_BG_COLOR,
+    DEFAULT_LED_ACTIVE_TEXT_COLOR, DEFAULT_LED_ACTIVE_BG_COLOR,
+    DEFAULT_CLOCK_DIGITAL_HOUR_COLOR, DEFAULT_CLOCK_DIGITAL_SECOND_COLOR,
+    DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR, DEFAULT_CLOCK_LOGO_PATH,
+    DEFAULT_TEXT_CLOCK_LANGUAGE, DEFAULT_DATE_FORMAT,
+    DEFAULT_TIMER_AIR_TEXTS, DEFAULT_TIMER_AIR_MIN_WIDTH,
+    DEFAULT_TIMER_AIR_ICON_PATHS, DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR,
+    DEFAULT_TIMER_AIR_INACTIVE_BG_COLOR, DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR,
+    DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR, DEFAULT_NTP_CHECK_SERVER,
+    DEFAULT_REPLACE_NOW_TEXT, DEFAULT_FONT_NAME, DEFAULT_FONT_WEIGHT_BOLD,
+    get_default
+)
 
 # Configure logging
 logging.basicConfig(
@@ -236,15 +251,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         # do initial update check
         self.settings.sigCheckForUpdate.emit()
 
-    def quit_oas(self):
-        # do cleanup here
+    def quit_oas(self) -> None:
+        """
+        Quit the application with cleanup
+        
+        Stops NTP check thread, HTTP server, and quits the application.
+        """
         logger.info("Quitting, cleaning up...")
         self.event_logger.log_system_event("Application quit")
         self.checkNTPOffset.stop()
         self.httpd.stop()
         QCoreApplication.instance().quit()
 
-    def radio_timer_start_stop(self):
+    def radio_timer_start_stop(self) -> None:
+        """
+        Start or stop the radio timer (AIR3)
+        
+        Toggles the radio timer between running and stopped states.
+        """
         self.start_stop_air3()
 
     def radio_timer_reset(self) -> None:
@@ -269,7 +293,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             logger.warning(f"Invalid timer type: {timer_type}")
 
     def radio_timer_set(self, seconds: int) -> None:
-        """Set radio timer seconds"""
+        """
+        Set radio timer duration in seconds
+        
+        Args:
+            seconds: Timer duration in seconds (0 for count-up mode, >0 for count-down mode)
+        """
         self.Air3Seconds = seconds
         if seconds > 0:
             self.radioTimerMode = 1  # count down mode
@@ -282,8 +311,14 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Log timer set event
         self.event_logger.log_timer_set(3, seconds, mode)
 
-    def get_timer_dialog(self):
-        # generate and display timer input window
+    def get_timer_dialog(self) -> None:
+        """
+        Generate and display timer input dialog window
+        
+        Creates a dialog window for entering timer values in formats:
+        - "2,10" or "2.10" for 2 minutes 10 seconds
+        - "30" for 30 seconds only
+        """
         self.getTimeWindow = QDialog()
         self.getTimeWindow.resize(200, 100)
         self.getTimeWindow.setWindowTitle("Please enter timer")
@@ -298,31 +333,126 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.getTimeWindow.timeEdit.returnPressed.connect(self.parse_timer_input)
         self.getTimeWindow.show()
 
-    def parse_timer_input(self):
-        minutes = 0
-        seconds = 0
-        # hide input window
-        self.sender().parent().hide()
-        # get time string
-        text = str(self.sender().text())
-        if re.match('^[0-9]*,[0-9]*$', text):
-            (minutes, seconds) = text.split(",")
-            minutes = int(minutes)
-            seconds = int(seconds)
-        elif re.match(r'^[0-9]*\.[0-9]*$', text):
-            (minutes, seconds) = text.split(".")
-            minutes = int(minutes)
-            seconds = int(seconds)
-        elif re.match('^[0-9]*$', text):
-            seconds = int(text)
-        seconds = (minutes * 60) + seconds
-        self.radio_timer_set(seconds)
+    def parse_timer_input(self) -> None:
+        """
+        Parse timer input from dialog and set radio timer
+        
+        Handles formats:
+        - "2,10" or "2.10" for 2 minutes 10 seconds
+        - "30" for 30 seconds only
+        
+        Includes validation and error handling for invalid inputs.
+        Logs warnings for invalid inputs and returns early without setting timer.
+        """
+        try:
+            # Get sender and validate
+            sender = self.sender()
+            if not sender:
+                logger.warning("parse_timer_input: No sender found")
+                return
+            
+            # Hide input window
+            try:
+                parent = sender.parent()
+                if parent:
+                    parent.hide()
+            except (AttributeError, RuntimeError) as e:
+                logger.warning(f"Error hiding timer input window: {e}")
+            
+            # Get and validate input text
+            try:
+                text = str(sender.text()).strip()
+            except (AttributeError, RuntimeError) as e:
+                logger.error(f"Error getting timer input text: {e}")
+                return
+            
+            # Validate input is not empty
+            if not text or text == "Enter timer here":
+                logger.warning("parse_timer_input: Empty or default input, ignoring")
+                return
+            
+            minutes = 0
+            seconds = 0
+            parsed = False
+            
+            # Try comma format: "2,10" for 2 minutes 10 seconds
+            if re.match('^[0-9]+,[0-9]+$', text):
+                try:
+                    parts = text.split(",")
+                    if len(parts) == 2:
+                        minutes = int(parts[0])
+                        seconds = int(parts[1])
+                        # Validate seconds are in valid range (0-59)
+                        if seconds < 0 or seconds >= 60:
+                            logger.warning(f"parse_timer_input: Invalid seconds value {seconds}, must be 0-59")
+                            return
+                        parsed = True
+                except (ValueError, IndexError) as e:
+                    logger.error(f"parse_timer_input: Error parsing comma format '{text}': {e}")
+                    return
+            
+            # Try dot format: "2.10" for 2 minutes 10 seconds
+            elif re.match(r'^[0-9]+\.[0-9]+$', text):
+                try:
+                    parts = text.split(".")
+                    if len(parts) == 2:
+                        minutes = int(parts[0])
+                        seconds = int(parts[1])
+                        # Validate seconds are in valid range (0-59)
+                        if seconds < 0 or seconds >= 60:
+                            logger.warning(f"parse_timer_input: Invalid seconds value {seconds}, must be 0-59")
+                            return
+                        parsed = True
+                except (ValueError, IndexError) as e:
+                    logger.error(f"parse_timer_input: Error parsing dot format '{text}': {e}")
+                    return
+            
+            # Try seconds-only format: "30" for 30 seconds
+            elif re.match('^[0-9]+$', text):
+                try:
+                    seconds = int(text)
+                    if seconds < 0:
+                        logger.warning(f"parse_timer_input: Negative seconds value {seconds}")
+                        return
+                    parsed = True
+                except ValueError as e:
+                    logger.error(f"parse_timer_input: Error parsing seconds format '{text}': {e}")
+                    return
+            
+            # If no format matched, show error
+            if not parsed:
+                logger.warning(f"parse_timer_input: Invalid input format '{text}'. Expected: '2,10', '2.10', or '30'")
+                return
+            
+            # Calculate total seconds
+            total_seconds = (minutes * 60) + seconds
+            
+            # Validate total is reasonable (max 24 hours = 86400 seconds)
+            if total_seconds > 86400:
+                logger.warning(f"parse_timer_input: Timer value too large: {total_seconds} seconds (max 86400)")
+                return
+            
+            # Set the timer
+            self.radio_timer_set(total_seconds)
+            logger.info(f"parse_timer_input: Set timer to {minutes}:{seconds:02d} ({total_seconds} seconds)")
+            
+        except Exception as e:
+            logger.error(f"parse_timer_input: Unexpected error: {e}", exc_info=True)
 
-    def stream_timer_start_stop(self):
+    def stream_timer_start_stop(self) -> None:
+        """
+        Start or stop the stream timer (AIR4)
+        
+        Toggles the stream timer between running and stopped states.
+        """
         self.start_stop_air4()
 
     def stream_timer_reset(self) -> None:
-        """Reset stream timer"""
+        """
+        Reset stream timer (AIR4)
+        
+        Resets the stream timer to 0 and sets it to count-up mode.
+        """
         self._reset_timer('stream', 4)
 
     def _ensure_air_icons_are_set(self) -> None:
@@ -430,8 +560,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                     setattr(self, seconds_attr, 0)
                 
                 # Set active styles
-                active_text_color = settings.value(config['active_text_color'], '#FFFFFF')
-                active_bg_color = settings.value(config['active_bg_color'], '#FF0000')
+                active_text_color = settings.value(config['active_text_color'], DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)
+                active_bg_color = settings.value(config['active_bg_color'], DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)
                 label_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
                 
                 # Set icon with active styles
@@ -534,7 +664,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             seconds = getattr(self, seconds_attr)
             label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
 
-    def show_settings(self):
+    def show_settings(self) -> None:
+        """
+        Show settings dialog window
+        
+        Restores mouse cursor, ensures AIR icons are set, and displays settings window.
+        """
         global app
         # un-hide mouse cursor
         app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
@@ -542,15 +677,41 @@ class MainScreen(QWidget, Ui_MainScreen):
         self._ensure_air_icons_are_set()
         self.settings.show_settings()
 
-    def display_all_hostaddresses(self):
+    def display_all_hostaddresses(self) -> None:
+        """
+        Display all local network IP addresses in NOW and NEXT text fields
+        
+        Retrieves all non-loopback IPv4 and IPv6 addresses from network interfaces
+        and displays them in the UI. Starts a timer to replace with configured text
+        after 10 seconds if replacenow setting is enabled.
+        """
         v4addrs = list()
         v6addrs = list()
-        for address in QNetworkInterface().allAddresses():
-            if address.protocol() == 0:
-                if address.toString()[:3] != '127':
-                    v4addrs.append(address.toString())
-            # if address.protocol() == 1:
-            #    v6addrs.append(address.toString())
+        
+        # Get all network interfaces
+        for interface in QNetworkInterface.allInterfaces():
+            # Skip loopback interfaces
+            if interface.flags() & QNetworkInterface.InterfaceFlag.IsLoopBack:
+                continue
+            
+            # Get all address entries for this interface
+            for entry in interface.addressEntries():
+                address = entry.ip()
+                addr_str = address.toString()
+                
+                # Check if it's IPv4 or IPv6 using toIPv4Address/toIPv6Address
+                # Both methods return a tuple: (address_value, is_valid) for IPv4, (16 bytes) for IPv6
+                ipv4_result = address.toIPv4Address()
+                ipv6_result = address.toIPv6Address()
+                
+                if len(ipv4_result) == 2 and ipv4_result[1]:  # IPv4 and valid
+                    # Skip localhost addresses
+                    if not addr_str.startswith('127.'):
+                        v4addrs.append(addr_str)
+                elif len(ipv6_result) == 16:  # IPv6 (returns 16-byte tuple)
+                    # Skip IPv6 localhost (::1) and link-local addresses (fe80::)
+                    if addr_str != '::1' and not addr_str.startswith('fe80::'):
+                        v6addrs.append(addr_str)
 
         self.set_current_song_text(", ".join([str(addr) for addr in v4addrs]))
         self.set_news_text(", ".join([str(addr) for addr in v6addrs]))
@@ -744,21 +905,31 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Log LED change event
         self.event_logger.log_led_changed(led, state, source)
 
-    def set_station_color(self, newcolor) -> None:
-        """Set the station label color"""
+    def set_station_color(self, newcolor: QColor) -> None:
+        """
+        Set the station label color
+        
+        Args:
+            newcolor: QColor object for the station name label
+        """
         self._set_label_color(self.labelStation, newcolor)
 
-    def set_slogan_color(self, newcolor) -> None:
-        """Set the slogan label color"""
+    def set_slogan_color(self, newcolor: QColor) -> None:
+        """
+        Set the slogan label color
+        
+        Args:
+            newcolor: QColor object for the slogan label
+        """
         self._set_label_color(self.labelSlogan, newcolor)
 
-    def _set_label_color(self, widget, color) -> None:
+    def _set_label_color(self, widget: QLabel, color: QColor) -> None:
         """
         Generic method to set label color
         
         Args:
             widget: The label widget to set color for
-            color: The color to set
+            color: QColor object to set as text color
         """
         palette = widget.palette()
         palette.setColor(QPalette.ColorRole.WindowText, color)
@@ -776,39 +947,48 @@ class MainScreen(QWidget, Ui_MainScreen):
         self._restore_font_settings(settings)
 
     def _restore_general_settings(self, settings: QSettings) -> None:
-        """Restore general settings (station name, slogan, colors)"""
+        """
+        Restore general settings (station name, slogan, colors)
+        
+        Args:
+            settings: QSettings object to read from
+        """
         with settings_group(settings, "General"):
-            self.labelStation.setText(settings.value('stationname', 'Radio Eriwan'))
-            self.labelSlogan.setText(settings.value('slogan', 'Your question is our motivation'))
-            self.set_station_color(self.settings.getColorFromName(settings.value('stationcolor', '#FFAA00')))
-            self.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', '#FFAA00')))
+            self.labelStation.setText(settings.value('stationname', DEFAULT_STATION_NAME))
+            self.labelSlogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
+            self.set_station_color(self.settings.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
+            self.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', DEFAULT_SLOGAN_COLOR)))
 
     def _restore_led_settings(self, settings: QSettings) -> None:
-        """Restore LED settings (text, visibility)"""
-        led_configs = [
-            (1, 'ON AIR'),
-            (2, 'PHONE'),
-            (3, 'DOORBELL'),
-            (4, 'EAS ACTIVE'),
-        ]
+        """
+        Restore LED settings (text, visibility)
         
-        for led_num, default_text in led_configs:
+        Args:
+            settings: QSettings object to read from
+        """
+        for led_num in range(1, 5):
             with settings_group(settings, f"LED{led_num}"):
+                default_text = DEFAULT_LED_TEXTS.get(led_num, f'LED{led_num}')
                 getattr(self, f'set_led{led_num}_text')(settings.value('text', default_text))
                 getattr(self, f'buttonLED{led_num}').setVisible(settings.value('used', True, type=bool))
 
     def _restore_clock_settings(self, settings: QSettings) -> None:
-        """Restore clock widget settings"""
+        """
+        Restore clock widget settings
+        
+        Args:
+            settings: QSettings object to read from
+        """
         with settings_group(settings, "Clock"):
             self.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
             self.clockWidget.set_digi_hour_color(
-                self.settings.getColorFromName(settings.value('digitalhourcolor', '#3232FF')))
+                self.settings.getColorFromName(settings.value('digitalhourcolor', DEFAULT_CLOCK_DIGITAL_HOUR_COLOR)))
             self.clockWidget.set_digi_second_color(
-                self.settings.getColorFromName(settings.value('digitalsecondcolor', '#FF9900')))
+                self.settings.getColorFromName(settings.value('digitalsecondcolor', DEFAULT_CLOCK_DIGITAL_SECOND_COLOR)))
             self.clockWidget.set_digi_digit_color(
-                self.settings.getColorFromName(settings.value('digitaldigitcolor', '#3232FF')))
+                self.settings.getColorFromName(settings.value('digitaldigitcolor', DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR)))
             self.clockWidget.set_logo(
-                settings.value('logopath', ':/astrastudio_logo/images/astrastudio_transparent.png'))
+                settings.value('logopath', DEFAULT_CLOCK_LOGO_PATH))
             self.clockWidget.set_show_seconds(settings.value('showSeconds', False, type=bool))
             self.clockWidget.set_one_line_time(settings.value('showSecondsInOneLine', False, type=bool) &
                                                settings.value('showSeconds', False, type=bool))
@@ -817,13 +997,23 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
 
     def _restore_formatting_settings(self, settings: QSettings) -> None:
-        """Restore formatting settings (AM/PM, text clock language)"""
+        """
+        Restore formatting settings (AM/PM, text clock language)
+        
+        Args:
+            settings: QSettings object to read from
+        """
         with settings_group(settings, "Formatting"):
             self.clockWidget.set_am_pm(settings.value('isAmPm', False, type=bool))
-            self.textLocale = settings.value('textClockLanguage', 'English')
+            self.textLocale = settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)
 
     def _restore_weather_settings(self, settings: QSettings) -> None:
-        """Restore weather widget settings"""
+        """
+        Restore weather widget settings
+        
+        Args:
+            settings: QSettings object to read from
+        """
         with settings_group(settings, "WeatherWidget"):
             if settings.value('owmWidgetEnabled', False, type=bool):
                 self.weatherWidget.show()
@@ -831,17 +1021,24 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.weatherWidget.hide()
 
     def _restore_timer_settings(self, settings: QSettings) -> None:
-        """Restore timer/AIR settings"""
+        """
+        Restore timer/AIR settings
+        
+        Args:
+            settings: QSettings object to read from
+        """
         with settings_group(settings, "Timers"):
             # Configuration for each AIR timer
             air_timer_configs = [
-                (1, 'TimerAIR1Enabled', 'TimerAIR1Text', 'Mic', 'air1iconpath', ':/mic_icon/images/mic_icon.png'),
-                (2, 'TimerAIR2Enabled', 'TimerAIR2Text', 'Phone', 'air2iconpath', ':/phone_icon/images/phone_icon.png'),
-                (3, 'TimerAIR3Enabled', 'TimerAIR3Text', 'Timer', 'air3iconpath', ':/timer_icon/images/timer_icon.png'),
-                (4, 'TimerAIR4Enabled', 'TimerAIR4Text', 'Stream', 'air4iconpath', ':/stream_icon/images/antenna2.png')
+                (1, 'TimerAIR1Enabled', 'TimerAIR1Text', 'air1iconpath'),
+                (2, 'TimerAIR2Enabled', 'TimerAIR2Text', 'air2iconpath'),
+                (3, 'TimerAIR3Enabled', 'TimerAIR3Text', 'air3iconpath'),
+                (4, 'TimerAIR4Enabled', 'TimerAIR4Text', 'air4iconpath')
             ]
             
-            for air_num, enabled_key, text_key, text_default, icon_key, icon_default in air_timer_configs:
+            for air_num, enabled_key, text_key, icon_key in air_timer_configs:
+                text_default = DEFAULT_TIMER_AIR_TEXTS.get(air_num, f'AIR{air_num}')
+                icon_default = DEFAULT_TIMER_AIR_ICON_PATHS.get(air_num, '')
                 if not settings.value(enabled_key, True, type=bool):
                     led_widget = getattr(self, f'AirLED_{air_num}')
                     led_widget.hide()
@@ -852,8 +1049,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                     led_widget = getattr(self, f'AirLED_{air_num}')
                     
                     label_widget.setText(f"{label_text}\n0:00")
-                    inactive_text_color = settings.value('inactivetextcolor', '#555555')
-                    inactive_bg_color = settings.value('inactivebgcolor', '#222222')
+                    inactive_text_color = settings.value('inactivetextcolor', DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR)
+                    inactive_bg_color = settings.value('inactivebgcolor', DEFAULT_TIMER_AIR_INACTIVE_BG_COLOR)
                     
                     # Save icon before setStyleSheet to prevent flickering
                     with settings_group(settings, "AIR"):
@@ -872,13 +1069,18 @@ class MainScreen(QWidget, Ui_MainScreen):
                     led_widget.show()
             
         # Set minimum left LED width
-        min_width = settings.value('TimerAIRMinWidth', 200, type=int)
+        min_width = settings.value('TimerAIRMinWidth', DEFAULT_TIMER_AIR_MIN_WIDTH, type=int)
         for air_num in range(1, 5):
             led_widget = getattr(self, f'AirLED_{air_num}')
             led_widget.setMinimumWidth(min_width)
 
     def _restore_font_settings(self, settings: QSettings) -> None:
-        """Restore font settings for all widgets"""
+        """
+        Restore font settings for all widgets
+        
+        Args:
+            settings: QSettings object to read from
+        """
         with settings_group(settings, "Fonts"):
             # Font configuration for widgets
             font_configs = [
@@ -896,9 +1098,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             
             for font_prefix, widget_name in font_configs:
                 widget = getattr(self, widget_name)
-                font_name = settings.value(f'{font_prefix}FontName', "FreeSans")
+                font_name = settings.value(f'{font_prefix}FontName', DEFAULT_FONT_NAME)
                 font_size = settings.value(f'{font_prefix}FontSize', 24, type=int)
-                font_weight = settings.value(f'{font_prefix}FontWeight', QFont.Weight.Bold, type=int)
+                font_weight = settings.value(f'{font_prefix}FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)
                 widget.setFont(QFont(font_name, font_size, font_weight))
 
     def constant_update(self):
@@ -912,15 +1114,15 @@ class MainScreen(QWidget, Ui_MainScreen):
     def update_date(self):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Formatting"):
-            set_language = settings.value('textClockLanguage', 'English')
+            set_language = settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)
         lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
-        self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', 'dddd, dd. MMMM yyyy')))
+        self.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', DEFAULT_DATE_FORMAT)))
 
     def update_backtiming_text(self) -> None:
         """Update the text clock display based on current time and language"""
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Formatting"):
-            text_clock_language = settings.value('textClockLanguage', 'English')
+            text_clock_language = settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)
             is_am_pm = settings.value('isAmPm', False, type=bool)
 
         now = datetime.now()
@@ -1171,13 +1373,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         """Update AIR4 seconds display"""
         self._update_air_seconds(4)
 
-    def replace_now_next(self):
+    def replace_now_next(self) -> None:
+        """
+        Replace NOW and NEXT text fields with configured replacement text
+        
+        Called by timer after displaying IP addresses. Replaces NOW field with
+        configured replacement text and clears NEXT field.
+        """
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "General"):
-            self.set_current_song_text(settings.value('replacenowtext', ""))
+            self.set_current_song_text(settings.value('replacenowtext', DEFAULT_REPLACE_NOW_TEXT))
             self.set_news_text("")
 
-    def trigger_ntp_check(self):
+    def trigger_ntp_check(self) -> None:
+        """
+        Trigger NTP offset check
+        
+        Checks if NTP checking is enabled and triggers NTP offset check.
+        """
         logger.debug("NTP Check triggered")
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "NTP"):
@@ -1232,14 +1445,14 @@ class MainScreen(QWidget, Ui_MainScreen):
         
         if action:
             with settings_group(settings, f"LED{led_num}"):
-                active_text_color = settings.value('activetextcolor', '#FFFFFF')
+                active_text_color = settings.value('activetextcolor', DEFAULT_LED_ACTIVE_TEXT_COLOR)
                 active_bg_color = settings.value('activebgcolor', default_active_colors[led_num])
                 button_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
             setattr(self, status_attr, True)
         else:
             with settings_group(settings, "LEDS"):
-                inactive_text_color = settings.value('inactivetextcolor', '#555555')
-                inactive_bg_color = settings.value('inactivebgcolor', '#222222')
+                inactive_text_color = settings.value('inactivetextcolor', DEFAULT_LED_INACTIVE_TEXT_COLOR)
+                inactive_bg_color = settings.value('inactivebgcolor', DEFAULT_LED_INACTIVE_BG_COLOR)
                 button_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
             setattr(self, status_attr, False)
 
@@ -1297,11 +1510,24 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             logger.warning(f"Widget '{widget_name}' not found for set_text")
 
-    def set_backtiming_secs(self, value):
+    def set_backtiming_secs(self, value: int) -> None:
+        """
+        Set backtiming seconds (currently not implemented)
+        
+        Args:
+            value: Seconds value (not currently used)
+        """
         pass
         # self.labelSeconds.setText( str(value) )
 
-    def add_warning(self, text, priority=0):
+    def add_warning(self, text: str, priority: int = 0) -> None:
+        """
+        Add a warning message to the warning system
+        
+        Args:
+            text: Warning message text
+            priority: Warning priority level (0-2, default: 0)
+        """
         # Only log if warning actually changed
         old_text = self.warnings[priority]
         self.warnings[priority] = text
@@ -1313,7 +1539,13 @@ class MainScreen(QWidget, Ui_MainScreen):
                 # Warning was removed (text is now empty)
                 self.event_logger.log_warning_removed(priority)
 
-    def remove_warning(self, priority=0):
+    def remove_warning(self, priority: int = 0) -> None:
+        """
+        Remove warning message from the warning system
+        
+        Args:
+            priority: Warning priority level (0-2, default: 0)
+        """
         # Only log if warning was actually present
         old_text = self.warnings[priority]
         if old_text:
@@ -1321,7 +1553,13 @@ class MainScreen(QWidget, Ui_MainScreen):
             # Log warning removed event only if there was a warning
             self.event_logger.log_warning_removed(priority)
 
-    def process_warnings(self):
+    def process_warnings(self) -> None:
+        """
+        Process all warnings and display the highest priority warning
+        
+        Checks all warning priority levels and displays the last (highest priority)
+        warning found, or hides the warning label if no warnings are present.
+        """
         warning_available = False
         last_warning = None
 
@@ -1334,7 +1572,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             self.hide_warning()
 
-    def show_warning(self, text):
+    def show_warning(self, text: str) -> None:
+        """
+        Show warning message in the UI
+        
+        Hides current song and news labels and displays warning text with large font.
+        
+        Args:
+            text: Warning message text to display
+        """
         self.labelCurrentSong.hide()
         self.labelNews.hide()
         self.labelWarning.setText(text)
@@ -1343,7 +1589,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelWarning.setFont(font)
         self.labelWarning.show()
 
-    def hide_warning(self, priority=0):
+    def hide_warning(self, priority: int = 0) -> None:
+        """
+        Hide warning message and restore normal UI
+        
+        Args:
+            priority: Warning priority level (0-2, default: 0, currently unused)
+        """
         self.labelWarning.hide()
         self.labelCurrentSong.show()
         self.labelNews.show()
@@ -1351,11 +1603,21 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.labelWarning.hide()
 
     @staticmethod
-    def exit_oas():
+    def exit_oas() -> None:
+        """
+        Exit the application
+        
+        Static method to exit the QApplication instance.
+        """
         global app
         app.exit()
 
-    def config_closed(self):
+    def config_closed(self) -> None:
+        """
+        Handle settings window closed event
+        
+        Restores mouse cursor state and ensures AIR icons are set correctly.
+        """
         global app
         # hide mouse cursor if in fullscreen mode
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
@@ -1365,30 +1627,66 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Ensure icons are still set after dialog is closed
         self._ensure_air_icons_are_set()
 
-    def config_finished(self):
+    def config_finished(self) -> None:
+        """
+        Handle settings applied event
+        
+        Restores settings from configuration, updates weather widget config,
+        and triggers weather update.
+        """
         self.restore_settings_from_config()
         self.weatherWidget.readConfig()
         self.weatherWidget.updateWeather()
 
     def reboot_host(self):
+        """Reboot the host system safely using subprocess"""
         self.add_warning("SYSTEM REBOOT IN PROGRESS", 2)
         self.event_logger.log_system_event("System reboot initiated")
-        if os.name == "posix":
-            cmd = "sudo reboot"
-            os.system(cmd)
-        if os.name == "nt":
-            cmd = "shutdown -f -r -t 0"
-            os.system(cmd)
+        try:
+            if os.name == "posix":
+                # Use subprocess with explicit command list (no shell injection possible)
+                subprocess.run(["sudo", "reboot"], check=False, timeout=5)
+            elif os.name == "nt":
+                # Windows: shutdown with explicit parameters
+                subprocess.run(
+                    ["shutdown", "/f", "/r", "/t", "0"],
+                    check=False,
+                    timeout=5
+                )
+            else:
+                logger.warning(f"Unsupported OS for reboot: {os.name}")
+        except subprocess.TimeoutExpired:
+            logger.warning("Reboot command timed out (this may be expected)")
+        except FileNotFoundError:
+            logger.error("Reboot command not found on this system")
+        except Exception as e:
+            logger.error(f"Error executing reboot command: {e}")
+            self.event_logger.log_system_event(f"Reboot failed: {e}")
 
     def shutdown_host(self):
+        """Shutdown the host system safely using subprocess"""
         self.add_warning("SYSTEM SHUTDOWN IN PROGRESS", 2)
         self.event_logger.log_system_event("System shutdown initiated")
-        if os.name == "posix":
-            cmd = "sudo halt"
-            os.system(cmd)
-        if os.name == "nt":
-            cmd = "shutdown -f -t 0"
-            os.system(cmd)
+        try:
+            if os.name == "posix":
+                # Use subprocess with explicit command list (no shell injection possible)
+                subprocess.run(["sudo", "halt"], check=False, timeout=5)
+            elif os.name == "nt":
+                # Windows: shutdown with explicit parameters
+                subprocess.run(
+                    ["shutdown", "/f", "/s", "/t", "0"],
+                    check=False,
+                    timeout=5
+                )
+            else:
+                logger.warning(f"Unsupported OS for shutdown: {os.name}")
+        except subprocess.TimeoutExpired:
+            logger.warning("Shutdown command timed out (this may be expected)")
+        except FileNotFoundError:
+            logger.error("Shutdown command not found on this system")
+        except Exception as e:
+            logger.error(f"Error executing shutdown command: {e}")
+            self.event_logger.log_system_event(f"Shutdown failed: {e}")
 
     def get_status_json(self) -> dict:
         """
@@ -1498,7 +1796,7 @@ class CheckNTPOffsetThread(QThread):
         logger.debug("entered CheckNTPOffsetThread.run")
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "NTP"):
-            ntp_server = str(settings.value('ntpcheckserver', 'pool.ntp.org'))
+            ntp_server = str(settings.value('ntpcheckserver', DEFAULT_NTP_CHECK_SERVER))
         max_deviation = 0.3
         c = ntplib.NTPClient()
         try:

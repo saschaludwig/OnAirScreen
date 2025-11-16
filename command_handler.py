@@ -42,7 +42,10 @@ This module handles parsing and execution of commands received via UDP/HTTP.
 """
 
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from start import MainScreen
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +58,7 @@ class CommandHandler:
     them to appropriate handler methods.
     """
     
-    def __init__(self, main_screen):
+    def __init__(self, main_screen: "MainScreen") -> None:
         """
         Initialize the command handler
         
@@ -124,25 +127,47 @@ class CommandHandler:
         return command_handlers.get(command)
     
     def _handle_led_command(self, led_num: int, value: str) -> None:
-        """Handle LED command (LED1-4)"""
+        """
+        Handle LED command (LED1-4)
+        
+        Args:
+            led_num: LED number (1-4)
+            value: Command value ("ON" or "OFF")
+        """
         self.main_screen.led_logic(led_num, value != "OFF")
     
     def _handle_warn_command(self, value: str) -> None:
-        """Handle WARN command"""
+        """
+        Handle WARN command
+        
+        Args:
+            value: Warning text (empty string to clear warning)
+        """
         if value:
             self.main_screen.add_warning(value, 1)
         else:
             self.main_screen.remove_warning(1)
     
     def _handle_air_simple_command(self, air_num: int, value: str) -> None:
-        """Handle simple AIR command (AIR1, AIR2)"""
+        """
+        Handle simple AIR command (AIR1, AIR2)
+        
+        Args:
+            air_num: AIR timer number (1 or 2)
+            value: Command value ("OFF" to stop, any other value to start)
+        """
         if value == "OFF":
             getattr(self.main_screen, f"set_air{air_num}")(False)
         else:
             getattr(self.main_screen, f"set_air{air_num}")(True)
     
     def _handle_air3_command(self, value: str) -> None:
-        """Handle AIR3 command with multiple actions"""
+        """
+        Handle AIR3 command with multiple actions
+        
+        Args:
+            value: Command action ("OFF", "ON", "RESET", or "TOGGLE")
+        """
         if value == "OFF":
             self.main_screen.stop_air3()
         elif value == "ON":
@@ -153,14 +178,27 @@ class CommandHandler:
             self.main_screen.radio_timer_start_stop()
     
     def _handle_air3time_command(self, value: str) -> None:
-        """Handle AIR3TIME command"""
+        """
+        Handle AIR3TIME command to set radio timer duration
+        
+        Args:
+            value: Timer duration in seconds as string
+            
+        Raises:
+            ValueError: If value cannot be converted to integer (logged, not raised)
+        """
         try:
             self.main_screen.radio_timer_set(int(value))
         except ValueError as e:
             logger.error(f"ERROR: invalid value: {e}")
     
     def _handle_air4_command(self, value: str) -> None:
-        """Handle AIR4 command"""
+        """
+        Handle AIR4 command
+        
+        Args:
+            value: Command action ("OFF", "ON", or "RESET")
+        """
         if value == "OFF":
             self.main_screen.set_air4(False)
         elif value == "ON":
@@ -169,13 +207,50 @@ class CommandHandler:
             self.main_screen.stream_timer_reset()
     
     def _handle_cmd_command(self, value: str) -> None:
-        """Handle CMD command"""
+        """
+        Handle CMD command for system operations
+        
+        Args:
+            value: Command action ("REBOOT", "SHUTDOWN", or "QUIT")
+        """
         if value == "REBOOT":
             self.main_screen.reboot_host()
         elif value == "SHUTDOWN":
             self.main_screen.shutdown_host()
         elif value == "QUIT":
             self.main_screen.quit_oas()
+    
+    def _handle_color_setting(self, color_str: str, setter_func: Callable[[object], None], setting_name: str) -> None:
+        """
+        Handle color setting with validation
+        
+        Args:
+            color_str: Color string to validate and set
+            setter_func: Function to call with validated QColor object
+            setting_name: Name of setting for logging purposes
+            
+        Note:
+            Uses white (#FFFFFF) as fallback if color validation fails
+        """
+        try:
+            # Normalize 0x prefix to # (for backward compatibility)
+            normalized = color_str.replace("0x", "#").replace("0X", "#")
+            
+            # Get color with validation (getColorFromName now validates)
+            color = self.main_screen.settings.getColorFromName(normalized)
+            
+            # Check if color is valid
+            if not color.isValid():
+                logger.warning(f"Invalid color value '{color_str}' for {setting_name}, using default white")
+                # Use white as fallback
+                color = self.main_screen.settings.getColorFromName("#FFFFFF")
+            
+            # Set the color
+            setter_func(color)
+            logger.debug(f"Set {setting_name} to color '{normalized}'")
+            
+        except Exception as e:
+            logger.error(f"Error setting color for {setting_name}: {e}", exc_info=True)
     
     def _handle_conf_command(self, value: str) -> bool:
         """
@@ -214,14 +289,20 @@ class CommandHandler:
         return False
     
     def _handle_conf_general(self, param: str, content: str) -> None:
-        """Handle CONF General group"""
+        """
+        Handle CONF General group configuration
+        
+        Args:
+            param: Parameter name (stationname, slogan, stationcolor, slogancolor, replacenow, replacenowtext)
+            content: Parameter value
+        """
         handlers = {
             "stationname": lambda c: self.main_screen.settings.StationName.setText(c),
             "slogan": lambda c: self.main_screen.settings.Slogan.setText(c),
-            "stationcolor": lambda c: self.main_screen.settings.setStationNameColor(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
-            "slogancolor": lambda c: self.main_screen.settings.setSloganColor(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
+            "stationcolor": lambda c: self._handle_color_setting(
+                c, lambda color: self.main_screen.settings.setStationNameColor(color), "stationcolor"),
+            "slogancolor": lambda c: self._handle_color_setting(
+                c, lambda color: self.main_screen.settings.setSloganColor(color), "slogancolor"),
             "replacenow": lambda c: self.main_screen.settings.replaceNOW.setChecked(c == "True"),
             "replacenowtext": lambda c: self.main_screen.settings.replaceNOWText.setText(c),
         }
@@ -230,14 +311,23 @@ class CommandHandler:
             handler(content)
     
     def _handle_conf_led(self, led_num: int, param: str, content: str) -> None:
-        """Handle CONF LED group (LED1-4)"""
+        """
+        Handle CONF LED group (LED1-4) configuration
+        
+        Args:
+            led_num: LED number (1-4)
+            param: Parameter name (used, text, activebgcolor, activetextcolor, autoflash, timedflash)
+            content: Parameter value
+        """
         handlers = {
             "used": lambda c: getattr(self.main_screen.settings, f"LED{led_num}").setChecked(c == "True"),
             "text": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Text").setText(c),
-            "activebgcolor": lambda c: getattr(self.main_screen.settings, f"setLED{led_num}BGColor")(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
-            "activetextcolor": lambda c: getattr(self.main_screen.settings, f"setLED{led_num}FGColor")(
-                self.main_screen.settings.getColorFromName(c.replace("0x", "#"))),
+            "activebgcolor": lambda c: self._handle_color_setting(
+                c, lambda color: getattr(self.main_screen.settings, f"setLED{led_num}BGColor")(color),
+                f"LED{led_num}.activebgcolor"),
+            "activetextcolor": lambda c: self._handle_color_setting(
+                c, lambda color: getattr(self.main_screen.settings, f"setLED{led_num}FGColor")(color),
+                f"LED{led_num}.activetextcolor"),
             "autoflash": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Autoflash").setChecked(c == "True"),
             "timedflash": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Timedflash").setChecked(c == "True"),
         }
@@ -246,7 +336,14 @@ class CommandHandler:
             handler(content)
     
     def _handle_conf_timers(self, param: str, content: str) -> None:
-        """Handle CONF Timers group"""
+        """
+        Handle CONF Timers group configuration
+        
+        Args:
+            param: Parameter name (TimerAIR[1-4]Enabled, TimerAIR[1-4]Text, 
+                   AIR[1-4]activebgcolor, AIR[1-4]activetextcolor, AIR[1-4]iconpath, TimerAIRMinWidth)
+            content: Parameter value
+        """
         # Handle AIR enabled flags
         for air_num in range(1, 5):
             if param == f"TimerAIR{air_num}Enabled":
@@ -262,12 +359,16 @@ class CommandHandler:
         # Handle AIR colors
         for air_num in range(1, 5):
             if param == f"AIR{air_num}activebgcolor":
-                getattr(self.main_screen.settings, f"setAIR{air_num}BGColor")(
-                    self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+                self._handle_color_setting(
+                    content,
+                    lambda color: getattr(self.main_screen.settings, f"setAIR{air_num}BGColor")(color),
+                    f"AIR{air_num}.activebgcolor")
                 return
             if param == f"AIR{air_num}activetextcolor":
-                getattr(self.main_screen.settings, f"setAIR{air_num}FGColor")(
-                    self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+                self._handle_color_setting(
+                    content,
+                    lambda color: getattr(self.main_screen.settings, f"setAIR{air_num}FGColor")(color),
+                    f"AIR{air_num}.activetextcolor")
                 return
         
         # Handle AIR icon paths
@@ -281,7 +382,14 @@ class CommandHandler:
             self.main_screen.settings.AIRMinWidth.setValue(int(content))
     
     def _handle_conf_clock(self, param: str, content: str) -> None:
-        """Handle CONF Clock group"""
+        """
+        Handle CONF Clock group configuration
+        
+        Args:
+            param: Parameter name (digital, showseconds, secondsinoneline, staticcolon,
+                   digitalhourcolor, digitalsecondcolor, digitaldigitcolor, logopath, logoupper)
+            content: Parameter value
+        """
         if param == "digital":
             if content == "True":
                 self.main_screen.settings.clockDigital.setChecked(True)
@@ -310,23 +418,44 @@ class CommandHandler:
         elif param == "staticcolon":
             self.main_screen.settings.staticColon.setChecked(content == "True")
         elif param == "digitalhourcolor":
-            self.main_screen.settings.setDigitalHourColor(self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+            self._handle_color_setting(
+                content,
+                lambda color: self.main_screen.settings.setDigitalHourColor(color),
+                "digitalhourcolor")
         elif param == "digitalsecondcolor":
-            self.main_screen.settings.setDigitalSecondColor(self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+            self._handle_color_setting(
+                content,
+                lambda color: self.main_screen.settings.setDigitalSecondColor(color),
+                "digitalsecondcolor")
         elif param == "digitaldigitcolor":
-            self.main_screen.settings.setDigitalDigitColor(self.main_screen.settings.getColorFromName(content.replace("0x", "#")))
+            self._handle_color_setting(
+                content,
+                lambda color: self.main_screen.settings.setDigitalDigitColor(color),
+                "digitaldigitcolor")
         elif param == "logopath":
             self.main_screen.settings.setLogoPath(content)
         elif param == "logoupper":
             self.main_screen.settings.setLogoUpper(content == "True")
     
     def _handle_conf_network(self, param: str, content: str) -> None:
-        """Handle CONF Network group"""
+        """
+        Handle CONF Network group configuration
+        
+        Args:
+            param: Parameter name (udpport, httpport, multicast_address)
+            content: Parameter value
+        """
         if param == "udpport":
             self.main_screen.settings.udpport.setText(content)
     
     def _handle_conf_apply(self, param: str, content: str) -> None:
-        """Handle CONF APPLY command"""
+        """
+        Handle CONF APPLY command to apply configuration changes
+        
+        Args:
+            param: Must be "APPLY"
+            content: Must be "TRUE" to trigger application of settings
+        """
         if param == "APPLY" and content == "TRUE":
             self.main_screen.settings.applySettings()
 
