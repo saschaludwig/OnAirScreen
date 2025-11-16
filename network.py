@@ -441,7 +441,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            
+
             try:
                 self.wfile.write(message.encode('utf-8'))
                 self.wfile.write("\n".encode('utf-8'))
