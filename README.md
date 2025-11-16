@@ -2,6 +2,11 @@
 Multi purpose "OnAir Lamp" solution targeted for use in professional broadcast environments
 http://saschaludwig.github.io/OnAirScreen/
 
+#### Support This Project
+This project needs your help! If you find OnAirScreen useful, please consider making a donation or becoming a sponsor. Your support helps me continue working on this project, adding new features, fixing bugs, and maintaining the codebase. Every contribution, no matter how small, is greatly appreciated!
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YCQKC82DLCHMG" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-yellow.svg" alt="PayPal donate button" /></a>
+
 <a href="https://www.buymeacoffee.com/saschaludwig" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Thanks%20for%20OnAirScreen&emoji=%E2%98%95&slug=saschaludwig&button_colour=FFDD00&font_colour=000000&font_family=Arial&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" height="45px"></a>
 
 <a href='https://ko-fi.com/L3L8BKHYT' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
@@ -148,13 +153,3 @@ Sends commands and returns JSON response with status confirmation.
 `CONF:Network:udpport=PORT`<br>
 `CONF:Network:tcpport=PORT`<br>
 `CONF:CONF:APPLY=TRUE`<br>
-
-#### Donation
-Do you like OnAirScreen?
-Feel free to donate.
-
-<span class="badge-paypal"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YCQKC82DLCHMG" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-yellow.svg" alt="PayPal donate button" /></a></span>
-
-<a href="https://www.buymeacoffee.com/saschaludwig" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Thanks%20for%20OnAirScreen&emoji=%E2%98%95&slug=saschaludwig&button_colour=FFDD00&font_colour=000000&font_family=Arial&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" height="45px"></a>
-
-<a href='https://ko-fi.com/L3L8BKHYT' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
