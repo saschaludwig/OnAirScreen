@@ -13,3 +13,4 @@ distribution.py
 *.build
 *.dist
 .vscode/
+IMPROVEMENTS.md
