@@ -13,7 +13,7 @@ And if you need extended support, please contact me.
 
 #### Screenshots
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_v2.png" width="600px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="400px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_webinterface_1.png" width="400px">
+<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_webinterface_1.png" width="300px">
 
 
 #### Pictures of OnAirScreen in use
