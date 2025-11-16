@@ -65,12 +65,12 @@ logger = logging.getLogger(__name__)
 
 try:
     import websockets
-    from websockets.server import WebSocketServerProtocol
+    from websockets.server import ServerConnection
     from websockets.exceptions import ConnectionClosed
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
     WEBSOCKETS_AVAILABLE = False
-    WebSocketServerProtocol = None  # type: ignore
+    ServerConnection = None  # type: ignore
     logger.warning("websockets library not available. WebSocket support will be disabled.")
 
 HOST = '0.0.0.0'
@@ -695,7 +695,7 @@ class WebSocketDaemon(QThread):
         """
         super().__init__()
         self.main_screen = main_screen
-        self.clients: Set = set()  # Set[WebSocketServerProtocol] when websockets is available
+        self.clients: Set = set()  # Set[ServerConnection] when websockets is available
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._server = None
         self._stop_event = threading.Event()
@@ -728,7 +728,8 @@ class WebSocketDaemon(QThread):
         asyncio.set_event_loop(self._loop)
         
         try:
-            # Start WebSocket server - must be done within the event loop
+            # Start WebSocket server using the new API
+            # websockets.serve is now a coroutine that returns a Server
             async def start_ws_server():
                 server = await websockets.serve(
                     self._handle_client,
@@ -760,34 +761,34 @@ class WebSocketDaemon(QThread):
             if self._loop:
                 self._loop.close()
     
-    async def _handle_client(self, websocket: WebSocketServerProtocol) -> None:
+    async def _handle_client(self, connection: ServerConnection) -> None:
         """
         Handle new WebSocket client connection
         
         Args:
-            websocket: WebSocket connection
+            connection: ServerConnection instance (new websockets 15.0+ API)
         """
         # Add client to set
-        self.clients.add(websocket)
-        logger.info(f"WebSocket client connected: {websocket.remote_address}")
+        self.clients.add(connection)
+        logger.info(f"WebSocket client connected: {connection.remote_address}")
         
         try:
             # Send initial status
             if self.main_screen:
                 status = self.main_screen.get_status_json()
-                await websocket.send(json.dumps(status))
+                await connection.send(json.dumps(status))
             
             # Keep connection alive and handle incoming messages
-            async for message in websocket:
+            async for message in connection:
                 # Echo back or handle commands if needed
                 logger.debug(f"WebSocket message received: {message}")
         except ConnectionClosed:
-            logger.debug(f"WebSocket client disconnected: {websocket.remote_address}")
+            logger.debug(f"WebSocket client disconnected: {connection.remote_address}")
         except Exception as e:
-            logger.error(f"Error handling WebSocket client {websocket.remote_address}: {e}")
+            logger.error(f"Error handling WebSocket client {connection.remote_address}: {e}")
         finally:
             # Remove client from set
-            self.clients.discard(websocket)
+            self.clients.discard(connection)
     
     async def _broadcast_status_periodically(self) -> None:
         """
