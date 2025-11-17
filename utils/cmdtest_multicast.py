@@ -46,6 +46,11 @@ Usage:
     python utils/cmdtest_multicast.py LED1:ON
     python utils/cmdtest_multicast.py -m 239.194.0.1 -p 3310 "NOW:Test Song"
     python utils/cmdtest_multicast.py --multicast-address 239.194.0.1 --port 3310 "CONF:LED:led1color=#FF0000"
+
+Troubleshooting:
+    If sendto() succeeds but packets don't appear in tcpdump, check your firewall
+    settings (e.g., LittleSnitch on macOS) - they may be blocking multicast traffic
+    from Python processes.
 """
 
 import argparse
@@ -79,7 +84,64 @@ def send_multicast_command(message: str, multicast_address: str = DEFAULT_MULTIC
         True if message was sent successfully, False otherwise
     """
     try:
-        # Create UDP socket
+        # Find a non-loopback network interface FIRST
+        # On macOS, we need to use the interface index, not the IP address
+        network_ip = None
+        interface_index = None
+        try:
+            import subprocess
+            import platform
+            
+            # On macOS, use netstat or ifconfig to get interface info
+            if platform.system() == 'Darwin':
+                # Try to get interface index using if_nametoindex
+                result = subprocess.run(['ifconfig'], capture_output=True, text=True, timeout=2)
+                current_interface = None
+                for line in result.stdout.split('\n'):
+                    # Interface name is on a line without leading whitespace
+                    if line and not line[0].isspace() and ':' in line:
+                        current_interface = line.split(':')[0]
+                    elif 'inet ' in line and '127.0.0.1' not in line and '::1' not in line:
+                        parts = line.split()
+                        if len(parts) > 1:
+                            ip = parts[1]
+                            # Use first valid network IP (not link-local 169.254.x.x)
+                            if (ip.startswith('192.168.') or ip.startswith('10.') or 
+                                ip.startswith('172.') or 
+                                (not ip.startswith('169.254.') and not ip.startswith('127.'))):
+                                network_ip = ip
+                                # Try to get interface index
+                                try:
+                                    import ctypes
+                                    import ctypes.util
+                                    libc = ctypes.CDLL(ctypes.util.find_library('c'))
+                                    libc.if_nametoindex.argtypes = [ctypes.c_char_p]
+                                    libc.if_nametoindex.restype = ctypes.c_uint32
+                                    if_index = libc.if_nametoindex(current_interface.encode('utf-8'))
+                                    if if_index > 0:
+                                        interface_index = if_index
+                                except Exception:
+                                    pass
+                                break
+            else:
+                # On other systems, just get the IP
+                result = subprocess.run(['ifconfig'], capture_output=True, text=True, timeout=2)
+                for line in result.stdout.split('\n'):
+                    if 'inet ' in line and '127.0.0.1' not in line and '::1' not in line:
+                        parts = line.split()
+                        if len(parts) > 1:
+                            ip = parts[1]
+                            if (ip.startswith('192.168.') or ip.startswith('10.') or 
+                                ip.startswith('172.') or 
+                                (not ip.startswith('169.254.') and not ip.startswith('127.'))):
+                                network_ip = ip
+                                break
+        except Exception as e:
+            if verbose:
+                print(f"Warning: Could not determine network interface: {e}", file=sys.stderr)
+        
+        # Create UDP socket AFTER determining network interface
+        # This ensures we can bind directly to the correct interface
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
         # Set socket options for multicast
@@ -89,24 +151,83 @@ def send_multicast_command(message: str, multicast_address: str = DEFAULT_MULTIC
         # Set TTL for multicast (1 = local network only, 32 = site-local, 255 = global)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
         
-        # Enable multicast loopback (allows receiving own messages on same machine)
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+        # Disable multicast loopback to ensure messages go to network, not just localhost
+        # This is important: with loopback enabled, messages might only go to localhost
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 0)
         
-        # On some systems (especially macOS), we need to bind the socket before sending multicast
-        # Bind to 0.0.0.0 (all interfaces) on a random port
+        # CRITICAL FIX: On macOS, binding to a specific IP and setting multicast interface
+        # can cause the message to not be sent if there's a routing mismatch.
+        # Instead, bind to 0.0.0.0 but DON'T set multicast interface - let the system choose
+        # This matches how the UDP server in network.py works
         try:
             sock.bind(('0.0.0.0', 0))
         except OSError as bind_error:
             if bind_error.errno != 48:  # Address already in use
                 if verbose:
                     print(f"Warning: Could not bind socket: {bind_error}", file=sys.stderr)
-                # Continue anyway, some systems don't require binding
+        
+        # DON'T set multicast interface - let the system choose based on routing table
+        # Setting it explicitly can cause routing issues on macOS
+        
+        # Debug: Print socket state before sending (only in verbose mode)
+        # Most of this is removed for cleaner output
         
         # Encode message to bytes
         message_bytes = message.encode('utf-8')
         
-        # Send multicast message
-        bytes_sent = sock.sendto(message_bytes, (multicast_address, port))
+        # Send multicast message with explicit error handling
+        # CRITICAL FIX: On macOS, calling connect() before sendto() can help
+        # establish proper routing, especially in different execution contexts
+        bytes_sent = 0
+        try:
+            # CRITICAL: On macOS, connect() to multicast address helps establish routing
+            # This is especially important when running from different contexts (terminal vs script)
+            # However, if connect() fails, we need to recreate the socket as it may be in a bad state
+            try:
+                sock.connect((multicast_address, port))
+                # Use send() instead of sendto() after connect()
+                bytes_sent = sock.send(message_bytes)
+            except OSError as connect_error:
+                # If connect() fails, the socket may be in a bad state
+                # Recreate the socket and use sendto() directly
+                # (This is expected on some systems and OK)
+                sock.close()
+                
+                # IMPORTANT: On macOS, when connect() fails, the socket state may be corrupted
+                # We MUST recreate it completely to ensure proper routing
+                
+                # Recreate socket with same configuration
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 0)
+                
+                # CRITICAL: On macOS, we need to bind to 0.0.0.0 and NOT set multicast interface
+                # But we also need to ensure the socket is actually ready to send
+                sock.bind(('0.0.0.0', 0))
+                
+                # Add a small delay to ensure socket is fully ready
+                import time
+                time.sleep(0.01)
+                
+                # CRITICAL: On macOS, after recreating socket, we may need to force
+                # the system to actually send by using a different approach
+                # Try using sendto() with explicit source address binding
+                try:
+                    # Force send by using sendto() with explicit address
+                    # On some systems, this helps ensure the message is actually sent
+                    bytes_sent = sock.sendto(message_bytes, (multicast_address, port))
+                except OSError as send_err:
+                    if verbose:
+                        print(f"Send failed: {send_err}", file=sys.stderr)
+                    raise
+            
+        except OSError as send_error:
+            if verbose:
+                print(f"Error sending multicast: {send_error}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+            raise
         
         if verbose:
             print(f"Sent {bytes_sent} bytes via multicast to {multicast_address}:{port}")

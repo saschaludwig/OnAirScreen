@@ -225,6 +225,7 @@ class UdpServer:
                         break
                     
                     data, host, port = self.udpsock.readDatagram(pending_size)
+                    logger.info(f"Received UDP datagram from {host.toString()}:{port}, size: {len(data)} bytes, content: {data!r}")
                     if not data:
                         logger.debug("Received empty UDP datagram, skipping")
                         continue
