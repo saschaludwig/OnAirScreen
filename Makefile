@@ -15,10 +15,10 @@ resources_rc.py : resources.qrc
 	else \
 		rcc_path=""; \
 		if [ -d /usr/local/Cellar/qt ]; then \
-			rcc_path=$$(find /usr/local/Cellar/qt -name rcc -type f 2>/dev/null | head -1); \
+			rcc_path=$$(find -L /usr/local/Cellar/qt -name rcc -type f 2>/dev/null | head -1); \
 		fi; \
 		if [ -z "$$rcc_path" ] && [ -d /opt/homebrew/Cellar/qt ]; then \
-			rcc_path=$$(find /opt/homebrew/Cellar/qt -name rcc -type f 2>/dev/null | head -1); \
+			rcc_path=$$(find -L /opt/homebrew/Cellar/qt -name rcc -type f 2>/dev/null | head -1); \
 		fi; \
 		if [ -n "$$rcc_path" ]; then \
 			$$rcc_path -g python -o resources_rc.py resources.qrc && \
