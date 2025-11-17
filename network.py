@@ -76,6 +76,17 @@ except ImportError:
 HOST = '0.0.0.0'
 
 
+class ReusableHTTPServer(HTTPServer):
+    """
+    HTTP Server with SO_REUSEADDR
+
+    """
+    def server_bind(self) -> None:
+        """Override server_bind to set SO_REUSEADDR before binding"""
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        super().server_bind()
+
+
 class UdpServer:
     """
     UDP Server for receiving commands via multicast/unicast
@@ -128,11 +139,76 @@ class UdpServer:
         
         if QHostAddress(multicast_address).isMulticast():
             try:
-                join_result = self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
-                if not join_result:
-                    logger.warning(f"Failed to join multicast group {multicast_address}, continuing without multicast")
-                else:
-                    logger.info(f"{multicast_address} is Multicast, joined multicast group")
+                from PyQt6.QtNetwork import QNetworkInterface
+                interfaces = QNetworkInterface.allInterfaces()
+                
+                # Strategy: Join multicast group on multiple interfaces
+                # 1. Join on loopback interface (for localhost testing)
+                # 2. Join on all active non-loopback interfaces (for network multicast)
+                loopback_interface = None
+                active_interfaces = []
+                
+                for iface in interfaces:
+                    flags = iface.flags()
+                    # Check if interface is up and running
+                    if flags & QNetworkInterface.InterfaceFlag.IsUp and flags & QNetworkInterface.InterfaceFlag.IsRunning:
+                        if flags & QNetworkInterface.InterfaceFlag.IsLoopBack:
+                            loopback_interface = iface
+                        else:
+                            # Only add interfaces that have at least one IPv4 address
+                            # Use toIPv4Address() to check if address is IPv4 (returns tuple: (address, is_valid))
+                            for entry in iface.addressEntries():
+                                ipv4_result = entry.ip().toIPv4Address()
+                                if len(ipv4_result) == 2 and ipv4_result[1]:  # IPv4 and valid
+                                    active_interfaces.append(iface)
+                                    break
+                
+                join_success = False
+                
+                # First, try to join on loopback interface (for localhost testing)
+                # On macOS, this is often required for multicast loopback to work
+                if loopback_interface:
+                    try:
+                        loopback_join = self.udpsock.joinMulticastGroup(
+                            QHostAddress(multicast_address), 
+                            loopback_interface
+                        )
+                        if loopback_join:
+                            logger.info(f"{multicast_address} is Multicast, joined multicast group on loopback interface {loopback_interface.name()}")
+                            join_success = True
+                        else:
+                            logger.debug(f"Failed to join multicast group {multicast_address} on loopback interface {loopback_interface.name()}")
+                    except Exception as loopback_error:
+                        logger.debug(f"Error joining multicast on loopback interface: {loopback_error}")
+                
+                # Then, join on all active network interfaces (for network multicast)
+                for iface in active_interfaces:
+                    try:
+                        network_join = self.udpsock.joinMulticastGroup(
+                            QHostAddress(multicast_address),
+                            iface
+                        )
+                        if network_join:
+                            logger.info(f"{multicast_address} is Multicast, joined multicast group on interface {iface.name()}")
+                            join_success = True
+                        else:
+                            logger.debug(f"Failed to join multicast group {multicast_address} on interface {iface.name()}")
+                    except Exception as iface_error:
+                        logger.debug(f"Error joining multicast on interface {iface.name()}: {iface_error}")
+                
+                # Fallback: If no explicit interface joins worked, try default join
+                # This joins on the default interface (usually the primary network interface)
+                if not join_success:
+                    logger.debug(f"No explicit interface joins succeeded, trying default join...")
+                    default_join = self.udpsock.joinMulticastGroup(QHostAddress(multicast_address))
+                    if default_join:
+                        logger.info(f"{multicast_address} is Multicast, joined multicast group (default)")
+                        join_success = True
+                    else:
+                        logger.warning(f"Failed to join multicast group {multicast_address} on any interface, continuing without multicast")
+                elif not loopback_interface and not active_interfaces:
+                    # If we have no interfaces but join_success is True, something unexpected happened
+                    logger.warning(f"Multicast join reported success but no suitable interfaces found")
             except Exception as e:
                 logger.warning(f"Error joining multicast group {multicast_address}: {e}, continuing without multicast")
         
@@ -223,7 +299,9 @@ class HttpDaemon(QThread):
             OASHTTPRequestHandler.main_screen = self.main_screen
             OASHTTPRequestHandler.command_signal = self.command_signal
             handler = OASHTTPRequestHandler
-            self._server = HTTPServer((HOST, port), handler)
+            # Use ReusableHTTPServer to prevent TIME_WAIT issues
+            self._server = ReusableHTTPServer((HOST, port), handler)
+            
             logger.info(f"HTTP server started on {HOST}:{port}")
             self._server.serve_forever()
         except OSError as error:
@@ -248,18 +326,26 @@ class HttpDaemon(QThread):
         try:
             if hasattr(self, '_server') and self._server:
                 try:
+                    # Shutdown the server (stops serve_forever)
                     self._server.shutdown()
                 except Exception as shutdown_error:
                     logger.warning(f"Error shutting down HTTP server: {shutdown_error}")
                 
                 try:
+                    # Close the socket explicitly to prevent TIME_WAIT
                     if hasattr(self._server, 'socket') and self._server.socket:
                         self._server.socket.close()
                 except Exception as close_error:
                     logger.warning(f"Error closing HTTP server socket: {close_error}")
                 
+                # Wait for thread to finish with timeout
                 try:
-                    self.wait()
+                    if not self.wait(3000):  # Wait up to 3 seconds
+                        logger.warning("HTTP server thread did not finish within timeout")
+                        # Force terminate if still running
+                        if self.isRunning():
+                            self.terminate()
+                            self.wait(1000)
                 except Exception as wait_error:
                     logger.warning(f"Error waiting for HTTP server thread: {wait_error}")
             else:

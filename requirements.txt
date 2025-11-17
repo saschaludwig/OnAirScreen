@@ -2,4 +2,5 @@ PyQt6
 ntplib
 PyInstaller
 pytest
+pytest-asyncio
 websockets>=12.0
