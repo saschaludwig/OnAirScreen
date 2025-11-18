@@ -5,6 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OnAirScreen Remote Control</title>
     <style>
+        :root {
+            /* Light mode colors */
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --bg-panel: white;
+            --bg-item: #f5f5f5;
+            --bg-item-active: #e8f5e9;
+            --bg-info: #e3f2fd;
+            --bg-version: rgba(255, 255, 255, 0.95);
+            --bg-modal: white;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --text-white: white;
+            --text-info: #1976d2;
+            --border-item: #667eea;
+            --border-item-active: #4caf50;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-strong: rgba(0, 0, 0, 0.2);
+            --shadow-modal: rgba(0, 0, 0, 0.3);
+            --input-border: #ddd;
+            --input-focus: #667eea;
+        }
+        
+        [data-theme="dark"] {
+            /* Dark mode colors */
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --bg-panel: #2d2d44;
+            --bg-item: #3a3a5c;
+            --bg-item-active: #2d5a3d;
+            --bg-info: #1e3a5f;
+            --bg-version: rgba(45, 45, 68, 0.95);
+            --bg-modal: #2d2d44;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #808080;
+            --text-white: #e0e0e0;
+            --text-info: #64b5f6;
+            --border-item: #667eea;
+            --border-item-active: #66bb6a;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-strong: rgba(0, 0, 0, 0.5);
+            --shadow-modal: rgba(0, 0, 0, 0.7);
+            --input-border: #555;
+            --input-focus: #667eea;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -12,26 +60,29 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
             padding: 20px;
+            color: var(--text-primary);
+            transition: background 0.3s ease;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
-            color: white;
+            color: var(--text-white);
             text-align: center;
             margin-bottom: 30px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         .status-panel {
-            background: white;
+            background: var(--bg-panel);
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .status-grid {
             display: grid;
@@ -40,36 +91,38 @@
             margin-bottom: 20px;
         }
         .status-item {
-            background: #f5f5f5;
+            background: var(--bg-item);
             padding: 15px;
             border-radius: 8px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--border-item);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
         .status-item.active {
-            background: #e8f5e9;
-            border-left-color: #4caf50;
+            background: var(--bg-item-active);
+            border-left-color: var(--border-item-active);
         }
         .status-item h3 {
             font-size: 14px;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 5px;
         }
         .status-item .value {
             font-size: 24px;
             font-weight: bold;
-            color: #333;
+            color: var(--text-primary);
         }
         .control-panel {
-            background: white;
+            background: var(--bg-panel);
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .section {
             margin-bottom: 30px;
         }
         .section h2 {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 15px;
             font-size: 20px;
         }
@@ -90,7 +143,7 @@
         }
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px var(--shadow-strong);
         }
         button:active {
             transform: translateY(0);
@@ -114,9 +167,11 @@
             font-weight: bold;
             text-align: center;
             padding: 10px;
-            background: #f5f5f5;
+            background: var(--bg-item);
             border-radius: 8px;
             margin: 10px 0;
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
         }
         .timer-controls {
             display: flex;
@@ -128,11 +183,12 @@
             max-width: 150px;
         }
         .info {
-            background: #e3f2fd;
+            background: var(--bg-info);
             padding: 15px;
             border-radius: 8px;
             margin-top: 20px;
-            color: #1976d2;
+            color: var(--text-info);
+            transition: background 0.3s ease, color 0.3s ease;
         }
         .text-controls {
             display: flex;
@@ -146,7 +202,7 @@
         }
         .text-input-group label {
             font-weight: bold;
-            color: #333;
+            color: var(--text-primary);
             font-size: 14px;
         }
         .input-with-button {
@@ -157,14 +213,16 @@
         .input-with-button input {
             flex: 1;
             padding: 12px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--input-border);
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.3s;
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            transition: border-color 0.3s, background 0.3s ease, color 0.3s ease;
         }
         .input-with-button input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--input-focus);
         }
         .text-btn {
             padding: 12px 20px;
@@ -206,14 +264,15 @@
             justify-content: center;
         }
         .modal-dialog {
-            background: white;
+            background: var(--bg-modal);
             border-radius: 12px;
             padding: 30px;
             max-width: 500px;
             width: 90%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px var(--shadow-modal);
             z-index: 1001;
             text-align: center;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .modal-dialog h2 {
             color: #d32f2f;
@@ -221,7 +280,7 @@
             font-size: 24px;
         }
         .modal-dialog p {
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 20px;
             font-size: 16px;
             line-height: 1.5;
@@ -234,15 +293,16 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--bg-version);
             padding: 10px 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px var(--shadow-strong);
             font-size: 13px;
-            color: #333;
+            color: var(--text-primary);
             z-index: 100;
             text-align: right;
             backdrop-filter: blur(10px);
+            transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
         }
         .version-info .version-label {
             font-weight: bold;
@@ -253,6 +313,30 @@
             font-weight: bold;
             color: #764ba2;
             margin-right: 5px;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--bg-version);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px var(--shadow-strong);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+        .theme-toggle:active {
+            transform: scale(0.95);
         }
         @media (max-width: 768px) {
             .button-grid {
@@ -274,6 +358,11 @@
     </style>
 </head>
 <body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+    
     <!-- Version Info -->
     <div class="version-info" id="versionInfo">
         <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
@@ -348,7 +437,7 @@
             <div class="modal-icon">⚠️</div>
             <h2>Connection Error</h2>
             <p>Unable to connect to OnAirScreen.<br>Please check if the application is running.</p>
-            <p style="font-size: 14px; color: #999; margin-top: 20px;">The interface will automatically reconnect when the connection is restored.</p>
+            <p style="font-size: 14px; color: var(--text-tertiary); margin-top: 20px;">The interface will automatically reconnect when the connection is restored.</p>
         </div>
     </div>
     
@@ -478,7 +567,7 @@
                     // Show error message in UI
                     const grid = document.getElementById('statusGrid');
                     if (grid && !connectionErrorShown) {
-                        grid.innerHTML = '<div style="color: red; padding: 20px;">Error loading status. Please check console.</div>';
+                        grid.innerHTML = '<div style="color: #d32f2f; padding: 20px;">Error loading status. Please check console.</div>';
                     }
                 });
         }
@@ -497,7 +586,7 @@
                 item.innerHTML = `
                     <h3>LED ${i}</h3>
                     <div class="value">${led.status ? 'ON' : 'OFF'}</div>
-                    <div style="font-size: 12px; color: #999;">${led.text}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">${led.text}</div>
                 `;
                 grid.appendChild(item);
             }
@@ -512,7 +601,7 @@
                 item.innerHTML = `
                     <h3>AIR ${i} (${air.text})</h3>
                     <div class="value">${minutes}:${String(secs).padStart(2, '0')}</div>
-                    <div style="font-size: 12px; color: #999;">${air.status ? 'Running' : 'Stopped'}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">${air.status ? 'Running' : 'Stopped'}</div>
                 `;
                 grid.appendChild(item);
             }
@@ -824,6 +913,32 @@
                 });
             }
         });
+        
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            function setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+            
+            // Set initial theme
+            setTheme(savedTheme);
+            
+            // Toggle theme on button click
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+            });
+        }
+        
+        // Initialize theme on page load
+        initTheme();
         
         // Connect WebSocket for real-time updates
         connectWebSocket();
