@@ -1,6 +1,26 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.9.7beta4]
+### Added
+- WebSocket support for Web-UI: Real-time status updates via WebSocket connections (replaces HTTP polling)
+- Integration tests for network communication (UDP, HTTP, WebSocket)
+- Extended unit tests for timer_manager, event_logger, and command_handler modules
+- Test tools: cmdtest_multicast.py and diagnose_multicast.py for multicast testing and diagnostics
+- Central configuration file (defaults.py) for all default values
+- Type hints and docstrings throughout codebase
+- Context manager (settings_group) for QSettings group operations
+
+### Changed
+- Network: Improved multicast support for macOS - UDP server now explicitly joins on loopback interface too
+- Network: Improved socket configuration for reliable multicast sending on macOS
+- Network: HTTP server now uses ReusableHTTPServer with SO_REUSEADDR to prevent TIME_WAIT issues
+- Security: Replaced os.system() with subprocess.run() for secure system command execution
+- Error handling: Enhanced error handling for network operations, timer input parsing, and color validation
+- Error handling: Graceful degradation when resources (fonts, templates) are missing
+- Makefile: Follow symlinks when searching for rcc tool in Homebrew installations
+- Fixed: IP addresses now correctly displayed at startup
+
 ## [0.9.7beta3]
 ### Added
 - Web-UI: Complete web-based remote control interface accessible via HTTP
