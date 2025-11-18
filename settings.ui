@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>703</width>
-    <height>846</height>
+    <width>756</width>
+    <height>840</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -4284,20 +4284,6 @@ Public License instead of this License.  But first, please read
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="RebootButton">
-       <property name="text">
-        <string>Reboot</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="ShutdownButton">
-       <property name="text">
-        <string>Shutdown</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <spacer name="horizontalSpacer_3">
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>
@@ -4309,6 +4295,27 @@ Public License instead of this License.  But first, please read
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="DeleteSettingsButton">
+       <property name="text">
+        <string>Delete Preset...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="LoadSettingsButton">
+       <property name="text">
+        <string>Load Preset...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="SaveSettingsButton">
+       <property name="text">
+        <string>Save Preset...</string>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer">
@@ -4420,8 +4427,6 @@ Public License instead of this License.  But first, please read
   <tabstop>enableResetButton</tabstop>
   <tabstop>ResetSettingsButton</tabstop>
   <tabstop>ExitButton</tabstop>
-  <tabstop>RebootButton</tabstop>
-  <tabstop>ShutdownButton</tabstop>
   <tabstop>CloseButton</tabstop>
   <tabstop>ApplyButton</tabstop>
  </tabstops>
@@ -5680,7 +5685,7 @@ Public License instead of this License.  But first, please read
  </connections>
  <buttongroups>
   <buttongroup name="buttonGroup_logo_position"/>
-  <buttongroup name="buttonGroup_show_seconds"/>
   <buttongroup name="buttonGroup_clock_mode"/>
+  <buttongroup name="buttonGroup_show_seconds"/>
  </buttongroups>
 </ui>
