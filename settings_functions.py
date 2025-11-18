@@ -37,14 +37,17 @@
 
 import json
 import logging
+import os
 import textwrap
 from collections import defaultdict
+from pathlib import Path
 from uuid import getnode
 
 import PyQt6.QtNetwork as QtNetwork
 from PyQt6.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
 from PyQt6.QtGui import QPalette, QColor, QFont
-from PyQt6.QtWidgets import QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox, QFontDialog
+from PyQt6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
+                              QFontDialog, QInputDialog)
 
 from settings import Ui_Settings
 from utils import TimerUpdateMessageBox, settings_group
@@ -200,6 +203,9 @@ class Settings(QWidget, Ui_Settings):
         # create settings object for use with OAC
         self.settings = OASSettings()
         self.oacmode = oacmode
+        
+        # Connect preset management buttons (if they exist in UI)
+        self._connect_preset_buttons()
 
         # read the config, add missing values, save config and re-read config
         self.restoreSettingsFromConfig()
@@ -259,8 +265,7 @@ class Settings(QWidget, Ui_Settings):
         self.ApplyButton.clicked.connect(self.applySettings)
         self.CloseButton.clicked.connect(self.closeSettings)
         self.ExitButton.clicked.connect(self.exit_on_air_screen)
-        self.RebootButton.clicked.connect(self.rebootHost)
-        self.ShutdownButton.clicked.connect(self.shutdownHost)
+
         self.LEDInactiveBGColor.clicked.connect(self.setLEDInactiveBGColor)
         self.LEDInactiveFGColor.clicked.connect(self.setLEDInactiveFGColor)
         self.LED1BGColor.clicked.connect(self.setLED1BGColor)
@@ -332,9 +337,260 @@ class Settings(QWidget, Ui_Settings):
         # return json representation of config
         return json.dumps(self.settings.config)
 
+    def _get_presets_directory(self) -> Path:
+        """
+        Get the directory where presets are stored
+        
+        Returns:
+            Path object pointing to the presets directory
+        """
+        if self.oacmode:
+            # In OAC mode, use a temporary directory
+            presets_dir = Path.home() / ".onairscreen" / "presets"
+        else:
+            # Use QSettings to determine the appropriate directory
+            settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+            settings_file = Path(settings.fileName())
+            # Presets directory is in the same location as settings file
+            presets_dir = settings_file.parent / "presets"
+        
+        # Create directory if it doesn't exist
+        presets_dir.mkdir(parents=True, exist_ok=True)
+        return presets_dir
+
+    def export_config_to_json(self) -> dict:
+        """
+        Export current QSettings configuration to a dictionary
+        
+        Returns:
+            Dictionary containing all configuration groups and their values
+        """
+        if self.oacmode:
+            # In OAC mode, use the in-memory settings
+            return self.settings.config.copy()
+        
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        config_dict = {}
+        
+        # List of all configuration groups
+        groups = [
+            "General", "NTP", "LEDS", "LED1", "LED2", "LED3", "LED4",
+            "Clock", "Network", "Formatting", "WeatherWidget", "Timers", "Fonts"
+        ]
+        
+        for group in groups:
+            group_dict = {}
+            # Get all keys in this group
+            with settings_group(settings, group):
+                # Get keys while in the group context
+                # Note: allKeys() returns keys relative to current group
+                keys = settings.allKeys()
+                
+                # Read each key's value
+                for key in keys:
+                    value = settings.value(key)
+                    # Convert QVariant to Python type if needed
+                    if isinstance(value, QVariant):
+                        value = value.value()
+                    group_dict[key] = value
+            
+            if group_dict:
+                config_dict[group] = group_dict
+        
+        return config_dict
+
+    def import_config_from_json(self, config_dict: dict) -> bool:
+        """
+        Import configuration from a dictionary into QSettings
+        
+        Args:
+            config_dict: Dictionary containing configuration groups and values
+            
+        Returns:
+            True if import was successful, False otherwise
+        """
+        if self.oacmode:
+            # In OAC mode, update in-memory settings
+            for group, content in config_dict.items():
+                with settings_group(self.settings, group):
+                    for key, value in content.items():
+                        self.settings.setValue(key, value)
+            self.restoreSettingsFromConfig()
+            return True
+        
+        try:
+            settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+            
+            for group, content in config_dict.items():
+                with settings_group(settings, group):
+                    for key, value in content.items():
+                        settings.setValue(key, value)
+            
+            # Reload settings into the dialog
+            self.restoreSettingsFromConfig()
+            return True
+        except Exception as e:
+            logger.error(f"Error importing configuration: {e}")
+            return False
+
+    def save_preset(self, preset_name: str) -> bool:
+        """
+        Save current configuration as a preset
+        
+        Args:
+            preset_name: Name of the preset (will be sanitized for filename)
+            
+        Returns:
+            True if preset was saved successfully, False otherwise
+        """
+        if not preset_name or not preset_name.strip():
+            logger.error("Preset name cannot be empty")
+            return False
+        
+        # Sanitize preset name for filename
+        safe_name = "".join(c for c in preset_name.strip() if c.isalnum() or c in (' ', '-', '_')).strip()
+        safe_name = safe_name.replace(' ', '_')
+        if not safe_name:
+            logger.error("Preset name contains no valid characters")
+            return False
+        
+        try:
+            presets_dir = self._get_presets_directory()
+            preset_file = presets_dir / f"{safe_name}.json"
+            
+            # Export current configuration
+            config_dict = self.export_config_to_json()
+            
+            # Add metadata
+            preset_data = {
+                "name": preset_name.strip(),
+                "version": versionString,
+                "config": config_dict
+            }
+            
+            # Write to file
+            with open(preset_file, 'w', encoding='utf-8') as f:
+                json.dump(preset_data, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Preset '{preset_name}' saved to {preset_file}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving preset '{preset_name}': {e}")
+            return False
+
+    def load_preset(self, preset_name: str) -> bool:
+        """
+        Load a preset configuration
+        
+        Args:
+            preset_name: Name of the preset (filename without .json extension)
+            
+        Returns:
+            True if preset was loaded successfully, False otherwise
+        """
+        try:
+            presets_dir = self._get_presets_directory()
+            preset_file = presets_dir / f"{preset_name}.json"
+            
+            if not preset_file.exists():
+                logger.error(f"Preset file not found: {preset_file}")
+                return False
+            
+            # Read preset file
+            with open(preset_file, 'r', encoding='utf-8') as f:
+                preset_data = json.load(f)
+            
+            # Extract configuration
+            if "config" in preset_data:
+                config_dict = preset_data["config"]
+            else:
+                # Fallback: assume the whole file is the config
+                config_dict = preset_data
+            
+            # Import configuration
+            success = self.import_config_from_json(config_dict)
+            
+            if success:
+                logger.info(f"Preset '{preset_name}' loaded successfully")
+            
+            return success
+        except Exception as e:
+            logger.error(f"Error loading preset '{preset_name}': {e}")
+            return False
+
+    def list_presets(self) -> list[dict]:
+        """
+        List all available presets
+        
+        Returns:
+            List of dictionaries containing preset information (name, filename, version)
+        """
+        presets = []
+        try:
+            presets_dir = self._get_presets_directory()
+            
+            if not presets_dir.exists():
+                return presets
+            
+            # Find all JSON files in presets directory
+            for preset_file in presets_dir.glob("*.json"):
+                try:
+                    with open(preset_file, 'r', encoding='utf-8') as f:
+                        preset_data = json.load(f)
+                    
+                    preset_info = {
+                        "filename": preset_file.stem,
+                        "name": preset_data.get("name", preset_file.stem),
+                        "version": preset_data.get("version", "unknown")
+                    }
+                    presets.append(preset_info)
+                except Exception as e:
+                    logger.warning(f"Error reading preset file {preset_file}: {e}")
+                    # Still include it with basic info
+                    presets.append({
+                        "filename": preset_file.stem,
+                        "name": preset_file.stem,
+                        "version": "unknown"
+                    })
+        except Exception as e:
+            logger.error(f"Error listing presets: {e}")
+        
+        # Sort by name
+        presets.sort(key=lambda x: x["name"].lower())
+        return presets
+
+    def delete_preset(self, preset_name: str) -> bool:
+        """
+        Delete a preset
+        
+        Args:
+            preset_name: Name of the preset (filename without .json extension)
+            
+        Returns:
+            True if preset was deleted successfully, False otherwise
+        """
+        try:
+            presets_dir = self._get_presets_directory()
+            preset_file = presets_dir / f"{preset_name}.json"
+            
+            if not preset_file.exists():
+                logger.error(f"Preset file not found: {preset_file}")
+                return False
+            
+            preset_file.unlink()
+            logger.info(f"Preset '{preset_name}' deleted")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting preset '{preset_name}': {e}")
+            return False
+
     def restoreSettingsFromConfig(self):
         if self.oacmode:
             settings = self.settings
+            # In OAC mode, we don't need to populate UI widgets
+            # Just set the settings path and return
+            self.settingsPath = settings.fileName()
+            return
         else:
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
             
@@ -1324,7 +1580,220 @@ class Settings(QWidget, Ui_Settings):
         self.ApplyButton.setToolTip("Apply all settings and close the dialog")
         self.CloseButton.setToolTip("Close the settings dialog without applying changes")
         self.ExitButton.setToolTip("Exit OnAirScreen application")
-        self.RebootButton.setToolTip("Reboot the host system")
-        self.ShutdownButton.setToolTip("Shutdown the host system")
         self.ResetSettingsButton.setToolTip("Reset all settings to default values (this cannot be undone)")
+        
+        # Preset management tooltips
+        self.SaveSettingsButton.setToolTip("Save current configuration as a preset")
+        self.LoadSettingsButton.setToolTip("Load a saved preset configuration")
+        self.DeleteSettingsButton.setToolTip("Delete a saved preset")
+
+    def _connect_preset_buttons(self) -> None:
+        """
+        Connect preset management buttons from UI to their handlers
+        """
+        # Connect Save Settings button
+        if hasattr(self, 'SaveSettingsButton'):
+            self.SaveSettingsButton.clicked.connect(self.save_preset_dialog)
+        else:
+            logger.warning("SaveSettingsButton not found in UI")
+        
+        # Connect Load Settings button
+        if hasattr(self, 'LoadSettingsButton'):
+            self.LoadSettingsButton.clicked.connect(self.load_preset_dialog)
+        else:
+            logger.warning("LoadSettingsButton not found in UI")
+        
+        # Connect Delete Settings button
+        if hasattr(self, 'DeleteSettingsButton'):
+            self.DeleteSettingsButton.clicked.connect(self.delete_preset_dialog)
+        else:
+            logger.warning("DeleteSettingsButton not found in UI")
+
+    def save_preset_dialog(self) -> None:
+        """
+        Show dialog to save current configuration as a preset
+        """
+        # First, save current dialog state to QSettings
+        self.getSettingsFromDialog()
+        
+        # Get preset name from user
+        preset_name, ok = QInputDialog.getText(
+            self,
+            "Save Preset",
+            "Enter a name for this preset:",
+            text=""
+        )
+        
+        if not ok or not preset_name.strip():
+            return
+        
+        # Check if preset already exists
+        presets = self.list_presets()
+        existing_preset = next((p for p in presets if p["name"].lower() == preset_name.strip().lower()), None)
+        
+        if existing_preset:
+            reply = QMessageBox.question(
+                self,
+                "Preset Exists",
+                f"A preset named '{preset_name}' already exists.\n\nDo you want to overwrite it?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+        
+        # Save preset
+        success = self.save_preset(preset_name.strip())
+        
+        if success:
+            QMessageBox.information(
+                self,
+                "Preset Saved",
+                f"Preset '{preset_name}' has been saved successfully."
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Save Failed",
+                f"Failed to save preset '{preset_name}'.\n\nPlease check the logs for details."
+            )
+
+    def load_preset_dialog(self) -> None:
+        """
+        Show dialog to load a preset configuration
+        """
+        # Get list of available presets
+        presets = self.list_presets()
+        
+        if not presets:
+            QMessageBox.information(
+                self,
+                "No Presets",
+                "No presets are available.\n\nSave a preset first using 'Save Preset...'."
+            )
+            return
+        
+        # Create list of preset names for selection
+        preset_names = [p["name"] for p in presets]
+        
+        # Show selection dialog
+        preset_name, ok = QInputDialog.getItem(
+            self,
+            "Load Preset",
+            "Select a preset to load:",
+            preset_names,
+            0,
+            False
+        )
+        
+        if not ok:
+            return
+        
+        # Find the preset filename
+        selected_preset = next((p for p in presets if p["name"] == preset_name), None)
+        if not selected_preset:
+            QMessageBox.warning(
+                self,
+                "Load Failed",
+                f"Could not find preset '{preset_name}'."
+            )
+            return
+        
+        # Confirm loading (this will overwrite current settings)
+        reply = QMessageBox.question(
+            self,
+            "Load Preset",
+            f"Loading preset '{preset_name}' will overwrite your current settings.\n\nDo you want to continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Load preset
+        success = self.load_preset(selected_preset["filename"])
+        
+        if success:
+            QMessageBox.information(
+                self,
+                "Preset Loaded",
+                f"Preset '{preset_name}' has been loaded successfully.\n\nClick 'Apply' to apply the changes."
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Load Failed",
+                f"Failed to load preset '{preset_name}'.\n\nPlease check the logs for details."
+            )
+
+    def delete_preset_dialog(self) -> None:
+        """
+        Show dialog to delete a preset
+        """
+        # Get list of available presets
+        presets = self.list_presets()
+        
+        if not presets:
+            QMessageBox.information(
+                self,
+                "No Presets",
+                "No presets are available."
+            )
+            return
+        
+        # Create list of preset names for selection
+        preset_names = [p["name"] for p in presets]
+        
+        # Show selection dialog
+        preset_name, ok = QInputDialog.getItem(
+            self,
+            "Delete Preset",
+            "Select a preset to delete:",
+            preset_names,
+            0,
+            False
+        )
+        
+        if not ok:
+            return
+        
+        # Find the preset filename
+        selected_preset = next((p for p in presets if p["name"] == preset_name), None)
+        if not selected_preset:
+            QMessageBox.warning(
+                self,
+                "Delete Failed",
+                f"Could not find preset '{preset_name}'."
+            )
+            return
+        
+        # Confirm deletion
+        reply = QMessageBox.question(
+            self,
+            "Delete Preset",
+            f"Are you sure you want to delete preset '{preset_name}'?\n\nThis action cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Delete preset
+        success = self.delete_preset(selected_preset["filename"])
+        
+        if success:
+            QMessageBox.information(
+                self,
+                "Preset Deleted",
+                f"Preset '{preset_name}' has been deleted successfully."
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Delete Failed",
+                f"Failed to delete preset '{preset_name}'.\n\nPlease check the logs for details."
+            )
 
