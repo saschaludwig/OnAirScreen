@@ -120,8 +120,9 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         self.labelWarning.hide()
 
-        # init warning prio array (0-2
-        self.warnings = ["", "", ""]
+        # init warning prio array (-1=NTP, 0=normal/legacy, 1=medium, 2=high)
+        # Index mapping: 0=-1, 1=0, 2=1, 3=2
+        self.warnings = ["", "", "", ""]
 
         # add hotkey bindings
         QShortcut(QKeySequence("Ctrl+F"), self, self.toggle_full_screen)
@@ -1228,11 +1229,12 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.set_backtiming_secs(remain_seconds)
 
     def update_ntp_status(self):
+        """Update NTP status warning (priority -1)"""
         if self.ntpHadWarning and len(self.ntpWarnMessage):
-            self.add_warning(self.ntpWarnMessage, 0)
+            self.add_warning(self.ntpWarnMessage, -1)
         else:
+            self.remove_warning(-1)
             self.ntpWarnMessage = ""
-            self.remove_warning(0)
 
     def toggle_full_screen(self):
         global app
@@ -1513,17 +1515,37 @@ class MainScreen(QWidget, Ui_MainScreen):
         pass
         # self.labelSeconds.setText( str(value) )
 
+    @staticmethod
+    def _priority_to_index(priority: int) -> int:
+        """
+        Convert priority to array index
+        
+        Priority -1 (NTP) -> Index 0
+        Priority 0 (normal/legacy) -> Index 1
+        Priority 1 (medium) -> Index 2
+        Priority 2 (high) -> Index 3
+        
+        Args:
+            priority: Warning priority level (-1 to 2)
+            
+        Returns:
+            Array index (0 to 3)
+        """
+        return priority + 1
+    
     def add_warning(self, text: str, priority: int = 0) -> None:
         """
         Add a warning message to the warning system
         
         Args:
             text: Warning message text
-            priority: Warning priority level (0-2, default: 0)
+            priority: Warning priority level (-1=NTP, 0=normal/legacy, 1=medium, 2=high, default: 0)
         """
+        # Convert priority to array index
+        index = MainScreen._priority_to_index(priority)
         # Only log if warning actually changed
-        old_text = self.warnings[priority]
-        self.warnings[priority] = text
+        old_text = self.warnings[index]
+        self.warnings[index] = text
         if old_text != text:
             # Log warning added/updated event only if it changed
             if text:
@@ -1531,37 +1553,60 @@ class MainScreen(QWidget, Ui_MainScreen):
             elif old_text:
                 # Warning was removed (text is now empty)
                 self.event_logger.log_warning_removed(priority)
+            # Note: process_warnings() is called by the timer in constant_update()
+            # No need to call it here to avoid race conditions
 
     def remove_warning(self, priority: int = 0) -> None:
         """
         Remove warning message from the warning system
         
         Args:
-            priority: Warning priority level (0-2, default: 0)
+            priority: Warning priority level (-1=NTP, 0=normal/legacy, 1=medium, 2=high, default: 0)
         """
+        # Convert priority to array index
+        index = MainScreen._priority_to_index(priority)
         # Only log if warning was actually present
-        old_text = self.warnings[priority]
+        old_text = self.warnings[index]
         if old_text:
-            self.warnings[priority] = ""
+            self.warnings[index] = ""
             # Log warning removed event only if there was a warning
             self.event_logger.log_warning_removed(priority)
+            # Note: process_warnings() is called by the timer in constant_update()
+            # No need to call it here to avoid race conditions
 
     def process_warnings(self) -> None:
         """
         Process all warnings and display the highest priority warning
         
-        Checks all warning priority levels and displays the last (highest priority)
-        warning found, or hides the warning label if no warnings are present.
+        Checks all warning priority levels and displays the highest priority
+        warning found (excluding NTP warnings if other warnings exist),
+        or hides the warning label if no warnings are present.
+        
+        Priority order: 2 (high) > 1 (medium) > 0 (normal) > -1 (NTP)
+        NTP warnings are only shown if no other warnings exist.
         """
         warning_available = False
-        last_warning = None
-
-        for warning in self.warnings:
+        highest_warning = None
+        highest_priority = -2  # Start below -1 to ensure we find something
+        
+        # Iterate through warnings in reverse priority order (2, 1, 0, -1)
+        # Index mapping: 3=priority 2, 2=priority 1, 1=priority 0, 0=priority -1
+        for index in range(3, -1, -1):  # 3, 2, 1, 0
+            warning = self.warnings[index]
             if len(warning) > 0:
-                last_warning = warning
+                priority = index - 1  # Convert index back to priority
+                # Skip NTP warnings (-1) if we already found a higher priority warning
+                if priority == -1 and highest_priority > -1:
+                    continue
+                highest_warning = warning
+                highest_priority = priority
                 warning_available = True
+                # If we found a non-NTP warning, we're done (don't check lower priorities)
+                if priority >= 0:
+                    break
+        
         if warning_available:
-            self.show_warning(last_warning)
+            self.show_warning(highest_warning)
         else:
             self.hide_warning()
 
@@ -1735,14 +1780,31 @@ class MainScreen(QWidget, Ui_MainScreen):
             except (AttributeError, RuntimeError):
                 warn_text = ""
         
+        # Get all warnings with priorities
+        warnings = []
+        try:
+            if hasattr(self, 'warnings') and isinstance(self.warnings, list):
+                # Iterate through priorities: -1 (NTP), 0 (normal), 1 (medium), 2 (high)
+                for priority in range(-1, 3):  # Priorities -1, 0, 1, 2
+                    index = priority + 1  # Convert priority to index
+                    if 0 <= index < len(self.warnings) and self.warnings[index]:
+                        warnings.append({
+                            'priority': priority,
+                            'text': self.warnings[index]
+                        })
+        except (AttributeError, RuntimeError):
+            # If warnings attribute doesn't exist or can't be accessed, use empty list
+            pass
+        
         return {
             'leds': leds,
             'air': air,
             'texts': {
                 'now': now_text,
                 'next': next_text,
-                'warn': warn_text
+                'warn': warn_text  # Keep for backward compatibility
             },
+            'warnings': warnings,  # New: all warnings with priorities
             'version': versionString,
             'distribution': distributionString
         }

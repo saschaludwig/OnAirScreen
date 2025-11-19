@@ -140,13 +140,44 @@ class CommandHandler:
         """
         Handle WARN command
         
+        Supports two formats:
+        - WARN:Text (backward compatible, uses priority 0)
+        - WARN:Prio:Text (explicit priority, where Prio is 0, 1, or 2)
+        
         Args:
-            value: Warning text (empty string to clear warning)
+            value: Warning text or "Prio:Text" format
+                 Empty string clears warning at priority 0
         """
-        if value:
-            self.main_screen.add_warning(value, 1)
+        if not value:
+            # Clear warning at priority 0 (backward compatible)
+            self.main_screen.remove_warning(0)
+            return
+        
+        # Check if format is "Prio:Text"
+        parts = value.split(':', 1)
+        if len(parts) == 2 and parts[0].isdigit():
+            try:
+                priority = int(parts[0])
+                if priority == 0:
+                    # Priority 0 is only for backward compatibility (WARN:Text)
+                    # If explicitly specified (WARN:0:Text), treat as regular text without priority
+                    logger.warning("Priority 0 cannot be explicitly set. Use WARN:Text for priority 0. Treating as regular text.")
+                    self.main_screen.add_warning(value, 0)  # Use the full value as text
+                elif 1 <= priority <= 2:
+                    text = parts[1]
+                    if text:
+                        self.main_screen.add_warning(text, priority)
+                    else:
+                        self.main_screen.remove_warning(priority)
+                else:
+                    logger.warning(f"Invalid WARN priority: {priority}, must be 1-2. Priority 0 is only for backward compatibility. Using default priority 0.")
+                    self.main_screen.add_warning(value, 0)
+            except ValueError:
+                # Not a valid priority format, treat as regular text
+                self.main_screen.add_warning(value, 0)
         else:
-            self.main_screen.remove_warning(1)
+            # Backward compatible: just text, use priority 0
+            self.main_screen.add_warning(value, 0)
     
     def _handle_air_simple_command(self, air_num: int, value: str) -> None:
         """

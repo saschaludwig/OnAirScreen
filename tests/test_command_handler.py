@@ -185,20 +185,47 @@ class TestLedCommands:
 class TestWarnCommand:
     """Test WARN command handler"""
     
-    def test_warn_add(self, command_handler, mock_main_screen):
-        """Test WARN command to add warning"""
+    def test_warn_add_default_priority(self, command_handler, mock_main_screen):
+        """Test WARN command to add warning with default priority (0)"""
         command_handler.parse_cmd(b"WARN:Test Warning")
+        mock_main_screen.add_warning.assert_called_once_with("Test Warning", 0)
+    
+    def test_warn_add_priority_0(self, command_handler, mock_main_screen):
+        """Test WARN command with explicit priority 0 (not allowed, treated as regular text)"""
+        command_handler.parse_cmd(b"WARN:0:Test Warning")
+        # Priority 0 cannot be explicitly set, so the full value is used as text
+        mock_main_screen.add_warning.assert_called_once_with("0:Test Warning", 0)
+    
+    def test_warn_add_priority_1(self, command_handler, mock_main_screen):
+        """Test WARN command to add warning with priority 1"""
+        command_handler.parse_cmd(b"WARN:1:Test Warning")
         mock_main_screen.add_warning.assert_called_once_with("Test Warning", 1)
     
-    def test_warn_remove(self, command_handler, mock_main_screen):
-        """Test WARN command to remove warning"""
+    def test_warn_add_priority_2(self, command_handler, mock_main_screen):
+        """Test WARN command to add warning with priority 2"""
+        command_handler.parse_cmd(b"WARN:2:Test Warning")
+        mock_main_screen.add_warning.assert_called_once_with("Test Warning", 2)
+    
+    def test_warn_remove_default_priority(self, command_handler, mock_main_screen):
+        """Test WARN command to remove warning with default priority (0)"""
         command_handler.parse_cmd(b"WARN:")
+        mock_main_screen.remove_warning.assert_called_once_with(0)
+    
+    def test_warn_remove_priority_1(self, command_handler, mock_main_screen):
+        """Test WARN command to remove warning with priority 1"""
+        command_handler.parse_cmd(b"WARN:1:")
         mock_main_screen.remove_warning.assert_called_once_with(1)
     
-    def test_warn_empty_string(self, command_handler, mock_main_screen):
-        """Test WARN command with empty string"""
-        command_handler.parse_cmd(b"WARN:")
-        mock_main_screen.remove_warning.assert_called_once_with(1)
+    def test_warn_invalid_priority(self, command_handler, mock_main_screen):
+        """Test WARN command with invalid priority falls back to default"""
+        command_handler.parse_cmd(b"WARN:5:Test Warning")
+        mock_main_screen.add_warning.assert_called_once_with("5:Test Warning", 0)
+    
+    def test_warn_text_with_colon(self, command_handler, mock_main_screen):
+        """Test WARN command with colon in text (not priority format)"""
+        command_handler.parse_cmd(b"WARN:Error: Something went wrong")
+        # Should be treated as regular text (not priority format)
+        mock_main_screen.add_warning.assert_called_once_with("Error: Something went wrong", 0)
 
 
 class TestAirSimpleCommands:

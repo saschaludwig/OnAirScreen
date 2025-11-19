@@ -671,78 +671,111 @@ class TestWarningSystem:
     
     def test_add_warning(self, mock_main_screen):
         """Test add_warning adds warning to correct priority"""
-        # Initialize warnings array
-        mock_main_screen.warnings = ["", "", ""]
+        # Initialize warnings array (4 elements: -1, 0, 1, 2)
+        mock_main_screen.warnings = ["", "", "", ""]
         
         # Call the actual method
         MainScreen.add_warning(mock_main_screen, "Test warning", 1)
         
-        assert mock_main_screen.warnings[1] == "Test warning"
-        assert mock_main_screen.warnings[0] == ""
-        assert mock_main_screen.warnings[2] == ""
+        # Priority 1 -> Index 2
+        assert mock_main_screen.warnings[2] == "Test warning"
+        assert mock_main_screen.warnings[0] == ""  # -1
+        assert mock_main_screen.warnings[1] == ""  # 0
+        assert mock_main_screen.warnings[3] == ""  # 2
     
     def test_add_warning_default_priority(self, mock_main_screen):
         """Test add_warning uses priority 0 by default"""
-        # Initialize warnings array
-        mock_main_screen.warnings = ["", "", ""]
+        # Initialize warnings array (4 elements: -1, 0, 1, 2)
+        mock_main_screen.warnings = ["", "", "", ""]
         
         # Call the actual method
         MainScreen.add_warning(mock_main_screen, "Default warning")
         
-        assert mock_main_screen.warnings[0] == "Default warning"
+        # Priority 0 -> Index 1
+        assert mock_main_screen.warnings[1] == "Default warning"
     
     def test_remove_warning(self, mock_main_screen):
         """Test remove_warning removes warning from correct priority"""
-        # Initialize warnings array
-        mock_main_screen.warnings = ["", "Test warning", ""]
+        # Initialize warnings array (4 elements: -1, 0, 1, 2)
+        # Priority 1 -> Index 2
+        mock_main_screen.warnings = ["", "", "Test warning", ""]
         
         # Call the actual method
         MainScreen.remove_warning(mock_main_screen, 1)
         
-        assert mock_main_screen.warnings[1] == ""
+        assert mock_main_screen.warnings[2] == ""
     
     def test_remove_warning_default_priority(self, mock_main_screen):
         """Test remove_warning uses priority 0 by default"""
-        # Initialize warnings array
-        mock_main_screen.warnings = ["Test warning", "", ""]
+        # Initialize warnings array (4 elements: -1, 0, 1, 2)
+        # Priority 0 -> Index 1
+        mock_main_screen.warnings = ["", "Test warning", "", ""]
         
         # Call the actual method
         MainScreen.remove_warning(mock_main_screen)
         
-        assert mock_main_screen.warnings[0] == ""
+        assert mock_main_screen.warnings[1] == ""
     
     def test_process_warnings_with_warning(self, mock_main_screen):
         """Test process_warnings shows warning when available"""
-        mock_main_screen.warnings = ["", "Warning text", ""]
+        # Priority 1 -> Index 2
+        mock_main_screen.warnings = ["", "", "Warning text", ""]
         mock_main_screen.show_warning = Mock()
         mock_main_screen.hide_warning = Mock()
         
-        mock_main_screen.process_warnings()
+        MainScreen.process_warnings(mock_main_screen)
         
         mock_main_screen.show_warning.assert_called_once_with("Warning text")
         mock_main_screen.hide_warning.assert_not_called()
     
     def test_process_warnings_multiple_warnings(self, mock_main_screen):
-        """Test process_warnings shows last warning when multiple exist"""
-        mock_main_screen.warnings = ["First", "Second", "Third"]
+        """Test process_warnings shows highest priority warning when multiple exist"""
+        # Priorities: -1, 0, 1, 2 -> Indices: 0, 1, 2, 3
+        # Should show priority 2 (highest)
+        mock_main_screen.warnings = ["NTP", "Normal", "Medium", "High"]
         mock_main_screen.show_warning = Mock()
         mock_main_screen.hide_warning = Mock()
         
-        mock_main_screen.process_warnings()
+        MainScreen.process_warnings(mock_main_screen)
         
-        # Should show the last warning (highest priority)
-        mock_main_screen.show_warning.assert_called_once_with("Third")
+        # Should show the highest priority warning (priority 2 = "High")
+        mock_main_screen.show_warning.assert_called_once_with("High")
     
     def test_process_warnings_no_warning(self, mock_main_screen):
         """Test process_warnings hides warning when none available"""
-        mock_main_screen.warnings = ["", "", ""]
+        mock_main_screen.warnings = ["", "", "", ""]
         mock_main_screen.show_warning = Mock()
         mock_main_screen.hide_warning = Mock()
         
-        mock_main_screen.process_warnings()
+        MainScreen.process_warnings(mock_main_screen)
         
         mock_main_screen.hide_warning.assert_called_once()
         mock_main_screen.show_warning.assert_not_called()
+    
+    def test_process_warnings_ntp_only(self, mock_main_screen):
+        """Test process_warnings shows NTP warning when no other warnings exist"""
+        # Only NTP warning (priority -1 -> Index 0)
+        mock_main_screen.warnings = ["NTP Warning", "", "", ""]
+        mock_main_screen.show_warning = Mock()
+        mock_main_screen.hide_warning = Mock()
+        
+        MainScreen.process_warnings(mock_main_screen)
+        
+        mock_main_screen.show_warning.assert_called_once_with("NTP Warning")
+        mock_main_screen.hide_warning.assert_not_called()
+    
+    def test_process_warnings_ntp_with_other(self, mock_main_screen):
+        """Test process_warnings shows non-NTP warning when both exist"""
+        # NTP warning (priority -1 -> Index 0) and normal warning (priority 0 -> Index 1)
+        mock_main_screen.warnings = ["NTP Warning", "Normal Warning", "", ""]
+        mock_main_screen.show_warning = Mock()
+        mock_main_screen.hide_warning = Mock()
+        
+        MainScreen.process_warnings(mock_main_screen)
+        
+        # Should show the non-NTP warning (priority 0 = "Normal Warning")
+        mock_main_screen.show_warning.assert_called_once_with("Normal Warning")
+        mock_main_screen.hide_warning.assert_not_called()
 
 
 class TestUpdateBacktimingSeconds:
@@ -1268,7 +1301,7 @@ class TestUpdateNTPStatus:
     """Tests for update_ntp_status method"""
     
     def test_update_ntp_status_with_warning(self, mock_main_screen):
-        """Test update_ntp_status adds warning when NTP warning exists"""
+        """Test update_ntp_status adds warning when NTP warning exists (priority -1)"""
         mock_main_screen.ntpHadWarning = True
         mock_main_screen.ntpWarnMessage = "NTP sync error"
         mock_main_screen.add_warning = Mock()
@@ -1276,11 +1309,11 @@ class TestUpdateNTPStatus:
         
         MainScreen.update_ntp_status(mock_main_screen)
         
-        mock_main_screen.add_warning.assert_called_once_with("NTP sync error", 0)
+        mock_main_screen.add_warning.assert_called_once_with("NTP sync error", -1)
         mock_main_screen.remove_warning.assert_not_called()
     
     def test_update_ntp_status_no_warning(self, mock_main_screen):
-        """Test update_ntp_status removes warning when no NTP warning"""
+        """Test update_ntp_status removes NTP warning when no NTP warning exists"""
         mock_main_screen.ntpHadWarning = False
         mock_main_screen.ntpWarnMessage = ""
         mock_main_screen.add_warning = Mock()
@@ -1288,11 +1321,12 @@ class TestUpdateNTPStatus:
         
         MainScreen.update_ntp_status(mock_main_screen)
         
-        mock_main_screen.remove_warning.assert_called_once_with(0)
+        # Should remove NTP warning (priority -1)
+        mock_main_screen.remove_warning.assert_called_once_with(-1)
         mock_main_screen.add_warning.assert_not_called()
     
     def test_update_ntp_status_empty_message(self, mock_main_screen):
-        """Test update_ntp_status removes warning when message is empty"""
+        """Test update_ntp_status removes NTP warning when message is empty"""
         mock_main_screen.ntpHadWarning = True
         mock_main_screen.ntpWarnMessage = ""
         mock_main_screen.add_warning = Mock()
@@ -1300,7 +1334,8 @@ class TestUpdateNTPStatus:
         
         MainScreen.update_ntp_status(mock_main_screen)
         
-        mock_main_screen.remove_warning.assert_called_once_with(0)
+        # Should remove NTP warning (priority -1)
+        mock_main_screen.remove_warning.assert_called_once_with(-1)
         mock_main_screen.add_warning.assert_not_called()
 
 
