@@ -25,17 +25,22 @@ And if you need extended support, please contact me.
 <img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
 
 #### Features
- * flexible integration into existing studio setups
- * customizable logo, colors and labels
+ * Flexible integration into existing studio setups
+ * Customizable logo, colors and labels
  * 4:3 and 16:9/16:10 monitor aspect ratio support
- * easy installation (Win/Linux/Mac binaries available)
- * runs on RaspberryPi
- * runs on Windows, Mac, Linux
- * controlled via keyboard and network
+ * Easy installation (Win/Linux/Mac binaries available)
+ * Runs on RaspberryPi
+ * Runs on Windows, Mac, Linux
+ * Controlled via keyboard and network
  * Web-UI for remote control via browser
+ * Web-UI: Dark Mode support with theme persistence
+ * Web-UI: Real-time status updates via WebSocket
+ * Web-UI: Warning priority system (NTP, Normal, Medium, High)
+ * Web-UI: Improved compact layout for better space efficiency
  * REST-style API endpoints (/api/status, /api/command)
  * Event logging system for tracking all actions
  * Tooltips for all settings widgets
+ * Preset/Profile management for saving and loading configurations
  * Weather Widget
  * static or blinking colon in digital clock mode
  * OnAir Timer, Stopwatch, Countdown and more
@@ -43,18 +48,18 @@ And if you need extended support, please contact me.
 #### OnAirScreen Function Keys
 | Hotkeys                           | Function                |
 |-----------------------------------|-------------------------|
-| Ctrl+F or F                       | Toggle fullscreen       |
-| Ctrl+Q or Q or Ctrl+C or ESC      | Quit OnAirScreen        |
-| Ctrl+S or Ctrl+,                  | Open settings dialog    |
-| Space or 0                        | Timer start/stop        |
-| . or , or R                       | Timer reset to 0:00     |
-| 1                                 | LED1 on/off             |
-| 2                                 | LED2 on/off             |
-| 3                                 | LED3 on/off             |
-| 4                                 | LED4 on/off             |
-| M or /                            | Mic Timer start/stop    |
-| P or *                            | Phone Timer start/stop  |
-| Enter                             | opens set timer dialog  |
+| `Ctrl+F` or `F`                       | Toggle fullscreen       |
+| `Ctrl+Q` or `Q` or `Ctrl+C` or `ESC`      | Quit OnAirScreen        |
+| `Ctrl+S` or `Ctrl+,`                  | Open settings dialog    |
+| `Space` or `0`                        | Timer start/stop        |
+| `.` or `,` or `R`                       | Timer reset to 0:00     |
+| `1`                                 | LED1 on/off             |
+| `2`                                 | LED2 on/off             |
+| `3`                                 | LED3 on/off             |
+| `4`                                 | LED4 on/off             |
+| `M` or `/`                            | Mic Timer start/stop    |
+| `P` or `*`                            | Phone Timer start/stop  |
+| `Enter`                             | opens set timer dialog  |
 
 On OSX use the `command ⌘` key instead of `Ctrl`
 
@@ -91,9 +96,14 @@ Simply open `http://127.0.0.1:8010/` (or the IP address of your OnAirScreen inst
 
 The Web-UI provides:
  * Real-time status display for LEDs, AIR timers, and text fields (NOW/NEXT/WARN)
+ * Real-time updates via WebSocket (with HTTP polling fallback)
+ * Dark Mode support with automatic theme persistence
+ * Warning priority system: Display NTP warnings and user warnings with priorities (Normal, Medium, High)
+ * Delete warnings directly from status display with X button
  * LED control buttons with toggle functionality
  * AIR timer controls with start/stop and reset buttons
  * Text input controls for NOW, NEXT, and WARN messages
+ * Compact, organized layout for better space efficiency
  * Version and distribution information display
  * Connection error handling with modal dialog
 
@@ -123,7 +133,8 @@ Sends commands and returns JSON response with status confirmation.
 | `LED4:[ON/OFF]`     | switch LED4 on/off |
 | `NOW:TEXT`               | set TEXT in first footer line |
 | `NEXT:TEXT`              | set TEXT in second footer line |
-| `WARN:TEXT`              | set TEXT and switch on red warning mode |
+| `WARN:TEXT`              | set TEXT and switch on red warning mode (priority 0) |
+| `WARN:Prio:TEXT`         | set TEXT with priority (Prio: 1=Medium, 2=High) |
 | `AIR1:[ON/OFF]`          | start/stop Mic Timer |
 | `AIR2:[ON/OFF]`          | start/stop Phone Timer |
 | `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggle Radio Timer |

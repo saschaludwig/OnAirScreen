@@ -1,6 +1,28 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+### Added
+- Web-UI: Dark Mode support with theme toggle button and automatic persistence
+- Web-UI: Warning priority system with support for NTP warnings (priority -1), normal warnings (priority 0), medium priority (1), and high priority (2)
+- Web-UI: Display NTP warnings in Current Status section with blue color coding
+- Web-UI: X button to delete warnings directly from status display (for priority 0-2)
+- Web-UI: Improved Current Status layout - organized in rows (LED1-4, AIR1-4, NOW/NEXT)
+- Web-UI: Compact design for NOW/NEXT status items and input fields
+- Web-UI: AIR Timer Controls now show timer labels (Mic, Phone, etc.) directly on buttons
+- Web-UI: NOW/NEXT input fields placed side by side (50% width each)
+- Settings: Preset/Profile management - save, load, list, and delete configuration presets as JSON files
+- Settings: UI buttons for preset management (Save, Load, Delete)
+
+### Changed
+- Web-UI: Fixed dark mode flash on page reload by setting theme immediately in HTML head
+- Web-UI: Restructured status display for better organization and space efficiency
+- Command Handler: Enhanced WARN command to support priority format (WARN:Prio:Text)
+- MainScreen: Implemented priority-based warning system with array index mapping
+- MainScreen: Updated process_warnings() to display highest priority warning (excluding NTP if others exist)
+- MainScreen: Simplified update_ntp_status() to use priority -1 directly
+- API: get_status_json() now returns warnings array with priorities in addition to legacy warn field
+
 ## [0.9.7beta4]
 ### Added
 - WebSocket support for Web-UI: Real-time status updates via WebSocket connections (replaces HTTP polling)
