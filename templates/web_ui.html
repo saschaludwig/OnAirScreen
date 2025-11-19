@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OnAirScreen Remote Control</title>
+    <script>
+        // Set theme immediately to prevent flash of light mode
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
     <style>
         :root {
             /* Light mode colors */
@@ -86,9 +93,21 @@
         }
         .status-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: auto auto auto;
             gap: 15px;
             margin-bottom: 20px;
+        }
+        .status-item.text-item {
+            padding: 10px 15px;
+        }
+        .status-item.text-item h3 {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        .status-item.text-item .value {
+            font-size: 14px;
+            line-height: 1.3;
         }
         .status-item {
             background: var(--bg-item);
@@ -110,6 +129,35 @@
             font-size: 24px;
             font-weight: bold;
             color: var(--text-primary);
+        }
+        .status-item {
+            position: relative;
+        }
+        .status-item .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            padding: 0;
+        }
+        .status-item .close-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+        .status-item .close-btn:active {
+            transform: scale(0.95);
         }
         .control-panel {
             background: var(--bg-panel);
@@ -182,6 +230,27 @@
             flex: 1;
             max-width: 150px;
         }
+        .air-controls-compact {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .air-control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .air-control-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            min-width: 60px;
+            text-align: right;
+        }
+        .air-control-group .air-btn {
+            flex: 1;
+            min-width: 100px;
+        }
         .info {
             background: var(--bg-info);
             padding: 15px;
@@ -194,6 +263,13 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+        }
+        .text-input-row {
+            display: flex;
+            gap: 15px;
+        }
+        .text-input-row .text-input-group {
+            flex: 1;
         }
         .text-input-group {
             display: flex;
@@ -389,7 +465,7 @@
             
             <div class="section">
                 <h2>AIR Timer Controls</h2>
-                <div id="airControls">
+                <div class="air-controls-compact" id="airControls">
                     <!-- AIR controls will be populated by JavaScript -->
                 </div>
             </div>
@@ -397,27 +473,34 @@
             <div class="section">
                 <h2>Text Controls</h2>
                 <div class="text-controls">
-                    <div class="text-input-group">
-                        <label for="nowInput">NOW (Current Song):</label>
-                        <div class="input-with-button">
-                            <input type="text" id="nowInput" placeholder="Enter current song..." />
-                            <button class="text-btn" onclick="sendTextCommand('NOW', 'nowInput')">Set</button>
-                            <button class="text-btn warn-clear" onclick="clearText('NOW', 'nowInput')">Clear</button>
+                    <div class="text-input-row">
+                        <div class="text-input-group">
+                            <label for="nowInput">NOW (Current Song):</label>
+                            <div class="input-with-button">
+                                <input type="text" id="nowInput" placeholder="Enter current song..." />
+                                <button class="text-btn" onclick="sendTextCommand('NOW', 'nowInput')">Set</button>
+                                <button class="text-btn warn-clear" onclick="clearText('NOW', 'nowInput')">Clear</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="text-input-group">
-                        <label for="nextInput">NEXT (News/Next):</label>
-                        <div class="input-with-button">
-                            <input type="text" id="nextInput" placeholder="Enter next item..." />
-                            <button class="text-btn" onclick="sendTextCommand('NEXT', 'nextInput')">Set</button>
-                            <button class="text-btn warn-clear" onclick="clearText('NEXT', 'nextInput')">Clear</button>
+                        <div class="text-input-group">
+                            <label for="nextInput">NEXT (News/Next):</label>
+                            <div class="input-with-button">
+                                <input type="text" id="nextInput" placeholder="Enter next item..." />
+                                <button class="text-btn" onclick="sendTextCommand('NEXT', 'nextInput')">Set</button>
+                                <button class="text-btn warn-clear" onclick="clearText('NEXT', 'nextInput')">Clear</button>
+                            </div>
                         </div>
                     </div>
                     <div class="text-input-group">
                         <label for="warnInput">WARN (Warning Message):</label>
                         <div class="input-with-button">
                             <input type="text" id="warnInput" placeholder="Enter warning message..." />
-                            <button class="text-btn" onclick="sendTextCommand('WARN', 'warnInput')">Set</button>
+                            <select id="warnPriority" style="padding: 8px; margin-right: 5px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="0" selected>Priority 0 (Normal)</option>
+                                <option value="1">Priority 1 (Medium)</option>
+                                <option value="2">Priority 2 (High)</option>
+                            </select>
+                            <button class="text-btn" onclick="sendTextCommand('WARN', 'warnInput', 'warnPriority')">Set</button>
                             <button class="text-btn warn-clear" onclick="clearWarning()">Clear</button>
                         </div>
                     </div>
@@ -578,7 +661,7 @@
             const grid = document.getElementById('statusGrid');
             grid.innerHTML = '';
             
-            // LED status
+            // Row 1: LED status (LED1-4)
             for (let i = 1; i <= 4; i++) {
                 const led = data.leds[i];
                 const item = document.createElement('div');
@@ -591,7 +674,7 @@
                 grid.appendChild(item);
             }
             
-            // AIR status
+            // Row 2: AIR status (AIR1-4)
             for (let i = 1; i <= 4; i++) {
                 const air = data.air[i];
                 const item = document.createElement('div');
@@ -606,37 +689,77 @@
                 grid.appendChild(item);
             }
             
-            // Text fields status (NOW, NEXT, WARN)
+            // Row 3: Text fields status (NOW, NEXT) - compact layout
             if (data.texts) {
                 const texts = data.texts;
                 
-                // NOW
+                // NOW (spans 2 columns)
                 const nowItem = document.createElement('div');
-                nowItem.className = 'status-item';
+                nowItem.className = 'status-item text-item';
+                nowItem.style.gridColumn = 'span 2';
                 nowItem.innerHTML = `
                     <h3>NOW</h3>
-                    <div class="value" style="font-size: 16px; word-break: break-word;">${texts.now || '(empty)'}</div>
+                    <div class="value" style="word-break: break-word;">${texts.now || '(empty)'}</div>
                 `;
                 grid.appendChild(nowItem);
                 
-                // NEXT
+                // NEXT (spans 2 columns)
                 const nextItem = document.createElement('div');
-                nextItem.className = 'status-item';
+                nextItem.className = 'status-item text-item';
+                nextItem.style.gridColumn = 'span 2';
                 nextItem.innerHTML = `
                     <h3>NEXT</h3>
-                    <div class="value" style="font-size: 16px; word-break: break-word;">${texts.next || '(empty)'}</div>
+                    <div class="value" style="word-break: break-word;">${texts.next || '(empty)'}</div>
                 `;
                 grid.appendChild(nextItem);
                 
-                // WARN
-                if (texts.warn) {
+                // WARN - Show all warnings sorted by priority (highest first)
+                // Warnings span full width and appear after the 3 main rows
+                if (data.warnings && data.warnings.length > 0) {
+                    // Sort by priority (descending: 2, 1, 0, -1)
+                    const sortedWarnings = [...data.warnings].sort((a, b) => b.priority - a.priority);
+                    
+                    sortedWarnings.forEach(warning => {
+                        const warnItem = document.createElement('div');
+                        warnItem.className = 'status-item';
+                        warnItem.style.gridColumn = 'span 4';  // Full width
+                        // Different colors based on priority
+                        const priorityColors = {
+                            '-1': { border: '#2196f3', bg: '#e3f2fd', text: '#1565c0' },  // Blue for NTP
+                            '0': { border: '#ff9800', bg: '#fff3e0', text: '#e65100' },  // Orange for normal/legacy
+                            '1': { border: '#ff5252', bg: '#ffebee', text: '#d32f2f' },  // Red for medium
+                            '2': { border: '#d32f2f', bg: '#ffcdd2', text: '#b71c1c' }   // Dark red for high
+                        };
+                        const priorityKey = String(warning.priority);
+                        const colors = priorityColors[priorityKey] || priorityColors['0'];
+                        const priorityLabels = { '-1': 'NTP', '0': 'Normal', '1': 'Medium', '2': 'High' };
+                        const label = priorityLabels[priorityKey] || 'Unknown';
+                        warnItem.style.borderLeftColor = colors.border;
+                        warnItem.style.background = colors.bg;
+                        
+                        // Add close button only for user warnings (priority 0-2), not for NTP (-1)
+                        const closeButton = warning.priority >= 0 ? 
+                            `<button class="close-btn" onclick="clearWarningByPriority(${warning.priority})" title="Remove warning">×</button>` : 
+                            '';
+                        
+                        warnItem.innerHTML = `
+                            <h3>WARN (Priority ${warning.priority} - ${label})</h3>
+                            <div class="value" style="font-size: 16px; word-break: break-word; color: ${colors.text};">${warning.text}</div>
+                            ${closeButton}
+                        `;
+                        grid.appendChild(warnItem);
+                    });
+                } else if (texts.warn) {
+                    // Fallback to old format for backward compatibility
                     const warnItem = document.createElement('div');
                     warnItem.className = 'status-item';
+                    warnItem.style.gridColumn = 'span 4';  // Full width
                     warnItem.style.borderLeftColor = '#ff5252';
                     warnItem.style.background = '#ffebee';
                     warnItem.innerHTML = `
                         <h3>WARN</h3>
                         <div class="value" style="font-size: 16px; word-break: break-word; color: #d32f2f;">${texts.warn}</div>
+                        <button class="close-btn" onclick="clearWarningByPriority(0)" title="Remove warning">×</button>
                     `;
                     grid.appendChild(warnItem);
                 }
@@ -751,7 +874,40 @@
         function updateAIRControls(air) {
             const container = document.getElementById('airControls');
             
-            // Initialize or update elements
+            // Initialize elements if they don't exist
+            if (Object.keys(airControlElements).length === 0) {
+                container.innerHTML = '';
+                for (let i = 1; i <= 4; i++) {
+                    const group = document.createElement('div');
+                    group.className = 'air-control-group';
+                    group.id = `airGroup${i}`;
+                    
+                    const startStopBtn = document.createElement('button');
+                    startStopBtn.className = 'air-btn';
+                    startStopBtn.id = `airStartStop${i}`;
+                    startStopBtn.textContent = `AIR ${i}`;
+                    group.appendChild(startStopBtn);
+                    
+                    // Add Reset button for AIR3 and AIR4
+                    if (i === 3 || i === 4) {
+                        const resetBtn = document.createElement('button');
+                        resetBtn.className = 'air-btn';
+                        resetBtn.id = `airReset${i}`;
+                        resetBtn.textContent = 'Reset';
+                        resetBtn.onclick = () => sendCommand(`AIR${i}:RESET`);
+                        group.appendChild(resetBtn);
+                    }
+                    
+                    container.appendChild(group);
+                    
+                    airControlElements[`air${i}`] = {
+                        group: group,
+                        startStopBtn: startStopBtn
+                    };
+                }
+            }
+            
+            // Update only changed elements
             for (let i = 1; i <= 4; i++) {
                 const a = air[i];
                 const minutes = Math.floor(a.seconds / 60);
@@ -760,82 +916,26 @@
                 const statusStr = a.status ? 'on' : 'off';
                 const key = `air${i}`;
                 
-                // Check if we need to create new elements
-                if (!airControlElements[key]) {
-                    const section = document.createElement('div');
-                    section.style.marginBottom = '20px';
-                    section.id = `airSection${i}`;
-                    
-                    const title = document.createElement('h3');
-                    title.style.marginBottom = '10px';
-                    title.id = `airTitle${i}`;
-                    section.appendChild(title);
-                    
-                    const timerDisplay = document.createElement('div');
-                    timerDisplay.className = 'timer-display';
-                    timerDisplay.id = `airTimer${i}`;
-                    section.appendChild(timerDisplay);
-                    
-                    const controlsDiv = document.createElement('div');
-                    controlsDiv.className = 'timer-controls';
-                    controlsDiv.id = `airControls${i}`;
-                    
-                    const startStopBtn = document.createElement('button');
-                    startStopBtn.className = 'air-btn';
-                    startStopBtn.id = `airStartStop${i}`;
-                    startStopBtn.onclick = function() {
-                        sendCommand('AIR' + i + ':' + (a.status ? 'OFF' : 'ON'));
-                    };
-                    controlsDiv.appendChild(startStopBtn);
-                    
-                    // Add Reset button for AIR3 and AIR4
-                    if (i === 3 || i === 4) {
-                        const resetBtn = document.createElement('button');
-                        resetBtn.className = 'air-btn';
-                        resetBtn.id = `airReset${i}`;
-                        resetBtn.textContent = 'Reset';
-                        resetBtn.onclick = function() {
-                            sendCommand('AIR' + i + ':RESET');
-                        };
-                        controlsDiv.appendChild(resetBtn);
-                    }
-                    
-                    section.appendChild(controlsDiv);
-                    container.appendChild(section);
-                    
-                    airControlElements[key] = {
-                        section: section,
-                        title: title,
-                        timer: timerDisplay,
-                        startStopBtn: startStopBtn
-                    };
+                const lastState = lastAIRState[key];
+                const elements = airControlElements[key];
+                
+                // Update button text and class if text or status changed
+                if (!lastState || lastState.text !== a.text || lastState.status !== statusStr) {
+                    const labelText = a.text || `AIR ${i}`;
+                    elements.startStopBtn.textContent = `AIR ${i}: ${labelText}`;
+                    elements.startStopBtn.className = 'air-btn' + (a.status ? ' active' : '');
+                    elements.startStopBtn.onclick = () => sendCommand(`AIR${i}:${a.status ? 'OFF' : 'ON'}`);
                 }
                 
-                // Only update if values changed
-                const lastState = lastAIRState[key];
-                if (!lastState || 
-                    lastState.status !== statusStr || 
-                    lastState.time !== timeStr ||
-                    lastState.text !== a.text) {
-                    
-                    const elements = airControlElements[key];
-                    elements.title.textContent = 'AIR ' + i + ': ' + a.text;
-                    elements.timer.textContent = timeStr;
-                    elements.startStopBtn.textContent = a.status ? 'Stop' : 'Start';
-                    
-                    // Update onclick handler if status changed
-                    if (!lastState || lastState.status !== statusStr) {
-                        elements.startStopBtn.onclick = function() {
-                            sendCommand('AIR' + i + ':' + (a.status ? 'OFF' : 'ON'));
-                        };
-                    }
-                    
-                    lastAIRState[key] = {
-                        status: statusStr,
-                        time: timeStr,
-                        text: a.text
-                    };
-                }
+                // Update tooltip (always, since time changes every second)
+                elements.startStopBtn.title = `${a.text} - ${timeStr} - ${a.status ? 'Running' : 'Stopped'} - Click to ${a.status ? 'stop' : 'start'}`;
+                
+                // Store current state
+                lastAIRState[key] = {
+                    status: statusStr,
+                    time: timeStr,
+                    text: a.text
+                };
             }
         }
         
@@ -863,11 +963,25 @@
                 });
         }
         
-        function sendTextCommand(command, inputId) {
+        function sendTextCommand(command, inputId, priorityId) {
             const input = document.getElementById(inputId);
             const value = input.value.trim();
             if (value) {
-                sendCommand(command + ':' + value);
+                let cmdValue = value;
+                // If priority is specified (for WARN command), prepend it
+                // Priority 0 is only for backward compatibility, so don't send it explicitly
+                if (priorityId && command === 'WARN') {
+                    const prioritySelect = document.getElementById(priorityId);
+                    if (prioritySelect) {
+                        const priority = prioritySelect.value;
+                        // Only add priority if it's 1 or 2 (priority 0 is implicit for backward compatibility)
+                        if (priority !== '0') {
+                            cmdValue = priority + ':' + value;
+                        }
+                        // If priority is 0, just send the text without explicit priority
+                    }
+                }
+                sendCommand(command + ':' + cmdValue);
                 // Clear input after sending (except for WARN)
                 if (command !== 'WARN') {
                     input.value = '';
@@ -876,8 +990,28 @@
         }
         
         function clearWarning() {
-            sendCommand('WARN:');
+            // Get the currently selected priority
+            const prioritySelect = document.getElementById('warnPriority');
+            const priority = prioritySelect ? prioritySelect.value : '0';
+            // Priority 0 is only for backward compatibility, so send WARN: without explicit priority
+            if (priority === '0') {
+                sendCommand('WARN:');
+            } else {
+                // Send clear command with the selected priority (1 or 2)
+                sendCommand('WARN:' + priority + ':');
+            }
             document.getElementById('warnInput').value = '';
+        }
+        
+        function clearWarningByPriority(priority) {
+            // Clear warning with specific priority (0, 1, or 2)
+            // Priority 0 is only for backward compatibility, so send WARN: without explicit priority
+            if (priority === 0) {
+                sendCommand('WARN:');
+            } else {
+                // Send clear command with the explicit priority (1 or 2)
+                sendCommand('WARN:' + priority + ':');
+            }
         }
         
         function clearText(command, inputId) {
@@ -908,7 +1042,7 @@
             if (warnInput) {
                 warnInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
-                        sendTextCommand('WARN', 'warnInput');
+                        sendTextCommand('WARN', 'warnInput', 'warnPriority');
                     }
                 });
             }
@@ -926,8 +1060,9 @@
                 themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
             }
             
-            // Set initial theme
-            setTheme(savedTheme);
+            // Set initial theme (already set in head, but update icon)
+            const currentTheme = document.documentElement.getAttribute('data-theme') || savedTheme;
+            setTheme(currentTheme);
             
             // Toggle theme on button click
             themeToggle.addEventListener('click', function() {
