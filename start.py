@@ -227,6 +227,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.wsd = WebSocketDaemon(self)
         self.wsd.start()
         
+        # Setup MQTT Client
+        try:
+            from mqtt_client import MqttClient
+            self.mqtt_client = MqttClient(self)
+            self.mqtt_client.start()
+        except Exception as e:
+            logger.warning(f"Failed to initialize MQTT client: {e}")
+            self.mqtt_client = None
+        
         # Log application start
         self.event_logger.log_system_event("Application started")
 
@@ -255,6 +264,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.httpd.stop()
         if hasattr(self, 'wsd') and self.wsd:
             self.wsd.stop()
+        if hasattr(self, 'mqtt_client') and self.mqtt_client:
+            self.mqtt_client.stop()
         QCoreApplication.instance().quit()
 
     def radio_timer_start_stop(self) -> None:
@@ -580,6 +591,9 @@ class MainScreen(QWidget, Ui_MainScreen):
                 # Log AIR started event
                 self.event_logger.log_air_started(air_num, "manual")
                 
+                # Publish MQTT status immediately after AIR start
+                self._publish_mqtt_status(f"air{air_num}")
+                
                 # Special handling for AIR3 and AIR4 countdown mode
                 if 'special_mode' in config:
                     mode_attr = config['special_mode']
@@ -613,6 +627,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             
             # Log AIR stopped event
             self.event_logger.log_air_stopped(air_num, "manual")
+        
+        # Publish MQTT status immediately after AIR state change
+        self._publish_mqtt_status(f"air{air_num}")
 
     def _update_air_seconds(self, air_num: int) -> None:
         """
@@ -898,6 +915,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         
         # Log LED change event
         self.event_logger.log_led_changed(led, state, source)
+        
+        # Publish MQTT status immediately after LED change
+        self._publish_mqtt_status(f"led{led}")
 
     def set_station_color(self, newcolor: QColor) -> None:
         """
@@ -1486,11 +1506,34 @@ class MainScreen(QWidget, Ui_MainScreen):
     def set_current_song_text(self, text: str) -> None:
         """Set current song text"""
         self._set_text('labelCurrentSong', text)
+        # Publish MQTT status immediately after NOW text change
+        self._publish_mqtt_status("now")
 
     def set_news_text(self, text: str) -> None:
         """Set news text"""
         self._set_text('labelNews', text)
+        # Publish MQTT status immediately after NEXT text change
+        self._publish_mqtt_status("next")
 
+    def _publish_mqtt_status(self, specific_item: str | None = None) -> None:
+        """
+        Publish MQTT status immediately after status change
+        
+        Args:
+            specific_item: Optional specific item to publish (e.g., 'led1', 'air2', 'now', 'next', 'warn')
+                          If None, publishes all status items
+        """
+        try:
+            mqtt_client = getattr(self, 'mqtt_client', None)
+            if mqtt_client:
+                try:
+                    mqtt_client.publish_status(specific_item)
+                except Exception as e:
+                    logger.warning(f"Failed to publish MQTT status: {e}")
+        except (RuntimeError, AttributeError):
+            # Ignore errors when object is not fully initialized (e.g., in tests)
+            pass
+    
     def _set_text(self, widget_name: str, text: str) -> None:
         """
         Generic method to set text on a widget
@@ -1572,6 +1615,8 @@ class MainScreen(QWidget, Ui_MainScreen):
             # Log warning removed event only if there was a warning
             self.event_logger.log_warning_removed(priority)
             # Note: process_warnings() is called by the timer in constant_update()
+            # Publish MQTT status immediately after warning removal
+            self._publish_mqtt_status("warn")
             # No need to call it here to avoid race conditions
 
     def process_warnings(self) -> None:
@@ -1675,6 +1720,10 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.restore_settings_from_config()
         self.weatherWidget.readConfig()
         self.weatherWidget.updateWeather()
+        
+        # Restart MQTT client if settings changed
+        if hasattr(self, 'mqtt_client') and self.mqtt_client:
+            self.mqtt_client.restart()
 
     def reboot_host(self):
         """Reboot the host system safely using subprocess"""

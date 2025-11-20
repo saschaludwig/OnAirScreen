@@ -1406,6 +1406,164 @@
        <item row="1" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_15">
          <item>
+          <widget class="QLabel" name="label_45">
+           <property name="text">
+            <string>Network Settings</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_20">
+           <item>
+            <layout class="QFormLayout" name="formLayout">
+             <property name="labelAlignment">
+              <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+             <property name="formAlignment">
+              <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+             </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>UDP Port</string>
+               </property>
+               <property name="buddy">
+                <cstring>udpport</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="udpport">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>HTTP Port</string>
+               </property>
+               <property name="buddy">
+                <cstring>httpport</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="httpport"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_40">
+               <property name="text">
+                <string>Multicast Address</string>
+               </property>
+               <property name="buddy">
+                <cstring>multicast_group</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="multicast_group"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QFormLayout" name="formLayout_3">
+             <property name="labelAlignment">
+              <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+             <property name="formAlignment">
+              <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+             </property>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_41">
+               <property name="text">
+                <string>MQTT Server</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttserver</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_42">
+               <property name="text">
+                <string>MQTT Topic</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttbasetopic</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_43">
+               <property name="text">
+                <string>MQTT User</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttuser</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_44">
+               <property name="text">
+                <string>MQTT Password</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttpassword</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="mqttserver"/>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLineEdit" name="mqttuser"/>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLineEdit" name="mqttpassword"/>
+             </item>
+             <item row="5" column="1">
+              <widget class="QLineEdit" name="mqttbasetopic"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_46">
+               <property name="text">
+                <string>MQTT Server Port</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttport</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="mqttport"/>
+             </item>
+             <item row="0" column="0">
+              <widget class="QCheckBox" name="enablemqtt">
+               <property name="text">
+                <string>enable MQTT support</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
           <widget class="QLabel" name="label_10">
            <property name="text">
             <string>Date format</string>
@@ -1750,68 +1908,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
             </widget>
            </item>
           </layout>
-         </item>
-        </layout>
-       </item>
-       <item row="0" column="0">
-        <layout class="QFormLayout" name="formLayout">
-         <property name="labelAlignment">
-          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-         <property name="formAlignment">
-          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>UDP Port</string>
-           </property>
-           <property name="buddy">
-            <cstring>udpport</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="udpport">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_12">
-           <property name="text">
-            <string>HTTP Port</string>
-           </property>
-           <property name="buddy">
-            <cstring>httpport</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="httpport"/>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_40">
-           <property name="text">
-            <string>Multicast Address</string>
-           </property>
-           <property name="buddy">
-            <cstring>multicast_group</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
-          <widget class="QLineEdit" name="multicast_group"/>
          </item>
         </layout>
        </item>
@@ -4410,7 +4506,6 @@ Public License instead of this License.  But first, please read
   <tabstop>LED4Autoflash</tabstop>
   <tabstop>LED4Timedflash</tabstop>
   <tabstop>udpport</tabstop>
-  <tabstop>httpport</tabstop>
   <tabstop>dateFormat</tabstop>
   <tabstop>textBrowser_2</tabstop>
   <tabstop>time_24h</tabstop>
@@ -4441,8 +4536,8 @@ Public License instead of this License.  But first, please read
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>566</x>
-     <y>790</y>
+     <x>618</x>
+     <y>827</y>
     </hint>
     <hint type="destinationlabel">
      <x>201</x>
@@ -4457,12 +4552,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>68</y>
+     <x>184</x>
+     <y>727</y>
     </hint>
    </hints>
   </connection>
@@ -4489,12 +4584,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>125</x>
-     <y>68</y>
+     <x>88</x>
+     <y>567</y>
     </hint>
    </hints>
   </connection>
@@ -4505,12 +4600,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>144</x>
-     <y>68</y>
+     <x>107</x>
+     <y>603</y>
     </hint>
    </hints>
   </connection>
@@ -4521,12 +4616,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>164</x>
-     <y>366</y>
+     <x>204</x>
+     <y>401</y>
     </hint>
     <hint type="destinationlabel">
-     <x>164</x>
-     <y>387</y>
+     <x>204</x>
+     <y>422</y>
     </hint>
    </hints>
   </connection>
@@ -4537,12 +4632,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>68</y>
+     <x>227</x>
+     <y>681</y>
     </hint>
    </hints>
   </connection>
@@ -4553,12 +4648,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>534</y>
+     <x>389</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>360</x>
-     <y>697</y>
+     <x>380</x>
+     <y>734</y>
     </hint>
    </hints>
   </connection>
@@ -4569,12 +4664,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>166</x>
-     <y>534</y>
+     <x>203</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>166</x>
-     <y>561</y>
+     <x>204</x>
+     <y>598</y>
     </hint>
    </hints>
   </connection>
@@ -4585,12 +4680,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>534</y>
+     <x>566</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>523</x>
-     <y>697</y>
+     <x>557</x>
+     <y>734</y>
     </hint>
    </hints>
   </connection>
@@ -4601,12 +4696,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>534</y>
+     <x>742</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>686</x>
-     <y>697</y>
+     <x>733</x>
+     <y>734</y>
     </hint>
    </hints>
   </connection>
@@ -4617,12 +4712,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>199</x>
-     <y>534</y>
+     <x>213</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>176</x>
-     <y>663</y>
+     <x>204</x>
+     <y>700</y>
     </hint>
    </hints>
   </connection>
@@ -4633,12 +4728,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>534</y>
+     <x>566</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>526</x>
-     <y>741</y>
+     <x>566</x>
+     <y>778</y>
     </hint>
    </hints>
   </connection>
@@ -4649,12 +4744,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>122</x>
-     <y>534</y>
+     <x>159</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>126</x>
-     <y>720</y>
+     <x>163</x>
+     <y>757</y>
     </hint>
    </hints>
   </connection>
@@ -4665,12 +4760,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>534</y>
+     <x>742</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>689</x>
-     <y>741</y>
+     <x>742</x>
+     <y>778</y>
     </hint>
    </hints>
   </connection>
@@ -4681,12 +4776,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>140</x>
-     <y>534</y>
+     <x>177</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>133</x>
-     <y>697</y>
+     <x>172</x>
+     <y>734</y>
     </hint>
    </hints>
   </connection>
@@ -4697,12 +4792,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>534</y>
+     <x>389</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>363</x>
-     <y>720</y>
+     <x>389</x>
+     <y>757</y>
     </hint>
    </hints>
   </connection>
@@ -4713,8 +4808,8 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>151</x>
-     <y>561</y>
+     <x>190</x>
+     <y>598</y>
     </hint>
     <hint type="destinationlabel">
      <x>151</x>
@@ -4729,12 +4824,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>199</x>
-     <y>534</y>
+     <x>213</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>157</x>
-     <y>741</y>
+     <x>194</x>
+     <y>778</y>
     </hint>
    </hints>
   </connection>
@@ -4745,12 +4840,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>534</y>
+     <x>566</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>526</x>
-     <y>720</y>
+     <x>566</x>
+     <y>757</y>
     </hint>
    </hints>
   </connection>
@@ -4761,8 +4856,8 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>534</y>
+     <x>389</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
      <x>354</x>
@@ -4777,12 +4872,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>534</y>
+     <x>389</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>363</x>
-     <y>741</y>
+     <x>389</x>
+     <y>778</y>
     </hint>
    </hints>
   </connection>
@@ -4793,12 +4888,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>534</y>
+     <x>742</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>689</x>
-     <y>720</y>
+     <x>742</x>
+     <y>757</y>
     </hint>
    </hints>
   </connection>
@@ -4809,12 +4904,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>534</y>
+     <x>389</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>360</x>
-     <y>663</y>
+     <x>380</x>
+     <y>700</y>
     </hint>
    </hints>
   </connection>
@@ -4825,12 +4920,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>261</y>
+     <x>565</x>
+     <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>557</x>
-     <y>340</y>
+     <x>575</x>
+     <y>332</y>
     </hint>
    </hints>
   </connection>
@@ -4841,12 +4936,12 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>243</x>
-     <y>126</y>
+     <x>283</x>
+     <y>116</y>
     </hint>
     <hint type="destinationlabel">
-     <x>281</x>
-     <y>202</y>
+     <x>320</x>
+     <y>194</y>
     </hint>
    </hints>
   </connection>
@@ -4857,12 +4952,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>534</y>
+     <x>566</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>523</x>
-     <y>663</y>
+     <x>557</x>
+     <y>700</y>
     </hint>
    </hints>
   </connection>
@@ -4873,12 +4968,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>321</x>
-     <y>68</y>
+     <x>415</x>
+     <y>536</y>
     </hint>
    </hints>
   </connection>
@@ -4889,8 +4984,8 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>152</x>
-     <y>534</y>
+     <x>189</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
      <x>151</x>
@@ -4905,12 +5000,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>534</y>
+     <x>742</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>686</x>
-     <y>663</y>
+     <x>733</x>
+     <y>700</y>
     </hint>
    </hints>
   </connection>
@@ -4921,12 +5016,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>363</x>
-     <y>534</y>
+     <x>389</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>354</x>
-     <y>561</y>
+     <x>380</x>
+     <y>598</y>
     </hint>
    </hints>
   </connection>
@@ -4937,12 +5032,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>134</x>
-     <y>68</y>
+     <x>97</x>
+     <y>673</y>
     </hint>
    </hints>
   </connection>
@@ -4953,12 +5048,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>261</y>
+     <x>565</x>
+     <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>557</x>
-     <y>304</y>
+     <x>575</x>
+     <y>296</y>
     </hint>
    </hints>
   </connection>
@@ -4969,12 +5064,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>256</x>
-     <y>236</y>
+     <x>293</x>
+     <y>228</y>
     </hint>
     <hint type="destinationlabel">
-     <x>353</x>
-     <y>264</y>
+     <x>379</x>
+     <y>256</y>
     </hint>
    </hints>
   </connection>
@@ -4985,12 +5080,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>203</x>
-     <y>366</y>
+     <x>207</x>
+     <y>401</y>
     </hint>
     <hint type="destinationlabel">
-     <x>239</x>
-     <y>426</y>
+     <x>278</x>
+     <y>461</y>
     </hint>
    </hints>
   </connection>
@@ -5001,8 +5096,8 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>534</y>
+     <x>566</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
      <x>517</x>
@@ -5017,12 +5112,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>534</y>
+     <x>566</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>517</x>
-     <y>561</y>
+     <x>557</x>
+     <y>598</y>
     </hint>
    </hints>
   </connection>
@@ -5033,12 +5128,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>163</x>
-     <y>366</y>
+     <x>203</x>
+     <y>401</y>
     </hint>
     <hint type="destinationlabel">
-     <x>354</x>
-     <y>384</y>
+     <x>379</x>
+     <y>419</y>
     </hint>
    </hints>
   </connection>
@@ -5049,8 +5144,8 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>517</x>
-     <y>561</y>
+     <x>557</x>
+     <y>598</y>
     </hint>
     <hint type="destinationlabel">
      <x>517</x>
@@ -5065,12 +5160,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>68</y>
+     <x>202</x>
+     <y>643</y>
     </hint>
    </hints>
   </connection>
@@ -5081,12 +5176,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>534</y>
+     <x>742</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
-     <x>680</x>
-     <y>561</y>
+     <x>733</x>
+     <y>598</y>
     </hint>
    </hints>
   </connection>
@@ -5097,12 +5192,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>261</y>
+     <x>565</x>
+     <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>557</x>
-     <y>374</y>
+     <x>575</x>
+     <y>366</y>
     </hint>
    </hints>
   </connection>
@@ -5113,8 +5208,8 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>689</x>
-     <y>534</y>
+     <x>742</x>
+     <y>571</y>
     </hint>
     <hint type="destinationlabel">
      <x>680</x>
@@ -5129,12 +5224,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>175</x>
-     <y>236</y>
+     <x>212</x>
+     <y>228</y>
     </hint>
     <hint type="destinationlabel">
-     <x>166</x>
-     <y>264</y>
+     <x>165</x>
+     <y>256</y>
     </hint>
    </hints>
   </connection>
@@ -5145,12 +5240,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>68</y>
+     <x>240</x>
+     <y>567</y>
     </hint>
    </hints>
   </connection>
@@ -5161,12 +5256,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>203</x>
-     <y>366</y>
+     <x>207</x>
+     <y>401</y>
     </hint>
     <hint type="destinationlabel">
-     <x>239</x>
-     <y>468</y>
+     <x>278</x>
+     <y>503</y>
     </hint>
    </hints>
   </connection>
@@ -5177,12 +5272,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>526</x>
-     <y>261</y>
+     <x>565</x>
+     <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>446</x>
-     <y>300</y>
+     <x>472</x>
+     <y>292</y>
     </hint>
    </hints>
   </connection>
@@ -5193,8 +5288,8 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>354</x>
-     <y>561</y>
+     <x>380</x>
+     <y>598</y>
     </hint>
     <hint type="destinationlabel">
      <x>354</x>
@@ -5209,12 +5304,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>109</x>
-     <y>68</y>
+     <x>73</x>
+     <y>639</y>
     </hint>
    </hints>
   </connection>
@@ -5225,12 +5320,12 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>243</x>
-     <y>60</y>
+     <x>283</x>
+     <y>55</y>
     </hint>
     <hint type="destinationlabel">
-     <x>281</x>
-     <y>176</y>
+     <x>320</x>
+     <y>166</y>
     </hint>
    </hints>
   </connection>
@@ -5241,12 +5336,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>68</y>
+     <x>208</x>
+     <y>607</y>
     </hint>
    </hints>
   </connection>
@@ -5273,8 +5368,8 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>680</x>
-     <y>561</y>
+     <x>733</x>
+     <y>598</y>
     </hint>
     <hint type="destinationlabel">
      <x>680</x>
@@ -5289,12 +5384,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>68</y>
+     <x>181</x>
+     <y>508</y>
     </hint>
     <hint type="destinationlabel">
-     <x>130</x>
-     <y>68</y>
+     <x>94</x>
+     <y>536</y>
     </hint>
    </hints>
   </connection>
@@ -5305,12 +5400,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>135</x>
-     <y>38</y>
+     <x>171</x>
+     <y>621</y>
     </hint>
     <hint type="destinationlabel">
-     <x>132</x>
-     <y>53</y>
+     <x>168</x>
+     <y>653</y>
     </hint>
    </hints>
   </connection>
@@ -5321,8 +5416,8 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>182</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
      <x>145</x>
@@ -5337,12 +5432,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>182</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>184</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5353,12 +5448,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>182</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>184</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>
@@ -5373,8 +5468,8 @@ Public License instead of this License.  But first, please read
      <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>141</x>
-     <y>41</y>
+     <x>180</x>
+     <y>195</y>
     </hint>
    </hints>
   </connection>
@@ -5385,12 +5480,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>359</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>361</x>
+     <y>59</y>
     </hint>
    </hints>
   </connection>
@@ -5401,12 +5496,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>359</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>361</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5417,12 +5512,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>359</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>361</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>
@@ -5433,12 +5528,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>359</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>361</x>
+     <y>195</y>
     </hint>
    </hints>
   </connection>
@@ -5449,12 +5544,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>535</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>537</x>
+     <y>59</y>
     </hint>
    </hints>
   </connection>
@@ -5465,12 +5560,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>535</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>537</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5481,12 +5576,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>535</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>537</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>
@@ -5497,12 +5592,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>535</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>537</x>
+     <y>195</y>
     </hint>
    </hints>
   </connection>
@@ -5513,12 +5608,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>712</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>714</x>
+     <y>59</y>
     </hint>
    </hints>
   </connection>
@@ -5529,12 +5624,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>712</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>714</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5545,12 +5640,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>712</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>714</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>
@@ -5561,12 +5656,12 @@ Public License instead of this License.  But first, please read
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>712</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>41</y>
+     <x>714</x>
+     <y>195</y>
     </hint>
    </hints>
   </connection>
@@ -5581,8 +5676,8 @@ Public License instead of this License.  But first, please read
      <y>41</y>
     </hint>
     <hint type="destinationlabel">
-     <x>122</x>
-     <y>61</y>
+     <x>161</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5593,12 +5688,12 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>361</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>361</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5609,12 +5704,12 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>537</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>537</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5625,12 +5720,12 @@ Public License instead of this License.  But first, please read
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>41</y>
+     <x>714</x>
+     <y>59</y>
     </hint>
     <hint type="destinationlabel">
-     <x>145</x>
-     <y>61</y>
+     <x>714</x>
+     <y>119</y>
     </hint>
    </hints>
   </connection>
@@ -5682,10 +5777,170 @@ Public License instead of this License.  But first, please read
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>mqttserver</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>411</x>
+     <y>52</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>623</x>
+     <y>77</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>mqttport</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>443</x>
+     <y>47</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>584</x>
+     <y>102</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>mqttuser</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>459</x>
+     <y>49</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>134</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>mqttpassword</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>430</x>
+     <y>49</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>659</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>mqttbasetopic</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>449</x>
+     <y>50</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>620</x>
+     <y>197</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_41</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>435</x>
+     <y>51</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>436</x>
+     <y>74</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_46</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>462</x>
+     <y>48</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>493</x>
+     <y>103</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_43</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>421</x>
+     <y>50</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>419</x>
+     <y>134</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_44</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>407</x>
+     <y>47</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>470</x>
+     <y>164</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>enablemqtt</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>label_42</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>456</x>
+     <y>51</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>455</x>
+     <y>195</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="buttonGroup_show_seconds"/>
   <buttongroup name="buttonGroup_logo_position"/>
   <buttongroup name="buttonGroup_clock_mode"/>
-  <buttongroup name="buttonGroup_show_seconds"/>
  </buttongroups>
 </ui>

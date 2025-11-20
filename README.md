@@ -38,6 +38,7 @@ And if you need extended support, please contact me.
  * Web-UI: Warning priority system (NTP, Normal, Medium, High)
  * Web-UI: Improved compact layout for better space efficiency
  * REST-style API endpoints (/api/status, /api/command)
+ * MQTT integration with Home Assistant Autodiscovery support
  * Event logging system for tracking all actions
  * Tooltips for all settings widgets
  * Preset/Profile management for saving and loading configurations
@@ -122,6 +123,46 @@ Returns JSON with current LED status, AIR timer status, text field values, versi
 curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 ```
 Sends commands and returns JSON response with status confirmation.  
+
+##### API via MQTT
+
+OnAirScreen can be controlled via MQTT and integrates seamlessly with Home Assistant using MQTT Autodiscovery.<br>
+Configure MQTT settings in the OnAirScreen settings dialog (Server, Port, Username, Password, Base Topic).
+
+**Home Assistant Integration:**
+OnAirScreen automatically publishes device configurations to Home Assistant, creating:
+ * **LED Switches** (LED1-4): Control LEDs on/off
+ * **AIR Timer Switches** (AIR1-4): Start/stop timers
+ * **AIR Timer Sensors** (AIR1-4 Time): Display elapsed time in seconds
+ * **Reset Buttons** (AIR3/AIR4 Reset): Reset timers to 0:00
+ * **Text Entities** (NOW, NEXT, WARN): Set and display text fields
+
+**MQTT Topics:**
+All commands use the same format as UDP/HTTP API commands, published to:
+```
+{base_topic}/led{1-4}/set          → ON/OFF
+{base_topic}/air{1-4}/set          → ON/OFF
+{base_topic}/air{3-4}/reset        → PRESS (button)
+{base_topic}/text/now/set          → TEXT
+{base_topic}/text/next/set         → TEXT
+{base_topic}/text/warn/set         → TEXT
+```
+
+Status updates are automatically published to:
+```
+{base_topic}/led{1-4}/state         → ON/OFF
+{base_topic}/air{1-4}/state         → ON/OFF
+{base_topic}/air{1-4}/time          → seconds (integer)
+{base_topic}/text/{now|next|warn}/state → TEXT
+```
+
+**Example using mosquitto_pub:**
+```Shell
+mosquitto_pub -h mqtt-broker -t onairscreen/led1/set -m "ON"
+mosquitto_pub -h mqtt-broker -t onairscreen/air3/set -m "ON"
+mosquitto_pub -h mqtt-broker -t onairscreen/air3/reset -m "PRESS"
+mosquitto_pub -h mqtt-broker -t onairscreen/text/now/set -m "Current Song"
+```
 
 ##### API Commands
 

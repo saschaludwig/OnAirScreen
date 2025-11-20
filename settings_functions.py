@@ -297,6 +297,9 @@ class Settings(QWidget, Ui_Settings):
 
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
         self.updateCheckNowButton.clicked.connect(self.trigger_manual_check_for_updates)
+        
+        # MQTT checkbox connection
+        self.enablemqtt.toggled.connect(self._on_mqtt_enabled_changed)
 
         self.SetFont_LED1.clicked.connect(self.setOASFontLED1)
         self.SetFont_LED2.clicked.connect(self.setOASFontLED2)
@@ -678,6 +681,20 @@ class Settings(QWidget, Ui_Settings):
             self.httpport.setText(str(settings.value('httpport', str(DEFAULT_HTTP_PORT))))
             self.multicast_group.setText(settings.value('multicast_address', DEFAULT_MULTICAST_ADDRESS))
 
+        with settings_group(settings, "MQTT"):
+            self.enablemqtt.setChecked(settings.value('enablemqtt', False, type=bool))
+            self.mqttserver.setText(settings.value('mqttserver', "localhost", type=str))
+            self.mqttport.setText(str(settings.value('mqttport', 1883, type=int)))
+            self.mqttuser.setText(settings.value('mqttuser', "", type=str))
+            self.mqttpassword.setText(settings.value('mqttpassword', "", type=str))
+            self.mqttbasetopic.setText(settings.value('mqttbasetopic', "onairscreen", type=str))
+            # Enable/disable MQTT fields based on checkbox
+            self.mqttserver.setEnabled(self.enablemqtt.isChecked())
+            self.mqttport.setEnabled(self.enablemqtt.isChecked())
+            self.mqttuser.setEnabled(self.enablemqtt.isChecked())
+            self.mqttpassword.setEnabled(self.enablemqtt.isChecked())
+            self.mqttbasetopic.setEnabled(self.enablemqtt.isChecked())
+
         with settings_group(settings, "Formatting"):
             self.dateFormat.setText(settings.value('dateFormat', DEFAULT_DATE_FORMAT))
             self.textClockLanguage.setCurrentIndex(
@@ -848,6 +865,14 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('udpport', self.udpport.displayText())
             settings.setValue('httpport', self.httpport.displayText())
             settings.setValue('multicast_address', self.multicast_group.displayText())
+
+        with settings_group(settings, "MQTT"):
+            settings.setValue('enablemqtt', self.enablemqtt.isChecked())
+            settings.setValue('mqttserver', self.mqttserver.displayText())
+            settings.setValue('mqttport', self.mqttport.displayText())
+            settings.setValue('mqttuser', self.mqttuser.displayText())
+            settings.setValue('mqttpassword', self.mqttpassword.displayText())
+            settings.setValue('mqttbasetopic', self.mqttbasetopic.displayText())
 
         with settings_group(settings, "Formatting"):
             settings.setValue('dateFormat', self.dateFormat.displayText())
@@ -1538,6 +1563,14 @@ class Settings(QWidget, Ui_Settings):
         self.httpport.setToolTip("HTTP port for receiving commands (default: 8010)")
         self.multicast_group.setToolTip("Multicast address for UDP commands (default: 239.194.0.1)")
         
+        # MQTT settings
+        self.enablemqtt.setToolTip("Enable MQTT integration with Home Assistant Autodiscovery")
+        self.mqttserver.setToolTip("MQTT broker hostname or IP address")
+        self.mqttport.setToolTip("MQTT broker port (default: 1883)")
+        self.mqttuser.setToolTip("MQTT username (optional)")
+        self.mqttpassword.setToolTip("MQTT password (optional)")
+        self.mqttbasetopic.setToolTip("Base MQTT topic prefix (default: onairscreen)")
+        
         # Formatting settings
         self.dateFormat.setToolTip("Date format string (e.g., 'dddd, dd. MMMM yyyy' for 'Monday, 01. January 2024')")
         self.textClockLanguage.setToolTip("Language for text-based clock display")
@@ -1551,6 +1584,14 @@ class Settings(QWidget, Ui_Settings):
         self.owmLanguage.setToolTip("Language for weather descriptions")
         self.owmUnit.setToolTip("Temperature unit (Celsius, Fahrenheit, or Kelvin)")
         self.owmTestAPI.setToolTip("Test the OpenWeatherMap API connection with current settings")
+        
+    def _on_mqtt_enabled_changed(self, enabled: bool) -> None:
+        """Handle MQTT enabled checkbox state change"""
+        self.mqttserver.setEnabled(enabled)
+        self.mqttport.setEnabled(enabled)
+        self.mqttuser.setEnabled(enabled)
+        self.mqttpassword.setEnabled(enabled)
+        self.mqttbasetopic.setEnabled(enabled)
         
         # Timer/AIR settings
         for air_num in range(1, 5):

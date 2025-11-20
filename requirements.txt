@@ -4,3 +4,4 @@ PyInstaller
 pytest
 pytest-asyncio
 websockets>=12.0
+paho-mqtt>=1.6.0

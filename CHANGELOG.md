@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [TBA]
 ### Added
+- MQTT integration with Home Assistant Autodiscovery support
+- MQTT: LED switches (LED1-4) for controlling LEDs via MQTT
+- MQTT: AIR timer switches (AIR1-4) for starting/stopping timers
+- MQTT: AIR timer sensors (AIR1-4 Time) for displaying elapsed time in seconds
+- MQTT: Reset buttons (AIR3/AIR4 Reset) for resetting timers
+- MQTT: Text entities (NOW, NEXT, WARN) for setting text fields
+- MQTT: Automatic status updates after state changes
+- MQTT: Automatic reconnection and autodiscovery re-publishing on reconnect
+- Settings: MQTT configuration (Server, Port, Username, Password, Base Topic)
 - Web-UI: Dark Mode support with theme toggle button and automatic persistence
 - Web-UI: Warning priority system with support for NTP warnings (priority -1), normal warnings (priority 0), medium priority (1), and high priority (2)
 - Web-UI: Display NTP warnings in Current Status section with blue color coding
