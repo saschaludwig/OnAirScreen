@@ -297,7 +297,7 @@ class Settings(QWidget, Ui_Settings):
 
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
         self.updateCheckNowButton.clicked.connect(self.trigger_manual_check_for_updates)
-        
+
         # MQTT checkbox connection
         self.enablemqtt.toggled.connect(self._on_mqtt_enabled_changed)
 

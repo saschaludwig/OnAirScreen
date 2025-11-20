@@ -1533,7 +1533,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         except (RuntimeError, AttributeError):
             # Ignore errors when object is not fully initialized (e.g., in tests)
             pass
-    
+
     def _set_text(self, widget_name: str, text: str) -> None:
         """
         Generic method to set text on a widget
