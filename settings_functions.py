@@ -56,7 +56,7 @@ from weatherwidget import WeatherWidget as ww
 from defaults import *  # noqa: F403, F405
 
 try:
-    from distribution import distributionString, update_url
+    from distribution import distributionString, update_url # type: ignore
 except ModuleNotFoundError:
     distributionString = "OpenSource"
     update_url = "https://customer.astrastudio.de/updatemanager/c"
