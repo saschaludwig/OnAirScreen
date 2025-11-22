@@ -2580,3 +2580,143 @@ class TestUnsetLed:
         
         mock_main_screen.led_logic.assert_called_once_with(4, False)
 
+
+class TestSetLogLevel:
+    """Test set_log_level() function"""
+
+    def test_set_log_level_debug(self):
+        """Test set_log_level() with DEBUG"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("DEBUG")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.DEBUG
+
+    def test_set_log_level_info(self):
+        """Test set_log_level() with INFO"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("INFO")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.INFO
+
+    def test_set_log_level_warning(self):
+        """Test set_log_level() with WARNING"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("WARNING")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.WARNING
+
+    def test_set_log_level_error(self):
+        """Test set_log_level() with ERROR"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("ERROR")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.ERROR
+
+    def test_set_log_level_critical(self):
+        """Test set_log_level() with CRITICAL"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("CRITICAL")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.CRITICAL
+
+    def test_set_log_level_none(self):
+        """Test set_log_level() with NONE"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("NONE")
+        root_logger = logging.getLogger()
+        # NONE should be CRITICAL + 1
+        assert root_logger.level == logging.CRITICAL + 1
+
+    def test_set_log_level_case_insensitive(self):
+        """Test set_log_level() is case-insensitive"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("debug")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.DEBUG
+        
+        set_log_level("Info")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.INFO
+        
+        set_log_level("WARNING")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.WARNING
+
+    def test_set_log_level_invalid_fallback(self):
+        """Test set_log_level() with invalid level falls back to INFO"""
+        import logging
+        from start import set_log_level
+        
+        set_log_level("INVALID")
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.INFO
+
+    def test_set_log_level_handler_creation(self):
+        """Test set_log_level() creates handler when none exists"""
+        import logging
+        from start import set_log_level
+        
+        root_logger = logging.getLogger()
+        # Remove all handlers
+        root_logger.handlers.clear()
+        
+        set_log_level("DEBUG")
+        
+        # Should have created a handler
+        assert len(root_logger.handlers) > 0
+        handler = root_logger.handlers[0]
+        assert isinstance(handler, logging.StreamHandler)
+        assert handler.formatter is not None
+
+    def test_set_log_level_handler_format(self):
+        """Test set_log_level() handler has correct format"""
+        import logging
+        from start import set_log_level
+        
+        root_logger = logging.getLogger()
+        root_logger.handlers.clear()
+        
+        set_log_level("INFO")
+        
+        handler = root_logger.handlers[0]
+        formatter = handler.formatter
+        format_string = formatter._fmt
+        
+        # Check format contains expected fields
+        assert '%(asctime)s' in format_string
+        assert '%(name)s' in format_string
+        assert '%(levelname)s' in format_string
+        assert '%(message)s' in format_string
+
+    def test_set_log_level_no_handler_duplication(self):
+        """Test set_log_level() doesn't create duplicate handlers"""
+        import logging
+        from start import set_log_level
+        
+        root_logger = logging.getLogger()
+        root_logger.handlers.clear()
+        
+        # First call creates handler
+        set_log_level("DEBUG")
+        handler_count_1 = len(root_logger.handlers)
+        
+        # Second call should not create another handler
+        set_log_level("INFO")
+        handler_count_2 = len(root_logger.handlers)
+        
+        assert handler_count_1 == handler_count_2
+
