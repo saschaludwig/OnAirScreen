@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [TBA]
 ### Added
+- Refactoring: Extracted NTP management to ntp_manager.py module
+- Refactoring: Extracted font loading to font_loader.py module
+- Refactoring: Extracted signal handlers to signal_handlers.py module
+- Refactoring: Extracted system operations to system_operations.py module
+- Refactoring: Extracted status export to status_exporter.py module
+- Refactoring: Extracted UI updates to ui_updater.py module
+- Refactoring: Extracted hotkey management to hotkey_manager.py module
+- Refactoring: Extracted logging configuration to logging_config.py module
 - Error Handling: Unified error handling system with custom exception hierarchy
 - Error Handling: Custom exceptions for all error types (Network, Command, Configuration, Validation, API, Encoding, Widget)
 - Error Handling: Consistent logging strategy with log_exception() helper function
@@ -39,8 +47,21 @@ All notable changes to this project will be documented in this file.
 - Security: Command value validation for LED, AIR, CMD commands (validates allowed values)
 - Security: Length limits for text inputs (500 chars for NOW/NEXT/WARN, 1000 for CONF)
 - Security: Input validation for CONF commands (stationname, slogan, LED text, AIR text)
+- Refactoring: Extracted NTP management to ntp_manager.py module
+- Refactoring: Extracted font loading to font_loader.py module
+- Refactoring: Extracted signal handlers to signal_handlers.py module
+- Refactoring: Extracted system operations to system_operations.py module
+- Refactoring: Extracted status export to status_exporter.py module
+- Refactoring: Extracted UI updates to ui_updater.py module
+- Refactoring: Extracted hotkey management to hotkey_manager.py module
+- Refactoring: Extracted logging configuration to logging_config.py module
 
 ### Changed
+- Refactoring: Reduced start.py from 1711 lines to ~1415 lines by extracting logical components into separate modules
+- Refactoring: Improved code modularity and maintainability by separating concerns into dedicated modules
+- Refactoring: All tests updated to use new modular structure (583 tests passing)
+- Code Quality: Removed unnecessary backward compatibility code after refactoring
+- Code Quality: Simplified initialization code using for loops for LED and AIR timer setup
 - Error Handling: Replaced generic Exception handling with specific custom exceptions throughout codebase
 - Error Handling: Standardized error logging with consistent format and context information
 - Error Handling: Improved HTTP error responses with appropriate status codes based on error types
