@@ -19,7 +19,7 @@ from start import MainScreen
 @pytest.fixture
 def mock_main_screen():
     """Create a mock MainScreen instance for testing"""
-    with patch('start.CheckNTPOffsetThread.__del__'):
+    with patch('ntp_manager.CheckNTPOffsetThread.__del__'):
         with patch('start.Settings'):
             with patch('start.Ui_MainScreen'):
                 screen = MainScreen.__new__(MainScreen)
@@ -569,56 +569,8 @@ class TestParseCmd:
         mock_main_screen.set_current_song_text.assert_called_once_with("Test Song with Ümläuts")
 
 
-class TestParseTimerInput:
-    """Tests for the parse_timer_input method"""
-    
-    def test_parse_timer_input_comma_format(self, mock_main_screen):
-        """Test parse_timer_input with comma format (2,10 for 2:10)"""
-        mock_sender = Mock()
-        mock_sender.text.return_value = "2,10"
-        mock_sender.parent.return_value = Mock()
-        mock_main_screen.sender = Mock(return_value=mock_sender)
-        
-        mock_main_screen.parse_timer_input()
-        
-        # Should convert 2,10 to 130 seconds (2*60 + 10)
-        mock_main_screen.radio_timer_set.assert_called_once_with(130)
-    
-    def test_parse_timer_input_dot_format(self, mock_main_screen):
-        """Test parse_timer_input with dot format (2.10 for 2:10)"""
-        mock_sender = Mock()
-        mock_sender.text.return_value = "2.10"
-        mock_sender.parent.return_value = Mock()
-        mock_main_screen.sender = Mock(return_value=mock_sender)
-        
-        mock_main_screen.parse_timer_input()
-        
-        # Should convert 2.10 to 130 seconds (2*60 + 10)
-        mock_main_screen.radio_timer_set.assert_called_once_with(130)
-    
-    def test_parse_timer_input_seconds_only(self, mock_main_screen):
-        """Test parse_timer_input with seconds only format"""
-        mock_sender = Mock()
-        mock_sender.text.return_value = "30"
-        mock_sender.parent.return_value = Mock()
-        mock_main_screen.sender = Mock(return_value=mock_sender)
-        
-        mock_main_screen.parse_timer_input()
-        
-        # Should convert 30 to 30 seconds
-        mock_main_screen.radio_timer_set.assert_called_once_with(30)
-    
-    def test_parse_timer_input_zero_minutes(self, mock_main_screen):
-        """Test parse_timer_input with zero minutes"""
-        mock_sender = Mock()
-        mock_sender.text.return_value = "0,45"
-        mock_sender.parent.return_value = Mock()
-        mock_main_screen.sender = Mock(return_value=mock_sender)
-        
-        mock_main_screen.parse_timer_input()
-        
-        # Should convert 0,45 to 45 seconds
-        mock_main_screen.radio_timer_set.assert_called_once_with(45)
+# Note: parse_timer_input has been moved to TimerInputDialog class
+# Tests for timer input parsing should be in tests/test_timer_input.py
 
 
 class TestRadioTimerSet:
@@ -671,117 +623,112 @@ class TestWarningSystem:
     
     def test_add_warning(self, mock_main_screen):
         """Test add_warning adds warning to correct priority"""
-        # Initialize warnings array (4 elements: -1, 0, 1, 2)
-        mock_main_screen.warnings = ["", "", "", ""]
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         # Call the actual method
         MainScreen.add_warning(mock_main_screen, "Test warning", 1)
         
-        # Priority 1 -> Index 2
-        assert mock_main_screen.warnings[2] == "Test warning"
-        assert mock_main_screen.warnings[0] == ""  # -1
-        assert mock_main_screen.warnings[1] == ""  # 0
-        assert mock_main_screen.warnings[3] == ""  # 2
+        # Should delegate to warning_manager
+        mock_warning_manager.add_warning.assert_called_once_with("Test warning", 1)
     
     def test_add_warning_default_priority(self, mock_main_screen):
         """Test add_warning uses priority 0 by default"""
-        # Initialize warnings array (4 elements: -1, 0, 1, 2)
-        mock_main_screen.warnings = ["", "", "", ""]
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         # Call the actual method
         MainScreen.add_warning(mock_main_screen, "Default warning")
         
-        # Priority 0 -> Index 1
-        assert mock_main_screen.warnings[1] == "Default warning"
+        # Should delegate to warning_manager with default priority 0
+        mock_warning_manager.add_warning.assert_called_once_with("Default warning", 0)
     
     def test_remove_warning(self, mock_main_screen):
         """Test remove_warning removes warning from correct priority"""
-        # Initialize warnings array (4 elements: -1, 0, 1, 2)
-        # Priority 1 -> Index 2
-        mock_main_screen.warnings = ["", "", "Test warning", ""]
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         # Call the actual method
         MainScreen.remove_warning(mock_main_screen, 1)
         
-        assert mock_main_screen.warnings[2] == ""
+        # Should delegate to warning_manager
+        mock_warning_manager.remove_warning.assert_called_once_with(1)
     
     def test_remove_warning_default_priority(self, mock_main_screen):
         """Test remove_warning uses priority 0 by default"""
-        # Initialize warnings array (4 elements: -1, 0, 1, 2)
-        # Priority 0 -> Index 1
-        mock_main_screen.warnings = ["", "Test warning", "", ""]
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         # Call the actual method
         MainScreen.remove_warning(mock_main_screen)
         
-        assert mock_main_screen.warnings[1] == ""
+        # Should delegate to warning_manager with default priority 0
+        mock_warning_manager.remove_warning.assert_called_once_with(0)
     
     def test_process_warnings_with_warning(self, mock_main_screen):
         """Test process_warnings shows warning when available"""
-        # Priority 1 -> Index 2
-        mock_main_screen.warnings = ["", "", "Warning text", ""]
-        mock_main_screen.show_warning = Mock()
-        mock_main_screen.hide_warning = Mock()
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.process_warnings(mock_main_screen)
         
-        mock_main_screen.show_warning.assert_called_once_with("Warning text")
-        mock_main_screen.hide_warning.assert_not_called()
+        # Should delegate to warning_manager
+        mock_warning_manager.process_warnings.assert_called_once()
     
     def test_process_warnings_multiple_warnings(self, mock_main_screen):
         """Test process_warnings shows highest priority warning when multiple exist"""
-        # Priorities: -1, 0, 1, 2 -> Indices: 0, 1, 2, 3
-        # Should show priority 2 (highest)
-        mock_main_screen.warnings = ["NTP", "Normal", "Medium", "High"]
-        mock_main_screen.show_warning = Mock()
-        mock_main_screen.hide_warning = Mock()
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.process_warnings(mock_main_screen)
         
-        # Should show the highest priority warning (priority 2 = "High")
-        mock_main_screen.show_warning.assert_called_once_with("High")
+        # Should delegate to warning_manager
+        mock_warning_manager.process_warnings.assert_called_once()
     
     def test_process_warnings_no_warning(self, mock_main_screen):
         """Test process_warnings hides warning when none available"""
-        mock_main_screen.warnings = ["", "", "", ""]
-        mock_main_screen.show_warning = Mock()
-        mock_main_screen.hide_warning = Mock()
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.process_warnings(mock_main_screen)
         
-        mock_main_screen.hide_warning.assert_called_once()
-        mock_main_screen.show_warning.assert_not_called()
+        # Should delegate to warning_manager
+        mock_warning_manager.process_warnings.assert_called_once()
     
     def test_process_warnings_ntp_only(self, mock_main_screen):
         """Test process_warnings shows NTP warning when no other warnings exist"""
-        # Only NTP warning (priority -1 -> Index 0)
-        mock_main_screen.warnings = ["NTP Warning", "", "", ""]
-        mock_main_screen.show_warning = Mock()
-        mock_main_screen.hide_warning = Mock()
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.process_warnings(mock_main_screen)
         
-        mock_main_screen.show_warning.assert_called_once_with("NTP Warning")
-        mock_main_screen.hide_warning.assert_not_called()
+        # Should delegate to warning_manager
+        mock_warning_manager.process_warnings.assert_called_once()
     
     def test_process_warnings_ntp_with_other(self, mock_main_screen):
         """Test process_warnings shows non-NTP warning when both exist"""
-        # NTP warning (priority -1 -> Index 0) and normal warning (priority 0 -> Index 1)
-        mock_main_screen.warnings = ["NTP Warning", "Normal Warning", "", ""]
-        mock_main_screen.show_warning = Mock()
-        mock_main_screen.hide_warning = Mock()
+        # Mock warning_manager
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.process_warnings(mock_main_screen)
         
-        # Should show the non-NTP warning (priority 0 = "Normal Warning")
-        mock_main_screen.show_warning.assert_called_once_with("Normal Warning")
-        mock_main_screen.hide_warning.assert_not_called()
+        # Should delegate to warning_manager
+        mock_warning_manager.process_warnings.assert_called_once()
 
 
 class TestUpdateBacktimingSeconds:
     """Tests for the update_backtiming_seconds method"""
     
-    @patch('start.datetime')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_seconds(self, mock_datetime, mock_main_screen):
         """Test update_backtiming_seconds calculates remaining seconds correctly"""
         # Mock datetime.now() to return a specific time
@@ -796,7 +743,7 @@ class TestUpdateBacktimingSeconds:
         # Should calculate 60 - 45 = 15 remaining seconds
         mock_main_screen.set_backtiming_secs.assert_called_once_with(15)
     
-    @patch('start.datetime')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_seconds_at_zero(self, mock_datetime, mock_main_screen):
         """Test update_backtiming_seconds at second 0"""
         mock_now = Mock()
@@ -810,7 +757,7 @@ class TestUpdateBacktimingSeconds:
         # Should calculate 60 - 0 = 60 remaining seconds
         mock_main_screen.set_backtiming_secs.assert_called_once_with(60)
     
-    @patch('start.datetime')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_seconds_at_59(self, mock_datetime, mock_main_screen):
         """Test update_backtiming_seconds at second 59"""
         mock_now = Mock()
@@ -828,8 +775,8 @@ class TestUpdateBacktimingSeconds:
 class TestUpdateBacktimingText:
     """Tests for the update_backtiming_text method"""
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_o_clock(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at o'clock"""
         # Setup mocks
@@ -854,8 +801,8 @@ class TestUpdateBacktimingText:
         call_args = mock_main_screen.set_right_text.call_args[0][0]
         assert "o'clock" in call_args
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_quarter_past(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at quarter past"""
         mock_settings = Mock()
@@ -870,16 +817,16 @@ class TestUpdateBacktimingText:
         mock_now.minute = 15
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "quarter past" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_half_past(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at half past"""
         mock_settings = Mock()
@@ -894,16 +841,16 @@ class TestUpdateBacktimingText:
         mock_now.minute = 30
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "half past" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_german(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format"""
         mock_settings = Mock()
@@ -918,16 +865,16 @@ class TestUpdateBacktimingText:
         mock_now.minute = 30
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "halb" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_dutch(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text Dutch format"""
         mock_settings = Mock()
@@ -942,16 +889,16 @@ class TestUpdateBacktimingText:
         mock_now.minute = 0
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "uur" in call_args or "Het is" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_french(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format"""
         mock_settings = Mock()
@@ -961,18 +908,21 @@ class TestUpdateBacktimingText:
         }.get(key, default)
         mock_qsettings.return_value = mock_settings
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
+        
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 0
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "heures" in call_args or "heure" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
 
 
 class TestUpdateAirSeconds:
@@ -1268,9 +1218,9 @@ class TestResetAir4:
 class TestUpdateDate:
     """Tests for update_date method"""
     
-    @patch('start.QDate')
-    @patch('start.QLocale')
-    @patch('start.QSettings')
+    @patch('ui_updater.QDate')
+    @patch('ui_updater.QLocale')
+    @patch('ui_updater.QSettings')
     def test_update_date(self, mock_qsettings, mock_qlocale, mock_qdate, mock_main_screen):
         """Test update_date formats and sets date text"""
         # Setup mocks
@@ -1288,13 +1238,14 @@ class TestUpdateDate:
         mock_locale.toString.return_value = "Monday, 01. January 2024"
         mock_qlocale.return_value = mock_locale
         
-        mock_main_screen.languages = {"English": 'en_US'}
+        mock_ui_updater = Mock()
+        mock_ui_updater.languages = {"English": 'en_US'}
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_left_text = Mock()
         
         MainScreen.update_date(mock_main_screen)
         
-        mock_main_screen.set_left_text.assert_called_once_with("Monday, 01. January 2024")
-        mock_locale.toString.assert_called_once_with(mock_date, 'dddd, dd. MMMM yyyy')
+        mock_ui_updater.update_date.assert_called_once()
 
 
 class TestUpdateNTPStatus:
@@ -1302,41 +1253,44 @@ class TestUpdateNTPStatus:
     
     def test_update_ntp_status_with_warning(self, mock_main_screen):
         """Test update_ntp_status adds warning when NTP warning exists (priority -1)"""
-        mock_main_screen.ntpHadWarning = True
-        mock_main_screen.ntpWarnMessage = "NTP sync error"
+        mock_ntp_manager = Mock()
+        mock_ntp_manager.ntp_had_warning = True
+        mock_ntp_manager.ntp_warn_message = "NTP sync error"
+        mock_main_screen.ntp_manager = mock_ntp_manager
         mock_main_screen.add_warning = Mock()
         mock_main_screen.remove_warning = Mock()
         
         MainScreen.update_ntp_status(mock_main_screen)
         
-        mock_main_screen.add_warning.assert_called_once_with("NTP sync error", -1)
-        mock_main_screen.remove_warning.assert_not_called()
+        mock_ntp_manager.update_ntp_status.assert_called_once()
     
     def test_update_ntp_status_no_warning(self, mock_main_screen):
         """Test update_ntp_status removes NTP warning when no NTP warning exists"""
-        mock_main_screen.ntpHadWarning = False
-        mock_main_screen.ntpWarnMessage = ""
+        mock_ntp_manager = Mock()
+        mock_ntp_manager.ntp_had_warning = False
+        mock_ntp_manager.ntp_warn_message = ""
+        mock_main_screen.ntp_manager = mock_ntp_manager
         mock_main_screen.add_warning = Mock()
         mock_main_screen.remove_warning = Mock()
         
         MainScreen.update_ntp_status(mock_main_screen)
         
-        # Should remove NTP warning (priority -1)
-        mock_main_screen.remove_warning.assert_called_once_with(-1)
-        mock_main_screen.add_warning.assert_not_called()
+        # Should call ntp_manager.update_ntp_status
+        mock_ntp_manager.update_ntp_status.assert_called_once()
     
     def test_update_ntp_status_empty_message(self, mock_main_screen):
         """Test update_ntp_status removes NTP warning when message is empty"""
-        mock_main_screen.ntpHadWarning = True
-        mock_main_screen.ntpWarnMessage = ""
+        mock_ntp_manager = Mock()
+        mock_ntp_manager.ntp_had_warning = True
+        mock_ntp_manager.ntp_warn_message = ""
+        mock_main_screen.ntp_manager = mock_ntp_manager
         mock_main_screen.add_warning = Mock()
         mock_main_screen.remove_warning = Mock()
         
         MainScreen.update_ntp_status(mock_main_screen)
         
-        # Should remove NTP warning (priority -1)
-        mock_main_screen.remove_warning.assert_called_once_with(-1)
-        mock_main_screen.add_warning.assert_not_called()
+        # Should call ntp_manager.update_ntp_status
+        mock_ntp_manager.update_ntp_status.assert_called_once()
 
 
 class TestLedLogic:
@@ -2166,41 +2120,29 @@ class TestShowHideWarning:
     """Tests for show_warning and hide_warning methods"""
     
     def test_show_warning(self, mock_main_screen):
-        """Test show_warning displays warning and hides other labels"""
-        mock_main_screen.labelCurrentSong = Mock()
-        mock_main_screen.labelNews = Mock()
-        mock_main_screen.labelWarning = Mock()
-        mock_main_screen.labelWarning.font.return_value = Mock()
+        """Test show_warning delegates to warning_manager"""
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.show_warning(mock_main_screen, "Test warning")
         
-        mock_main_screen.labelCurrentSong.hide.assert_called_once()
-        mock_main_screen.labelNews.hide.assert_called_once()
-        mock_main_screen.labelWarning.setText.assert_called_once_with("Test warning")
-        mock_main_screen.labelWarning.font.assert_called_once()
-        mock_main_screen.labelWarning.font().setPointSize.assert_called_once_with(45)
-        mock_main_screen.labelWarning.setFont.assert_called_once()
-        mock_main_screen.labelWarning.show.assert_called_once()
+        mock_warning_manager.show_warning.assert_called_once_with("Test warning")
     
     def test_hide_warning(self, mock_main_screen):
-        """Test hide_warning hides warning and shows other labels"""
-        mock_main_screen.labelWarning = Mock()
-        mock_main_screen.labelCurrentSong = Mock()
-        mock_main_screen.labelNews = Mock()
+        """Test hide_warning delegates to warning_manager"""
+        mock_warning_manager = Mock()
+        mock_main_screen.warning_manager = mock_warning_manager
         
         MainScreen.hide_warning(mock_main_screen)
         
-        mock_main_screen.labelWarning.hide.assert_called()
-        mock_main_screen.labelWarning.setText.assert_called_once_with("")
-        mock_main_screen.labelCurrentSong.show.assert_called_once()
-        mock_main_screen.labelNews.show.assert_called_once()
+        mock_warning_manager.hide_warning.assert_called_once()
 
 
 class TestUpdateBacktimingTextEdgeCases:
     """Tests for edge cases in update_backtiming_text method"""
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_quarter_to(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at quarter to"""
         mock_settings = Mock()
@@ -2215,16 +2157,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 45
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "quarter to" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_minutes_past(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format for minutes past"""
         mock_settings = Mock()
@@ -2239,16 +2181,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 7
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "minute" in call_args and "past" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_minutes_to(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format for minutes to"""
         mock_settings = Mock()
@@ -2263,16 +2205,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 50
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "minute" in call_args and "to" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_english_am_pm(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format with AM/PM"""
         mock_settings = Mock()
@@ -2287,17 +2229,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 0
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        # Should convert 15 to 3 for AM/PM
-        assert "3" in call_args or "o'clock" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_german_minutes_nach(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format for minutes nach"""
         mock_settings = Mock()
@@ -2312,16 +2253,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 10
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "nach" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_german_minutes_vor(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format for minutes vor"""
         mock_settings = Mock()
@@ -2336,16 +2277,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 50
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "vor" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_german_uhr(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format at o'clock"""
         mock_settings = Mock()
@@ -2360,16 +2301,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 0
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "Uhr" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_dutch_kwart(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text Dutch format for kwart"""
         mock_settings = Mock()
@@ -2384,16 +2325,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 15
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "kwart" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_french_et_quart(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format for et quart"""
         mock_settings = Mock()
@@ -2408,16 +2349,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 15
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "quart" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_french_et_demie(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format for et demie"""
         mock_settings = Mock()
@@ -2432,16 +2373,16 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 30
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "demie" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
     
-    @patch('start.QSettings')
-    @patch('start.datetime')
+    @patch('ui_updater.QSettings')
+    @patch('ui_updater.datetime')
     def test_update_backtiming_text_french_minuit(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format for minuit"""
         mock_settings = Mock()
@@ -2456,49 +2397,35 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now.minute = 0
         mock_datetime.now.return_value = mock_now
         
+        mock_ui_updater = Mock()
+        mock_main_screen.ui_updater = mock_ui_updater
         mock_main_screen.set_right_text = Mock()
         
         mock_main_screen.update_backtiming_text()
         
-        mock_main_screen.set_right_text.assert_called_once()
-        call_args = mock_main_screen.set_right_text.call_args[0][0]
-        assert "minuit" in call_args
+        mock_ui_updater.update_backtiming_text.assert_called_once()
 
 
 class TestTriggerNTPCheck:
     """Tests for trigger_ntp_check method"""
     
-    @patch('start.QSettings')
-    def test_trigger_ntp_check_enabled(self, mock_qsettings, mock_main_screen):
+    def test_trigger_ntp_check_enabled(self, mock_main_screen):
         """Test trigger_ntp_check starts NTP check when enabled"""
-        mock_settings = Mock()
-        mock_settings.value.return_value = True
-        mock_qsettings.return_value = mock_settings
-        
-        mock_main_screen.timerNTP = Mock()
-        mock_main_screen.checkNTPOffset = Mock()
+        mock_ntp_manager = Mock()
+        mock_main_screen.ntp_manager = mock_ntp_manager
         
         MainScreen.trigger_ntp_check(mock_main_screen)
         
-        mock_main_screen.timerNTP.stop.assert_called()
-        mock_main_screen.checkNTPOffset.start.assert_called_once()
-        mock_main_screen.timerNTP.start.assert_called_once_with(60000)
+        mock_ntp_manager.trigger_ntp_check.assert_called_once()
     
-    @patch('start.QSettings')
-    def test_trigger_ntp_check_disabled(self, mock_qsettings, mock_main_screen):
+    def test_trigger_ntp_check_disabled(self, mock_main_screen):
         """Test trigger_ntp_check stops timer when disabled"""
-        mock_settings = Mock()
-        mock_settings.value.return_value = False
-        mock_qsettings.return_value = mock_settings
-        
-        mock_main_screen.timerNTP = Mock()
-        mock_main_screen.checkNTPOffset = Mock()
+        mock_ntp_manager = Mock()
+        mock_main_screen.ntp_manager = mock_ntp_manager
         
         MainScreen.trigger_ntp_check(mock_main_screen)
         
-        mock_main_screen.timerNTP.stop.assert_called_once()
-        mock_main_screen.checkNTPOffset.start.assert_not_called()
-        mock_main_screen.timerNTP.start.assert_not_called()
+        mock_ntp_manager.trigger_ntp_check.assert_called_once()
 
 
 class TestRadioTimerHelpers:

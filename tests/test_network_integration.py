@@ -33,7 +33,7 @@ from utils import settings_group
 @pytest.fixture
 def mock_main_screen():
     """Create a mock MainScreen instance for testing"""
-    with patch('start.CheckNTPOffsetThread.__del__'):
+    with patch('ntp_manager.CheckNTPOffsetThread.__del__'):
         with patch('start.Settings'):
             with patch('start.Ui_MainScreen'):
                 screen = MainScreen.__new__(MainScreen)

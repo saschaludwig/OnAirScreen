@@ -45,6 +45,7 @@ And if you need extended support, please contact me.
  * Tooltips for all settings widgets
  * Preset/Profile management for saving and loading configurations
  * Unified error handling system with custom exceptions for better error tracking and debugging
+ * Modular architecture with separated concerns (NTP, UI updates, system operations, etc.)
  * Weather Widget
  * static or blinking colon in digital clock mode
  * OnAir Timer, Stopwatch, Countdown and more

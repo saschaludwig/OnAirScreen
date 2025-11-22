@@ -55,6 +55,7 @@ from version import versionString
 from weatherwidget import WeatherWidget as ww
 from defaults import *  # noqa: F403, F405
 from exceptions import SettingsError, InvalidConfigValueError, log_exception
+from PyQt6.QtGui import QPixmap
 
 try:
     from distribution import distributionString, update_url # type: ignore
@@ -1916,4 +1917,191 @@ class Settings(QWidget, Ui_Settings):
                 "Delete Failed",
                 f"Failed to delete preset '{preset_name}'.\n\nPlease check the logs for details."
             )
+
+
+class SettingsRestorer:
+    """
+    Helper class for restoring settings from configuration to MainScreen widgets
+    
+    This class provides methods to restore various settings groups from QSettings
+    to the MainScreen UI widgets.
+    """
+    
+    def __init__(self, main_screen, settings_instance):
+        """
+        Initialize the settings restorer
+        
+        Args:
+            main_screen: MainScreen instance to restore settings to
+            settings_instance: Settings instance for color conversion methods
+        """
+        self.main_screen = main_screen
+        self.settings = settings_instance
+    
+    def restore_all(self, settings: QSettings) -> None:
+        """Restore all settings from configuration"""
+        self.restore_general(settings)
+        self.restore_led(settings)
+        self.restore_clock(settings)
+        self.restore_formatting(settings)
+        self.restore_weather(settings)
+        self.restore_timer(settings)
+        self.restore_font(settings)
+    
+    def restore_general(self, settings: QSettings) -> None:
+        """
+        Restore general settings (station name, slogan, colors)
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        with settings_group(settings, "General"):
+            self.main_screen.labelStation.setText(settings.value('stationname', DEFAULT_STATION_NAME))
+            self.main_screen.labelSlogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
+            self.main_screen.set_station_color(self.settings.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
+            self.main_screen.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', DEFAULT_SLOGAN_COLOR)))
+    
+    def restore_led(self, settings: QSettings) -> None:
+        """
+        Restore LED settings (text, visibility)
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        for led_num in range(1, 5):
+            with settings_group(settings, f"LED{led_num}"):
+                default_text = DEFAULT_LED_TEXTS.get(led_num, f'LED{led_num}')
+                getattr(self.main_screen, f'set_led{led_num}_text')(settings.value('text', default_text))
+                getattr(self.main_screen, f'buttonLED{led_num}').setVisible(settings.value('used', True, type=bool))
+    
+    def restore_clock(self, settings: QSettings) -> None:
+        """
+        Restore clock widget settings
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        with settings_group(settings, "Clock"):
+            self.main_screen.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
+            self.main_screen.clockWidget.set_digi_hour_color(
+                self.settings.getColorFromName(settings.value('digitalhourcolor', DEFAULT_CLOCK_DIGITAL_HOUR_COLOR)))
+            self.main_screen.clockWidget.set_digi_second_color(
+                self.settings.getColorFromName(settings.value('digitalsecondcolor', DEFAULT_CLOCK_DIGITAL_SECOND_COLOR)))
+            self.main_screen.clockWidget.set_digi_digit_color(
+                self.settings.getColorFromName(settings.value('digitaldigitcolor', DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR)))
+            self.main_screen.clockWidget.set_logo(
+                settings.value('logopath', DEFAULT_CLOCK_LOGO_PATH))
+            self.main_screen.clockWidget.set_show_seconds(settings.value('showSeconds', False, type=bool))
+            self.main_screen.clockWidget.set_one_line_time(settings.value('showSecondsInOneLine', False, type=bool) &
+                                                           settings.value('showSeconds', False, type=bool))
+            self.main_screen.clockWidget.set_static_colon(settings.value('staticColon', False, type=bool))
+            self.main_screen.clockWidget.set_logo_upper(settings.value('logoUpper', False, type=bool))
+            self.main_screen.labelTextRight.setVisible(settings.value('useTextClock', True, type=bool))
+    
+    def restore_formatting(self, settings: QSettings) -> None:
+        """
+        Restore formatting settings (AM/PM, text clock language)
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        with settings_group(settings, "Formatting"):
+            self.main_screen.clockWidget.set_am_pm(settings.value('isAmPm', False, type=bool))
+            self.main_screen.textLocale = settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)
+    
+    def restore_weather(self, settings: QSettings) -> None:
+        """
+        Restore weather widget settings
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        with settings_group(settings, "WeatherWidget"):
+            if settings.value('owmWidgetEnabled', False, type=bool):
+                self.main_screen.weatherWidget.show()
+            else:
+                self.main_screen.weatherWidget.hide()
+    
+    def restore_timer(self, settings: QSettings) -> None:
+        """
+        Restore timer/AIR settings
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        with settings_group(settings, "Timers"):
+            # Configuration for each AIR timer
+            air_timer_configs = [
+                (1, 'TimerAIR1Enabled', 'TimerAIR1Text', 'air1iconpath'),
+                (2, 'TimerAIR2Enabled', 'TimerAIR2Text', 'air2iconpath'),
+                (3, 'TimerAIR3Enabled', 'TimerAIR3Text', 'air3iconpath'),
+                (4, 'TimerAIR4Enabled', 'TimerAIR4Text', 'air4iconpath')
+            ]
+            
+            for air_num, enabled_key, text_key, icon_key in air_timer_configs:
+                text_default = DEFAULT_TIMER_AIR_TEXTS.get(air_num, f'AIR{air_num}')
+                icon_default = DEFAULT_TIMER_AIR_ICON_PATHS.get(air_num, '')
+                if not settings.value(enabled_key, True, type=bool):
+                    led_widget = getattr(self.main_screen, f'AirLED_{air_num}')
+                    led_widget.hide()
+                else:
+                    label_text = settings.value(text_key, text_default)
+                    label_widget = getattr(self.main_screen, f'AirLabel_{air_num}')
+                    icon_widget = getattr(self.main_screen, f'AirIcon_{air_num}')
+                    led_widget = getattr(self.main_screen, f'AirLED_{air_num}')
+                    
+                    label_widget.setText(f"{label_text}\n0:00")
+                    inactive_text_color = settings.value('inactivetextcolor', DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR)
+                    inactive_bg_color = settings.value('inactivebgcolor', DEFAULT_TIMER_AIR_INACTIVE_BG_COLOR)
+                    
+                    # Save icon before setStyleSheet to prevent flickering
+                    with settings_group(settings, "AIR"):
+                        icon_path = settings.value(icon_key, icon_default)
+                        icon_pixmap = QPixmap(icon_path) if icon_path else None
+                    
+                    # Set inactive styles
+                    label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
+                    icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
+                    
+                    # Restore icon immediately after styleSheet change to prevent flickering
+                    if icon_pixmap and not icon_pixmap.isNull():
+                        icon_widget.setPixmap(icon_pixmap)
+                        icon_widget.update()
+                    
+                    led_widget.show()
+            
+            # Set minimum left LED width
+            min_width = settings.value('TimerAIRMinWidth', DEFAULT_TIMER_AIR_MIN_WIDTH, type=int)
+            for air_num in range(1, 5):
+                led_widget = getattr(self.main_screen, f'AirLED_{air_num}')
+                led_widget.setMinimumWidth(min_width)
+    
+    def restore_font(self, settings: QSettings) -> None:
+        """
+        Restore font settings for all widgets
+        
+        Args:
+            settings: QSettings object to read from
+        """
+        with settings_group(settings, "Fonts"):
+            # Font configuration for widgets
+            font_configs = [
+                ('LED1', 'buttonLED1'),
+                ('LED2', 'buttonLED2'),
+                ('LED3', 'buttonLED3'),
+                ('LED4', 'buttonLED4'),
+                ('AIR1', 'AirLabel_1'),
+                ('AIR2', 'AirLabel_2'),
+                ('AIR3', 'AirLabel_3'),
+                ('AIR4', 'AirLabel_4'),
+                ('StationName', 'labelStation'),
+                ('Slogan', 'labelSlogan'),
+            ]
+            
+            for font_prefix, widget_name in font_configs:
+                widget = getattr(self.main_screen, widget_name)
+                font_name = settings.value(f'{font_prefix}FontName', DEFAULT_FONT_NAME)
+                font_size = settings.value(f'{font_prefix}FontSize', 24, type=int)
+                font_weight = settings.value(f'{font_prefix}FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)
+                widget.setFont(QFont(font_name, font_size, font_weight))
 
