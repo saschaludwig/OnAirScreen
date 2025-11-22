@@ -44,6 +44,7 @@ And if you need extended support, please contact me.
  * Command-line option to override log level (--loglevel)
  * Tooltips for all settings widgets
  * Preset/Profile management for saving and loading configurations
+ * Unified error handling system with custom exceptions for better error tracking and debugging
  * Weather Widget
  * static or blinking colon in digital clock mode
  * OnAir Timer, Stopwatch, Countdown and more
@@ -206,4 +207,25 @@ mosquitto_pub -h mqtt-broker -t onairscreen/text/now/set -m "Current Song"
 `CONF:Clock:logopath=PathToLogo`<br>
 `CONF:Network:udpport=PORT`<br>
 `CONF:Network:tcpport=PORT`<br>
+
+## Error Handling
+
+OnAirScreen uses a unified error handling system with custom exceptions for consistent error tracking and debugging:
+
+- **Network Errors**: `UdpError`, `HttpError`, `WebSocketError`, `MqttError`, `PortInUseError`, `PermissionDeniedError`
+- **Command Errors**: `CommandParseError`, `CommandValidationError`, `UnknownCommandError`, `InvalidCommandFormatError`
+- **Configuration Errors**: `SettingsError`, `InvalidConfigValueError`
+- **Validation Errors**: `TextValidationError`, `ColorValidationError`, `ValueValidationError`
+- **API Errors**: `WeatherApiError`, `JsonParseError`, `JsonSerializationError`
+- **Encoding Errors**: `EncodingError`
+- **Widget Errors**: `WidgetAccessError`
+
+All exceptions inherit from `OnAirScreenError` and include context information for better debugging. The `log_exception()` helper function provides consistent logging across the application.
+
+HTTP error responses are automatically mapped to appropriate status codes:
+- Validation/Parse errors → 400 (Bad Request)
+- Unknown commands → 404 (Not Found)
+- Port/Permission errors → 503 (Service Unavailable)
+- Serialization errors → 500 (Internal Server Error)
+
 `CONF:CONF:APPLY=TRUE`<br>
