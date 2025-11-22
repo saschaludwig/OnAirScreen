@@ -45,6 +45,12 @@ import logging
 import re
 from typing import Callable, Optional, TYPE_CHECKING
 
+from exceptions import (
+    CommandParseError, CommandValidationError, UnknownCommandError,
+    InvalidCommandFormatError, EncodingError, TextValidationError,
+    log_exception
+)
+
 if TYPE_CHECKING:
     from start import MainScreen
 
@@ -241,10 +247,19 @@ class CommandHandler:
         try:
             (command, value) = data.decode('utf_8').split(':', 1)
         except ValueError:
-            logger.warning("Invalid command format: missing colon separator")
+            error = InvalidCommandFormatError(
+                "Invalid command format: missing colon separator",
+                command_data=data.decode('utf-8', errors='replace')
+            )
+            log_exception(logger, error, use_exc_info=False)
             return False
         except UnicodeDecodeError as e:
-            logger.error(f"Invalid UTF-8 encoding in command: {e}")
+            error = EncodingError(
+                f"Invalid UTF-8 encoding in command: {e}",
+                encoding="utf-8",
+                data=data
+            )
+            log_exception(logger, error, use_exc_info=False)
             return False
 
         command = str(command).strip()
@@ -254,7 +269,16 @@ class CommandHandler:
         try:
             value = validate_command_value(value, command)
         except Exception as e:
-            logger.error(f"Error validating command value for {command}: {e}")
+            from exceptions import OnAirScreenError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e, use_exc_info=False)
+            else:
+                error = CommandValidationError(
+                    f"Error validating command value for {command}: {e}",
+                    command=command,
+                    value=value
+                )
+                log_exception(logger, error, use_exc_info=False)
             return False
         
         # Use command dispatch map for simple commands
@@ -268,7 +292,8 @@ class CommandHandler:
             return self._handle_conf_command(value)
         
         # Unknown command
-        logger.warning(f"Unknown command: {command}")
+        error = UnknownCommandError(command)
+        log_exception(logger, error, use_exc_info=False)
         return False
     
     def _get_command_handler(self, command: str) -> Optional[Callable[[str], None]]:
@@ -418,7 +443,12 @@ class CommandHandler:
         try:
             self.main_screen.radio_timer_set(int(value))
         except (ValueError, OverflowError) as e:
-            logger.error(f"ERROR: invalid AIR3TIME value: {e}")
+            error = CommandValidationError(
+                f"ERROR: invalid AIR3TIME value: {e}",
+                command="AIR3TIME",
+                value=value
+            )
+            log_exception(logger, error, use_exc_info=False)
     
     def _handle_air4_command(self, value: str) -> None:
         """
@@ -488,7 +518,12 @@ class CommandHandler:
             logger.debug(f"Set {setting_name} to color '{normalized}'")
             
         except Exception as e:
-            logger.error(f"Error setting color for {setting_name}: {e}", exc_info=True)
+            from exceptions import OnAirScreenError, ColorValidationError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = ColorValidationError(f"Error setting color for {setting_name}: {e}", color_value=color_str)
+                log_exception(logger, error)
     
     def _handle_conf_command(self, value: str) -> bool:
         """
@@ -504,7 +539,11 @@ class CommandHandler:
             (group, paramvalue) = value.split(':', 1)
             (param, content) = paramvalue.split('=', 1)
         except ValueError:
-            logger.warning(f"Invalid CONF command format: '{value}', expected 'GROUP:PARAM=VALUE'")
+            error = InvalidCommandFormatError(
+                f"Invalid CONF command format: '{value}', expected 'GROUP:PARAM=VALUE'",
+                command_data=value
+            )
+            log_exception(logger, error, use_exc_info=False)
             return False
 
         # Validate group and param names (basic sanitization)

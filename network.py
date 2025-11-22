@@ -57,6 +57,10 @@ from PyQt6.QtNetwork import QUdpSocket, QHostAddress
 from utils import settings_group
 from settings_functions import versionString
 from defaults import DEFAULT_UDP_PORT, DEFAULT_HTTP_PORT, DEFAULT_MULTICAST_ADDRESS
+from exceptions import (
+    UdpError, HttpError, WebSocketError, PortInUseError, PermissionDeniedError,
+    CommandParseError, InvalidCommandFormatError, EncodingError, JsonSerializationError, log_exception
+)
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -134,8 +138,14 @@ class UdpServer:
                 raise RuntimeError(error_msg)
             logger.info(f"UDP socket bound to port {port}")
         except Exception as e:
-            logger.error(f"Error binding UDP socket to port {port}: {e}")
-            raise
+            from exceptions import OnAirScreenError, UdpError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+                raise
+            else:
+                error = UdpError(f"Error binding UDP socket to port {port}: {e}")
+                log_exception(logger, error)
+                raise error
         
         if QHostAddress(multicast_address).isMulticast():
             try:
@@ -243,15 +253,22 @@ class UdpServer:
                             else:
                                 self.command_callback(line)
                         except Exception as callback_error:
-                            logger.error(f"Error in UDP command callback from {host}:{port}: {callback_error}")
+                            error = CommandParseError(
+                                f"Error in UDP command callback from {host}:{port}",
+                                command_data=str(line) if line else None
+                            )
+                            log_exception(logger, error, {"host": str(host), "port": port})
                 except OSError as socket_error:
-                    logger.error(f"Socket error reading UDP datagram: {socket_error}")
+                    error = UdpError(f"Socket error reading UDP datagram: {socket_error}")
+                    log_exception(logger, error)
                     break
                 except Exception as read_error:
-                    logger.error(f"Error reading UDP datagram: {read_error}")
+                    error = UdpError(f"Error reading UDP datagram: {read_error}")
+                    log_exception(logger, error)
                     break
         except Exception as e:
-            logger.error(f"Unexpected error in UDP data handler: {e}")
+            error = UdpError(f"Unexpected error in UDP data handler: {e}")
+            log_exception(logger, error)
 
 
 class HttpDaemon(QThread):
@@ -307,15 +324,20 @@ class HttpDaemon(QThread):
             self._server.serve_forever()
         except OSError as error:
             if error.errno == 98 or "Address already in use" in str(error):
-                logger.error(f"HTTP Server port {port} is already in use. Please choose a different port or stop the conflicting service.")
+                port_error = PortInUseError(port, "TCP")
+                log_exception(logger, port_error)
             elif error.errno == 13 or "Permission denied" in str(error):
-                logger.error(f"Permission denied binding to HTTP port {port}. Try using a port above 1024 or run with appropriate permissions.")
+                perm_error = PermissionDeniedError(port, "TCP")
+                log_exception(logger, perm_error)
             else:
-                logger.error(f"OS error starting HTTP Server on port {port}: {error}")
+                http_error = HttpError(f"OS error starting HTTP Server on port {port}: {error}", status_code=500)
+                log_exception(logger, http_error)
         except socket.error as socket_error:
-            logger.error(f"Socket error starting HTTP Server on port {port}: {socket_error}")
+            http_error = HttpError(f"Socket error starting HTTP Server on port {port}: {socket_error}", status_code=500)
+            log_exception(logger, http_error)
         except Exception as error:
-            logger.error(f"Unexpected error starting HTTP Server on port {port}: {error}", exc_info=True)
+            http_error = HttpError(f"Unexpected error starting HTTP Server on port {port}: {error}", status_code=500)
+            log_exception(logger, http_error)
 
     def stop(self) -> None:
         """
@@ -352,7 +374,43 @@ class HttpDaemon(QThread):
             else:
                 logger.debug("HTTP server not initialized, nothing to stop")
         except Exception as e:
-            logger.error(f"Unexpected error stopping HTTP server: {e}")
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Unexpected error stopping HTTP server: {e}")
+                log_exception(logger, error)
+
+
+def _exception_to_http_status(exception: Exception) -> int:
+    """
+    Map exception types to HTTP status codes
+    
+    Args:
+        exception: Exception to map
+        
+    Returns:
+        HTTP status code
+    """
+    from exceptions import (
+        CommandValidationError, TextValidationError, CommandParseError,
+        InvalidCommandFormatError, UnknownCommandError, PortInUseError,
+        PermissionDeniedError, JsonSerializationError, HttpError
+    )
+    
+    if isinstance(exception, HttpError):
+        return exception.status_code
+    elif isinstance(exception, (CommandValidationError, TextValidationError, 
+                                  CommandParseError, InvalidCommandFormatError)):
+        return 400  # Bad Request
+    elif isinstance(exception, UnknownCommandError):
+        return 404  # Not Found
+    elif isinstance(exception, (PortInUseError, PermissionDeniedError)):
+        return 503  # Service Unavailable
+    elif isinstance(exception, JsonSerializationError):
+        return 500  # Internal Server Error
+    else:
+        return 500  # Internal Server Error
 
 
 class OASHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -473,8 +531,14 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                     try:
                         command_bytes = message.encode('utf-8')
                     except UnicodeEncodeError as encode_error:
-                        logger.error(f"Encoding error encoding command '{message}': {encode_error}")
-                        self.send_error(400, f'Invalid character encoding in command: {str(encode_error)}')
+                        error = EncodingError(
+                            f"Encoding error encoding command: {encode_error}",
+                            encoding="utf-8",
+                            data=message.encode('utf-8', errors='ignore') if message else None
+                        )
+                        log_exception(logger, error, use_exc_info=False)
+                        status_code = _exception_to_http_status(error)
+                        self.send_error(status_code, str(error))
                         return
                     
                     if not self.command_signal:
@@ -492,16 +556,29 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                         response_json = json.dumps({'status': 'ok', 'command': message})
                         self.wfile.write(response_json.encode('utf-8'))
                     except (TypeError, ValueError) as json_error:
-                        logger.error(f"JSON serialization error: {json_error}")
-                        self.send_error(500, 'Error serializing response')
+                        error = JsonSerializationError(
+                            f"JSON serialization error: {json_error}",
+                            data={'status': 'ok', 'command': message}
+                        )
+                        log_exception(logger, error, use_exc_info=False)
+                        status_code = _exception_to_http_status(error)
+                        self.send_error(status_code, str(error))
                         return
                     except (OSError, BrokenPipeError) as write_error:
                         logger.warning(f"Error writing response to client: {write_error}")
                         # Client may have disconnected, which is not critical
                     return
                 except Exception as e:
-                    logger.error(f"Error processing command: {e}", exc_info=True)
-                    self.send_error(500, f'Error processing command: {str(e)}')
+                    from exceptions import OnAirScreenError
+                    if isinstance(e, OnAirScreenError):
+                        log_exception(logger, e)
+                        status_code = _exception_to_http_status(e)
+                        self.send_error(status_code, str(e))
+                    else:
+                        # Wrap unexpected exceptions
+                        error = HttpError(f"Error processing command: {e}", status_code=500)
+                        log_exception(logger, error)
+                        self.send_error(500, str(error))
                     return
             
             # Fallback to UDP forwarding if MainScreen not available
@@ -521,18 +598,33 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 try:
                     sock.sendto(message.encode('utf-8'), ("127.0.0.1", port))
                 except UnicodeEncodeError as encode_error:
-                    logger.error(f"Encoding error sending UDP command: {encode_error}")
-                    self.send_error(400, f'Invalid character encoding in command: {str(encode_error)}')
+                    error = EncodingError(
+                        f"Encoding error sending UDP command: {encode_error}",
+                        encoding="utf-8",
+                        data=message.encode('utf-8', errors='ignore') if message else None
+                    )
+                    log_exception(logger, error, use_exc_info=False)
+                    status_code = _exception_to_http_status(error)
+                    self.send_error(status_code, str(error))
                     return
                 except OSError as socket_error:
-                    logger.error(f"Socket error sending UDP command to 127.0.0.1:{port}: {socket_error}")
-                    self.send_error(500, f'Error forwarding command via UDP: {str(socket_error)}')
+                    error = UdpError(f"Socket error sending UDP command to 127.0.0.1:{port}: {socket_error}")
+                    log_exception(logger, error)
+                    status_code = _exception_to_http_status(error)
+                    self.send_error(status_code, str(error))
                     return
                 finally:
                     sock.close()
             except Exception as udp_error:
-                logger.error(f"Error forwarding command via UDP: {udp_error}")
-                self.send_error(500, f'Error forwarding command via UDP: {str(udp_error)}')
+                from exceptions import OnAirScreenError
+                if isinstance(udp_error, OnAirScreenError):
+                    log_exception(logger, udp_error)
+                    status_code = _exception_to_http_status(udp_error)
+                    self.send_error(status_code, str(udp_error))
+                else:
+                    error = UdpError(f"Error forwarding command via UDP: {udp_error}")
+                    log_exception(logger, error)
+                    self.send_error(500, str(error))
                 return
 
             # send file content to client
@@ -548,10 +640,19 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 logger.warning(f"Error writing response to client: {write_error}")
                 # Client may have disconnected, which is not critical
             except UnicodeEncodeError as encode_error:
-                logger.error(f"Encoding error writing response: {encode_error}")
+                error = EncodingError(
+                    f"Encoding error writing response: {encode_error}",
+                    encoding="utf-8"
+                )
+                log_exception(logger, error, use_exc_info=False)
                 # Response already sent, can't send error
             except Exception as write_error:
-                logger.error(f"Unexpected error writing response: {write_error}")
+                from exceptions import OnAirScreenError, HttpError
+                if isinstance(write_error, OnAirScreenError):
+                    log_exception(logger, write_error)
+                else:
+                    error = HttpError(f"Unexpected error writing response: {write_error}", status_code=500)
+                    log_exception(logger, error)
         else:
             self.send_error(400, 'no command was given')
     
@@ -595,8 +696,14 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                     try:
                         command_bytes = message.encode('utf-8')
                     except UnicodeEncodeError as encode_error:
-                        logger.error(f"Encoding error encoding command '{message}': {encode_error}")
-                        self.send_error(400, f'Invalid character encoding in command: {str(encode_error)}')
+                        error = EncodingError(
+                            f"Encoding error encoding command: {encode_error}",
+                            encoding="utf-8",
+                            data=message.encode('utf-8', errors='ignore') if message else None
+                        )
+                        log_exception(logger, error, use_exc_info=False)
+                        status_code = _exception_to_http_status(error)
+                        self.send_error(status_code, str(error))
                         return
                     
                     if not self.command_signal:
@@ -614,16 +721,29 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                         response_json = json.dumps({'status': 'ok', 'command': message})
                         self.wfile.write(response_json.encode('utf-8'))
                     except (TypeError, ValueError) as json_error:
-                        logger.error(f"JSON serialization error: {json_error}")
-                        self.send_error(500, 'Error serializing response')
+                        error = JsonSerializationError(
+                            f"JSON serialization error: {json_error}",
+                            data={'status': 'ok', 'command': message}
+                        )
+                        log_exception(logger, error, use_exc_info=False)
+                        status_code = _exception_to_http_status(error)
+                        self.send_error(status_code, str(error))
                         return
                     except (OSError, BrokenPipeError) as write_error:
                         logger.warning(f"Error writing response to client: {write_error}")
                         # Client may have disconnected, which is not critical
                     return
                 except Exception as e:
-                    logger.error(f"Error processing command: {e}", exc_info=True)
-                    self.send_error(500, f'Error processing command: {str(e)}')
+                    from exceptions import OnAirScreenError
+                    if isinstance(e, OnAirScreenError):
+                        log_exception(logger, e)
+                        status_code = _exception_to_http_status(e)
+                        self.send_error(status_code, str(e))
+                    else:
+                        # Wrap unexpected exceptions
+                        error = HttpError(f"Error processing command: {e}", status_code=500)
+                        log_exception(logger, error)
+                        self.send_error(500, str(error))
                     return
             
             # Fallback to UDP forwarding if MainScreen not available
@@ -648,36 +768,71 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 try:
                     sock.sendto(message.encode('utf-8'), ("127.0.0.1", port))
                 except UnicodeEncodeError as encode_error:
-                    logger.error(f"Encoding error sending UDP command: {encode_error}")
-                    raise
+                    error = EncodingError(
+                        f"Encoding error sending UDP command: {encode_error}",
+                        encoding="utf-8",
+                        data=message.encode('utf-8', errors='ignore') if message else None
+                    )
+                    log_exception(logger, error, use_exc_info=False)
+                    raise error
                 except OSError as socket_error:
-                    logger.error(f"Socket error sending UDP command to 127.0.0.1:{port}: {socket_error}")
-                    raise
+                    error = UdpError(f"Socket error sending UDP command to 127.0.0.1:{port}: {socket_error}")
+                    log_exception(logger, error)
+                    raise error
                 finally:
                     sock.close()
             except Exception as udp_error:
-                logger.error(f"Error forwarding command via UDP: {udp_error}")
-                self.send_error(500, f'Error forwarding command via UDP: {str(udp_error)}')
+                from exceptions import OnAirScreenError
+                if isinstance(udp_error, OnAirScreenError):
+                    log_exception(logger, udp_error)
+                    status_code = _exception_to_http_status(udp_error)
+                    self.send_error(status_code, str(udp_error))
+                else:
+                    error = UdpError(f"Error forwarding command via UDP: {udp_error}")
+                    log_exception(logger, error)
+                    self.send_error(500, str(error))
                 return
 
             try:
                 response_data = json.dumps({'status': 'ok', 'command': message, 'method': 'udp_fallback'})
                 self.wfile.write(response_data.encode('utf-8'))
             except (TypeError, ValueError) as json_error:
-                logger.error(f"JSON serialization error: {json_error}")
-                self.send_error(500, 'Error serializing response')
+                error = JsonSerializationError(
+                    f"JSON serialization error: {json_error}",
+                    data={'status': 'ok', 'command': message, 'method': 'udp_fallback'}
+                )
+                log_exception(logger, error, use_exc_info=False)
+                status_code = _exception_to_http_status(error)
+                self.send_error(status_code, str(error))
                 return
             except (OSError, BrokenPipeError) as write_error:
                 logger.warning(f"Error writing response to client: {write_error}")
                 # Client may have disconnected, which is not critical
             except Exception as write_error:
-                logger.error(f"Unexpected error writing response: {write_error}")
+                from exceptions import OnAirScreenError, HttpError
+                if isinstance(write_error, OnAirScreenError):
+                    log_exception(logger, write_error)
+                else:
+                    error = HttpError(f"Unexpected error writing response: {write_error}", status_code=500)
+                    log_exception(logger, error)
         except ValueError as value_error:
-            logger.error(f"Value error in API command handler: {value_error}")
-            self.send_error(400, f'Invalid command format: {str(value_error)}')
+            error = InvalidCommandFormatError(
+                f"Value error in API command handler: {value_error}",
+                command_data=query_string
+            )
+            log_exception(logger, error, use_exc_info=False)
+            status_code = _exception_to_http_status(error)
+            self.send_error(status_code, str(error))
         except Exception as e:
-            logger.error(f"Error in API command handler: {e}", exc_info=True)
-            self.send_error(500, f'Error processing command: {str(e)}')
+            from exceptions import OnAirScreenError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+                status_code = _exception_to_http_status(e)
+                self.send_error(status_code, str(e))
+            else:
+                error = HttpError(f"Error in API command handler: {e}", status_code=500)
+                log_exception(logger, error)
+                self.send_error(500, str(error))
     
     def _handle_api_status(self) -> None:
         """
@@ -707,18 +862,37 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 status_json = json.dumps(status)
                 self.wfile.write(status_json.encode('utf-8'))
             except (TypeError, ValueError) as json_error:
-                logger.error(f"JSON serialization error for status: {json_error}")
-                self.send_error(500, 'Error serializing status response')
+                error = JsonSerializationError(
+                    f"JSON serialization error for status: {json_error}",
+                    data=status
+                )
+                log_exception(logger, error, use_exc_info=False)
+                status_code = _exception_to_http_status(error)
+                self.send_error(status_code, str(error))
                 return
             except (OSError, BrokenPipeError) as write_error:
                 logger.warning(f"Error writing status response to client: {write_error}")
                 # Client may have disconnected, which is not critical
         except AttributeError as attr_error:
-            logger.error(f"MainScreen missing required method or attribute: {attr_error}")
-            self.send_error(500, f'Error getting status: MainScreen interface error')
+            from exceptions import WidgetAccessError
+            error = WidgetAccessError(
+                f"MainScreen missing required method or attribute: {attr_error}",
+                widget_name="MainScreen",
+                attribute="get_status_json"
+            )
+            log_exception(logger, error, use_exc_info=False)
+            status_code = _exception_to_http_status(error)
+            self.send_error(status_code, str(error))
         except Exception as e:
-            logger.error(f"Error getting status: {e}", exc_info=True)
-            self.send_error(500, f'Error getting status: {str(e)}')
+            from exceptions import OnAirScreenError, HttpError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+                status_code = _exception_to_http_status(e)
+                self.send_error(status_code, str(e))
+            else:
+                error = HttpError(f"Error getting status: {e}", status_code=500)
+                log_exception(logger, error)
+                self.send_error(500, str(error))
     
     def _handle_web_ui(self) -> None:
         """
@@ -742,11 +916,22 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 logger.warning(f"Error writing Web-UI HTML to client: {write_error}")
                 # Client may have disconnected, which is not critical
             except UnicodeEncodeError as encode_error:
-                logger.error(f"Encoding error writing Web-UI HTML: {encode_error}")
+                error = EncodingError(
+                    f"Encoding error writing Web-UI HTML: {encode_error}",
+                    encoding="utf-8"
+                )
+                log_exception(logger, error, use_exc_info=False)
                 self.send_error(500, 'Error encoding Web-UI content')
         except Exception as e:
-            logger.error(f"Unexpected error serving Web-UI: {e}", exc_info=True)
-            self.send_error(500, f'Error serving Web-UI: {str(e)}')
+            from exceptions import OnAirScreenError, HttpError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+                status_code = _exception_to_http_status(e)
+                self.send_error(status_code, str(e))
+            else:
+                error = HttpError(f"Unexpected error serving Web-UI: {e}", status_code=500)
+                log_exception(logger, error)
+                self.send_error(500, str(error))
     
     def _get_web_ui_html(self) -> str:
         """Load HTML content for Web-UI from template file"""
@@ -761,7 +946,12 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             logger.error(f"Web UI template not found at {template_path}")
             return "<html><body><h1>Error: Web UI template not found</h1></body></html>"
         except Exception as e:
-            logger.error(f"Error loading Web UI template: {e}")
+            from exceptions import OnAirScreenError, HttpError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = HttpError(f"Error loading Web UI template: {e}", status_code=500)
+                log_exception(logger, error)
             return f"<html><body><h1>Error loading Web UI: {e}</h1></body></html>"
 
 
@@ -837,13 +1027,17 @@ class WebSocketDaemon(QThread):
             self._loop.run_forever()
         except OSError as error:
             if error.errno == 98 or "Address already in use" in str(error):
-                logger.error(f"WebSocket Server port {ws_port} is already in use. WebSocket support disabled.")
+                port_error = PortInUseError(ws_port, "WebSocket")
+                log_exception(logger, port_error)
             elif error.errno == 13 or "Permission denied" in str(error):
-                logger.error(f"Permission denied binding to WebSocket port {ws_port}. WebSocket support disabled.")
+                perm_error = PermissionDeniedError(ws_port, "WebSocket")
+                log_exception(logger, perm_error)
             else:
-                logger.error(f"OS error starting WebSocket Server on port {ws_port}: {error}")
+                ws_error = WebSocketError(f"OS error starting WebSocket Server on port {ws_port}: {error}")
+                log_exception(logger, ws_error)
         except Exception as error:
-            logger.error(f"Unexpected error starting WebSocket Server on port {ws_port}: {error}", exc_info=True)
+            ws_error = WebSocketError(f"Unexpected error starting WebSocket Server on port {ws_port}: {error}")
+            log_exception(logger, ws_error)
         finally:
             if self._loop:
                 self._loop.close()
@@ -872,7 +1066,12 @@ class WebSocketDaemon(QThread):
         except ConnectionClosed:
             logger.debug(f"WebSocket client disconnected: {connection.remote_address}")
         except Exception as e:
-            logger.error(f"Error handling WebSocket client {connection.remote_address}: {e}")
+            from exceptions import OnAirScreenError, WebSocketError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = WebSocketError(f"Error handling WebSocket client {connection.remote_address}: {e}")
+                log_exception(logger, error)
         finally:
             # Remove client from set
             self.clients.discard(connection)
@@ -895,7 +1094,12 @@ class WebSocketDaemon(QThread):
                         except ConnectionClosed:
                             disconnected.add(client)
                         except Exception as e:
-                            logger.error(f"Error sending to WebSocket client: {e}")
+                            from exceptions import OnAirScreenError, WebSocketError
+                            if isinstance(e, OnAirScreenError):
+                                log_exception(logger, e, use_exc_info=False)
+                            else:
+                                error = WebSocketError(f"Error sending to WebSocket client: {e}")
+                                log_exception(logger, error, use_exc_info=False)
                             disconnected.add(client)
                     
                     # Remove disconnected clients
@@ -910,7 +1114,12 @@ class WebSocketDaemon(QThread):
                 # Task was cancelled, exit gracefully
                 break
             except Exception as e:
-                logger.error(f"Error in periodic status broadcast: {e}")
+                from exceptions import OnAirScreenError, WebSocketError
+                if isinstance(e, OnAirScreenError):
+                    log_exception(logger, e, use_exc_info=False)
+                else:
+                    error = WebSocketError(f"Error in periodic status broadcast: {e}")
+                    log_exception(logger, error, use_exc_info=False)
                 if not self._stop_event.is_set():
                     await asyncio.sleep(1.0)
     
@@ -995,4 +1204,9 @@ class WebSocketDaemon(QThread):
             # Wait for thread to finish
             self.wait()
         except Exception as e:
-            logger.error(f"Error stopping WebSocket server: {e}")
+            from exceptions import OnAirScreenError, WebSocketError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = WebSocketError(f"Error stopping WebSocket server: {e}")
+                log_exception(logger, error)
