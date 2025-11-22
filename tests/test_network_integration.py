@@ -38,10 +38,11 @@ def mock_main_screen():
             with patch('start.Ui_MainScreen'):
                 screen = MainScreen.__new__(MainScreen)
                 # Mock attributes needed for get_status_json
-                screen.statusLED1 = False
-                screen.statusLED2 = False
-                screen.statusLED3 = False
-                screen.statusLED4 = False
+                # Use LED{num}on for logical status (not statusLED{num} which is visual)
+                screen.LED1on = False
+                screen.LED2on = False
+                screen.LED3on = False
+                screen.LED4on = False
                 screen.statusAIR1 = False
                 screen.statusAIR2 = False
                 screen.statusAIR3 = False
@@ -69,6 +70,12 @@ def mock_main_screen():
                 screen.stop_air3 = Mock()
                 screen.start_air4 = Mock()
                 screen.stop_air4 = Mock()
+                # Mock settings for autoflash access
+                screen.settings = Mock()
+                for i in range(1, 5):
+                    autoflash_attr = f'LED{i}Autoflash'
+                    setattr(screen.settings, autoflash_attr, Mock())
+                    getattr(screen.settings, autoflash_attr).isChecked.return_value = False
                 screen.command_handler = CommandHandler(screen)
                 screen.get_status_json = MainScreen.get_status_json.__get__(screen, MainScreen)
                 return screen
@@ -893,8 +900,8 @@ class TestNetworkEndToEnd:
         import urllib.request
         
         try:
-            # Change LED state
-            mock_main_screen.statusLED1 = True
+            # Change LED state (use LED1on for logical status)
+            mock_main_screen.LED1on = True
             
             # Get status via HTTP
             url = f"http://127.0.0.1:{http_port}/api/status"

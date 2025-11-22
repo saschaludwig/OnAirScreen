@@ -26,10 +26,11 @@ def mock_main_screen():
             with patch('start.Ui_MainScreen'):
                 screen = MainScreen.__new__(MainScreen)
                 # Mock attributes needed for get_status_json
-                screen.statusLED1 = False
-                screen.statusLED2 = True
-                screen.statusLED3 = False
-                screen.statusLED4 = True
+                # Use LED{num}on for logical status (not statusLED{num} which is visual)
+                screen.LED1on = False
+                screen.LED2on = True
+                screen.LED3on = False
+                screen.LED4on = True
                 screen.statusAIR1 = True
                 screen.statusAIR2 = False
                 screen.statusAIR3 = True
@@ -44,6 +45,12 @@ def mock_main_screen():
                 screen.labelNews.text.return_value = "Next Item"
                 screen.labelWarning = Mock()
                 screen.labelWarning.text.return_value = "Warning Message"
+                # Mock settings for autoflash access
+                screen.settings = Mock()
+                for i in range(1, 5):
+                    autoflash_attr = f'LED{i}Autoflash'
+                    setattr(screen.settings, autoflash_attr, Mock())
+                    getattr(screen.settings, autoflash_attr).isChecked.return_value = False
                 return screen
 
 
@@ -409,10 +416,11 @@ class TestGetStatusJSON:
             with patch('start.Settings'):
                 with patch('start.Ui_MainScreen'):
                     screen = MainScreen.__new__(MainScreen)
-                    screen.statusLED1 = False
-                    screen.statusLED2 = False
-                    screen.statusLED3 = False
-                    screen.statusLED4 = False
+                    # Use LED{num}on for logical status
+                    screen.LED1on = False
+                    screen.LED2on = False
+                    screen.LED3on = False
+                    screen.LED4on = False
                     screen.statusAIR1 = False
                     screen.statusAIR2 = False
                     screen.statusAIR3 = False
@@ -427,6 +435,12 @@ class TestGetStatusJSON:
                     screen.labelNews.text.return_value = ""
                     screen.labelWarning = Mock()
                     screen.labelWarning.text.return_value = ""
+                    # Mock settings for autoflash access
+                    screen.settings = Mock()
+                    for i in range(1, 5):
+                        autoflash_attr = f'LED{i}Autoflash'
+                        setattr(screen.settings, autoflash_attr, Mock())
+                        getattr(screen.settings, autoflash_attr).isChecked.return_value = False
         
         mock_settings = Mock()
         mock_settings.value.return_value = "default"

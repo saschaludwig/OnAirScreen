@@ -85,12 +85,33 @@ class StatusExporter:
         # Get LED status
         leds = {}
         for led_num in range(1, 5):
-            status_attr = f'statusLED{led_num}'
+            # IMPORTANT: Use LED{num}on for logical status, not statusLED{num}
+            # statusLED{num} reflects the visual blinking state (changes between True/False)
+            # LED{num}on reflects the logical state (True if LED is on, even if blinking)
+            led_on_attr = f'LED{led_num}on'
             with settings_group(settings, f"LED{led_num}"):
                 led_text = settings.value('text', f'LED{led_num}')
+            
+            # Get logical LED status (True if LED is on, regardless of blinking state)
+            led_status = getattr(self.main_screen, led_on_attr, False)
+            
+            # Get autoflash status
+            autoflash_enabled = False
+            try:
+                if hasattr(self.main_screen, 'settings') and self.main_screen.settings:
+                    autoflash_attr = f'LED{led_num}Autoflash'
+                    if hasattr(self.main_screen.settings, autoflash_attr):
+                        autoflash_widget = getattr(self.main_screen.settings, autoflash_attr)
+                        autoflash_enabled = autoflash_widget.isChecked()
+            except (AttributeError, RuntimeError) as e:
+                # If autoflash widget is not accessible, default to False
+                logger.debug(f"Could not access autoflash status for LED{led_num}: {e}")
+                autoflash_enabled = False
+            
             leds[led_num] = {
-                'status': getattr(self.main_screen, status_attr, False),
-                'text': led_text
+                'status': led_status,  # Use logical status (LED{num}on), not visual status (statusLED{num})
+                'text': led_text,
+                'autoflash': autoflash_enabled
             }
         
         # Get AIR timer status
