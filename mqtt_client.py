@@ -167,11 +167,17 @@ class MqttClient(QThread):
             time.sleep(0.5)
             
             # Publish initial status
+            logger.debug("Publishing initial status after autodiscovery")
             self.publish_status()
+            logger.debug("Initial status published, entering main loop")
             
             # Keep thread alive and publish status periodically
             last_publish_time = time.time()
+            loop_iteration = 0
             while not self._stop_requested:
+                loop_iteration += 1
+                if loop_iteration % 60 == 0:  # Log every 60 seconds
+                    logger.debug(f"MQTT client main loop running, connected={self._connected}, stop_requested={self._stop_requested}")
                 time.sleep(1)
                 # Check if still connected
                 if not self._connected:
@@ -206,12 +212,20 @@ class MqttClient(QThread):
                 
         except Exception as e:
             logger.error(f"Error in MQTT client thread: {e}", exc_info=True)
+        except KeyboardInterrupt:
+            logger.debug("MQTT client thread interrupted")
         finally:
+            logger.debug("MQTT client thread entering finally block")
             if self.client:
+                logger.debug("Stopping MQTT client loop and disconnecting")
                 self._stop_requested = True
-                self.client.loop_stop()
-                self.client.disconnect()
-                logger.info("MQTT client stopped")
+                try:
+                    self.client.loop_stop()
+                    self.client.disconnect()
+                    logger.debug("MQTT client stopped")
+                except Exception as e:
+                    logger.error(f"Error during MQTT client cleanup: {e}", exc_info=True)
+            logger.debug("MQTT client thread finished")
     
     def _on_connect(self, client: mqtt.Client, userdata: Any, flags: Dict[str, int], rc: int) -> None:
         """Callback when MQTT client connects"""
@@ -249,9 +263,9 @@ class MqttClient(QThread):
         """Callback when MQTT client disconnects"""
         self._connected = False
         if rc != 0:
-            logger.warning(f"MQTT client disconnected unexpectedly (rc={rc})")
+            logger.warning(f"MQTT client disconnected unexpectedly (rc={rc}), stop_requested={self._stop_requested}")
         else:
-            logger.info("MQTT client disconnected")
+            logger.debug(f"MQTT client disconnected (rc={rc}), stop_requested={self._stop_requested}")
     
     def _on_message(self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
         """Callback when MQTT message is received"""
@@ -259,7 +273,7 @@ class MqttClient(QThread):
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
             
-            logger.info(f"Received MQTT message: {topic} = {payload}")
+            logger.debug(f"Received MQTT message: {topic} = {payload}")
             
             # Build command string
             command = None
@@ -519,13 +533,29 @@ class MqttClient(QThread):
     
     def restart(self) -> None:
         """Restart MQTT client (stop and start again)"""
+        logger.debug("Restarting MQTT client...")
         self.stop()
+        # Wait for thread to fully stop before starting a new one
+        if self.isRunning():
+            logger.debug("Waiting for MQTT client thread to stop...")
+            if not self.wait(3000):  # Wait up to 3 seconds
+                logger.warning("MQTT client thread did not stop within timeout, forcing termination")
+                self.terminate()
+                self.wait(1000)  # Wait additional second after termination
+        
+        # Reset stop flag for new start
+        self._stop_requested = False
+        self._connected = False
+        
         if self._is_enabled():
+            logger.debug("Starting new MQTT client thread...")
             self.start()
+        else:
+            logger.debug("MQTT is disabled, not restarting client")
     
     def stop(self) -> None:
         """Stop MQTT client gracefully"""
-        logger.info("Stopping MQTT client...")
+        logger.debug("Stopping MQTT client...")
         self._stop_requested = True
         if self.client and self._connected:
             try:

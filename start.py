@@ -104,6 +104,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigShutdownHost.connect(self.shutdown_host)
         self.settings.sigConfigFinished.connect(self.config_finished)
         self.settings.sigConfigClosed.connect(self.config_closed)
+        
+        # Store MQTT settings when settings dialog opens to compare on apply
+        self._mqtt_settings_before_edit = {}
 
         # Initialize command handler
         self.command_handler = CommandHandler(self)
@@ -1717,12 +1720,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         Restores settings from configuration, updates weather widget config,
         and triggers weather update.
         """
+        # Restore settings (this loads new settings from QSettings)
         self.restore_settings_from_config()
         self.weatherWidget.readConfig()
         self.weatherWidget.updateWeather()
         
-        # Restart MQTT client if settings changed
+        # Always restart MQTT client when settings are applied (applySettings was called)
+        # The client will check if settings changed and only reconnect if needed
         if hasattr(self, 'mqtt_client') and self.mqtt_client:
+            logger.debug("Settings applied, restarting MQTT client to apply any changes...")
             self.mqtt_client.restart()
 
     def reboot_host(self):

@@ -968,14 +968,16 @@ class Settings(QWidget, Ui_Settings):
         return mac
 
     def trigger_manual_check_for_updates(self):
+        logger.info("Manual update check triggered")
         self.manual_update_check = True
         self.check_for_updates()
 
     def check_for_updates(self):
         if self.checkBox_UpdateCheck.isChecked():
-            logger.debug("check for updates")
+            logger.info("Starting update check")
             update_key = self.updateKey.displayText()
             if len(update_key) == 50:
+                logger.debug(f"Update check parameters: version={versionString}, distribution={distributionString}, include_beta={self.checkBox_IncludeBetaVersions.isChecked()}")
                 data = QUrlQuery()
                 data.addQueryItem("update_key", update_key)
                 data.addQueryItem("product", "OnAirScreen")
@@ -984,52 +986,84 @@ class Settings(QWidget, Ui_Settings):
                 data.addQueryItem("mac", self.get_mac())
                 data.addQueryItem("include_beta", f'{self.checkBox_IncludeBetaVersions.isChecked()}')
                 req = QtNetwork.QNetworkRequest(QUrl(update_url))
-                req.setHeader(QtNetwork.QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
+                req.setHeader(QtNetwork.QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/x-www-form-urlencoded")
+                logger.debug(f"Sending update check request to: {update_url}")
                 self.nam_update_check = QtNetwork.QNetworkAccessManager()
                 self.nam_update_check.finished.connect(self.handle_update_check_response)
-                self.nam_update_check.post(req, data.toString(QUrl.FullyEncoded).encode("UTF-8"))
+                self.nam_update_check.post(req, data.toString().encode("UTF-8"))
+                logger.debug("Update check request sent successfully")
             else:
-                logger.error("error, update key in wrong format")
+                logger.error(f"Update check failed: update key has wrong format (length: {len(update_key)}, expected: 50)")
                 self.error_dialog = QErrorMessage()
                 self.error_dialog.setWindowTitle("Update Check Error")
                 self.error_dialog.showMessage('Update key is in the wrong format!', 'UpdateKeyError')
+        else:
+            logger.debug("Update check skipped: update check is disabled in settings")
 
     def handle_update_check_response(self, reply):
         er = reply.error()
         if er == QtNetwork.QNetworkReply.NetworkError.NoError:
-            bytes_string = reply.readAll()
-            reply_string = str(bytes_string, 'utf-8')
-            json_reply = json.loads(reply_string)
+            logger.info("Update check response received successfully")
+            try:
+                bytes_string = reply.readAll()
+                reply_string = str(bytes_string, 'utf-8')
+                logger.debug(f"Update check response body: {reply_string}")
+                json_reply = json.loads(reply_string)
+                status = json_reply.get('Status', 'UNKNOWN')
+                logger.info(f"Update check response status: {status}")
 
-            if json_reply['Status'] == "UPDATE":
-                self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
-                self.timer_message_box.exec()
+                if json_reply['Status'] == "UPDATE":
+                    logger.info(f"Update available: {json_reply.get('Message', 'No message')}")
+                    self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
+                    self.timer_message_box.exec()
 
-            if json_reply['Status'] == "OK" and self.manual_update_check:
-                self.message_box = QMessageBox()
-                self.message_box.setIcon(QMessageBox.Icon.Information)
-                self.message_box.setWindowTitle("OnAirScreen Update Check")
-                self.message_box.setText("OnAirScreen Update Check")
-                self.message_box.setInformativeText(f"{json_reply['Message']}")
-                self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-                self.message_box.show()
-                self.manual_update_check = False
+                if json_reply['Status'] == "OK" and self.manual_update_check:
+                    message = json_reply.get('Message', 'No message')
+                    logger.info(f"Update check successful (no update available): {message}")
+                    self.message_box = QMessageBox()
+                    self.message_box.setIcon(QMessageBox.Icon.Information)
+                    self.message_box.setWindowTitle("OnAirScreen Update Check")
+                    self.message_box.setText("OnAirScreen Update Check")
+                    self.message_box.setInformativeText(f"{message}")
+                    self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                    self.message_box.show()
+                    self.manual_update_check = False
 
-            if json_reply['Status'] == "ERROR" and self.manual_update_check:
-                self.message_box = QMessageBox()
-                self.message_box.setIcon(QMessageBox.Icon.Critical)
-                self.message_box.setWindowTitle("OnAirScreen Update Check")
-                self.message_box.setText("OnAirScreen Update Check")
-                self.message_box.setInformativeText(f"{json_reply['Message']}")
-                self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-                self.message_box.show()
-                self.manual_update_check = False
+                if json_reply['Status'] == "ERROR" and self.manual_update_check:
+                    message = json_reply.get('Message', 'No message')
+                    logger.error(f"Update check returned error: {message}")
+                    self.message_box = QMessageBox()
+                    self.message_box.setIcon(QMessageBox.Icon.Critical)
+                    self.message_box.setWindowTitle("OnAirScreen Update Check")
+                    self.message_box.setText("OnAirScreen Update Check")
+                    self.message_box.setInformativeText(f"{message}")
+                    self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                    self.message_box.show()
+                    self.manual_update_check = False
 
-        elif self.manual_update_check:
-            error_string = "Error occurred: {}, {}".format(er, reply.errorString())
-            self.error_dialog = QErrorMessage()
-            self.error_dialog.setWindowTitle("Update Check Error")
-            self.error_dialog.showMessage(error_string, 'UpdateCheckError')
+                if json_reply['Status'] not in ["UPDATE", "OK", "ERROR"]:
+                    logger.warning(f"Update check returned unknown status: {status}")
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse update check response as JSON: {e}")
+                if self.manual_update_check:
+                    self.error_dialog = QErrorMessage()
+                    self.error_dialog.setWindowTitle("Update Check Error")
+                    self.error_dialog.showMessage('Invalid response from update server', 'UpdateCheckError')
+            except Exception as e:
+                logger.error(f"Unexpected error processing update check response: {e}", exc_info=True)
+                if self.manual_update_check:
+                    self.error_dialog = QErrorMessage()
+                    self.error_dialog.setWindowTitle("Update Check Error")
+                    self.error_dialog.showMessage(f'Error processing update check response: {str(e)}', 'UpdateCheckError')
+
+        else:
+            error_string = f"Error occurred: {er}, {reply.errorString()}"
+            logger.error(f"Update check network error: {error_string}")
+            if self.manual_update_check:
+                self.error_dialog = QErrorMessage()
+                self.error_dialog.setWindowTitle("Update Check Error")
+                self.error_dialog.showMessage(error_string, 'UpdateCheckError')
 
     def makeOWMTestCall(self):
         appid = self.owmAPIKey.displayText()
