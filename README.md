@@ -131,7 +131,10 @@ Sends commands and returns JSON response with status confirmation.
 ##### API via MQTT
 
 OnAirScreen can be controlled via MQTT and integrates seamlessly with Home Assistant using MQTT Autodiscovery.<br>
-Configure MQTT settings in the OnAirScreen settings dialog (Server, Port, Username, Password, Base Topic).
+Configure MQTT settings in the OnAirScreen settings dialog (Server, Port, Username, Password, Device Name).
+
+**Base Topic:**
+The MQTT base topic is automatically generated from `onairscreen` + a unique device ID (last 6 hex characters of the MAC address). This ensures each OnAirScreen instance has a unique topic, even when multiple instances are running on the same network. For example: `onairscreen_a1b2c3`.
 
 **Home Assistant Integration:**
 OnAirScreen automatically publishes device configurations to Home Assistant, creating:
@@ -161,11 +164,12 @@ Status updates are automatically published to:
 ```
 
 **Example using mosquitto_pub:**
+The base topic is automatically generated (e.g., `onairscreen_a1b2c3`). Replace `{base_topic}` with your actual base topic:
 ```Shell
-mosquitto_pub -h mqtt-broker -t onairscreen/led1/set -m "ON"
-mosquitto_pub -h mqtt-broker -t onairscreen/air3/set -m "ON"
-mosquitto_pub -h mqtt-broker -t onairscreen/air3/reset -m "PRESS"
-mosquitto_pub -h mqtt-broker -t onairscreen/text/now/set -m "Current Song"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/led1/set -m "ON"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/set -m "ON"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/reset -m "PRESS"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song"
 ```
 
 ##### API Commands
