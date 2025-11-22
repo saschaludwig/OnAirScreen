@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - Web-UI: NOW/NEXT input fields placed side by side (50% width each)
 - Settings: Preset/Profile management - save, load, list, and delete configuration presets as JSON files
 - Settings: UI buttons for preset management (Save, Load, Delete)
+- Settings: Log level configuration (DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE) with ComboBox in General settings
+- Command-line: --loglevel option to override log level settings (temporary, not saved)
 
 ### Changed
 - Web-UI: Fixed dark mode flash on page reload by setting theme immediately in HTML head

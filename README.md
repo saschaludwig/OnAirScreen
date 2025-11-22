@@ -40,6 +40,8 @@ And if you need extended support, please contact me.
  * REST-style API endpoints (/api/status, /api/command)
  * MQTT integration with Home Assistant Autodiscovery support
  * Event logging system for tracking all actions
+ * Configurable log level settings (DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE)
+ * Command-line option to override log level (--loglevel)
  * Tooltips for all settings widgets
  * Preset/Profile management for saving and loading configurations
  * Weather Widget
