@@ -140,7 +140,8 @@ class TestParseCmd:
         with patch('command_handler.logger') as mock_logger:
             result = command_handler.parse_cmd(b"UNKNOWN:value")
             assert result is False
-            mock_logger.warning.assert_called_once()
+            # Now uses log_exception which calls logger.error (not warning)
+            mock_logger.error.assert_called_once()
 
 
 class TestSimpleCommands:

@@ -61,6 +61,7 @@ from timer_manager import TimerManager
 from event_logger import EventLogger
 from utils import settings_group
 from defaults import *  # noqa: F403, F405
+from exceptions import WidgetAccessError, log_exception
 
 
 def set_log_level(log_level_str: str) -> None:
@@ -395,13 +396,23 @@ class MainScreen(QWidget, Ui_MainScreen):
                 if parent:
                     parent.hide()
             except (AttributeError, RuntimeError) as e:
-                logger.warning(f"Error hiding timer input window: {e}")
+                error = WidgetAccessError(
+                    f"Error hiding timer input window: {e}",
+                    widget_name="getTimeWindow",
+                    attribute="hide"
+                )
+                log_exception(logger, error, use_exc_info=False)
             
             # Get and validate input text
             try:
                 text = str(sender.text()).strip()
             except (AttributeError, RuntimeError) as e:
-                logger.error(f"Error getting timer input text: {e}")
+                error = WidgetAccessError(
+                    f"Error getting timer input text: {e}",
+                    widget_name="getTimeWindow.timeEdit",
+                    attribute="text"
+                )
+                log_exception(logger, error, use_exc_info=False)
                 return
             
             # Validate input is not empty
@@ -426,7 +437,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                             return
                         parsed = True
                 except (ValueError, IndexError) as e:
-                    logger.error(f"parse_timer_input: Error parsing comma format '{text}': {e}")
+                    from exceptions import ValueValidationError
+                    error = ValueValidationError(
+                        f"parse_timer_input: Error parsing comma format '{text}': {e}",
+                        value=text
+                    )
+                    log_exception(logger, error, use_exc_info=False)
                     return
             
             # Try dot format: "2.10" for 2 minutes 10 seconds
@@ -442,7 +458,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                             return
                         parsed = True
                 except (ValueError, IndexError) as e:
-                    logger.error(f"parse_timer_input: Error parsing dot format '{text}': {e}")
+                    from exceptions import ValueValidationError
+                    error = ValueValidationError(
+                        f"parse_timer_input: Error parsing dot format '{text}': {e}",
+                        value=text
+                    )
+                    log_exception(logger, error, use_exc_info=False)
                     return
             
             # Try seconds-only format: "30" for 30 seconds
@@ -475,7 +496,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             logger.info(f"parse_timer_input: Set timer to {minutes}:{seconds:02d} ({total_seconds} seconds)")
             
         except Exception as e:
-            logger.error(f"parse_timer_input: Unexpected error: {e}", exc_info=True)
+            from exceptions import OnAirScreenError, WidgetError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = WidgetError(f"parse_timer_input: Unexpected error: {e}")
+                log_exception(logger, error)
 
     def stream_timer_start_stop(self) -> None:
         """
@@ -1563,8 +1589,15 @@ class MainScreen(QWidget, Ui_MainScreen):
                     mqtt_client.publish_status(specific_item)
                 except Exception as e:
                     logger.warning(f"Failed to publish MQTT status: {e}")
-        except (RuntimeError, AttributeError):
+        except (RuntimeError, AttributeError) as e:
             # Ignore errors when object is not fully initialized (e.g., in tests)
+            # Log but don't raise - this is expected in test scenarios
+            error = WidgetAccessError(
+                f"Error accessing MQTT client (object may not be initialized): {e}",
+                widget_name="mqtt_client",
+                attribute="publish_status"
+            )
+            log_exception(logger, error, use_exc_info=False)
             pass
 
     def _set_text(self, widget_name: str, text: str) -> None:
@@ -1879,17 +1912,35 @@ class MainScreen(QWidget, Ui_MainScreen):
         if hasattr(self, 'labelCurrentSong') and self.labelCurrentSong:
             try:
                 now_text = self.labelCurrentSong.text() or ""
-            except (AttributeError, RuntimeError):
+            except (AttributeError, RuntimeError) as e:
+                error = WidgetAccessError(
+                    f"Error accessing labelCurrentSong.text(): {e}",
+                    widget_name="labelCurrentSong",
+                    attribute="text"
+                )
+                log_exception(logger, error, use_exc_info=False)
                 now_text = ""
         if hasattr(self, 'labelNews') and self.labelNews:
             try:
                 next_text = self.labelNews.text() or ""
-            except (AttributeError, RuntimeError):
+            except (AttributeError, RuntimeError) as e:
+                error = WidgetAccessError(
+                    f"Error accessing labelNews.text(): {e}",
+                    widget_name="labelNews",
+                    attribute="text"
+                )
+                log_exception(logger, error, use_exc_info=False)
                 next_text = ""
         if hasattr(self, 'labelWarning') and self.labelWarning:
             try:
                 warn_text = self.labelWarning.text() or ""
-            except (AttributeError, RuntimeError):
+            except (AttributeError, RuntimeError) as e:
+                error = WidgetAccessError(
+                    f"Error accessing labelWarning.text(): {e}",
+                    widget_name="labelWarning",
+                    attribute="text"
+                )
+                log_exception(logger, error, use_exc_info=False)
                 warn_text = ""
         
         # Get all warnings with priorities
@@ -1904,8 +1955,14 @@ class MainScreen(QWidget, Ui_MainScreen):
                             'priority': priority,
                             'text': self.warnings[index]
                         })
-        except (AttributeError, RuntimeError):
+        except (AttributeError, RuntimeError) as e:
             # If warnings attribute doesn't exist or can't be accessed, use empty list
+            error = WidgetAccessError(
+                f"Error accessing warnings attribute: {e}",
+                widget_name="MainScreen",
+                attribute="warnings"
+            )
+            log_exception(logger, error, use_exc_info=False)
             pass
         
         return {
@@ -1927,19 +1984,34 @@ class MainScreen(QWidget, Ui_MainScreen):
             if hasattr(self, 'httpd') and self.httpd:
                 self.httpd.stop()
         except Exception as e:
-            logger.error(f"Error stopping HTTP daemon: {e}")
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping HTTP daemon: {e}")
+                log_exception(logger, error)
         
         try:
             if hasattr(self, 'wsd') and self.wsd:
                 self.wsd.stop()
         except Exception as e:
-            logger.error(f"Error stopping WebSocket daemon: {e}")
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping WebSocket daemon: {e}")
+                log_exception(logger, error)
         
         try:
             if hasattr(self, 'checkNTPOffset') and self.checkNTPOffset:
                 self.checkNTPOffset.stop()
         except Exception as e:
-            logger.error(f"Error stopping NTP check: {e}")
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping NTP check: {e}")
+                log_exception(logger, error)
 
 
 class CheckNTPOffsetThread(QThread):
@@ -1961,8 +2033,15 @@ class CheckNTPOffsetThread(QThread):
             # This prevents errors when the object is created with __new__() in tests
             if hasattr(self, '_initialized') and self._initialized:
                 self.wait()
-        except (RuntimeError, AttributeError):
+        except (RuntimeError, AttributeError) as e:
             # Thread was never initialized or already destroyed
+            # Log but don't raise - this is expected in some scenarios
+            error = WidgetAccessError(
+                f"Error accessing NTP check thread (thread may not be initialized): {e}",
+                widget_name="checkNTPOffset",
+                attribute="stop"
+            )
+            log_exception(logger, error, use_exc_info=False)
             pass
 
     def run(self):
