@@ -8,7 +8,17 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from PyQt6.QtGui import QColor
 
-from command_handler import CommandHandler
+from command_handler import (
+    CommandHandler,
+    validate_text_input,
+    validate_command_value,
+    validate_led_value,
+    validate_air_value,
+    validate_air3time_value,
+    validate_cmd_value,
+    MAX_TEXT_LENGTH,
+    MAX_CONFIG_LENGTH,
+)
 
 
 @pytest.fixture
@@ -191,10 +201,10 @@ class TestWarnCommand:
         mock_main_screen.add_warning.assert_called_once_with("Test Warning", 0)
     
     def test_warn_add_priority_0(self, command_handler, mock_main_screen):
-        """Test WARN command with explicit priority 0 (not allowed, treated as regular text)"""
+        """Test WARN command with explicit priority 0 (not allowed, text part is extracted)"""
         command_handler.parse_cmd(b"WARN:0:Test Warning")
-        # Priority 0 cannot be explicitly set, so the full value is used as text
-        mock_main_screen.add_warning.assert_called_once_with("0:Test Warning", 0)
+        # Priority 0 cannot be explicitly set, so the text part is extracted and validated
+        mock_main_screen.add_warning.assert_called_once_with("Test Warning", 0)
     
     def test_warn_add_priority_1(self, command_handler, mock_main_screen):
         """Test WARN command to add warning with priority 1"""
@@ -243,7 +253,7 @@ class TestAirSimpleCommands:
     
     def test_air2_on(self, command_handler, mock_main_screen):
         """Test AIR2 ON command"""
-        command_handler.parse_cmd(b"AIR2:START")
+        command_handler.parse_cmd(b"AIR2:ON")
         mock_main_screen.set_air2.assert_called_once_with(True)
     
     def test_air2_off(self, command_handler, mock_main_screen):
@@ -562,4 +572,211 @@ class TestColorSetting:
             
             mock_logger.error.assert_called_once()
             setter.assert_not_called()
+
+
+class TestInputValidation:
+    """Test input validation functions"""
+    
+    def test_validate_text_input_normal(self):
+        """Test validate_text_input with normal text"""
+        result = validate_text_input("Hello World", MAX_TEXT_LENGTH, "test")
+        assert result == "Hello World"
+    
+    def test_validate_text_input_control_chars(self):
+        """Test validate_text_input removes control characters"""
+        text_with_control = "Hello\x00World\x1F"
+        result = validate_text_input(text_with_control, MAX_TEXT_LENGTH, "test")
+        assert result == "HelloWorld"
+        assert "\x00" not in result
+        assert "\x1F" not in result
+    
+    def test_validate_text_input_truncate(self):
+        """Test validate_text_input truncates long text"""
+        long_text = "A" * (MAX_TEXT_LENGTH + 100)
+        result = validate_text_input(long_text, MAX_TEXT_LENGTH, "test")
+        assert len(result) == MAX_TEXT_LENGTH
+        assert result == "A" * MAX_TEXT_LENGTH
+    
+    def test_validate_text_input_dangerous_patterns(self):
+        """Test validate_text_input removes dangerous patterns"""
+        dangerous_text = "Hello <script>alert('xss')</script> World"
+        result = validate_text_input(dangerous_text, MAX_TEXT_LENGTH, "test")
+        # Dangerous patterns should be removed, but "alert" alone is not dangerous
+        assert "<script" not in result.lower()
+        # Test with javascript: pattern
+        dangerous_text2 = "Hello javascript:alert('xss') World"
+        result2 = validate_text_input(dangerous_text2, MAX_TEXT_LENGTH, "test")
+        assert "javascript:" not in result2.lower()
+    
+    def test_validate_text_input_non_string(self):
+        """Test validate_text_input converts non-string to string"""
+        result = validate_text_input(12345, MAX_TEXT_LENGTH, "test")
+        assert isinstance(result, str)
+        assert result == "12345"
+    
+    def test_validate_command_value_now(self):
+        """Test validate_command_value for NOW command"""
+        result = validate_command_value("Test Song", "NOW")
+        assert result == "Test Song"
+    
+    def test_validate_command_value_next(self):
+        """Test validate_command_value for NEXT command"""
+        result = validate_command_value("Next Item", "NEXT")
+        assert result == "Next Item"
+    
+    def test_validate_command_value_warn(self):
+        """Test validate_command_value for WARN command"""
+        result = validate_command_value("Warning Message", "WARN")
+        assert result == "Warning Message"
+    
+    def test_validate_command_value_conf(self):
+        """Test validate_command_value for CONF command"""
+        long_value = "A" * (MAX_CONFIG_LENGTH + 100)
+        result = validate_command_value(long_value, "CONF")
+        assert len(result) <= MAX_CONFIG_LENGTH
+    
+    def test_validate_led_value_on(self):
+        """Test validate_led_value with ON"""
+        assert validate_led_value("ON") is True
+        assert validate_led_value("on") is True
+        assert validate_led_value("On") is True
+    
+    def test_validate_led_value_off(self):
+        """Test validate_led_value with OFF"""
+        assert validate_led_value("OFF") is True
+        assert validate_led_value("off") is True
+        assert validate_led_value("Off") is True
+    
+    def test_validate_led_value_invalid(self):
+        """Test validate_led_value with invalid values"""
+        assert validate_led_value("INVALID") is False
+        assert validate_led_value("") is False
+        assert validate_led_value("ONN") is False
+    
+    def test_validate_air_value_air1(self):
+        """Test validate_air_value for AIR1"""
+        assert validate_air_value("ON", 1) is True
+        assert validate_air_value("OFF", 1) is True
+        assert validate_air_value("RESET", 1) is False
+    
+    def test_validate_air_value_air2(self):
+        """Test validate_air_value for AIR2"""
+        assert validate_air_value("ON", 2) is True
+        assert validate_air_value("OFF", 2) is True
+        assert validate_air_value("RESET", 2) is False
+    
+    def test_validate_air_value_air3(self):
+        """Test validate_air_value for AIR3"""
+        assert validate_air_value("ON", 3) is True
+        assert validate_air_value("OFF", 3) is True
+        assert validate_air_value("RESET", 3) is True
+        assert validate_air_value("TOGGLE", 3) is True
+        assert validate_air_value("INVALID", 3) is False
+    
+    def test_validate_air_value_air4(self):
+        """Test validate_air_value for AIR4"""
+        assert validate_air_value("ON", 4) is True
+        assert validate_air_value("OFF", 4) is True
+        assert validate_air_value("RESET", 4) is True
+        assert validate_air_value("TOGGLE", 4) is False
+    
+    def test_validate_air3time_value_valid(self):
+        """Test validate_air3time_value with valid values"""
+        assert validate_air3time_value("0") is True
+        assert validate_air3time_value("60") is True
+        assert validate_air3time_value("3600") is True
+        assert validate_air3time_value("86400") is True  # 24 hours
+    
+    def test_validate_air3time_value_invalid(self):
+        """Test validate_air3time_value with invalid values"""
+        assert validate_air3time_value("-1") is False
+        assert validate_air3time_value("86401") is False  # > 24 hours
+        assert validate_air3time_value("abc") is False
+        assert validate_air3time_value("") is False
+    
+    def test_validate_cmd_value_valid(self):
+        """Test validate_cmd_value with valid values"""
+        assert validate_cmd_value("REBOOT") is True
+        assert validate_cmd_value("SHUTDOWN") is True
+        assert validate_cmd_value("QUIT") is True
+        assert validate_cmd_value("reboot") is True  # Case insensitive
+        assert validate_cmd_value("shutdown") is True
+    
+    def test_validate_cmd_value_invalid(self):
+        """Test validate_cmd_value with invalid values"""
+        assert validate_cmd_value("INVALID") is False
+        assert validate_cmd_value("") is False
+        assert validate_cmd_value("RESTART") is False
+
+
+class TestInputValidationIntegration:
+    """Test input validation integration in parse_cmd"""
+    
+    def test_parse_cmd_now_with_control_chars(self, command_handler, mock_main_screen):
+        """Test NOW command with control characters is sanitized"""
+        command_handler.parse_cmd(b"NOW:Hello\x00World\x1F")
+        # Should be sanitized (control chars removed)
+        call_args = mock_main_screen.set_current_song_text.call_args[0][0]
+        assert "\x00" not in call_args
+        assert "\x1F" not in call_args
+    
+    def test_parse_cmd_next_long_text_truncated(self, command_handler, mock_main_screen):
+        """Test NEXT command with very long text is truncated"""
+        long_text = "A" * (MAX_TEXT_LENGTH + 100)
+        command_handler.parse_cmd(f"NEXT:{long_text}".encode('utf-8'))
+        call_args = mock_main_screen.set_news_text.call_args[0][0]
+        assert len(call_args) == MAX_TEXT_LENGTH
+    
+    def test_parse_cmd_warn_with_dangerous_pattern(self, command_handler, mock_main_screen):
+        """Test WARN command with dangerous pattern is sanitized"""
+        dangerous_text = "Warning <script>alert('xss')</script>"
+        command_handler.parse_cmd(f"WARN:{dangerous_text}".encode('utf-8'))
+        call_args = mock_main_screen.add_warning.call_args[0][0]
+        assert "<script" not in call_args.lower()
+    
+    def test_parse_cmd_led_invalid_value(self, command_handler, mock_main_screen):
+        """Test LED command with invalid value is rejected"""
+        command_handler.parse_cmd(b"LED1:INVALID")
+        # Should not call led_logic
+        mock_main_screen.led_logic.assert_not_called()
+    
+    def test_parse_cmd_air3_invalid_value(self, command_handler, mock_main_screen):
+        """Test AIR3 command with invalid value is rejected"""
+        command_handler.parse_cmd(b"AIR3:INVALID")
+        # Should not call any AIR3 methods
+        mock_main_screen.start_air3.assert_not_called()
+        mock_main_screen.stop_air3.assert_not_called()
+        mock_main_screen.radio_timer_reset.assert_not_called()
+        mock_main_screen.radio_timer_start_stop.assert_not_called()
+    
+    def test_parse_cmd_air3time_invalid_value(self, command_handler, mock_main_screen):
+        """Test AIR3TIME command with invalid value is rejected"""
+        command_handler.parse_cmd(b"AIR3TIME:99999")  # > 86400
+        # Should not call radio_timer_set
+        mock_main_screen.radio_timer_set.assert_not_called()
+    
+    def test_parse_cmd_cmd_invalid_value(self, command_handler, mock_main_screen):
+        """Test CMD command with invalid value is rejected"""
+        command_handler.parse_cmd(b"CMD:INVALID")
+        # Should not call any system commands
+        mock_main_screen.reboot_host.assert_not_called()
+        mock_main_screen.shutdown_host.assert_not_called()
+        mock_main_screen.quit_oas.assert_not_called()
+    
+    def test_parse_cmd_conf_text_sanitized(self, command_handler, mock_main_screen):
+        """Test CONF command with text parameter is sanitized"""
+        dangerous_text = "Station\x00Name<script>"
+        command_handler.parse_cmd(f"CONF:General:stationname={dangerous_text}".encode('utf-8'))
+        # Should call setText with sanitized value
+        call_args = mock_main_screen.settings.StationName.setText.call_args[0][0]
+        assert "\x00" not in call_args
+        assert "<script" not in call_args.lower()
+    
+    def test_parse_cmd_invalid_utf8(self, command_handler, mock_main_screen):
+        """Test parse_cmd with invalid UTF-8 encoding"""
+        # Invalid UTF-8 sequence
+        invalid_utf8 = b'\xff\xfe\x00\x00'
+        result = command_handler.parse_cmd(invalid_utf8)
+        # Should return False and not crash
+        assert result is False
 

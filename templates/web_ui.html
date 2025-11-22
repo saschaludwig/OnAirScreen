@@ -474,20 +474,20 @@
                 <h2>Text Controls</h2>
                 <div class="text-controls">
                     <div class="text-input-row">
-                        <div class="text-input-group">
-                            <label for="nowInput">NOW (Current Song):</label>
-                            <div class="input-with-button">
-                                <input type="text" id="nowInput" placeholder="Enter current song..." />
-                                <button class="text-btn" onclick="sendTextCommand('NOW', 'nowInput')">Set</button>
-                                <button class="text-btn warn-clear" onclick="clearText('NOW', 'nowInput')">Clear</button>
-                            </div>
+                    <div class="text-input-group">
+                        <label for="nowInput">NOW (Current Song):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="nowInput" placeholder="Enter current song..." />
+                            <button class="text-btn" onclick="sendTextCommand('NOW', 'nowInput')">Set</button>
+                            <button class="text-btn warn-clear" onclick="clearText('NOW', 'nowInput')">Clear</button>
                         </div>
-                        <div class="text-input-group">
-                            <label for="nextInput">NEXT (News/Next):</label>
-                            <div class="input-with-button">
-                                <input type="text" id="nextInput" placeholder="Enter next item..." />
-                                <button class="text-btn" onclick="sendTextCommand('NEXT', 'nextInput')">Set</button>
-                                <button class="text-btn warn-clear" onclick="clearText('NEXT', 'nextInput')">Clear</button>
+                    </div>
+                    <div class="text-input-group">
+                        <label for="nextInput">NEXT (News/Next):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="nextInput" placeholder="Enter next item..." />
+                            <button class="text-btn" onclick="sendTextCommand('NEXT', 'nextInput')">Set</button>
+                            <button class="text-btn warn-clear" onclick="clearText('NEXT', 'nextInput')">Clear</button>
                             </div>
                         </div>
                     </div>
@@ -720,8 +720,8 @@
                     const sortedWarnings = [...data.warnings].sort((a, b) => b.priority - a.priority);
                     
                     sortedWarnings.forEach(warning => {
-                        const warnItem = document.createElement('div');
-                        warnItem.className = 'status-item';
+                    const warnItem = document.createElement('div');
+                    warnItem.className = 'status-item';
                         warnItem.style.gridColumn = 'span 4';  // Full width
                         // Different colors based on priority
                         const priorityColors = {
@@ -877,7 +877,7 @@
             // Initialize elements if they don't exist
             if (Object.keys(airControlElements).length === 0) {
                 container.innerHTML = '';
-                for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= 4; i++) {
                     const group = document.createElement('div');
                     group.className = 'air-control-group';
                     group.id = `airGroup${i}`;
@@ -917,7 +917,7 @@
                 const key = `air${i}`;
                 
                 const lastState = lastAIRState[key];
-                const elements = airControlElements[key];
+                    const elements = airControlElements[key];
                 
                 // Update button text and class if text or status changed
                 if (!lastState || lastState.text !== a.text || lastState.status !== statusStr) {
@@ -931,11 +931,11 @@
                 elements.startStopBtn.title = `${a.text} - ${timeStr} - ${a.status ? 'Running' : 'Stopped'} - Click to ${a.status ? 'stop' : 'start'}`;
                 
                 // Store current state
-                lastAIRState[key] = {
-                    status: statusStr,
-                    time: timeStr,
-                    text: a.text
-                };
+                    lastAIRState[key] = {
+                        status: statusStr,
+                        time: timeStr,
+                        text: a.text
+                    };
             }
         }
         
@@ -995,7 +995,7 @@
             const priority = prioritySelect ? prioritySelect.value : '0';
             // Priority 0 is only for backward compatibility, so send WARN: without explicit priority
             if (priority === '0') {
-                sendCommand('WARN:');
+            sendCommand('WARN:');
             } else {
                 // Send clear command with the selected priority (1 or 2)
                 sendCommand('WARN:' + priority + ':');

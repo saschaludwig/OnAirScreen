@@ -28,6 +28,11 @@ All notable changes to this project will be documented in this file.
 - Tests: Comprehensive unit test coverage for weatherwidget.py (23 tests for WeatherWidget class)
 - Tests: Comprehensive unit test coverage for clockwidget.py (25 tests for ClockWidget class)
 - Tests: Extended test coverage for start.py with 11 tests for set_log_level() function
+- Security: Comprehensive input validation for all network commands (UDP/HTTP)
+- Security: Text input sanitization for NOW, NEXT, WARN commands (removes control characters, dangerous patterns)
+- Security: Command value validation for LED, AIR, CMD commands (validates allowed values)
+- Security: Length limits for text inputs (500 chars for NOW/NEXT/WARN, 1000 for CONF)
+- Security: Input validation for CONF commands (stationname, slogan, LED text, AIR text)
 
 ### Changed
 - Web-UI: Fixed dark mode flash on page reload by setting theme immediately in HTML head

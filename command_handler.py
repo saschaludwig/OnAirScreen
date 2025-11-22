@@ -42,12 +42,173 @@ This module handles parsing and execution of commands received via UDP/HTTP.
 """
 
 import logging
+import re
 from typing import Callable, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from start import MainScreen
 
 logger = logging.getLogger(__name__)
+
+# Maximum length for text fields (NOW, NEXT, WARN)
+MAX_TEXT_LENGTH = 500
+
+# Maximum length for configuration values
+MAX_CONFIG_LENGTH = 1000
+
+# Control characters that should be removed from text input
+CONTROL_CHAR_PATTERN = re.compile(r'[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]')
+
+# Dangerous characters/sequences that should be sanitized
+DANGEROUS_PATTERNS = [
+    re.compile(r'<script', re.IGNORECASE),
+    re.compile(r'javascript:', re.IGNORECASE),
+    re.compile(r'on\w+\s*=', re.IGNORECASE),  # Event handlers like onclick=
+]
+
+
+def validate_text_input(text: str, max_length: int = MAX_TEXT_LENGTH, field_name: str = "text") -> str:
+    """
+    Validate and sanitize text input for NOW, NEXT, WARN commands
+    
+    Args:
+        text: Input text to validate
+        max_length: Maximum allowed length (default: MAX_TEXT_LENGTH)
+        field_name: Name of field for logging purposes
+        
+    Returns:
+        Sanitized text string
+        
+    Note:
+        - Removes control characters
+        - Truncates to max_length if necessary
+        - Logs warnings for invalid input
+    """
+    if not isinstance(text, str):
+        logger.warning(f"Invalid input type for {field_name}: {type(text)}, converting to string")
+        text = str(text)
+    
+    # Remove control characters
+    sanitized = CONTROL_CHAR_PATTERN.sub('', text)
+    
+    if sanitized != text:
+        logger.warning(f"Control characters removed from {field_name} input")
+    
+    # Check for dangerous patterns
+    for pattern in DANGEROUS_PATTERNS:
+        if pattern.search(sanitized):
+            logger.warning(f"Potentially dangerous pattern detected in {field_name} input, removing")
+            sanitized = pattern.sub('', sanitized)
+    
+    # Truncate if too long
+    if len(sanitized) > max_length:
+        logger.warning(f"{field_name} input truncated from {len(sanitized)} to {max_length} characters")
+        sanitized = sanitized[:max_length]
+    
+    return sanitized
+
+
+def validate_command_value(value: str, command: str) -> str:
+    """
+    Validate command value based on command type
+    
+    Args:
+        value: Command value to validate
+        command: Command name (NOW, NEXT, WARN, etc.)
+        
+    Returns:
+        Validated value string
+    """
+    if not isinstance(value, str):
+        logger.warning(f"Invalid value type for command {command}: {type(value)}, converting to string")
+        value = str(value)
+    
+    # Text commands need special validation
+    if command in ("NOW", "NEXT", "WARN"):
+        return validate_text_input(value, MAX_TEXT_LENGTH, command)
+    
+    # Configuration values
+    if command == "CONF":
+        # CONF values can be longer but still need basic sanitization
+        sanitized = CONTROL_CHAR_PATTERN.sub('', value)
+        if len(sanitized) > MAX_CONFIG_LENGTH:
+            logger.warning(f"CONF value truncated from {len(sanitized)} to {MAX_CONFIG_LENGTH} characters")
+            sanitized = sanitized[:MAX_CONFIG_LENGTH]
+        return sanitized
+    
+    # For other commands, just remove control characters
+    sanitized = CONTROL_CHAR_PATTERN.sub('', value)
+    if sanitized != value:
+        logger.warning(f"Control characters removed from {command} command value")
+    
+    return sanitized
+
+
+def validate_led_value(value: str) -> bool:
+    """
+    Validate LED command value
+    
+    Args:
+        value: LED command value (should be "ON" or "OFF")
+        
+    Returns:
+        True if value is valid, False otherwise
+    """
+    return value.upper() in ("ON", "OFF")
+
+
+def validate_air_value(value: str, air_num: int) -> bool:
+    """
+    Validate AIR command value
+    
+    Args:
+        value: AIR command value
+        air_num: AIR timer number (1-4)
+        
+    Returns:
+        True if value is valid, False otherwise
+    """
+    if air_num in (1, 2):
+        # AIR1 and AIR2 only support ON/OFF
+        return value.upper() in ("ON", "OFF")
+    elif air_num == 3:
+        # AIR3 supports ON, OFF, RESET, TOGGLE
+        return value.upper() in ("ON", "OFF", "RESET", "TOGGLE")
+    elif air_num == 4:
+        # AIR4 supports ON, OFF, RESET
+        return value.upper() in ("ON", "OFF", "RESET")
+    return False
+
+
+def validate_air3time_value(value: str) -> bool:
+    """
+    Validate AIR3TIME command value (must be a valid integer)
+    
+    Args:
+        value: Timer duration as string
+        
+    Returns:
+        True if value is valid integer, False otherwise
+    """
+    try:
+        int_value = int(value)
+        # Reasonable range: 0 to 24 hours (86400 seconds)
+        return 0 <= int_value <= 86400
+    except (ValueError, OverflowError):
+        return False
+
+
+def validate_cmd_value(value: str) -> bool:
+    """
+    Validate CMD command value
+    
+    Args:
+        value: CMD command value (should be "REBOOT", "SHUTDOWN", or "QUIT")
+        
+    Returns:
+        True if value is valid, False otherwise
+    """
+    return value.upper() in ("REBOOT", "SHUTDOWN", "QUIT")
 
 
 class CommandHandler:
@@ -80,10 +241,21 @@ class CommandHandler:
         try:
             (command, value) = data.decode('utf_8').split(':', 1)
         except ValueError:
+            logger.warning("Invalid command format: missing colon separator")
+            return False
+        except UnicodeDecodeError as e:
+            logger.error(f"Invalid UTF-8 encoding in command: {e}")
             return False
 
-        command = str(command)
-        value = str(value)
+        command = str(command).strip()
+        value = str(value).strip()
+        
+        # Validate and sanitize command value
+        try:
+            value = validate_command_value(value, command)
+        except Exception as e:
+            logger.error(f"Error validating command value for {command}: {e}")
+            return False
         
         # Use command dispatch map for simple commands
         handler = self._get_command_handler(command)
@@ -134,7 +306,11 @@ class CommandHandler:
             led_num: LED number (1-4)
             value: Command value ("ON" or "OFF")
         """
-        self.main_screen.led_logic(led_num, value != "OFF")
+        if not validate_led_value(value):
+            logger.warning(f"Invalid LED{led_num} command value: '{value}', expected 'ON' or 'OFF'")
+            return
+        
+        self.main_screen.led_logic(led_num, value.upper() != "OFF")
     
     def _handle_warn_command(self, value: str) -> None:
         """
@@ -142,10 +318,10 @@ class CommandHandler:
         
         Supports two formats:
         - WARN:Text (backward compatible, uses priority 0)
-        - WARN:Prio:Text (explicit priority, where Prio is 0, 1, or 2)
+        - WARN:Prio:Text (explicit priority, where Prio is 1 or 2)
         
         Args:
-            value: Warning text or "Prio:Text" format
+            value: Warning text or "Prio:Text" format (already validated and sanitized)
                  Empty string clears warning at priority 0
         """
         if not value:
@@ -162,21 +338,29 @@ class CommandHandler:
                     # Priority 0 is only for backward compatibility (WARN:Text)
                     # If explicitly specified (WARN:0:Text), treat as regular text without priority
                     logger.warning("Priority 0 cannot be explicitly set. Use WARN:Text for priority 0. Treating as regular text.")
-                    self.main_screen.add_warning(value, 0)  # Use the full value as text
+                    # Validate and sanitize the text part
+                    text = validate_text_input(parts[1] if len(parts) > 1 else value, MAX_TEXT_LENGTH, "WARN")
+                    self.main_screen.add_warning(text, 0)
                 elif 1 <= priority <= 2:
-                    text = parts[1]
+                    text = parts[1] if len(parts) > 1 else ""
                     if text:
+                        # Validate and sanitize the text part
+                        text = validate_text_input(text, MAX_TEXT_LENGTH, f"WARN (priority {priority})")
                         self.main_screen.add_warning(text, priority)
                     else:
                         self.main_screen.remove_warning(priority)
                 else:
                     logger.warning(f"Invalid WARN priority: {priority}, must be 1-2. Priority 0 is only for backward compatibility. Using default priority 0.")
-                    self.main_screen.add_warning(value, 0)
+                    # Validate and sanitize the full value as text
+                    text = validate_text_input(value, MAX_TEXT_LENGTH, "WARN")
+                    self.main_screen.add_warning(text, 0)
             except ValueError:
                 # Not a valid priority format, treat as regular text
-                self.main_screen.add_warning(value, 0)
+                text = validate_text_input(value, MAX_TEXT_LENGTH, "WARN")
+                self.main_screen.add_warning(text, 0)
         else:
             # Backward compatible: just text, use priority 0
+            # Value is already validated and sanitized by parse_cmd
             self.main_screen.add_warning(value, 0)
     
     def _handle_air_simple_command(self, air_num: int, value: str) -> None:
@@ -185,9 +369,13 @@ class CommandHandler:
         
         Args:
             air_num: AIR timer number (1 or 2)
-            value: Command value ("OFF" to stop, any other value to start)
+            value: Command value ("OFF" to stop, "ON" to start)
         """
-        if value == "OFF":
+        if not validate_air_value(value, air_num):
+            logger.warning(f"Invalid AIR{air_num} command value: '{value}', expected 'ON' or 'OFF'")
+            return
+        
+        if value.upper() == "OFF":
             getattr(self.main_screen, f"set_air{air_num}")(False)
         else:
             getattr(self.main_screen, f"set_air{air_num}")(True)
@@ -199,13 +387,18 @@ class CommandHandler:
         Args:
             value: Command action ("OFF", "ON", "RESET", or "TOGGLE")
         """
-        if value == "OFF":
+        if not validate_air_value(value, 3):
+            logger.warning(f"Invalid AIR3 command value: '{value}', expected 'ON', 'OFF', 'RESET', or 'TOGGLE'")
+            return
+        
+        value_upper = value.upper()
+        if value_upper == "OFF":
             self.main_screen.stop_air3()
-        elif value == "ON":
+        elif value_upper == "ON":
             self.main_screen.start_air3()
-        elif value == "RESET":
+        elif value_upper == "RESET":
             self.main_screen.radio_timer_reset()
-        elif value == "TOGGLE":
+        elif value_upper == "TOGGLE":
             self.main_screen.radio_timer_start_stop()
     
     def _handle_air3time_command(self, value: str) -> None:
@@ -215,13 +408,17 @@ class CommandHandler:
         Args:
             value: Timer duration in seconds as string
             
-        Raises:
-            ValueError: If value cannot be converted to integer (logged, not raised)
+        Note:
+            Validates that value is a valid integer in range 0-86400 (24 hours)
         """
+        if not validate_air3time_value(value):
+            logger.error(f"Invalid AIR3TIME value: '{value}', must be integer between 0 and 86400")
+            return
+        
         try:
             self.main_screen.radio_timer_set(int(value))
-        except ValueError as e:
-            logger.error(f"ERROR: invalid value: {e}")
+        except (ValueError, OverflowError) as e:
+            logger.error(f"ERROR: invalid AIR3TIME value: {e}")
     
     def _handle_air4_command(self, value: str) -> None:
         """
@@ -230,11 +427,16 @@ class CommandHandler:
         Args:
             value: Command action ("OFF", "ON", or "RESET")
         """
-        if value == "OFF":
+        if not validate_air_value(value, 4):
+            logger.warning(f"Invalid AIR4 command value: '{value}', expected 'ON', 'OFF', or 'RESET'")
+            return
+        
+        value_upper = value.upper()
+        if value_upper == "OFF":
             self.main_screen.set_air4(False)
-        elif value == "ON":
+        elif value_upper == "ON":
             self.main_screen.set_air4(True)
-        elif value == "RESET":
+        elif value_upper == "RESET":
             self.main_screen.stream_timer_reset()
     
     def _handle_cmd_command(self, value: str) -> None:
@@ -244,11 +446,16 @@ class CommandHandler:
         Args:
             value: Command action ("REBOOT", "SHUTDOWN", or "QUIT")
         """
-        if value == "REBOOT":
+        if not validate_cmd_value(value):
+            logger.warning(f"Invalid CMD command value: '{value}', expected 'REBOOT', 'SHUTDOWN', or 'QUIT'")
+            return
+        
+        value_upper = value.upper()
+        if value_upper == "REBOOT":
             self.main_screen.reboot_host()
-        elif value == "SHUTDOWN":
+        elif value_upper == "SHUTDOWN":
             self.main_screen.shutdown_host()
-        elif value == "QUIT":
+        elif value_upper == "QUIT":
             self.main_screen.quit_oas()
     
     def _handle_color_setting(self, color_str: str, setter_func: Callable[[object], None], setting_name: str) -> None:
@@ -288,7 +495,7 @@ class CommandHandler:
         Handle CONF command (configuration updates)
         
         Args:
-            value: Configuration string in format "GROUP:PARAM=VALUE"
+            value: Configuration string in format "GROUP:PARAM=VALUE" (already validated and sanitized)
             
         Returns:
             True if command was handled successfully, False otherwise
@@ -297,6 +504,16 @@ class CommandHandler:
             (group, paramvalue) = value.split(':', 1)
             (param, content) = paramvalue.split('=', 1)
         except ValueError:
+            logger.warning(f"Invalid CONF command format: '{value}', expected 'GROUP:PARAM=VALUE'")
+            return False
+
+        # Validate group and param names (basic sanitization)
+        group = group.strip()
+        param = param.strip()
+        content = content.strip()
+        
+        if not group or not param:
+            logger.warning(f"Invalid CONF command: empty group or param in '{value}'")
             return False
 
         group_handlers = {
@@ -328,14 +545,17 @@ class CommandHandler:
             content: Parameter value
         """
         handlers = {
-            "stationname": lambda c: self.main_screen.settings.StationName.setText(c),
-            "slogan": lambda c: self.main_screen.settings.Slogan.setText(c),
+            "stationname": lambda c: self.main_screen.settings.StationName.setText(
+                validate_text_input(c, MAX_TEXT_LENGTH, "stationname")),
+            "slogan": lambda c: self.main_screen.settings.Slogan.setText(
+                validate_text_input(c, MAX_TEXT_LENGTH, "slogan")),
             "stationcolor": lambda c: self._handle_color_setting(
                 c, lambda color: self.main_screen.settings.setStationNameColor(color), "stationcolor"),
             "slogancolor": lambda c: self._handle_color_setting(
                 c, lambda color: self.main_screen.settings.setSloganColor(color), "slogancolor"),
             "replacenow": lambda c: self.main_screen.settings.replaceNOW.setChecked(c == "True"),
-            "replacenowtext": lambda c: self.main_screen.settings.replaceNOWText.setText(c),
+            "replacenowtext": lambda c: self.main_screen.settings.replaceNOWText.setText(
+                validate_text_input(c, MAX_TEXT_LENGTH, "replacenowtext")),
         }
         handler = handlers.get(param)
         if handler:
@@ -352,7 +572,8 @@ class CommandHandler:
         """
         handlers = {
             "used": lambda c: getattr(self.main_screen.settings, f"LED{led_num}").setChecked(c == "True"),
-            "text": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Text").setText(c),
+            "text": lambda c: getattr(self.main_screen.settings, f"LED{led_num}Text").setText(
+                validate_text_input(c, MAX_TEXT_LENGTH, f"LED{led_num} text")),
             "activebgcolor": lambda c: self._handle_color_setting(
                 c, lambda color: getattr(self.main_screen.settings, f"setLED{led_num}BGColor")(color),
                 f"LED{led_num}.activebgcolor"),
@@ -384,7 +605,8 @@ class CommandHandler:
         # Handle AIR text
         for air_num in range(1, 5):
             if param == f"TimerAIR{air_num}Text":
-                getattr(self.main_screen.settings, f"AIR{air_num}Text").setText(content)
+                sanitized = validate_text_input(content, MAX_TEXT_LENGTH, f"AIR{air_num} text")
+                getattr(self.main_screen.settings, f"AIR{air_num}Text").setText(sanitized)
                 return
         
         # Handle AIR colors
