@@ -24,6 +24,10 @@ All notable changes to this project will be documented in this file.
 - Settings: UI buttons for preset management (Save, Load, Delete)
 - Settings: Log level configuration (DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE) with ComboBox in General settings
 - Command-line: --loglevel option to override log level settings (temporary, not saved)
+- Tests: Comprehensive unit test coverage for defaults.py (17 tests for get_default() function)
+- Tests: Comprehensive unit test coverage for weatherwidget.py (23 tests for WeatherWidget class)
+- Tests: Comprehensive unit test coverage for clockwidget.py (25 tests for ClockWidget class)
+- Tests: Extended test coverage for start.py with 11 tests for set_log_level() function
 
 ### Changed
 - Web-UI: Fixed dark mode flash on page reload by setting theme immediately in HTML head
