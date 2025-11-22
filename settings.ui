@@ -2613,32 +2613,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
        <property name="bottomMargin">
         <number>0</number>
        </property>
-       <item row="5" column="0">
-        <spacer name="verticalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Orientation::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="3" column="0">
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Orientation::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_6">
          <property name="font">
@@ -2655,13 +2629,23 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="versionLabel">
-         <property name="text">
-          <string>Version: ???</string>
+       <item row="3" column="0">
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignCenter</set>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="settingspathLabel">
+         <property name="text">
+          <string>Settings Path: ???</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextSelectableByKeyboard|Qt::TextInteractionFlag::TextSelectableByMouse</set>
@@ -2681,7 +2665,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </property>
         </widget>
        </item>
-       <item row="12" column="0">
+       <item row="13" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2869,7 +2853,7 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item row="8" column="0">
+       <item row="9" column="0">
         <widget class="QPushButton" name="ResetSettingsButton">
          <property name="enabled">
           <bool>false</bool>
@@ -2879,12 +2863,18 @@ p, li { white-space: pre-wrap; }
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
-        <widget class="QCheckBox" name="enableResetButton">
-         <property name="text">
-          <string>Enable Reset all settings button</string>
+       <item row="5" column="0">
+        <spacer name="verticalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
-        </widget>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="distributionLabel">
@@ -2899,15 +2889,90 @@ p, li { white-space: pre-wrap; }
          </property>
         </widget>
        </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="settingspathLabel">
+       <item row="1" column="0">
+        <widget class="QLabel" name="versionLabel">
          <property name="text">
-          <string>Settings Path: ???</string>
+          <string>Version: ???</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextSelectableByKeyboard|Qt::TextInteractionFlag::TextSelectableByMouse</set>
          </property>
         </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QCheckBox" name="enableResetButton">
+         <property name="text">
+          <string>Enable Reset all settings button</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_21">
+         <item>
+          <layout class="QFormLayout" name="formLayout_4">
+           <property name="formAlignment">
+            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+           </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_47">
+             <property name="text">
+              <string>Loglevel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="loglevelcombobox">
+             <item>
+              <property name="text">
+               <string comment="DEBUG">DEBUG</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string comment="INFO">INFO</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string comment="WARNING">WARNING</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string comment="ERROR">ERROR</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string comment="CRITICAL">CRITICAL</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string comment="NONE">NONE</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
@@ -5940,7 +6005,7 @@ Public License instead of this License.  But first, please read
  </connections>
  <buttongroups>
   <buttongroup name="buttonGroup_show_seconds"/>
-  <buttongroup name="buttonGroup_logo_position"/>
   <buttongroup name="buttonGroup_clock_mode"/>
+  <buttongroup name="buttonGroup_logo_position"/>
  </buttongroups>
 </ui>

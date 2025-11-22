@@ -127,6 +127,9 @@ DEFAULT_UPDATE_CHECK: bool = False
 DEFAULT_UPDATE_KEY: str = ""
 DEFAULT_UPDATE_INCLUDE_BETA: bool = False
 
+# Logging Settings
+DEFAULT_LOG_LEVEL: str = "INFO"
+
 # Weather Widget Settings
 DEFAULT_WEATHER_WIDGET_ENABLED: bool = False
 DEFAULT_WEATHER_API_KEY: str = ""
@@ -157,6 +160,7 @@ def get_default(group: str, key: str, default: Any = None) -> Any:
             "replacenow": DEFAULT_REPLACE_NOW,
             "replacenowtext": DEFAULT_REPLACE_NOW_TEXT,
             "fullscreen": DEFAULT_FULLSCREEN,
+            "loglevel": DEFAULT_LOG_LEVEL,
         }
         return defaults.get(key, default)
     

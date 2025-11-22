@@ -625,6 +625,25 @@ class Settings(QWidget, Ui_Settings):
             self.checkBox_IncludeBetaVersions.setChecked(settings.value('updateincludebeta', DEFAULT_UPDATE_INCLUDE_BETA, type=bool))
             self.replaceNOW.setChecked(settings.value('replacenow', DEFAULT_REPLACE_NOW, type=bool))
             self.replaceNOWText.setText(settings.value('replacenowtext', DEFAULT_REPLACE_NOW_TEXT))
+            # Load log level and set ComboBox
+            # Check if command-line log level is set (always overrides settings)
+            try:
+                import start
+                if hasattr(start, '_command_line_log_level') and start._command_line_log_level:
+                    log_level = start._command_line_log_level
+                else:
+                    log_level = settings.value('loglevel', DEFAULT_LOG_LEVEL, type=str)
+            except (ImportError, AttributeError):
+                # If import fails (e.g., in tests), use settings value
+                log_level = settings.value('loglevel', DEFAULT_LOG_LEVEL, type=str)
+            index = self.loglevelcombobox.findText(log_level)
+            if index >= 0:
+                self.loglevelcombobox.setCurrentIndex(index)
+            else:
+                # Fallback to default if value not found
+                index = self.loglevelcombobox.findText(DEFAULT_LOG_LEVEL)
+                if index >= 0:
+                    self.loglevelcombobox.setCurrentIndex(index)
 
         with settings_group(settings, "NTP"):
             self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', DEFAULT_NTP_CHECK, type=bool))
@@ -808,6 +827,7 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
             settings.setValue('replacenow', self.replaceNOW.isChecked())
             settings.setValue('replacenowtext', self.replaceNOWText.displayText())
+            settings.setValue('loglevel', self.loglevelcombobox.currentText())
 
         with settings_group(settings, "NTP"):
             settings.setValue('ntpcheck', self.checkBox_NTPCheck.isChecked())

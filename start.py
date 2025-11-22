@@ -35,6 +35,7 @@
 #
 #############################################################################
 
+import argparse
 import logging
 import os
 import re
@@ -61,12 +62,41 @@ from event_logger import EventLogger
 from utils import settings_group
 from defaults import *  # noqa: F403, F405
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
+def set_log_level(log_level_str: str) -> None:
+    """
+    Set the global log level for all loggers
+    
+    Args:
+        log_level_str: Log level string (DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE)
+                      For NONE, logging is effectively disabled (CRITICAL+1)
+    """
+    log_level_map = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+        "NONE": logging.CRITICAL + 1,  # Disables all logging
+    }
+    
+    level = log_level_map.get(log_level_str.upper(), logging.INFO)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    
+    # Configure handler if not already configured
+    if not root_logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        root_logger.addHandler(handler)
+
+
+# Logging will be configured after QApplication initialization and settings loading
 logger = logging.getLogger(__name__)
+
+# Global variable to store command-line log level (overrides settings)
+# This will be set in the main block if --loglevel is provided
+_command_line_log_level = None
 
 
 class CommandSignal(QObject):
@@ -1720,10 +1750,37 @@ class MainScreen(QWidget, Ui_MainScreen):
         Restores settings from configuration, updates weather widget config,
         and triggers weather update.
         """
-        # Restore settings (this loads new settings from QSettings)
-        self.restore_settings_from_config()
-        self.weatherWidget.readConfig()
-        self.weatherWidget.updateWeather()
+        # IMPORTANT: Check command-line log level FIRST, before restoring settings
+        # Command-line log level ALWAYS overrides settings and must not be changed
+        import sys as sys_module
+        global _command_line_log_level
+        
+        # If command-line log level is set, use it and ignore settings completely
+        # This check MUST happen BEFORE restoring settings to prevent settings from overriding
+        if _command_line_log_level is not None:
+            # Command-line log level always overrides settings - do not change it
+            log_level = _command_line_log_level
+            set_log_level(log_level)
+            # Always print log level change, regardless of current log level
+            print(f"Log level (from command-line, ignoring settings): {log_level}", file=sys_module.stderr)
+            # Restore other settings (but keep command-line log level - do NOT read log level from settings)
+            self.restore_settings_from_config()
+            self.weatherWidget.readConfig()
+            self.weatherWidget.updateWeather()
+            # Note: We do NOT read or apply log level from settings when command-line level is set
+        else:
+            # No command-line level set, restore all settings including log level
+            self.restore_settings_from_config()
+            self.weatherWidget.readConfig()
+            self.weatherWidget.updateWeather()
+            
+            # Apply log level from settings
+            settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+            with settings_group(settings, "General"):
+                log_level = settings.value('loglevel', DEFAULT_LOG_LEVEL, type=str)
+            set_log_level(log_level)
+            # Always print log level change, regardless of current log level
+            print(f"Log level updated to: {log_level}", file=sys_module.stderr)
         
         # Always restart MQTT client when settings are applied (applySettings was called)
         # The client will check if settings changed and only reconnect if needed
@@ -1983,7 +2040,37 @@ def sigint_handler(*args) -> None:
 ###################################
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, sigint_handler)
+    
+    # Parse command-line arguments before QApplication initialization
+    parser = argparse.ArgumentParser(description='OnAirScreen')
+    parser.add_argument('-l', '--loglevel', 
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                        help='Set log level (overrides settings, but does not save)')
+    args = parser.parse_args()
+    
     app = QApplication(sys.argv)
+    
+    # Initialize logging: load from settings first, then override with command-line if provided
+    settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+    with settings_group(settings, "General"):
+        log_level = settings.value('loglevel', DEFAULT_LOG_LEVEL, type=str)
+    
+    # Command-line argument overrides settings (temporarily, not saved)
+    if args.loglevel:
+        # Set module-level variable to remember command-line log level (for settings dialog)
+        _command_line_log_level = args.loglevel
+        log_level = args.loglevel
+    else:
+        # Clear command-line log level
+        _command_line_log_level = None
+    
+    # Configure logging with determined level
+    set_log_level(log_level)
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    # Always print log level change, regardless of current log level
+    print(f"Log level set to: {log_level}", file=sys.stderr)
     
     # Load fonts from fonts/ directory before creating UI
     load_fonts()
