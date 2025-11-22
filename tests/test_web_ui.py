@@ -21,7 +21,7 @@ from start import MainScreen
 @pytest.fixture
 def mock_main_screen():
     """Create a mock MainScreen instance for testing"""
-    with patch('start.CheckNTPOffsetThread.__del__'):
+    with patch('ntp_manager.CheckNTPOffsetThread.__del__'):
         with patch('start.Settings'):
             with patch('start.Ui_MainScreen'):
                 screen = MainScreen.__new__(MainScreen)
@@ -405,7 +405,7 @@ class TestGetStatusJSON:
     @patch('start.settings_group')
     def test_get_status_json_empty_texts(self, mock_settings_group, mock_qsettings):
         """Test get_status_json handles empty text fields"""
-        with patch('start.CheckNTPOffsetThread.__del__'):
+        with patch('ntp_manager.CheckNTPOffsetThread.__del__'):
             with patch('start.Settings'):
                 with patch('start.Ui_MainScreen'):
                     screen = MainScreen.__new__(MainScreen)
