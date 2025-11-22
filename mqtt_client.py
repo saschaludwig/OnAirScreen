@@ -42,6 +42,7 @@ from exceptions import MqttError, log_exception
 
 if TYPE_CHECKING:
     from start import MainScreen
+    from settings_functions import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,29 @@ class MqttClient(QThread):
         self.device_name = "OnAirScreen"
         self.device_id = socket.gethostname().lower().replace(" ", "_").replace(".", "_")
     
+    def _get_unique_id_from_mac(self) -> str:
+        """
+        Get unique ID from MAC address (last 6 hex characters)
+        
+        Returns:
+            Unique ID string (6 hex characters, lowercase)
+        """
+        try:
+            from settings_functions import Settings
+            mac = Settings.get_mac()
+            # Extract last 6 hex characters (remove colons and take last 6)
+            mac_clean = mac.replace(":", "").upper()
+            if len(mac_clean) >= 6:
+                unique_id = mac_clean[-6:].lower()
+            else:
+                # Fallback if MAC address is invalid
+                logger.warning(f"Invalid MAC address format: {mac}, using fallback")
+                unique_id = "000000"
+            return unique_id
+        except Exception as e:
+            logger.error(f"Error getting unique ID from MAC address: {e}")
+            return "000000"
+    
     def _load_config(self) -> None:
         """Load MQTT configuration from QSettings"""
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
@@ -93,11 +117,13 @@ class MqttClient(QThread):
             self.password = settings.value('mqttpassword', None, type=str)
             if not self.password:
                 self.password = None
-            self.base_topic = settings.value('mqttbasetopic', "onairscreen", type=str)
-            if not self.base_topic:
-                self.base_topic = "onairscreen"
             self.discovery_prefix = settings.value('discovery_prefix', "homeassistant", type=str)
-            self.device_name = settings.value('device_name', "OnAirScreen", type=str)
+            self.device_name = settings.value('mqttdevicename', "OnAirScreen", type=str)
+            if not self.device_name:
+                self.device_name = "OnAirScreen"
+            # Generate base_topic automatically from "onairscreen" + unique ID from MAC
+            unique_id = self._get_unique_id_from_mac()
+            self.base_topic = f"onairscreen_{unique_id}"
     
     def _is_enabled(self) -> bool:
         """Check if MQTT is enabled in settings"""

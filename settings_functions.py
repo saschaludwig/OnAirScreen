@@ -728,13 +728,13 @@ class Settings(QWidget, Ui_Settings):
             self.mqttport.setText(str(settings.value('mqttport', 1883, type=int)))
             self.mqttuser.setText(settings.value('mqttuser', "", type=str))
             self.mqttpassword.setText(settings.value('mqttpassword', "", type=str))
-            self.mqttbasetopic.setText(settings.value('mqttbasetopic', "onairscreen", type=str))
+            self.mqttdevicename.setText(settings.value('mqttdevicename', "OnAirScreen", type=str))
             # Enable/disable MQTT fields based on checkbox
             self.mqttserver.setEnabled(self.enablemqtt.isChecked())
             self.mqttport.setEnabled(self.enablemqtt.isChecked())
             self.mqttuser.setEnabled(self.enablemqtt.isChecked())
             self.mqttpassword.setEnabled(self.enablemqtt.isChecked())
-            self.mqttbasetopic.setEnabled(self.enablemqtt.isChecked())
+            self.mqttdevicename.setEnabled(self.enablemqtt.isChecked())
 
         with settings_group(settings, "Formatting"):
             self.dateFormat.setText(settings.value('dateFormat', DEFAULT_DATE_FORMAT))
@@ -914,7 +914,7 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('mqttport', self.mqttport.displayText())
             settings.setValue('mqttuser', self.mqttuser.displayText())
             settings.setValue('mqttpassword', self.mqttpassword.displayText())
-            settings.setValue('mqttbasetopic', self.mqttbasetopic.displayText())
+            settings.setValue('mqttdevicename', self.mqttdevicename.displayText())
 
         with settings_group(settings, "Formatting"):
             settings.setValue('dateFormat', self.dateFormat.displayText())
@@ -1661,7 +1661,7 @@ class Settings(QWidget, Ui_Settings):
         self.mqttport.setToolTip("MQTT broker port (default: 1883)")
         self.mqttuser.setToolTip("MQTT username (optional)")
         self.mqttpassword.setToolTip("MQTT password (optional)")
-        self.mqttbasetopic.setToolTip("Base MQTT topic prefix (default: onairscreen)")
+        self.mqttdevicename.setToolTip("MQTT device name (default: OnAirScreen)")
         
         # Formatting settings
         self.dateFormat.setToolTip("Date format string (e.g., 'dddd, dd. MMMM yyyy' for 'Monday, 01. January 2024')")
@@ -1683,7 +1683,7 @@ class Settings(QWidget, Ui_Settings):
         self.mqttport.setEnabled(enabled)
         self.mqttuser.setEnabled(enabled)
         self.mqttpassword.setEnabled(enabled)
-        self.mqttbasetopic.setEnabled(enabled)
+        self.mqttdevicename.setEnabled(enabled)
         
         # Timer/AIR settings
         for air_num in range(1, 5):

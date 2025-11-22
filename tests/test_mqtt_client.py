@@ -136,17 +136,20 @@ class TestMqttClientConfiguration:
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     @patch('mqtt_client.QSettings')
-    def test_load_config_from_settings(self, mock_qsettings, mock_main_screen):
+    @patch('settings_functions.Settings')
+    def test_load_config_from_settings(self, mock_settings_class, mock_qsettings, mock_main_screen):
         """Test loading configuration from QSettings"""
+        # Mock Settings.get_mac() to return a consistent MAC address
+        mock_settings_class.get_mac.return_value = "AA:BB:CC:DD:EE:FF"
+        
         mock_settings = Mock()
         mock_settings.value.side_effect = lambda key, default, **kwargs: {
             'mqttserver': 'test-broker.local',
             'mqttport': 8883,
             'mqttuser': 'testuser',
             'mqttpassword': 'testpass',
-            'mqttbasetopic': 'testtopic',
+            'mqttdevicename': 'TestDevice',
             'discovery_prefix': 'hass',
-            'device_name': 'TestDevice',
             'enablemqtt': True
         }.get(key, default)
         
@@ -159,14 +162,18 @@ class TestMqttClientConfiguration:
         assert client.broker_port == 8883
         assert client.username == 'testuser'
         assert client.password == 'testpass'
-        assert client.base_topic == 'testtopic'
+        assert client.base_topic == 'onairscreen_ddeeff'  # Last 6 hex chars from MAC (AA:BB:CC:DD:EE:FF -> DDEEFF)
         assert client.discovery_prefix == 'hass'
         assert client.device_name == 'TestDevice'
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     @patch('mqtt_client.QSettings')
-    def test_load_config_defaults(self, mock_qsettings, mock_main_screen):
+    @patch('settings_functions.Settings')
+    def test_load_config_defaults(self, mock_settings_class, mock_qsettings, mock_main_screen):
         """Test loading default configuration when settings are empty"""
+        # Mock Settings.get_mac() to return a consistent MAC address
+        mock_settings_class.get_mac.return_value = "11:22:33:44:55:66"
+        
         mock_settings = Mock()
         mock_settings.value.side_effect = lambda key, default, **kwargs: default
         mock_qsettings.return_value = mock_settings
@@ -178,7 +185,8 @@ class TestMqttClientConfiguration:
         assert client.broker_port == 1883
         assert client.username is None
         assert client.password is None
-        assert client.base_topic == "onairscreen"
+        assert client.base_topic == "onairscreen_445566"  # Last 6 hex chars from MAC (11:22:33:44:55:66 -> 445566)
+        assert client.device_name == "OnAirScreen"
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     @patch('mqtt_client.QSettings')

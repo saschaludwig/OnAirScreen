@@ -1484,6 +1484,16 @@
              <property name="formAlignment">
               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
              </property>
+             <item row="0" column="0">
+              <widget class="QCheckBox" name="enablemqtt">
+               <property name="text">
+                <string>enable MQTT support</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
              <item row="1" column="0">
               <widget class="QLabel" name="label_41">
                <property name="text">
@@ -1494,47 +1504,8 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="label_42">
-               <property name="text">
-                <string>MQTT Topic</string>
-               </property>
-               <property name="buddy">
-                <cstring>mqttbasetopic</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_43">
-               <property name="text">
-                <string>MQTT User</string>
-               </property>
-               <property name="buddy">
-                <cstring>mqttuser</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_44">
-               <property name="text">
-                <string>MQTT Password</string>
-               </property>
-               <property name="buddy">
-                <cstring>mqttpassword</cstring>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="1">
               <widget class="QLineEdit" name="mqttserver"/>
-             </item>
-             <item row="3" column="1">
-              <widget class="QLineEdit" name="mqttuser"/>
-             </item>
-             <item row="4" column="1">
-              <widget class="QLineEdit" name="mqttpassword"/>
-             </item>
-             <item row="5" column="1">
-              <widget class="QLineEdit" name="mqttbasetopic"/>
              </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_46">
@@ -1549,15 +1520,44 @@
              <item row="2" column="1">
               <widget class="QLineEdit" name="mqttport"/>
              </item>
-             <item row="0" column="0">
-              <widget class="QCheckBox" name="enablemqtt">
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_43">
                <property name="text">
-                <string>enable MQTT support</string>
+                <string>MQTT User</string>
                </property>
-               <property name="checked">
-                <bool>true</bool>
+               <property name="buddy">
+                <cstring>mqttuser</cstring>
                </property>
               </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLineEdit" name="mqttuser"/>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_44">
+               <property name="text">
+                <string>MQTT Password</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttpassword</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLineEdit" name="mqttpassword"/>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_42">
+               <property name="text">
+                <string>MQTT Device Name</string>
+               </property>
+               <property name="buddy">
+                <cstring>mqttdevicename</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QLineEdit" name="mqttdevicename"/>
              </item>
             </layout>
            </item>
@@ -5909,7 +5909,7 @@ Public License instead of this License.  But first, please read
   <connection>
    <sender>enablemqtt</sender>
    <signal>clicked(bool)</signal>
-   <receiver>mqttbasetopic</receiver>
+   <receiver>mqttdevicename</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -6004,8 +6004,8 @@ Public License instead of this License.  But first, please read
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="buttonGroup_logo_position"/>
   <buttongroup name="buttonGroup_show_seconds"/>
   <buttongroup name="buttonGroup_clock_mode"/>
-  <buttongroup name="buttonGroup_logo_position"/>
  </buttongroups>
 </ui>

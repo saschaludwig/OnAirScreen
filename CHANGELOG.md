@@ -25,7 +25,8 @@ All notable changes to this project will be documented in this file.
 - MQTT: Text entities (NOW, NEXT, WARN) for setting text fields
 - MQTT: Automatic status updates after state changes
 - MQTT: Automatic reconnection and autodiscovery re-publishing on reconnect
-- Settings: MQTT configuration (Server, Port, Username, Password, Base Topic)
+- Settings: MQTT configuration (Server, Port, Username, Password, Device Name)
+- MQTT: Base topic automatically generated from "onairscreen" + unique device ID (last 6 hex characters of MAC address)
 - Web-UI: Dark Mode support with theme toggle button and automatic persistence
 - Web-UI: Warning priority system with support for NTP warnings (priority -1), normal warnings (priority 0), medium priority (1), and high priority (2)
 - Web-UI: Display NTP warnings in Current Status section with blue color coding
