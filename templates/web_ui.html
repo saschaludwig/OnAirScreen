@@ -203,6 +203,26 @@
         .led-btn.active {
             background: #4caf50;
         }
+        .led-btn.blinking {
+            animation: ledBlink 1s infinite;
+        }
+        .status-item.blinking {
+            animation: statusBlink 1s infinite;
+        }
+        @keyframes ledBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        @keyframes statusBlink {
+            0%, 100% { 
+                background: var(--bg-item-active);
+                border-left-color: var(--border-item-active);
+            }
+            50% { 
+                background: var(--bg-item);
+                border-left-color: var(--border-item);
+            }
+        }
         .air-btn {
             background: #2196f3;
             color: white;
@@ -614,6 +634,7 @@
             }
             console.log('Using polling for status updates');
             updateStatus();  // Initial update
+            // Poll every 1000ms (1 second) - reasonable update frequency
             pollingInterval = setInterval(updateStatus, 1000);
         }
         
@@ -657,22 +678,197 @@
         
         let connectionErrorShown = false;
         
+        // Store blinking intervals for LEDs
+        let ledBlinkIntervals = {};
+        // Store element references for blinking (so intervals work even if element is temporarily removed from DOM)
+        let ledBlinkElements = {};
+        
+        // Function to start/stop blinking for a LED status display
+        // Only blinks if autoflash is enabled AND LED is ON (from server)
+        // Only restarts blinking if state actually changed
+        function manageLEDBlinking(ledNum, autoflashEnabled, ledIsOn, statusElement, forceRestart = false) {
+            const key = `led${ledNum}`;
+            
+            // Check if we need to change anything
+            const shouldBlink = autoflashEnabled && ledIsOn && statusElement;
+            const currentlyBlinking = ledBlinkIntervals[key] !== undefined;
+            
+            // If state hasn't changed and not forced, don't touch blinking at all
+            // Just ensure classes are correct (in case element was temporarily removed from DOM)
+            if (!forceRestart && currentlyBlinking === shouldBlink) {
+                // Only ensure classes are correct, but don't restart intervals
+                if (shouldBlink && statusElement && !statusElement.classList.contains('blinking')) {
+                    statusElement.classList.add('blinking');
+                } else if (!shouldBlink && statusElement && statusElement.classList.contains('blinking')) {
+                    statusElement.classList.remove('blinking');
+                }
+                // Don't restart blinking - intervals are already running correctly
+                return;
+            }
+            
+            // State changed or forced - stop existing blinking
+            if (ledBlinkIntervals[key]) {
+                clearInterval(ledBlinkIntervals[key]);
+                delete ledBlinkIntervals[key];
+            }
+            delete ledBlinkElements[key]; // Remove element reference
+            if (statusElement) {
+                statusElement.classList.remove('blinking');
+            }
+            
+            // Set correct state from server
+            if (statusElement) {
+                if (ledIsOn) {
+                    statusElement.classList.add('active');
+                } else {
+                    statusElement.classList.remove('active');
+                }
+            }
+            
+            // Only start blinking if: autoflash is enabled AND LED is actually ON
+            if (shouldBlink) {
+                // Store element reference for interval (so it works even if element is temporarily removed from DOM)
+                ledBlinkElements[key] = statusElement;
+                
+                // Add blinking class for CSS animation
+                statusElement.classList.add('blinking');
+                
+                // Start independent blinking animation (500ms interval like OnAirScreen)
+                let shouldShowActive = true;
+                
+                // Use setTimeout first to ensure we don't toggle immediately
+                ledBlinkIntervals[key] = setTimeout(() => {
+                    // Use stored element reference instead of getElementById
+                    const currentElement = ledBlinkElements[key];
+                    if (!currentElement || !currentElement.classList.contains('blinking')) {
+                        delete ledBlinkIntervals[key];
+                        delete ledBlinkElements[key];
+                        return;
+                    }
+                    
+                    // Now set up the interval for regular blinking
+                    ledBlinkIntervals[key] = setInterval(() => {
+                        // Use stored element reference - works even if element was temporarily removed from DOM
+                        const currentElement = ledBlinkElements[key];
+                        if (!currentElement || !currentElement.classList.contains('blinking')) {
+                            // Element reference lost or blinking stopped
+                            if (ledBlinkIntervals[key]) {
+                                clearInterval(ledBlinkIntervals[key]);
+                            }
+                            delete ledBlinkIntervals[key];
+                            delete ledBlinkElements[key];
+                            return;
+                        }
+                        
+                        // Toggle visual appearance only
+                        shouldShowActive = !shouldShowActive;
+                        if (shouldShowActive) {
+                            currentElement.classList.add('active');
+                        } else {
+                            currentElement.classList.remove('active');
+                        }
+                    }, 500);
+                }, 500);
+            } else {
+                // Not blinking - remove element reference
+                delete ledBlinkElements[key];
+            }
+        }
+        
+        // Store last LED state to detect changes
+        let lastLEDDisplayState = {};
+        
         function updateStatusDisplay(data) {
             const grid = document.getElementById('statusGrid');
-            grid.innerHTML = '';
             
-            // Row 1: LED status (LED1-4)
+            // Step 1: Update or create LED elements BEFORE clearing grid
+            // This preserves the elements and their blinking intervals
             for (let i = 1; i <= 4; i++) {
                 const led = data.leds[i];
-                const item = document.createElement('div');
-                item.className = 'status-item' + (led.status ? ' active' : '');
-                item.innerHTML = `
-                    <h3>LED ${i}</h3>
-                    <div class="value">${led.status ? 'ON' : 'OFF'}</div>
-                    <div style="font-size: 12px; color: var(--text-tertiary);">${led.text}</div>
-                `;
-                grid.appendChild(item);
+                
+                // Get actual status from server
+                const ledIsOn = led.status === true;
+                const autoflashEnabled = led.autoflash === true;
+                
+                // Check if element already exists
+                let item = document.getElementById(`ledStatus${i}`);
+                
+                // Check if state has changed
+                const currentState = {
+                    status: ledIsOn,
+                    autoflash: autoflashEnabled,
+                    text: led.text || `LED${i}`
+                };
+                
+                const stateChanged = !lastLEDDisplayState[i] || 
+                    lastLEDDisplayState[i].status !== currentState.status ||
+                    lastLEDDisplayState[i].autoflash !== currentState.autoflash ||
+                    lastLEDDisplayState[i].text !== currentState.text;
+                
+                if (stateChanged) {
+                    lastLEDDisplayState[i] = currentState;
+                }
+                
+                if (!item) {
+                    // Element doesn't exist, create it
+                    item = document.createElement('div');
+                    item.id = `ledStatus${i}`;
+                    item.classList.add('status-item');
+                    
+                    // Create value element
+                    const valueElement = document.createElement('div');
+                    valueElement.className = 'value';
+                    valueElement.id = `ledStatusValue${i}`;
+                    valueElement.textContent = ledIsOn ? 'ON' : 'OFF';
+                    
+                    const textElement = document.createElement('div');
+                    textElement.style.fontSize = '12px';
+                    textElement.style.color = 'var(--text-tertiary)';
+                    textElement.textContent = led.text || `LED${i}`;
+                    
+                    item.innerHTML = `<h3>LED ${i}</h3>`;
+                    item.appendChild(valueElement);
+                    item.appendChild(textElement);
+                    
+                    // Set initial state
+                    if (ledIsOn) {
+                        item.classList.add('active');
+                    }
+                    
+                    // Add to grid immediately (will be repositioned later)
+                    grid.appendChild(item);
+                }
+                
+                // Update content only if state changed or element not in DOM
+                if (stateChanged || !item.parentNode) {
+                    // Update text content
+                    const valueElement = document.getElementById(`ledStatusValue${i}`);
+                    if (valueElement) {
+                        valueElement.textContent = ledIsOn ? 'ON' : 'OFF';
+                    }
+                    const textElement = item.querySelector('div[style*="font-size: 12px"]');
+                    if (textElement) {
+                        textElement.textContent = led.text || `LED${i}`;
+                    }
+                    
+                    // Update blinking state (only restarts if state changed)
+                    manageLEDBlinking(i, autoflashEnabled, ledIsOn, item, stateChanged);
+                }
+                // If state hasn't changed, don't touch the blinking - it's already running correctly
             }
+            
+            // Step 2: Remove only non-LED elements from grid
+            // CRITICAL: Keep LED elements in DOM to preserve blinking animations
+            // Removing them interrupts CSS animations even if JavaScript intervals continue
+            const children = Array.from(grid.children);
+            children.forEach(child => {
+                // Only remove non-LED elements (AIR, texts, warnings)
+                if (!child.id || !child.id.startsWith('ledStatus')) {
+                    grid.removeChild(child);
+                }
+            });
+            
+            // LED elements remain in DOM at their positions - no interruption to blinking
             
             // Row 2: AIR status (AIR1-4)
             for (let i = 1; i <= 4; i++) {
@@ -826,33 +1022,49 @@
         function updateLEDButtons(leds) {
             const container = document.getElementById('ledControls');
             
-            // Only update if state changed
+            // Check if update is needed before updating lastLEDState
             let needsUpdate = false;
             for (let i = 1; i <= 4; i++) {
                 const led = leds[i];
                 const key = `led${i}`;
                 const currentState = led.status ? 'on' : 'off';
                 const currentText = led.text;
+                const currentAutoflash = led.autoflash || false;
                 
                 if (!lastLEDState[key] || 
                     lastLEDState[key].status !== currentState || 
-                    lastLEDState[key].text !== currentText) {
+                    lastLEDState[key].text !== currentText ||
+                    lastLEDState[key].autoflash !== currentAutoflash) {
                     needsUpdate = true;
                     break;
                 }
             }
             
-            if (!needsUpdate) {
-                return; // No changes, skip update
-            }
-            
-            // Store current state
+            // Always update lastLEDState to keep it current for button click handlers
             for (let i = 1; i <= 4; i++) {
                 const led = leds[i];
                 lastLEDState[`led${i}`] = {
                     status: led.status ? 'on' : 'off',
-                    text: led.text
+                    text: led.text,
+                    autoflash: led.autoflash || false
                 };
+            }
+            
+            if (!needsUpdate) {
+                // Even if buttons don't need rebuilding, update their active state
+                // in case only the status changed (e.g., from autoflash)
+                for (let i = 1; i <= 4; i++) {
+                    const btn = document.getElementById(`ledButton${i}`);
+                    if (btn) {
+                        const led = leds[i];
+                        if (led.status) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    }
+                }
+                return; // No changes, skip button rebuild
             }
             
             // Rebuild buttons only when state changed
@@ -861,10 +1073,24 @@
             for (let i = 1; i <= 4; i++) {
                 const led = leds[i];
                 const btn = document.createElement('button');
+                btn.id = `ledButton${i}`;
                 btn.className = 'led-btn' + (led.status ? ' active' : '');
                 btn.textContent = `LED ${i}: ${led.text}`;
-                btn.onclick = () => sendCommand(`LED${i}:${led.status ? 'OFF' : 'ON'}`);
+                // Use current state from lastLEDState when button is clicked, not when created
+                btn.onclick = () => {
+                    const currentState = lastLEDState[`led${i}`];
+                    if (currentState) {
+                        const isOn = currentState.status === 'on';
+                        sendCommand(`LED${i}:${isOn ? 'OFF' : 'ON'}`);
+                    } else {
+                        // Fallback: toggle based on button's current active class
+                        const isActive = btn.classList.contains('active');
+                        sendCommand(`LED${i}:${isActive ? 'OFF' : 'ON'}`);
+                    }
+                };
                 container.appendChild(btn);
+                
+                // Don't blink buttons, only status display
             }
         }
         
@@ -941,6 +1167,7 @@
         
         function sendCommand(cmd) {
             console.log('Sending command:', cmd);
+            
             // Use REST-style API endpoint
             const url = API_BASE + '/api/command?cmd=' + encodeURIComponent(cmd);
             fetch(url)
@@ -954,12 +1181,15 @@
                 })
                 .then(data => {
                     console.log('Command sent successfully:', cmd, data);
-                    // Update status after a short delay
-                    setTimeout(updateStatus, 200);
+                    // Wait a moment for server to process, then refresh status
+                    // This ensures we get the updated state from the server
+                    setTimeout(updateStatus, 400);
                 })
                 .catch(error => {
                     console.error('Error sending command:', error);
                     alert('Error sending command: ' + error.message);
+                    // Refresh status even on error to get current state
+                    setTimeout(updateStatus, 400);
                 });
         }
         
