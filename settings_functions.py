@@ -45,7 +45,7 @@ from uuid import getnode
 
 import PyQt6.QtNetwork as QtNetwork
 from PyQt6.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
-from PyQt6.QtGui import QPalette, QColor, QFont
+from PyQt6.QtGui import QPalette, QColor, QFont, QIcon
 from PyQt6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
                               QFontDialog, QInputDialog)
 
@@ -1063,7 +1063,13 @@ class Settings(QWidget, Ui_Settings):
                     message = json_reply.get('Message', 'No message')
                     logger.info(f"Update check successful (no update available): {message}")
                     self.message_box = QMessageBox()
-                    self.message_box.setIcon(QMessageBox.Icon.Information)
+                    
+                    # Set OnAirScreen app icon
+                    icon = QIcon()
+                    icon.addPixmap(QPixmap(":/oas_icon/images/oas_icon.png"), QIcon.Mode.Normal, QIcon.State.Off)
+                    self.message_box.setWindowIcon(icon)
+                    self.message_box.setIconPixmap(QPixmap(":/oas_icon/images/oas_icon.png"))
+                    
                     self.message_box.setWindowTitle("OnAirScreen Update Check")
                     self.message_box.setText("OnAirScreen Update Check")
                     self.message_box.setInformativeText(f"{message}")
@@ -1075,7 +1081,13 @@ class Settings(QWidget, Ui_Settings):
                     message = json_reply.get('Message', 'No message')
                     logger.error(f"Update check returned error: {message}")
                     self.message_box = QMessageBox()
-                    self.message_box.setIcon(QMessageBox.Icon.Critical)
+                    
+                    # Set OnAirScreen app icon
+                    icon = QIcon()
+                    icon.addPixmap(QPixmap(":/oas_icon/images/oas_icon.png"), QIcon.Mode.Normal, QIcon.State.Off)
+                    self.message_box.setWindowIcon(icon)
+                    self.message_box.setIconPixmap(QPixmap(":/oas_icon/images/oas_icon.png"))
+                    
                     self.message_box.setWindowTitle("OnAirScreen Update Check")
                     self.message_box.setText("OnAirScreen Update Check")
                     self.message_box.setInformativeText(f"{message}")

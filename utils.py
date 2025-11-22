@@ -41,6 +41,7 @@ from contextlib import contextmanager
 from PyQt6 import QtCore
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QSettings
+from PyQt6.QtGui import QIcon, QPixmap
 
 
 @contextmanager
@@ -69,7 +70,13 @@ class TimerUpdateMessageBox(QtWidgets.QMessageBox):
         super(TimerUpdateMessageBox, self).__init__(parent)
         self.json_reply = json_reply
         self.time_to_wait = timeout
-        self.setIcon(QtWidgets.QMessageBox.Icon.Information)
+        
+        # Set OnAirScreen app icon
+        icon = QIcon()
+        icon.addPixmap(QPixmap(":/oas_icon/images/oas_icon.png"), QIcon.Mode.Normal, QIcon.State.Off)
+        self.setWindowIcon(icon)
+        self.setIconPixmap(QPixmap(":/oas_icon/images/oas_icon.png"))
+        
         self.setWindowTitle("OnAirScreen Update Check")
         self.setText("OnAirScreen Update Check")
         self.setFixedWidth(200)
