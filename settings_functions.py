@@ -54,6 +54,7 @@ from utils import TimerUpdateMessageBox, settings_group
 from version import versionString
 from weatherwidget import WeatherWidget as ww
 from defaults import *  # noqa: F403, F405
+from exceptions import SettingsError, InvalidConfigValueError, log_exception
 
 try:
     from distribution import distributionString, update_url # type: ignore
@@ -433,7 +434,11 @@ class Settings(QWidget, Ui_Settings):
             self.restoreSettingsFromConfig()
             return True
         except Exception as e:
-            logger.error(f"Error importing configuration: {e}")
+            if isinstance(e, (SettingsError, InvalidConfigValueError)):
+                log_exception(logger, e, use_exc_info=False)
+            else:
+                error = SettingsError(f"Error importing configuration: {e}")
+                log_exception(logger, error, use_exc_info=False)
             return False
 
     def save_preset(self, preset_name: str) -> bool:
@@ -478,7 +483,11 @@ class Settings(QWidget, Ui_Settings):
             logger.info(f"Preset '{preset_name}' saved to {preset_file}")
             return True
         except Exception as e:
-            logger.error(f"Error saving preset '{preset_name}': {e}")
+            if isinstance(e, (SettingsError, InvalidConfigValueError)):
+                log_exception(logger, e, use_exc_info=False)
+            else:
+                error = SettingsError(f"Error saving preset '{preset_name}': {e}")
+                log_exception(logger, error, use_exc_info=False)
             return False
 
     def load_preset(self, preset_name: str) -> bool:
@@ -518,7 +527,11 @@ class Settings(QWidget, Ui_Settings):
             
             return success
         except Exception as e:
-            logger.error(f"Error loading preset '{preset_name}': {e}")
+            if isinstance(e, (SettingsError, InvalidConfigValueError)):
+                log_exception(logger, e, use_exc_info=False)
+            else:
+                error = SettingsError(f"Error loading preset '{preset_name}': {e}")
+                log_exception(logger, error, use_exc_info=False)
             return False
 
     def list_presets(self) -> list[dict]:
@@ -556,7 +569,11 @@ class Settings(QWidget, Ui_Settings):
                         "version": "unknown"
                     })
         except Exception as e:
-            logger.error(f"Error listing presets: {e}")
+            if isinstance(e, (SettingsError, InvalidConfigValueError)):
+                log_exception(logger, e, use_exc_info=False)
+            else:
+                error = SettingsError(f"Error listing presets: {e}")
+                log_exception(logger, error, use_exc_info=False)
         
         # Sort by name
         presets.sort(key=lambda x: x["name"].lower())
@@ -584,7 +601,11 @@ class Settings(QWidget, Ui_Settings):
             logger.info(f"Preset '{preset_name}' deleted")
             return True
         except Exception as e:
-            logger.error(f"Error deleting preset '{preset_name}': {e}")
+            if isinstance(e, (SettingsError, InvalidConfigValueError)):
+                log_exception(logger, e, use_exc_info=False)
+            else:
+                error = SettingsError(f"Error deleting preset '{preset_name}': {e}")
+                log_exception(logger, error, use_exc_info=False)
             return False
 
     def restoreSettingsFromConfig(self):
@@ -1071,7 +1092,11 @@ class Settings(QWidget, Ui_Settings):
                     self.error_dialog.setWindowTitle("Update Check Error")
                     self.error_dialog.showMessage('Invalid response from update server', 'UpdateCheckError')
             except Exception as e:
-                logger.error(f"Unexpected error processing update check response: {e}", exc_info=True)
+                if isinstance(e, (SettingsError, InvalidConfigValueError)):
+                    log_exception(logger, e)
+                else:
+                    error = SettingsError(f"Unexpected error processing update check response: {e}")
+                    log_exception(logger, error)
                 if self.manual_update_check:
                     self.error_dialog = QErrorMessage()
                     self.error_dialog.setWindowTitle("Update Check Error")

@@ -38,6 +38,7 @@ except ImportError:
     logging.getLogger(__name__).warning("paho-mqtt library not available. MQTT support will be disabled.")
 
 from utils import settings_group
+from exceptions import MqttError, log_exception
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -138,7 +139,8 @@ class MqttClient(QThread):
             try:
                 self.client.connect(self.broker_host, self.broker_port, 60)
             except Exception as e:
-                logger.error(f"Failed to connect to MQTT broker: {e}")
+                error = MqttError(f"Failed to connect to MQTT broker: {e}")
+                log_exception(logger, error)
                 return
             
             # Start network loop (this runs in a separate thread)
@@ -200,7 +202,8 @@ class MqttClient(QThread):
                             time.sleep(5)  # Wait before next reconnect attempt
                             continue
                     except Exception as reconnect_error:
-                        logger.error(f"Error during MQTT reconnect: {reconnect_error}")
+                        error = MqttError(f"Error during MQTT reconnect: {reconnect_error}")
+                        log_exception(logger, error)
                         time.sleep(5)  # Wait before next reconnect attempt
                         continue
                 
@@ -211,7 +214,12 @@ class MqttClient(QThread):
                     last_publish_time = current_time
                 
         except Exception as e:
-            logger.error(f"Error in MQTT client thread: {e}", exc_info=True)
+            from exceptions import OnAirScreenError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = MqttError(f"Error in MQTT client thread: {e}")
+                log_exception(logger, error)
         except KeyboardInterrupt:
             logger.debug("MQTT client thread interrupted")
         finally:
@@ -224,7 +232,12 @@ class MqttClient(QThread):
                     self.client.disconnect()
                     logger.debug("MQTT client stopped")
                 except Exception as e:
-                    logger.error(f"Error during MQTT client cleanup: {e}", exc_info=True)
+                    from exceptions import OnAirScreenError
+                    if isinstance(e, OnAirScreenError):
+                        log_exception(logger, e)
+                    else:
+                        error = MqttError(f"Error during MQTT client cleanup: {e}")
+                        log_exception(logger, error)
             logger.debug("MQTT client thread finished")
     
     def _on_connect(self, client: mqtt.Client, userdata: Any, flags: Dict[str, int], rc: int) -> None:
@@ -340,7 +353,12 @@ class MqttClient(QThread):
                     logger.error("No command handler available for MQTT command")
                     
         except Exception as e:
-            logger.error(f"Error processing MQTT message: {e}", exc_info=True)
+            from exceptions import OnAirScreenError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = MqttError(f"Error processing MQTT message: {e}")
+                log_exception(logger, error)
     
     def _on_publish(self, client: mqtt.Client, userdata: Any, mid: int) -> None:
         """Callback when message is published (optional, for debugging)"""
@@ -529,7 +547,12 @@ class MqttClient(QThread):
                     logger.debug(f"Published {specific_item.upper()} text to MQTT: {text_value}")
             
         except Exception as e:
-            logger.error(f"Error publishing status to MQTT: {e}", exc_info=True)
+            from exceptions import OnAirScreenError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = MqttError(f"Error publishing status to MQTT: {e}")
+                log_exception(logger, error)
     
     def restart(self) -> None:
         """Restart MQTT client (stop and start again)"""

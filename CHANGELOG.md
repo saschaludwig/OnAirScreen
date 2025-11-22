@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [TBA]
 ### Added
+- Error Handling: Unified error handling system with custom exception hierarchy
+- Error Handling: Custom exceptions for all error types (Network, Command, Configuration, Validation, API, Encoding, Widget)
+- Error Handling: Consistent logging strategy with log_exception() helper function
+- Error Handling: HTTP error response mapping based on exception types
+- Error Handling: Comprehensive exception handling in network.py, command_handler.py, start.py, weatherwidget.py, mqtt_client.py, settings_functions.py
+- Tests: Unit tests for exceptions module (26 tests covering all exception types and logging helper)
 - MQTT integration with Home Assistant Autodiscovery support
 - MQTT: LED switches (LED1-4) for controlling LEDs via MQTT
 - MQTT: AIR timer switches (AIR1-4) for starting/stopping timers
@@ -35,6 +41,9 @@ All notable changes to this project will be documented in this file.
 - Security: Input validation for CONF commands (stationname, slogan, LED text, AIR text)
 
 ### Changed
+- Error Handling: Replaced generic Exception handling with specific custom exceptions throughout codebase
+- Error Handling: Standardized error logging with consistent format and context information
+- Error Handling: Improved HTTP error responses with appropriate status codes based on error types
 - Web-UI: Fixed dark mode flash on page reload by setting theme immediately in HTML head
 - Web-UI: Restructured status display for better organization and space efficiency
 - Command Handler: Enhanced WARN command to support priority format (WARN:Prio:Text)

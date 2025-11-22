@@ -41,6 +41,8 @@ import PyQt6.QtNetwork as QtNetwork
 import json
 import logging
 
+from exceptions import JsonParseError, WeatherApiError, log_exception
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -250,20 +252,35 @@ class WeatherWidget(QtWidgets.QWidget):
             try:
                 weather_json = (json.loads(reply_string))
             except json.JSONDecodeError as e:
-                error_string = f"Unexpected JSON payload in OWM Response: {reply_string}"
-                logger.error(f"{error_string}: {e}")
+                error = JsonParseError(
+                    f"Unexpected JSON payload in OWM Response: {e}",
+                    json_data=reply_string[:500] if len(reply_string) > 500 else reply_string
+                )
+                log_exception(logger, error, use_exc_info=False)
                 return
             
             # Validate JSON structure to prevent KeyError/IndexError
             try:
                 if "weather" not in weather_json or len(weather_json["weather"]) == 0:
-                    logger.error("OWM response missing weather array")
+                    error = WeatherApiError(
+                        "OWM response missing weather array",
+                        api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                    )
+                    log_exception(logger, error, use_exc_info=False)
                     return
                 if "main" not in weather_json:
-                    logger.error("OWM response missing main data")
+                    error = WeatherApiError(
+                        "OWM response missing main data",
+                        api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                    )
+                    log_exception(logger, error, use_exc_info=False)
                     return
                 if "name" not in weather_json:
-                    logger.error("OWM response missing city name")
+                    error = WeatherApiError(
+                        "OWM response missing city name",
+                        api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                    )
+                    log_exception(logger, error, use_exc_info=False)
                     return
                 
                 main_weather = weather_json["weather"][0]["main"]
@@ -276,7 +293,11 @@ class WeatherWidget(QtWidgets.QWidget):
                 icon = weather_json["weather"][0]["icon"]
                 background = icon
             except (KeyError, IndexError, TypeError) as e:
-                logger.error(f"OWM response has unexpected structure: {e}")
+                error = WeatherApiError(
+                    f"OWM response has unexpected structure: {e}",
+                    api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                )
+                log_exception(logger, error, use_exc_info=False)
                 return
             if self.owmLanguage == "de":
                 label = "WETTER"
