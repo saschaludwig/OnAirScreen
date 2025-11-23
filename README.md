@@ -17,12 +17,20 @@ I also have a RaspberryPi version and a ready-to-run RaspberryPi SD-Card image i
 And if you need extended support, please contact me.
 
 #### Screenshots
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_v2.png" width="600px">
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_1.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_settings_2.png" width="300px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/oas_webinterface_1.png" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/OAS3.png" width="600px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_1.png" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_2.png" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_3.png" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_5.png" width="300px">
+
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/web_1.png" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/web_2.png" width="300px">
 
 
 #### Pictures of OnAirScreen in use
-<img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS1.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS2.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS3.jpg" width="220px"><img src="https://cdn.rawgit.com/saschaludwig/OnAirScreen/gh-pages/images/OAS4.jpg" width="220px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/OAS2.jpeg" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/OAS1.jpeg" width="300px">
+<img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/OAS4.jpeg" width="300px">
 
 #### Features
  * Flexible integration into existing studio setups
@@ -126,7 +134,7 @@ Returns JSON with current LED status, AIR timer status, text field values, versi
 ```Shell
 curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 ```
-Sends commands and returns JSON response with status confirmation.  
+Sends commands and returns JSON response with status confirmation.
 
 ##### API via MQTT
 
