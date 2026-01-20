@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen Analog / Digital Clock implementation
-# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
