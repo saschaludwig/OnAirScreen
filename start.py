@@ -684,11 +684,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         self._toggle_led(4)
 
     def _toggle_led(self, led_num: int) -> None:
-        """Generic method to toggle LED using set_led"""
-        status_attr = f'statusLED{led_num}'
-        current_state = getattr(self, status_attr, False)
-        set_led_method = getattr(self, f'set_led{led_num}')
-        set_led_method(not current_state)
+        """Generic method to toggle LED using led_logic"""
+        # Use LED{num}on for logical status, not statusLED{num} which is the visual blinking state
+        led_on_attr = f'LED{led_num}on'
+        current_state = getattr(self, led_on_attr, False)
+        self.led_logic(led_num, not current_state)
 
     def toggle_air1(self) -> None:
         """Toggle AIR1"""
@@ -795,6 +795,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         
         # Publish MQTT status immediately after LED change
         self._publish_mqtt_status(f"led{led}")
+        
+        # Broadcast WebSocket status immediately after LED change
+        self._broadcast_web_status()
 
     def set_station_color(self, newcolor: QColor) -> None:
         """
@@ -1162,6 +1165,31 @@ class MainScreen(QWidget, Ui_MainScreen):
                 f"Error accessing MQTT client (object may not be initialized): {e}",
                 widget_name="mqtt_client",
                 attribute="publish_status"
+            )
+            log_exception(logger, error, use_exc_info=False)
+            pass
+    
+    def _broadcast_web_status(self) -> None:
+        """
+        Broadcast WebSocket status immediately after status change
+        
+        Triggers immediate status update to all connected WebSocket clients
+        instead of waiting for the periodic broadcast.
+        """
+        try:
+            wsd = getattr(self, 'wsd', None)
+            if wsd:
+                try:
+                    wsd.broadcast_status()
+                except Exception as e:
+                    logger.warning(f"Failed to broadcast WebSocket status: {e}")
+        except (RuntimeError, AttributeError) as e:
+            # Ignore errors when object is not fully initialized (e.g., in tests)
+            # Log but don't raise - this is expected in test scenarios
+            error = WidgetAccessError(
+                f"Error accessing WebSocket daemon (object may not be initialized): {e}",
+                widget_name="wsd",
+                attribute="broadcast_status"
             )
             log_exception(logger, error, use_exc_info=False)
             pass
