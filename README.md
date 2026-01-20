@@ -184,19 +184,19 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song
 
 | UDP Command         | Function |
 ----------------------|----------|
-| `LED1:[ON/OFF]`     | switch LED1 on/off |
-| `LED2:[ON/OFF]`     | switch LED2 on/off |
-| `LED3:[ON/OFF]`     | switch LED3 on/off |
-| `LED4:[ON/OFF]`     | switch LED4 on/off |
+| `LED1:[ON/OFF/TOGGLE]`     | switch LED1 on/off/toggle |
+| `LED2:[ON/OFF/TOGGLE]`     | switch LED2 on/off/toggle |
+| `LED3:[ON/OFF/TOGGLE]`     | switch LED3 on/off/toggle |
+| `LED4:[ON/OFF/TOGGLE]`     | switch LED4 on/off/toggle |
 | `NOW:TEXT`               | set TEXT in first footer line |
 | `NEXT:TEXT`              | set TEXT in second footer line |
 | `WARN:TEXT`              | set TEXT and switch on red warning mode (priority 0) |
 | `WARN:Prio:TEXT`         | set TEXT with priority (Prio: 1=Medium, 2=High) |
-| `AIR1:[ON/OFF]`          | start/stop Mic Timer |
-| `AIR2:[ON/OFF]`          | start/stop Phone Timer |
+| `AIR1:[ON/OFF/TOGGLE]`          | start/stop/toggle Mic Timer |
+| `AIR2:[ON/OFF/TOGGLE]`          | start/stop/toggle Phone Timer |
 | `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggle Radio Timer |
 | `AIR3TIME:seconds`            | set Radio Timer to given value in seconds |
-| `AIR4:[ON/OFF/RESET]`        | start/stop/reset Stream Timer |
+| `AIR4:[ON/OFF/RESET/TOGGLE]`        | start/stop/reset/toggle Stream Timer |
 | `CMD:REBOOT`                  | OS restart |
 | `CMD:SHUTDOWN`                | OS shutdown |
 | `CMD:QUIT`                    | quit OnAirScreen instance |

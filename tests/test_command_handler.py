@@ -32,17 +32,24 @@ def mock_main_screen():
     
     # Mock LED methods
     main_screen.led_logic = Mock()
+    main_screen.toggle_led1 = Mock()
+    main_screen.toggle_led2 = Mock()
+    main_screen.toggle_led3 = Mock()
+    main_screen.toggle_led4 = Mock()
     
     # Mock AIR methods
     main_screen.set_air1 = Mock()
     main_screen.set_air2 = Mock()
     main_screen.set_air4 = Mock()
+    main_screen.toggle_air1 = Mock()
+    main_screen.toggle_air2 = Mock()
     main_screen.start_air3 = Mock()
     main_screen.stop_air3 = Mock()
     main_screen.radio_timer_reset = Mock()
     main_screen.radio_timer_start_stop = Mock()
     main_screen.radio_timer_set = Mock()
     main_screen.stream_timer_reset = Mock()
+    main_screen.start_stop_air4 = Mock()
     
     # Mock system commands
     main_screen.reboot_host = Mock()
@@ -191,6 +198,26 @@ class TestLedCommands:
         for led_num in range(1, 5):
             command_handler.parse_cmd(f"LED{led_num}:ON".encode())
             mock_main_screen.led_logic.assert_called_with(led_num, True)
+    
+    def test_led1_toggle(self, command_handler, mock_main_screen):
+        """Test LED1 TOGGLE command"""
+        command_handler.parse_cmd(b"LED1:TOGGLE")
+        mock_main_screen.toggle_led1.assert_called_once()
+    
+    def test_led2_toggle(self, command_handler, mock_main_screen):
+        """Test LED2 TOGGLE command"""
+        command_handler.parse_cmd(b"LED2:TOGGLE")
+        mock_main_screen.toggle_led2.assert_called_once()
+    
+    def test_led3_toggle(self, command_handler, mock_main_screen):
+        """Test LED3 TOGGLE command"""
+        command_handler.parse_cmd(b"LED3:TOGGLE")
+        mock_main_screen.toggle_led3.assert_called_once()
+    
+    def test_led4_toggle(self, command_handler, mock_main_screen):
+        """Test LED4 TOGGLE command"""
+        command_handler.parse_cmd(b"LED4:TOGGLE")
+        mock_main_screen.toggle_led4.assert_called_once()
 
 
 class TestWarnCommand:
@@ -261,6 +288,16 @@ class TestAirSimpleCommands:
         """Test AIR2 OFF command"""
         command_handler.parse_cmd(b"AIR2:OFF")
         mock_main_screen.set_air2.assert_called_once_with(False)
+    
+    def test_air1_toggle(self, command_handler, mock_main_screen):
+        """Test AIR1 TOGGLE command"""
+        command_handler.parse_cmd(b"AIR1:TOGGLE")
+        mock_main_screen.toggle_air1.assert_called_once()
+    
+    def test_air2_toggle(self, command_handler, mock_main_screen):
+        """Test AIR2 TOGGLE command"""
+        command_handler.parse_cmd(b"AIR2:TOGGLE")
+        mock_main_screen.toggle_air2.assert_called_once()
 
 
 class TestAir3Command:
@@ -326,6 +363,11 @@ class TestAir4Command:
         """Test AIR4 RESET command"""
         command_handler.parse_cmd(b"AIR4:RESET")
         mock_main_screen.stream_timer_reset.assert_called_once()
+    
+    def test_air4_toggle(self, command_handler, mock_main_screen):
+        """Test AIR4 TOGGLE command"""
+        command_handler.parse_cmd(b"AIR4:TOGGLE")
+        mock_main_screen.start_stop_air4.assert_called_once()
 
 
 class TestCmdCommand:
@@ -648,6 +690,12 @@ class TestInputValidation:
         assert validate_led_value("off") is True
         assert validate_led_value("Off") is True
     
+    def test_validate_led_value_toggle(self):
+        """Test validate_led_value with TOGGLE"""
+        assert validate_led_value("TOGGLE") is True
+        assert validate_led_value("toggle") is True
+        assert validate_led_value("Toggle") is True
+    
     def test_validate_led_value_invalid(self):
         """Test validate_led_value with invalid values"""
         assert validate_led_value("INVALID") is False
@@ -658,12 +706,14 @@ class TestInputValidation:
         """Test validate_air_value for AIR1"""
         assert validate_air_value("ON", 1) is True
         assert validate_air_value("OFF", 1) is True
+        assert validate_air_value("TOGGLE", 1) is True
         assert validate_air_value("RESET", 1) is False
     
     def test_validate_air_value_air2(self):
         """Test validate_air_value for AIR2"""
         assert validate_air_value("ON", 2) is True
         assert validate_air_value("OFF", 2) is True
+        assert validate_air_value("TOGGLE", 2) is True
         assert validate_air_value("RESET", 2) is False
     
     def test_validate_air_value_air3(self):
@@ -679,7 +729,7 @@ class TestInputValidation:
         assert validate_air_value("ON", 4) is True
         assert validate_air_value("OFF", 4) is True
         assert validate_air_value("RESET", 4) is True
-        assert validate_air_value("TOGGLE", 4) is False
+        assert validate_air_value("TOGGLE", 4) is True
     
     def test_validate_air3time_value_valid(self):
         """Test validate_air3time_value with valid values"""
