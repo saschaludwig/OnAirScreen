@@ -155,12 +155,12 @@ def validate_led_value(value: str) -> bool:
     Validate LED command value
     
     Args:
-        value: LED command value (should be "ON" or "OFF")
+        value: LED command value (should be "ON", "OFF", or "TOGGLE")
         
     Returns:
         True if value is valid, False otherwise
     """
-    return value.upper() in ("ON", "OFF")
+    return value.upper() in ("ON", "OFF", "TOGGLE")
 
 
 def validate_air_value(value: str, air_num: int) -> bool:
@@ -175,14 +175,14 @@ def validate_air_value(value: str, air_num: int) -> bool:
         True if value is valid, False otherwise
     """
     if air_num in (1, 2):
-        # AIR1 and AIR2 only support ON/OFF
-        return value.upper() in ("ON", "OFF")
+        # AIR1 and AIR2 support ON, OFF, TOGGLE
+        return value.upper() in ("ON", "OFF", "TOGGLE")
     elif air_num == 3:
         # AIR3 supports ON, OFF, RESET, TOGGLE
         return value.upper() in ("ON", "OFF", "RESET", "TOGGLE")
     elif air_num == 4:
-        # AIR4 supports ON, OFF, RESET
-        return value.upper() in ("ON", "OFF", "RESET")
+        # AIR4 supports ON, OFF, RESET, TOGGLE
+        return value.upper() in ("ON", "OFF", "RESET", "TOGGLE")
     return False
 
 
@@ -329,13 +329,17 @@ class CommandHandler:
         
         Args:
             led_num: LED number (1-4)
-            value: Command value ("ON" or "OFF")
+            value: Command value ("ON", "OFF", or "TOGGLE")
         """
         if not validate_led_value(value):
-            logger.warning(f"Invalid LED{led_num} command value: '{value}', expected 'ON' or 'OFF'")
+            logger.warning(f"Invalid LED{led_num} command value: '{value}', expected 'ON', 'OFF', or 'TOGGLE'")
             return
         
-        self.main_screen.led_logic(led_num, value.upper() != "OFF")
+        value_upper = value.upper()
+        if value_upper == "TOGGLE":
+            getattr(self.main_screen, f"toggle_led{led_num}")()
+        else:
+            self.main_screen.led_logic(led_num, value_upper != "OFF")
     
     def _handle_warn_command(self, value: str) -> None:
         """
@@ -394,13 +398,16 @@ class CommandHandler:
         
         Args:
             air_num: AIR timer number (1 or 2)
-            value: Command value ("OFF" to stop, "ON" to start)
+            value: Command value ("OFF" to stop, "ON" to start, "TOGGLE" to toggle)
         """
         if not validate_air_value(value, air_num):
-            logger.warning(f"Invalid AIR{air_num} command value: '{value}', expected 'ON' or 'OFF'")
+            logger.warning(f"Invalid AIR{air_num} command value: '{value}', expected 'ON', 'OFF', or 'TOGGLE'")
             return
         
-        if value.upper() == "OFF":
+        value_upper = value.upper()
+        if value_upper == "TOGGLE":
+            getattr(self.main_screen, f"toggle_air{air_num}")()
+        elif value_upper == "OFF":
             getattr(self.main_screen, f"set_air{air_num}")(False)
         else:
             getattr(self.main_screen, f"set_air{air_num}")(True)
@@ -455,10 +462,10 @@ class CommandHandler:
         Handle AIR4 command
         
         Args:
-            value: Command action ("OFF", "ON", or "RESET")
+            value: Command action ("OFF", "ON", "RESET", or "TOGGLE")
         """
         if not validate_air_value(value, 4):
-            logger.warning(f"Invalid AIR4 command value: '{value}', expected 'ON', 'OFF', or 'RESET'")
+            logger.warning(f"Invalid AIR4 command value: '{value}', expected 'ON', 'OFF', 'RESET', or 'TOGGLE'")
             return
         
         value_upper = value.upper()
@@ -468,6 +475,8 @@ class CommandHandler:
             self.main_screen.set_air4(True)
         elif value_upper == "RESET":
             self.main_screen.stream_timer_reset()
+        elif value_upper == "TOGGLE":
+            self.main_screen.start_stop_air4()
     
     def _handle_cmd_command(self, value: str) -> None:
         """
