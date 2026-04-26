@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnAirScreen Remote Control</title>
+    <script>
+        // Set theme immediately to prevent flash of light mode
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+    <style>
+        :root {
+            /* Light mode colors */
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --bg-panel: white;
+            --bg-item: #f5f5f5;
+            --bg-item-active: #e8f5e9;
+            --bg-info: #e3f2fd;
+            --bg-version: rgba(255, 255, 255, 0.95);
+            --bg-modal: white;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --text-white: white;
+            --text-info: #1976d2;
+            --border-item: #667eea;
+            --border-item-active: #4caf50;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-strong: rgba(0, 0, 0, 0.2);
+            --shadow-modal: rgba(0, 0, 0, 0.3);
+            --input-border: #ddd;
+            --input-focus: #667eea;
+        }
+        
+        [data-theme="dark"] {
+            /* Dark mode colors */
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --bg-panel: #2d2d44;
+            --bg-item: #3a3a5c;
+            --bg-item-active: #2d5a3d;
+            --bg-info: #1e3a5f;
+            --bg-version: rgba(45, 45, 68, 0.95);
+            --bg-modal: #2d2d44;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #808080;
+            --text-white: #e0e0e0;
+            --text-info: #64b5f6;
+            --border-item: #667eea;
+            --border-item-active: #66bb6a;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-strong: rgba(0, 0, 0, 0.5);
+            --shadow-modal: rgba(0, 0, 0, 0.7);
+            --input-border: #555;
+            --input-focus: #667eea;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+            transition: background 0.3s ease;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: var(--text-white);
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .status-panel {
+            background: var(--bg-panel);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .status-item.text-item {
+            padding: 10px 15px;
+        }
+        .status-item.text-item h3 {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        .status-item.text-item .value {
+            font-size: 14px;
+            line-height: 1.3;
+        }
+        .status-item {
+            background: var(--bg-item);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--border-item);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .status-item.active {
+            background: var(--bg-item-active);
+            border-left-color: var(--border-item-active);
+        }
+        .status-item h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .status-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        .status-item {
+            position: relative;
+        }
+        .status-item .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            padding: 0;
+        }
+        .status-item .close-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+        .status-item .close-btn:active {
+            transform: scale(0.95);
+        }
+        .control-panel {
+            background: var(--bg-panel);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        button {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-strong);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .led-btn {
+            background: #ff5252;
+            color: white;
+        }
+        .led-btn.active {
+            background: #4caf50;
+        }
+        .led-btn.blinking {
+            animation: ledBlink 1s infinite;
+        }
+        .status-item.blinking {
+            animation: statusBlink 1s infinite;
+        }
+        @keyframes ledBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        @keyframes statusBlink {
+            0%, 100% { 
+                background: var(--bg-item-active);
+                border-left-color: var(--border-item-active);
+            }
+            50% { 
+                background: var(--bg-item);
+                border-left-color: var(--border-item);
+            }
+        }
+        .air-btn {
+            background: #2196f3;
+            color: white;
+        }
+        .air-btn.active {
+            background: #ff9800;
+        }
+        .timer-display {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-item);
+            border-radius: 8px;
+            margin: 10px 0;
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .timer-controls button {
+            flex: 1;
+            max-width: 150px;
+        }
+        .air-controls-compact {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .air-control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .air-control-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            min-width: 60px;
+            text-align: right;
+        }
+        .air-control-group .air-btn {
+            flex: 1;
+            min-width: 100px;
+        }
+        .info {
+            background: var(--bg-info);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: var(--text-info);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .text-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .text-input-row {
+            display: flex;
+            gap: 15px;
+        }
+        .text-input-row .text-input-group {
+            flex: 1;
+        }
+        .text-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .text-input-group label {
+            font-weight: bold;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .input-with-button {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+        .input-with-button input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            transition: border-color 0.3s, background 0.3s ease, color 0.3s ease;
+        }
+        .input-with-button input:focus {
+            outline: none;
+            border-color: var(--input-focus);
+        }
+        .text-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #667eea;
+            color: white;
+            white-space: nowrap;
+        }
+        .text-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .text-btn.warn-clear {
+            background: #ff5252;
+        }
+        .text-btn.warn-clear:hover {
+            background: #e53935;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-dialog {
+            background: var(--bg-modal);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px var(--shadow-modal);
+            z-index: 1001;
+            text-align: center;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .modal-dialog h2 {
+            color: #d32f2f;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .modal-dialog p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .version-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-version);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px var(--shadow-strong);
+            font-size: 13px;
+            color: var(--text-primary);
+            z-index: 100;
+            text-align: right;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .version-info .version-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 5px;
+        }
+        .version-info .distribution-label {
+            font-weight: bold;
+            color: #764ba2;
+            margin-right: 5px;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--bg-version);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px var(--shadow-strong);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+        @media (max-width: 768px) {
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            .input-with-button {
+                flex-direction: column;
+            }
+            .input-with-button input {
+                width: 100%;
+            }
+            .modal-dialog {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+    
+    <!-- Version Info -->
+    <div class="version-info" id="versionInfo">
+        <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
+        <div><span class="distribution-label">Distribution:</span><span id="distributionValue">-</span></div>
+    </div>
+    
+    <div class="container">
+        <h1>🎙️ OnAirScreen Remote Control</h1>
+        
+        <div class="status-panel">
+            <h2>Current Status</h2>
+            <div class="status-grid" id="statusGrid">
+                <!-- Status will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="section">
+                <h2>LED Controls</h2>
+                <div class="button-grid" id="ledControls">
+                    <!-- LED buttons will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>AIR Timer Controls</h2>
+                <div class="air-controls-compact" id="airControls">
+                    <!-- AIR controls will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Text Controls</h2>
+                <div class="text-controls">
+                    <div class="text-input-row">
+                    <div class="text-input-group">
+                        <label for="nowInput">NOW (Current Song):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="nowInput" placeholder="Enter current song..." />
+                            <button class="text-btn" onclick="sendTextCommand('NOW', 'nowInput')">Set</button>
+                            <button class="text-btn warn-clear" onclick="clearText('NOW', 'nowInput')">Clear</button>
+                        </div>
+                    </div>
+                    <div class="text-input-group">
+                        <label for="nextInput">NEXT (News/Next):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="nextInput" placeholder="Enter next item..." />
+                            <button class="text-btn" onclick="sendTextCommand('NEXT', 'nextInput')">Set</button>
+                            <button class="text-btn warn-clear" onclick="clearText('NEXT', 'nextInput')">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-input-group">
+                        <label for="warnInput">WARN (Warning Message):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="warnInput" placeholder="Enter warning message..." />
+                            <select id="warnPriority" style="padding: 8px; margin-right: 5px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="0" selected>Priority 0 (Normal)</option>
+                                <option value="1">Priority 1 (Medium)</option>
+                                <option value="2">Priority 2 (High)</option>
+                            </select>
+                            <button class="text-btn" onclick="sendTextCommand('WARN', 'warnInput', 'warnPriority')">Set</button>
+                            <button class="text-btn warn-clear" onclick="clearWarning()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info">
+            <strong>Info:</strong> This interface connects to OnAirScreen via HTTP API. 
+            All changes are applied immediately.
+        </div>
+    </div>
+    
+    <!-- Connection Error Modal -->
+    <div class="modal-overlay" id="connectionErrorModal">
+        <div class="modal-dialog">
+            <div class="modal-icon">⚠️</div>
+            <h2>Connection Error</h2>
+            <p>Unable to connect to OnAirScreen.<br>Please check if the application is running.</p>
+            <p style="font-size: 14px; color: var(--text-tertiary); margin-top: 20px;">The interface will automatically reconnect when the connection is restored.</p>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        const WS_BASE = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.hostname;
+        const WS_PORT = parseInt(window.location.port || '8010') + 1;  // HTTP port + 1
+        const WS_URL = `${WS_BASE}:${WS_PORT}`;
+        
+        let ws = null;
+        let wsReconnectTimeout = null;
+        let useWebSocket = true;
+        let pollingInterval = null;
+        
+        // WebSocket connection management
+        function connectWebSocket() {
+            if (!useWebSocket) {
+                // Fallback to polling
+                startPolling();
+                return;
+            }
+            
+            try {
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    hideConnectionError();
+                    // Stop polling if it was running
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data && data.leds && data.air) {
+                            updateStatusDisplay(data);
+                            updateLEDButtons(data.leds);
+                            updateAIRControls(data.air);
+                            // Update version info
+                            if (data.version) {
+                                document.getElementById('versionValue').textContent = data.version;
+                            }
+                            if (data.distribution) {
+                                document.getElementById('distributionValue').textContent = data.distribution;
+                            }
+                        } else {
+                            console.error('Invalid data format:', data);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing WebSocket message:', e);
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    // Fallback to polling on error
+                    if (useWebSocket) {
+                        console.log('Falling back to polling');
+                        useWebSocket = false;
+                        startPolling();
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    ws = null;
+                    // Try to reconnect after 3 seconds
+                    if (useWebSocket) {
+                        wsReconnectTimeout = setTimeout(connectWebSocket, 3000);
+                    } else {
+                        // If WebSocket is disabled, use polling
+                        startPolling();
+                    }
+                };
+            } catch (e) {
+                console.error('Error creating WebSocket:', e);
+                // Fallback to polling
+                useWebSocket = false;
+                startPolling();
+            }
+        }
+        
+        // Polling fallback
+        function startPolling() {
+            if (pollingInterval) {
+                return;  // Already polling
+            }
+            console.log('Using polling for status updates');
+            updateStatus();  // Initial update
+            // Poll every 1000ms (1 second) - reasonable update frequency
+            pollingInterval = setInterval(updateStatus, 1000);
+        }
+        
+        // Update status via HTTP (fallback)
+        function updateStatus() {
+            fetch(API_BASE + '/api/status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP error! status: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.leds && data.air) {
+                        updateStatusDisplay(data);
+                        updateLEDButtons(data.leds);
+                        updateAIRControls(data.air);
+                        // Update version info
+                        if (data.version) {
+                            document.getElementById('versionValue').textContent = data.version;
+                        }
+                        if (data.distribution) {
+                            document.getElementById('distributionValue').textContent = data.distribution;
+                        }
+                        hideConnectionError();
+                    } else {
+                        console.error('Invalid data format:', data);
+                        showConnectionError();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    showConnectionError();
+                    // Show error message in UI
+                    const grid = document.getElementById('statusGrid');
+                    if (grid && !connectionErrorShown) {
+                        grid.innerHTML = '<div style="color: #d32f2f; padding: 20px;">Error loading status. Please check console.</div>';
+                    }
+                });
+        }
+        
+        let connectionErrorShown = false;
+        
+        // Store blinking intervals for LEDs
+        let ledBlinkIntervals = {};
+        // Store element references for blinking (so intervals work even if element is temporarily removed from DOM)
+        let ledBlinkElements = {};
+        
+        // Function to start/stop blinking for a LED status display
+        // Only blinks if autoflash is enabled AND LED is ON (from server)
+        // Only restarts blinking if state actually changed
+        function manageLEDBlinking(ledNum, autoflashEnabled, ledIsOn, statusElement, forceRestart = false) {
+            const key = `led${ledNum}`;
+            
+            // Check if we need to change anything
+            const shouldBlink = autoflashEnabled && ledIsOn && statusElement;
+            const currentlyBlinking = ledBlinkIntervals[key] !== undefined;
+            
+            // If state hasn't changed and not forced, don't touch blinking at all
+            // Just ensure classes are correct (in case element was temporarily removed from DOM)
+            if (!forceRestart && currentlyBlinking === shouldBlink) {
+                // Only ensure classes are correct, but don't restart intervals
+                if (shouldBlink && statusElement && !statusElement.classList.contains('blinking')) {
+                    statusElement.classList.add('blinking');
+                } else if (!shouldBlink && statusElement && statusElement.classList.contains('blinking')) {
+                    statusElement.classList.remove('blinking');
+                }
+                // Don't restart blinking - intervals are already running correctly
+                return;
+            }
+            
+            // State changed or forced - stop existing blinking
+            if (ledBlinkIntervals[key]) {
+                clearInterval(ledBlinkIntervals[key]);
+                delete ledBlinkIntervals[key];
+            }
+            delete ledBlinkElements[key]; // Remove element reference
+            if (statusElement) {
+                statusElement.classList.remove('blinking');
+            }
+            
+            // Set correct state from server
+            if (statusElement) {
+                if (ledIsOn) {
+                    statusElement.classList.add('active');
+                } else {
+                    statusElement.classList.remove('active');
+                }
+            }
+            
+            // Only start blinking if: autoflash is enabled AND LED is actually ON
+            if (shouldBlink) {
+                // Store element reference for interval (so it works even if element is temporarily removed from DOM)
+                ledBlinkElements[key] = statusElement;
+                
+                // Add blinking class for CSS animation
+                statusElement.classList.add('blinking');
+                
+                // Start independent blinking animation (500ms interval like OnAirScreen)
+                let shouldShowActive = true;
+                
+                // Use setTimeout first to ensure we don't toggle immediately
+                ledBlinkIntervals[key] = setTimeout(() => {
+                    // Use stored element reference instead of getElementById
+                    const currentElement = ledBlinkElements[key];
+                    if (!currentElement || !currentElement.classList.contains('blinking')) {
+                        delete ledBlinkIntervals[key];
+                        delete ledBlinkElements[key];
+                        return;
+                    }
+                    
+                    // Now set up the interval for regular blinking
+                    ledBlinkIntervals[key] = setInterval(() => {
+                        // Use stored element reference - works even if element was temporarily removed from DOM
+                        const currentElement = ledBlinkElements[key];
+                        if (!currentElement || !currentElement.classList.contains('blinking')) {
+                            // Element reference lost or blinking stopped
+                            if (ledBlinkIntervals[key]) {
+                                clearInterval(ledBlinkIntervals[key]);
+                            }
+                            delete ledBlinkIntervals[key];
+                            delete ledBlinkElements[key];
+                            return;
+                        }
+                        
+                        // Toggle visual appearance only
+                        shouldShowActive = !shouldShowActive;
+                        if (shouldShowActive) {
+                            currentElement.classList.add('active');
+                        } else {
+                            currentElement.classList.remove('active');
+                        }
+                    }, 500);
+                }, 500);
+            } else {
+                // Not blinking - remove element reference
+                delete ledBlinkElements[key];
+            }
+        }
+        
+        // Store last LED state to detect changes
+        let lastLEDDisplayState = {};
+        
+        function updateStatusDisplay(data) {
+            const grid = document.getElementById('statusGrid');
+            
+            // Step 1: Update or create LED elements BEFORE clearing grid
+            // This preserves the elements and their blinking intervals
+            for (let i = 1; i <= 4; i++) {
+                const led = data.leds[i];
+                
+                // Get actual status from server
+                const ledIsOn = led.status === true;
+                const autoflashEnabled = led.autoflash === true;
+                
+                // Check if element already exists
+                let item = document.getElementById(`ledStatus${i}`);
+                
+                // Check if state has changed
+                const currentState = {
+                    status: ledIsOn,
+                    autoflash: autoflashEnabled,
+                    text: led.text || `LED${i}`
+                };
+                
+                const stateChanged = !lastLEDDisplayState[i] || 
+                    lastLEDDisplayState[i].status !== currentState.status ||
+                    lastLEDDisplayState[i].autoflash !== currentState.autoflash ||
+                    lastLEDDisplayState[i].text !== currentState.text;
+                
+                if (stateChanged) {
+                    lastLEDDisplayState[i] = currentState;
+                }
+                
+                if (!item) {
+                    // Element doesn't exist, create it
+                    item = document.createElement('div');
+                    item.id = `ledStatus${i}`;
+                    item.classList.add('status-item');
+                    
+                    // Create value element
+                    const valueElement = document.createElement('div');
+                    valueElement.className = 'value';
+                    valueElement.id = `ledStatusValue${i}`;
+                    valueElement.textContent = ledIsOn ? 'ON' : 'OFF';
+                    
+                    const textElement = document.createElement('div');
+                    textElement.style.fontSize = '12px';
+                    textElement.style.color = 'var(--text-tertiary)';
+                    textElement.textContent = led.text || `LED${i}`;
+                    
+                    item.innerHTML = `<h3>LED ${i}</h3>`;
+                    item.appendChild(valueElement);
+                    item.appendChild(textElement);
+                    
+                    // Set initial state
+                    if (ledIsOn) {
+                        item.classList.add('active');
+                    }
+                    
+                    // Add to grid immediately (will be repositioned later)
+                    grid.appendChild(item);
+                }
+                
+                // Update content only if state changed or element not in DOM
+                if (stateChanged || !item.parentNode) {
+                    // Update text content
+                    const valueElement = document.getElementById(`ledStatusValue${i}`);
+                    if (valueElement) {
+                        valueElement.textContent = ledIsOn ? 'ON' : 'OFF';
+                    }
+                    const textElement = item.querySelector('div[style*="font-size: 12px"]');
+                    if (textElement) {
+                        textElement.textContent = led.text || `LED${i}`;
+                    }
+                    
+                    // Update blinking state (only restarts if state changed)
+                    manageLEDBlinking(i, autoflashEnabled, ledIsOn, item, stateChanged);
+                }
+                // If state hasn't changed, don't touch the blinking - it's already running correctly
+            }
+            
+            // Step 2: Remove only non-LED elements from grid
+            // CRITICAL: Keep LED elements in DOM to preserve blinking animations
+            // Removing them interrupts CSS animations even if JavaScript intervals continue
+            const children = Array.from(grid.children);
+            children.forEach(child => {
+                // Only remove non-LED elements (AIR, texts, warnings)
+                if (!child.id || !child.id.startsWith('ledStatus')) {
+                    grid.removeChild(child);
+                }
+            });
+            
+            // LED elements remain in DOM at their positions - no interruption to blinking
+            
+            // Row 2: AIR status (AIR1-4)
+            for (let i = 1; i <= 4; i++) {
+                const air = data.air[i];
+                const item = document.createElement('div');
+                item.className = 'status-item' + (air.status ? ' active' : '');
+                const minutes = Math.floor(air.seconds / 60);
+                const secs = air.seconds % 60;
+                item.innerHTML = `
+                    <h3>AIR ${i} (${air.text})</h3>
+                    <div class="value">${minutes}:${String(secs).padStart(2, '0')}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">${air.status ? 'Running' : 'Stopped'}</div>
+                `;
+                grid.appendChild(item);
+            }
+            
+            // Row 3: Text fields status (NOW, NEXT) - compact layout
+            if (data.texts) {
+                const texts = data.texts;
+                
+                // NOW (spans 2 columns)
+                const nowItem = document.createElement('div');
+                nowItem.className = 'status-item text-item';
+                nowItem.style.gridColumn = 'span 2';
+                nowItem.innerHTML = `
+                    <h3>NOW</h3>
+                    <div class="value" style="word-break: break-word;">${texts.now || '(empty)'}</div>
+                `;
+                grid.appendChild(nowItem);
+                
+                // NEXT (spans 2 columns)
+                const nextItem = document.createElement('div');
+                nextItem.className = 'status-item text-item';
+                nextItem.style.gridColumn = 'span 2';
+                nextItem.innerHTML = `
+                    <h3>NEXT</h3>
+                    <div class="value" style="word-break: break-word;">${texts.next || '(empty)'}</div>
+                `;
+                grid.appendChild(nextItem);
+                
+                // WARN - Show all warnings sorted by priority (highest first)
+                // Warnings span full width and appear after the 3 main rows
+                if (data.warnings && data.warnings.length > 0) {
+                    // Sort by priority (descending: 2, 1, 0, -1)
+                    const sortedWarnings = [...data.warnings].sort((a, b) => b.priority - a.priority);
+                    
+                    sortedWarnings.forEach(warning => {
+                    const warnItem = document.createElement('div');
+                    warnItem.className = 'status-item';
+                        warnItem.style.gridColumn = 'span 4';  // Full width
+                        // Different colors based on priority
+                        const priorityColors = {
+                            '-1': { border: '#2196f3', bg: '#e3f2fd', text: '#1565c0' },  // Blue for NTP
+                            '0': { border: '#ff9800', bg: '#fff3e0', text: '#e65100' },  // Orange for normal/legacy
+                            '1': { border: '#ff5252', bg: '#ffebee', text: '#d32f2f' },  // Red for medium
+                            '2': { border: '#d32f2f', bg: '#ffcdd2', text: '#b71c1c' }   // Dark red for high
+                        };
+                        const priorityKey = String(warning.priority);
+                        const colors = priorityColors[priorityKey] || priorityColors['0'];
+                        const priorityLabels = { '-1': 'NTP', '0': 'Normal', '1': 'Medium', '2': 'High' };
+                        const label = priorityLabels[priorityKey] || 'Unknown';
+                        warnItem.style.borderLeftColor = colors.border;
+                        warnItem.style.background = colors.bg;
+                        
+                        // Add close button only for user warnings (priority 0-2), not for NTP (-1)
+                        const closeButton = warning.priority >= 0 ? 
+                            `<button class="close-btn" onclick="clearWarningByPriority(${warning.priority})" title="Remove warning">×</button>` : 
+                            '';
+                        
+                        warnItem.innerHTML = `
+                            <h3>WARN (Priority ${warning.priority} - ${label})</h3>
+                            <div class="value" style="font-size: 16px; word-break: break-word; color: ${colors.text};">${warning.text}</div>
+                            ${closeButton}
+                        `;
+                        grid.appendChild(warnItem);
+                    });
+                } else if (texts.warn) {
+                    // Fallback to old format for backward compatibility
+                    const warnItem = document.createElement('div');
+                    warnItem.className = 'status-item';
+                    warnItem.style.gridColumn = 'span 4';  // Full width
+                    warnItem.style.borderLeftColor = '#ff5252';
+                    warnItem.style.background = '#ffebee';
+                    warnItem.innerHTML = `
+                        <h3>WARN</h3>
+                        <div class="value" style="font-size: 16px; word-break: break-word; color: #d32f2f;">${texts.warn}</div>
+                        <button class="close-btn" onclick="clearWarningByPriority(0)" title="Remove warning">×</button>
+                    `;
+                    grid.appendChild(warnItem);
+                }
+            }
+            
+            // Hide connection error if status was successfully loaded
+            if (connectionErrorShown) {
+                hideConnectionError();
+            }
+        }
+        
+        function showConnectionError() {
+            if (!connectionErrorShown) {
+                const modal = document.getElementById('connectionErrorModal');
+                if (modal) {
+                    modal.classList.add('show');
+                    connectionErrorShown = true;
+                    // Disable all interactive elements
+                    disableControls(true);
+                }
+            }
+        }
+        
+        function hideConnectionError() {
+            const modal = document.getElementById('connectionErrorModal');
+            if (modal) {
+                modal.classList.remove('show');
+                connectionErrorShown = false;
+                // Re-enable all interactive elements
+                disableControls(false);
+            }
+        }
+        
+        function disableControls(disable) {
+            // Disable all buttons
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.disabled = disable;
+                if (disable) {
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                } else {
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            });
+            
+            // Disable all inputs
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.disabled = disable;
+                if (disable) {
+                    input.style.opacity = '0.5';
+                    input.style.cursor = 'not-allowed';
+                } else {
+                    input.style.opacity = '1';
+                    input.style.cursor = 'text';
+                }
+            });
+        }
+        
+        let lastLEDState = {};
+        
+        function updateLEDButtons(leds) {
+            const container = document.getElementById('ledControls');
+            
+            // Check if update is needed before updating lastLEDState
+            let needsUpdate = false;
+            for (let i = 1; i <= 4; i++) {
+                const led = leds[i];
+                const key = `led${i}`;
+                const currentState = led.status ? 'on' : 'off';
+                const currentText = led.text;
+                const currentAutoflash = led.autoflash || false;
+                
+                if (!lastLEDState[key] || 
+                    lastLEDState[key].status !== currentState || 
+                    lastLEDState[key].text !== currentText ||
+                    lastLEDState[key].autoflash !== currentAutoflash) {
+                    needsUpdate = true;
+                    break;
+                }
+            }
+            
+            // Always update lastLEDState to keep it current for button click handlers
+            for (let i = 1; i <= 4; i++) {
+                const led = leds[i];
+                lastLEDState[`led${i}`] = {
+                    status: led.status ? 'on' : 'off',
+                    text: led.text,
+                    autoflash: led.autoflash || false
+                };
+            }
+            
+            if (!needsUpdate) {
+                // Even if buttons don't need rebuilding, update their active state
+                // in case only the status changed (e.g., from autoflash)
+                for (let i = 1; i <= 4; i++) {
+                    const btn = document.getElementById(`ledButton${i}`);
+                    if (btn) {
+                        const led = leds[i];
+                        if (led.status) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    }
+                }
+                return; // No changes, skip button rebuild
+            }
+            
+            // Rebuild buttons only when state changed
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= 4; i++) {
+                const led = leds[i];
+                const btn = document.createElement('button');
+                btn.id = `ledButton${i}`;
+                btn.className = 'led-btn' + (led.status ? ' active' : '');
+                btn.textContent = `LED ${i}: ${led.text}`;
+                // Use current state from lastLEDState when button is clicked, not when created
+                btn.onclick = () => {
+                    const currentState = lastLEDState[`led${i}`];
+                    if (currentState) {
+                        const isOn = currentState.status === 'on';
+                        sendCommand(`LED${i}:${isOn ? 'OFF' : 'ON'}`);
+                    } else {
+                        // Fallback: toggle based on button's current active class
+                        const isActive = btn.classList.contains('active');
+                        sendCommand(`LED${i}:${isActive ? 'OFF' : 'ON'}`);
+                    }
+                };
+                container.appendChild(btn);
+                
+                // Don't blink buttons, only status display
+            }
+        }
+        
+        let lastAIRState = {};
+        let airControlElements = {};
+        
+        function updateAIRControls(air) {
+            const container = document.getElementById('airControls');
+            
+            // Initialize elements if they don't exist
+            if (Object.keys(airControlElements).length === 0) {
+                container.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                    const group = document.createElement('div');
+                    group.className = 'air-control-group';
+                    group.id = `airGroup${i}`;
+                    
+                    const startStopBtn = document.createElement('button');
+                    startStopBtn.className = 'air-btn';
+                    startStopBtn.id = `airStartStop${i}`;
+                    startStopBtn.textContent = `AIR ${i}`;
+                    group.appendChild(startStopBtn);
+                    
+                    // Add Reset button for AIR3 and AIR4
+                    if (i === 3 || i === 4) {
+                        const resetBtn = document.createElement('button');
+                        resetBtn.className = 'air-btn';
+                        resetBtn.id = `airReset${i}`;
+                        resetBtn.textContent = 'Reset';
+                        resetBtn.onclick = () => sendCommand(`AIR${i}:RESET`);
+                        group.appendChild(resetBtn);
+                    }
+                    
+                    container.appendChild(group);
+                    
+                    airControlElements[`air${i}`] = {
+                        group: group,
+                        startStopBtn: startStopBtn
+                    };
+                }
+            }
+            
+            // Update only changed elements
+            for (let i = 1; i <= 4; i++) {
+                const a = air[i];
+                const minutes = Math.floor(a.seconds / 60);
+                const secs = a.seconds % 60;
+                const timeStr = minutes + ':' + String(secs).padStart(2, '0');
+                const statusStr = a.status ? 'on' : 'off';
+                const key = `air${i}`;
+                
+                const lastState = lastAIRState[key];
+                    const elements = airControlElements[key];
+                
+                // Update button text and class if text or status changed
+                if (!lastState || lastState.text !== a.text || lastState.status !== statusStr) {
+                    const labelText = a.text || `AIR ${i}`;
+                    elements.startStopBtn.textContent = `AIR ${i}: ${labelText}`;
+                    elements.startStopBtn.className = 'air-btn' + (a.status ? ' active' : '');
+                    elements.startStopBtn.onclick = () => sendCommand(`AIR${i}:${a.status ? 'OFF' : 'ON'}`);
+                }
+                
+                // Update tooltip (always, since time changes every second)
+                elements.startStopBtn.title = `${a.text} - ${timeStr} - ${a.status ? 'Running' : 'Stopped'} - Click to ${a.status ? 'stop' : 'start'}`;
+                
+                // Store current state
+                    lastAIRState[key] = {
+                        status: statusStr,
+                        time: timeStr,
+                        text: a.text
+                    };
+            }
+        }
+        
+        function sendCommand(cmd) {
+            console.log('Sending command:', cmd);
+            
+            // Use REST-style API endpoint
+            const url = API_BASE + '/api/command?cmd=' + encodeURIComponent(cmd);
+            fetch(url)
+                .then(response => {
+                    console.log('Command response status:', response.status);
+                    if (response.ok) {
+                        return response.json().catch(() => response.text());
+                    } else {
+                        throw new Error('HTTP error! status: ' + response.status);
+                    }
+                })
+                .then(data => {
+                    console.log('Command sent successfully:', cmd, data);
+                    // Wait a moment for server to process, then refresh status
+                    // This ensures we get the updated state from the server
+                    setTimeout(updateStatus, 400);
+                })
+                .catch(error => {
+                    console.error('Error sending command:', error);
+                    alert('Error sending command: ' + error.message);
+                    // Refresh status even on error to get current state
+                    setTimeout(updateStatus, 400);
+                });
+        }
+        
+        function sendTextCommand(command, inputId, priorityId) {
+            const input = document.getElementById(inputId);
+            const value = input.value.trim();
+            if (value) {
+                let cmdValue = value;
+                // If priority is specified (for WARN command), prepend it
+                // Priority 0 is only for backward compatibility, so don't send it explicitly
+                if (priorityId && command === 'WARN') {
+                    const prioritySelect = document.getElementById(priorityId);
+                    if (prioritySelect) {
+                        const priority = prioritySelect.value;
+                        // Only add priority if it's 1 or 2 (priority 0 is implicit for backward compatibility)
+                        if (priority !== '0') {
+                            cmdValue = priority + ':' + value;
+                        }
+                        // If priority is 0, just send the text without explicit priority
+                    }
+                }
+                sendCommand(command + ':' + cmdValue);
+                // Clear input after sending (except for WARN)
+                if (command !== 'WARN') {
+                    input.value = '';
+                }
+            }
+        }
+        
+        function clearWarning() {
+            // Get the currently selected priority
+            const prioritySelect = document.getElementById('warnPriority');
+            const priority = prioritySelect ? prioritySelect.value : '0';
+            // Priority 0 is only for backward compatibility, so send WARN: without explicit priority
+            if (priority === '0') {
+            sendCommand('WARN:');
+            } else {
+                // Send clear command with the selected priority (1 or 2)
+                sendCommand('WARN:' + priority + ':');
+            }
+            document.getElementById('warnInput').value = '';
+        }
+        
+        function clearWarningByPriority(priority) {
+            // Clear warning with specific priority (0, 1, or 2)
+            // Priority 0 is only for backward compatibility, so send WARN: without explicit priority
+            if (priority === 0) {
+                sendCommand('WARN:');
+            } else {
+                // Send clear command with the explicit priority (1 or 2)
+                sendCommand('WARN:' + priority + ':');
+            }
+        }
+        
+        function clearText(command, inputId) {
+            sendCommand(command + ':');
+            document.getElementById(inputId).value = '';
+        }
+        
+        // Allow Enter key to submit text inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const nowInput = document.getElementById('nowInput');
+            const nextInput = document.getElementById('nextInput');
+            const warnInput = document.getElementById('warnInput');
+            
+            if (nowInput) {
+                nowInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendTextCommand('NOW', 'nowInput');
+                    }
+                });
+            }
+            if (nextInput) {
+                nextInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendTextCommand('NEXT', 'nextInput');
+                    }
+                });
+            }
+            if (warnInput) {
+                warnInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendTextCommand('WARN', 'warnInput', 'warnPriority');
+                    }
+                });
+            }
+        });
+        
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            function setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+            
+            // Set initial theme (already set in head, but update icon)
+            const currentTheme = document.documentElement.getAttribute('data-theme') || savedTheme;
+            setTheme(currentTheme);
+            
+            // Toggle theme on button click
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+            });
+        }
+        
+        // Initialize theme on page load
+        initTheme();
+        
+        // Connect WebSocket for real-time updates
+        connectWebSocket();
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+            if (wsReconnectTimeout) {
+                clearTimeout(wsReconnectTimeout);
+            }
+        });
+    </script>
+</body>
+</html>

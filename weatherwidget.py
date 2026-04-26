@@ -3,7 +3,7 @@
 #############################################################################
 #
 # OnAirScreen
-# Copyright (c) 2012-2025 Sascha Ludwig, astrastudio.de
+# Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
 # start.py
@@ -40,6 +40,8 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import PyQt6.QtNetwork as QtNetwork
 import json
 import logging
+
+from exceptions import JsonParseError, WeatherApiError, log_exception
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -172,9 +174,11 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def updateWeather(self) -> None:
         """Update weather data from OpenWeatherMap API"""
-        if self.widgetEnabled:
+        if self.widgetEnabled and self.owmAPIKey:
             logger.debug("update weather called")
             self.makeOWMApiCall()
+        else:
+            logger.debug("Weather update skipped: widget disabled or no API key")
 
     def setData(self, city: str, temperature: str, condition: str, icon: str = "01d", background: str = None, label: str = "WEATHER") -> None:
         """
@@ -219,6 +223,14 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def makeOWMApiCall(self) -> None:
         """Make API call to OpenWeatherMap to fetch current weather"""
+        # Check if widget is enabled and API key is present
+        if not self.widgetEnabled:
+            logger.debug("OWM API call skipped: widget is disabled")
+            return
+        if not self.owmAPIKey or self.owmAPIKey.strip() == "":
+            logger.debug("OWM API call skipped: no API key configured")
+            return
+        
         logger.debug("OWM API Call")
         url = "https://api.openweathermap.org/data/2.5/weather?id=" + self.owmCityID + "&units=" + self.owmUnit + "&lang=" + self.owmLanguage + "&appid=" + self.owmAPIKey
         req = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
@@ -240,16 +252,53 @@ class WeatherWidget(QtWidgets.QWidget):
             try:
                 weather_json = (json.loads(reply_string))
             except json.JSONDecodeError as e:
-                error_string = f"Unexpected JSON payload in OWM Response: {reply_string}"
-                logger.error(f"{error_string}: {e}")
+                error = JsonParseError(
+                    f"Unexpected JSON payload in OWM Response: {e}",
+                    json_data=reply_string[:500] if len(reply_string) > 500 else reply_string
+                )
+                log_exception(logger, error, use_exc_info=False)
                 return
-            main_weather = weather_json["weather"][0]["main"]
-            condition = weather_json["weather"][0]["description"]
-            city = weather_json["name"]
-            unit_symbol = self.owm_units_abbrev.get(self.owmUnit)
-            temp = "{:.0f}{}".format(weather_json["main"]["temp"], unit_symbol)
-            icon = weather_json["weather"][0]["icon"]
-            background = icon
+            
+            # Validate JSON structure to prevent KeyError/IndexError
+            try:
+                if "weather" not in weather_json or len(weather_json["weather"]) == 0:
+                    error = WeatherApiError(
+                        "OWM response missing weather array",
+                        api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                    )
+                    log_exception(logger, error, use_exc_info=False)
+                    return
+                if "main" not in weather_json:
+                    error = WeatherApiError(
+                        "OWM response missing main data",
+                        api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                    )
+                    log_exception(logger, error, use_exc_info=False)
+                    return
+                if "name" not in weather_json:
+                    error = WeatherApiError(
+                        "OWM response missing city name",
+                        api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                    )
+                    log_exception(logger, error, use_exc_info=False)
+                    return
+                
+                main_weather = weather_json["weather"][0]["main"]
+                condition = weather_json["weather"][0]["description"]
+                city = weather_json["name"]
+                unit_symbol = self.owm_units_abbrev.get(self.owmUnit, "°C")  # Default to °C if not found
+                if unit_symbol is None:
+                    unit_symbol = "°C"
+                temp = "{:.0f}{}".format(weather_json["main"]["temp"], unit_symbol)
+                icon = weather_json["weather"][0]["icon"]
+                background = icon
+            except (KeyError, IndexError, TypeError) as e:
+                error = WeatherApiError(
+                    f"OWM response has unexpected structure: {e}",
+                    api_response=reply_string[:500] if len(reply_string) > 500 else reply_string
+                )
+                log_exception(logger, error, use_exc_info=False)
+                return
             if self.owmLanguage == "de":
                 label = "WETTER"
             else:
@@ -262,14 +311,14 @@ class WeatherWidget(QtWidgets.QWidget):
 
     def readConfig(self) -> None:
         """Read weather widget configuration from QSettings"""
+        from utils import settings_group
         settings = QtCore.QSettings(QtCore.QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        settings.beginGroup("WeatherWidget")
-        self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
-        self.owmAPIKey = settings.value('owmAPIKey', "")
-        self.owmCityID = settings.value('owmCityID', "2643743")
-        self.owmLanguage = self.owm_languages.get(settings.value('owmLanguage', "English"))
-        self.owmUnit = self.owm_units.get(settings.value('owmUnit', "Celsius"))
-        settings.endGroup()
+        with settings_group(settings, "WeatherWidget"):
+            self.widgetEnabled = settings.value('owmWidgetEnabled', False, type=bool)
+            self.owmAPIKey = settings.value('owmAPIKey', "")
+            self.owmCityID = settings.value('owmCityID', "2643743")
+            self.owmLanguage = self.owm_languages.get(settings.value('owmLanguage', "English"))
+            self.owmUnit = self.owm_units.get(settings.value('owmUnit', "Celsius"))
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
