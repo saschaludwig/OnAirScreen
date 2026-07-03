@@ -15,6 +15,7 @@ from command_handler import (
     validate_led_value,
     validate_air_value,
     validate_air3time_value,
+    validate_air3toh_value,
     validate_cmd_value,
     MAX_TEXT_LENGTH,
     MAX_CONFIG_LENGTH,
@@ -48,6 +49,9 @@ def mock_main_screen():
     main_screen.radio_timer_reset = Mock()
     main_screen.radio_timer_start_stop = Mock()
     main_screen.radio_timer_set = Mock()
+    main_screen.start_top_of_hour_countdown = Mock()
+    main_screen.stop_top_of_hour_countdown = Mock()
+    main_screen.toggle_top_of_hour_countdown = Mock()
     main_screen.stream_timer_reset = Mock()
     main_screen.start_stop_air4 = Mock()
     
@@ -344,6 +348,34 @@ class TestAir3TimeCommand:
             mock_logger.error.assert_called_once()
             # radio_timer_set should not be called with invalid value
             mock_main_screen.radio_timer_set.assert_not_called()
+
+
+class TestAir3TohCommand:
+    """Test AIR3TOH command handler"""
+
+    def test_air3toh_on(self, command_handler, mock_main_screen):
+        """Test AIR3TOH ON command"""
+        command_handler.parse_cmd(b"AIR3TOH:ON")
+        mock_main_screen.start_top_of_hour_countdown.assert_called_once()
+
+    def test_air3toh_off(self, command_handler, mock_main_screen):
+        """Test AIR3TOH OFF command"""
+        command_handler.parse_cmd(b"AIR3TOH:OFF")
+        mock_main_screen.stop_top_of_hour_countdown.assert_called_once()
+
+    def test_air3toh_toggle(self, command_handler, mock_main_screen):
+        """Test AIR3TOH TOGGLE command"""
+        command_handler.parse_cmd(b"AIR3TOH:TOGGLE")
+        mock_main_screen.toggle_top_of_hour_countdown.assert_called_once()
+
+    def test_air3toh_invalid(self, command_handler, mock_main_screen):
+        """Test AIR3TOH command with invalid value"""
+        with patch('command_handler.logger') as mock_logger:
+            command_handler.parse_cmd(b"AIR3TOH:invalid")
+            mock_logger.warning.assert_called_once()
+            mock_main_screen.start_top_of_hour_countdown.assert_not_called()
+            mock_main_screen.stop_top_of_hour_countdown.assert_not_called()
+            mock_main_screen.toggle_top_of_hour_countdown.assert_not_called()
 
 
 class TestAir4Command:
@@ -744,6 +776,18 @@ class TestInputValidation:
         assert validate_air3time_value("86401") is False  # > 24 hours
         assert validate_air3time_value("abc") is False
         assert validate_air3time_value("") is False
+
+    def test_validate_air3toh_value_valid(self):
+        """Test validate_air3toh_value with valid values"""
+        assert validate_air3toh_value("ON") is True
+        assert validate_air3toh_value("OFF") is True
+        assert validate_air3toh_value("TOGGLE") is True
+        assert validate_air3toh_value("toggle") is True
+
+    def test_validate_air3toh_value_invalid(self):
+        """Test validate_air3toh_value with invalid values"""
+        assert validate_air3toh_value("RESET") is False
+        assert validate_air3toh_value("") is False
     
     def test_validate_cmd_value_valid(self):
         """Test validate_cmd_value with valid values"""

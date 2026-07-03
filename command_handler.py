@@ -204,6 +204,19 @@ def validate_air3time_value(value: str) -> bool:
         return False
 
 
+def validate_air3toh_value(value: str) -> bool:
+    """
+    Validate AIR3TOH command value
+
+    Args:
+        value: AIR3TOH command value (should be "ON", "OFF", or "TOGGLE")
+
+    Returns:
+        True if value is valid, False otherwise
+    """
+    return value.upper() in ("ON", "OFF", "TOGGLE")
+
+
 def validate_cmd_value(value: str) -> bool:
     """
     Validate CMD command value
@@ -318,6 +331,7 @@ class CommandHandler:
             "AIR2": lambda v: self._handle_air_simple_command(2, v),
             "AIR3": lambda v: self._handle_air3_command(v),
             "AIR3TIME": lambda v: self._handle_air3time_command(v),
+            "AIR3TOH": lambda v: self._handle_air3toh_command(v),
             "AIR4": lambda v: self._handle_air4_command(v),
             "CMD": lambda v: self._handle_cmd_command(v),
         }
@@ -456,7 +470,28 @@ class CommandHandler:
                 value=value
             )
             log_exception(logger, error, use_exc_info=False)
-    
+
+    def _handle_air3toh_command(self, value: str) -> None:
+        """
+        Handle AIR3TOH command for top-of-hour countdown
+
+        Args:
+            value: Command action ("ON", "OFF", or "TOGGLE")
+        """
+        if not validate_air3toh_value(value):
+            logger.warning(
+                f"Invalid AIR3TOH command value: '{value}', expected 'ON', 'OFF', or 'TOGGLE'"
+            )
+            return
+
+        value_upper = value.upper()
+        if value_upper == "OFF":
+            self.main_screen.stop_top_of_hour_countdown()
+        elif value_upper == "ON":
+            self.main_screen.start_top_of_hour_countdown()
+        else:
+            self.main_screen.toggle_top_of_hour_countdown()
+
     def _handle_air4_command(self, value: str) -> None:
         """
         Handle AIR4 command

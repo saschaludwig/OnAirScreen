@@ -77,8 +77,6 @@
 #
 #############################################################################
 
-import time as pytime
-
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import QRectF
 from PyQt6.QtGui import QColor
@@ -123,14 +121,33 @@ class ClockWidget(QtWidgets.QWidget):
         self.logo_upper = False
 
         self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.update)
+        self.timer.timeout.connect(self._on_timer_timeout)
         self.resync_time()
 
+    def _milliseconds_until_next_clock_boundary(self) -> int:
+        """Return milliseconds until the next required clock repaint boundary."""
+        msec = QtCore.QTime.currentTime().msec()
+        if self.staticColon:
+            delay = 1000 - msec
+        elif msec < 500:
+            delay = 500 - msec
+        else:
+            delay = 1000 - msec
+        return delay if delay > 0 else 1
+
+    def _schedule_next_clock_update(self) -> None:
+        """Schedule the next repaint aligned to wall-clock boundaries."""
+        self.timer.start(self._milliseconds_until_next_clock_boundary())
+
+    def _on_timer_timeout(self) -> None:
+        """Repaint the clock and schedule the next aligned update."""
+        self.update()
+        self._schedule_next_clock_update()
+
     def resync_time(self):
-        # sync local timer with system clock
-        while QtCore.QTime.currentTime().msec() > 5:
-            pytime.sleep(0.001)
-        self.timer.start(500)
+        """Sync clock repaints to wall-clock second and colon boundaries."""
+        self.update()
+        self._schedule_next_clock_update()
 
     def update_time(self):
         self.timeChanged.emit(QtCore.QTime.currentTime())
@@ -207,6 +224,7 @@ class ClockWidget(QtWidgets.QWidget):
     @QtCore.pyqtSlot(bool)
     def set_static_colon(self, value):
         self.staticColon = value
+        self.resync_time()
 
     def reset_static_colon(self):
         self.staticColon = False

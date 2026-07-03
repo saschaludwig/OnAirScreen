@@ -1123,12 +1123,23 @@
                         resetBtn.onclick = () => sendCommand(`AIR${i}:RESET`);
                         group.appendChild(resetBtn);
                     }
+
+                    if (i === 3) {
+                        const tohBtn = document.createElement('button');
+                        tohBtn.className = 'air-btn';
+                        tohBtn.id = 'airTopOfHour3';
+                        tohBtn.textContent = 'Top of Hour';
+                        tohBtn.title = 'Countdown to next full hour';
+                        tohBtn.onclick = () => sendCommand('AIR3TOH:TOGGLE');
+                        group.appendChild(tohBtn);
+                    }
                     
                     container.appendChild(group);
                     
                     airControlElements[`air${i}`] = {
                         group: group,
-                        startStopBtn: startStopBtn
+                        startStopBtn: startStopBtn,
+                        topOfHourBtn: i === 3 ? document.getElementById('airTopOfHour3') : null
                     };
                 }
             }
@@ -1155,12 +1166,20 @@
                 
                 // Update tooltip (always, since time changes every second)
                 elements.startStopBtn.title = `${a.text} - ${timeStr} - ${a.status ? 'Running' : 'Stopped'} - Click to ${a.status ? 'stop' : 'start'}`;
+
+                if (i === 3 && elements.topOfHourBtn) {
+                    const topOfHourActive = !!a.topOfHour;
+                    if (!lastState || lastState.topOfHour !== topOfHourActive) {
+                        elements.topOfHourBtn.className = 'air-btn' + (topOfHourActive ? ' active' : '');
+                    }
+                }
                 
                 // Store current state
                     lastAIRState[key] = {
                         status: statusStr,
                         time: timeStr,
-                        text: a.text
+                        text: a.text,
+                        topOfHour: i === 3 ? !!a.topOfHour : false
                     };
             }
         }

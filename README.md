@@ -56,7 +56,47 @@ And if you need extended support, please contact me.
  * Modular architecture with separated concerns (NTP, UI updates, system operations, etc.)
  * Weather Widget
  * static or blinking colon in digital clock mode
+ * static or blinking colon in digital clock mode
  * OnAir Timer, Stopwatch, Countdown and more
+ * Top-of-Hour countdown in the Radio Timer (AIR3): wall-clock synchronized countdown to the next full hour
+
+#### Top-of-Hour Countdown (AIR3)
+
+The Top-of-Hour (TOH) countdown shows the remaining time until the next full hour in the **Radio Timer** display (AIR3, left timer column). The display uses the format **minutes:seconds** (e.g. `22:38`).
+
+**Behavior:**
+ * Press once to start: calculates the remaining time until the next `:00` and starts the countdown
+ * Press again (or send `OFF`/`TOGGLE` while active): stops the timer and resets the display to `0:00`
+ * The countdown is synchronized with the system clock and stops automatically when the hour is reached
+ * While active, the `/api/status` response includes `"topOfHour": true` in the `air[3]` object
+
+**Control:**
+
+| Method | Action |
+|--------|--------|
+| Hotkey `T` | Toggle Top-of-Hour countdown |
+| `AIR3TOH:ON` | Start countdown |
+| `AIR3TOH:OFF` | Stop and reset to `0:00` |
+| `AIR3TOH:TOGGLE` | Toggle countdown |
+| Web-UI | "Top of Hour" button at AIR3 |
+| MQTT | Publish to `{base_topic}/air3/toh` (`ON`/`OFF`/`TOGGLE`) |
+| Home Assistant | "AIR3 Top of Hour" button (MQTT Autodiscovery) |
+
+**Examples:**
+
+```Shell
+# UDP
+echo "AIR3TOH:TOGGLE" > /dev/udp/127.0.0.1/3310
+
+# HTTP
+curl "http://127.0.0.1:8010/?cmd=AIR3TOH:TOGGLE"
+
+# REST-style API
+curl "http://127.0.0.1:8010/api/command?cmd=AIR3TOH:ON"
+
+# MQTT
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/toh -m "TOGGLE"
+```
 
 #### OnAirScreen Function Keys
 | Hotkeys                           | Function                |
@@ -72,6 +112,7 @@ And if you need extended support, please contact me.
 | `4`                                 | LED4 on/off             |
 | `M` or `/`                            | Mic Timer start/stop    |
 | `P` or `*`                            | Phone Timer start/stop  |
+| `T`                                   | Top-of-Hour countdown in Radio Timer (AIR3) start/stop |
 | `Enter`                             | opens set timer dialog  |
 
 On OSX use the `command ⌘` key instead of `Ctrl`
@@ -115,6 +156,7 @@ The Web-UI provides:
  * Delete warnings directly from status display with X button
  * LED control buttons with toggle functionality
  * AIR timer controls with start/stop and reset buttons
+ * Top-of-Hour button for AIR3 (countdown to next full hour)
  * Text input controls for NOW, NEXT, and WARN messages
  * Compact, organized layout for better space efficiency
  * Version and distribution information display
@@ -128,7 +170,7 @@ OnAirScreen also provides REST-style API endpoints:
 ```Shell
 curl http://127.0.0.1:8010/api/status
 ```
-Returns JSON with current LED status, AIR timer status, text field values, version, and distribution information.
+Returns JSON with current LED status, AIR timer status, text field values, version, and distribution information. For AIR3, the `topOfHour` field indicates whether the Top-of-Hour countdown is active.
 
 **Command Endpoint:**
 ```Shell
@@ -150,6 +192,7 @@ OnAirScreen automatically publishes device configurations to Home Assistant, cre
  * **AIR Timer Switches** (AIR1-4): Start/stop timers
  * **AIR Timer Sensors** (AIR1-4 Time): Display elapsed time in seconds
  * **Reset Buttons** (AIR3/AIR4 Reset): Reset timers to 0:00
+ * **Top-of-Hour Button** (AIR3): Start/stop countdown to next full hour
  * **Text Entities** (NOW, NEXT, WARN): Set and display text fields
 
 **MQTT Topics:**
@@ -158,6 +201,7 @@ All commands use the same format as UDP/HTTP API commands, published to:
 {base_topic}/led{1-4}/set          → ON/OFF
 {base_topic}/air{1-4}/set          → ON/OFF
 {base_topic}/air{3-4}/reset        → PRESS (button)
+{base_topic}/air3/toh              → ON/OFF/TOGGLE
 {base_topic}/text/now/set          → TEXT
 {base_topic}/text/next/set         → TEXT
 {base_topic}/text/warn/set         → TEXT
@@ -168,6 +212,7 @@ Status updates are automatically published to:
 {base_topic}/led{1-4}/state         → ON/OFF
 {base_topic}/air{1-4}/state         → ON/OFF
 {base_topic}/air{1-4}/time          → seconds (integer)
+{base_topic}/air3/toh/state         → true/false
 {base_topic}/text/{now|next|warn}/state → TEXT
 ```
 
@@ -177,6 +222,7 @@ The base topic is automatically generated (e.g., `onairscreen_a1b2c3`). Replace 
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/led1/set -m "ON"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/set -m "ON"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/reset -m "PRESS"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/toh -m "TOGGLE"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song"
 ```
 
@@ -196,6 +242,7 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song
 | `AIR2:[ON/OFF/TOGGLE]`          | start/stop/toggle Phone Timer |
 | `AIR3:[ON/OFF/RESET/TOGGLE]` | start/stop/reset/toggle Radio Timer |
 | `AIR3TIME:seconds`            | set Radio Timer to given value in seconds |
+| `AIR3TOH:[ON/OFF/TOGGLE]`     | start/stop/toggle Top-of-Hour countdown in Radio Timer |
 | `AIR4:[ON/OFF/RESET/TOGGLE]`        | start/stop/reset/toggle Stream Timer |
 | `CMD:REBOOT`                  | OS restart |
 | `CMD:SHUTDOWN`                | OS shutdown |

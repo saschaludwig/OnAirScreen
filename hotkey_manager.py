@@ -90,6 +90,7 @@ class HotkeyManager:
         QShortcut(QKeySequence("."), self.main_screen, self.main_screen.radio_timer_start_stop)
         QShortcut(QKeySequence("0"), self.main_screen, self.main_screen.radio_timer_reset)
         QShortcut(QKeySequence("R"), self.main_screen, self.main_screen.radio_timer_reset)
+        QShortcut(QKeySequence("T"), self.main_screen, self.main_screen.toggle_top_of_hour_countdown)
         
         # LED controls
         QShortcut(QKeySequence("1"), self.main_screen, self.main_screen.manual_toggle_led1)

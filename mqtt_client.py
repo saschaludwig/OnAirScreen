@@ -288,6 +288,7 @@ class MqttClient(QThread):
             for air_num in [3, 4]:
                 reset_topic = f"{self.base_topic}/air{air_num}/reset"
                 client.subscribe(reset_topic)
+            client.subscribe(f"{self.base_topic}/air3/toh")
             set_topic = f"{self.base_topic}/text/now/set"
             client.subscribe(set_topic)
             set_topic = f"{self.base_topic}/text/next/set"
@@ -342,6 +343,12 @@ class MqttClient(QThread):
                         command = "AIR4:RESET"
                     else:
                         logger.warning(f"Reset button only available for AIR3 and AIR4, not AIR{air_num}")
+                        return
+                elif len(topic_parts) > 2 and topic_parts[2] == "toh":
+                    if air_num == 3:
+                        command = f"AIR3TOH:{payload.upper()}"
+                    else:
+                        logger.warning("Top-of-hour countdown only available for AIR3")
                         return
                 else:
                     # Regular set command
@@ -476,6 +483,18 @@ class MqttClient(QThread):
             topic = f"{self.discovery_prefix}/button/onairscreen_air{air_num}_reset_{self.device_id}/config"
             self.client.publish(topic, json.dumps(config), retain=True)
             logger.info(f"Published autodiscovery config for {air_name} Reset button")
+
+        # Publish Top-of-Hour button for AIR3
+        toh_config = {
+            "name": f"{self.device_name} AIR3 Top of Hour",
+            "unique_id": f"onairscreen_air3_toh_{self.device_id}",
+            "command_topic": f"{self.base_topic}/air3/toh",
+            "payload_press": "TOGGLE",
+            "device": device_info,
+        }
+        toh_topic = f"{self.discovery_prefix}/button/onairscreen_air3_toh_{self.device_id}/config"
+        self.client.publish(toh_topic, json.dumps(toh_config), retain=True)
+        logger.info("Published autodiscovery config for AIR3 Top of Hour button")
         
         # Publish text sensors (Home Assistant uses "text" not "text_sensor")
         for text_type in ["now", "next", "warn"]:
@@ -503,7 +522,12 @@ class MqttClient(QThread):
         topic = f"{self.discovery_prefix}/binary_sensor/onairscreen_warning_active_{self.device_id}/config"
         self.client.publish(topic, json.dumps(config), retain=True)
         logger.info("Published autodiscovery config for Warning Active")
-    
+
+    def _publish_air3_toh_status(self, status: dict) -> None:
+        """Publish AIR3 top-of-hour active state to MQTT."""
+        toh_active = "true" if status['air'][3].get('topOfHour', False) else "false"
+        self.client.publish(f"{self.base_topic}/air3/toh/state", toh_active, retain=True)
+
     def publish_status(self, specific_item: str | None = None) -> None:
         """
         Publish current status to MQTT
@@ -535,6 +559,8 @@ class MqttClient(QThread):
                     # Publish elapsed time
                     time_topic = f"{self.base_topic}/air{air_num}/time"
                     self.client.publish(time_topic, str(status['air'][air_num]['seconds']), retain=True)
+
+                self._publish_air3_toh_status(status)
                 
                 # Publish text fields
                 self.client.publish(f"{self.base_topic}/text/now/state", status['texts']['now'], retain=True)
@@ -554,6 +580,17 @@ class MqttClient(QThread):
                     topic = f"{self.base_topic}/led{led_num}/state"
                     self.client.publish(topic, led_status, retain=True)
                     logger.debug(f"Published LED{led_num} status to MQTT: {led_status}")
+
+                elif specific_item == "air3toh":
+                    self._publish_air3_toh_status(status)
+                    air_status = "ON" if status['air'][3]['status'] else "OFF"
+                    self.client.publish(f"{self.base_topic}/air3/state", air_status, retain=True)
+                    self.client.publish(
+                        f"{self.base_topic}/air3/time",
+                        str(status['air'][3]['seconds']),
+                        retain=True,
+                    )
+                    logger.debug(f"Published AIR3 top-of-hour status to MQTT: {air_status}")
                 
                 elif specific_item.startswith('air'):
                     air_num = int(specific_item[3:])

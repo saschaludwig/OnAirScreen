@@ -73,7 +73,8 @@ def mock_main_screen():
             'air': {
                 1: {'status': main_screen.statusAIR1, 'seconds': main_screen.Air1Seconds, 'text': 'Mic'},
                 2: {'status': main_screen.statusAIR2, 'seconds': main_screen.Air2Seconds, 'text': 'Phone'},
-                3: {'status': main_screen.statusAIR3, 'seconds': main_screen.Air3Seconds, 'text': 'Radio'},
+                3: {'status': main_screen.statusAIR3, 'seconds': main_screen.Air3Seconds, 'text': 'Radio',
+                    'topOfHour': getattr(main_screen, 'topOfHourActive', False)},
                 4: {'status': main_screen.statusAIR4, 'seconds': main_screen.Air4Seconds, 'text': 'Stream'},
             },
             'texts': {
@@ -359,6 +360,33 @@ class TestMqttClientAutodiscovery:
                 assert 'payload_press' in config
                 assert config['payload_press'] == 'PRESS'
 
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_autodiscovery_top_of_hour_button(self, mock_main_screen):
+        """Test publishing autodiscovery config for AIR3 top-of-hour button"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        client.discovery_prefix = "homeassistant"
+        client.device_id = "test_device"
+        client.device_name = "OnAirScreen"
+
+        client._publish_autodiscovery()
+
+        published_topics = [call[0][0] for call in client.client.publish.call_args_list]
+        toh_button_configs = [
+            topic for topic in published_topics
+            if 'toh' in topic.lower() and 'config' in topic and 'button' in topic
+        ]
+        assert len(toh_button_configs) == 1
+
+        for call_args in client.client.publish.call_args_list:
+            topic = call_args[0][0]
+            if 'toh' in topic and 'button' in topic and 'config' in topic:
+                config = json.loads(call_args[0][1])
+                assert config['command_topic'] == "onairscreen/air3/toh"
+                assert config['payload_press'] == "TOGGLE"
+
 
 class TestMqttClientStatusPublishing:
     """Tests for status publishing"""
@@ -425,6 +453,31 @@ class TestMqttClientStatusPublishing:
         published_topics = [call[0][0] for call in client.client.publish.call_args_list]
         assert "onairscreen/air1/state" in published_topics
         assert "onairscreen/air1/time" in published_topics
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_status_specific_air3toh(self, mock_main_screen):
+        """Test publishing status for AIR3 top-of-hour state"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+
+        mock_main_screen.statusAIR3 = True
+        mock_main_screen.Air3Seconds = 120
+        mock_main_screen.topOfHourActive = True
+
+        client.publish_status("air3toh")
+
+        published_topics = [call[0][0] for call in client.client.publish.call_args_list]
+        assert "onairscreen/air3/toh/state" in published_topics
+        assert "onairscreen/air3/state" in published_topics
+        assert "onairscreen/air3/time" in published_topics
+
+        toh_call = next(
+            call for call in client.client.publish.call_args_list
+            if call[0][0] == "onairscreen/air3/toh/state"
+        )
+        assert toh_call[0][1] == "true"
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     def test_publish_status_specific_text(self, mock_main_screen):
@@ -613,6 +666,23 @@ class TestMqttClientCommandReceiving:
         mock_main_screen.command_signal.command_received.emit.assert_called_once()
         call_args = mock_main_screen.command_signal.command_received.emit.call_args[0]
         assert call_args[0] == b"AIR4:RESET"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_receive_air3_top_of_hour_command(self, mock_main_screen):
+        """Test receiving AIR3 top-of-hour command via MQTT"""
+        client = MqttClient(mock_main_screen)
+        client.base_topic = "onairscreen"
+        client.client = Mock()
+
+        mock_msg = Mock()
+        mock_msg.topic = "onairscreen/air3/toh"
+        mock_msg.payload = b"TOGGLE"
+
+        client._on_message(client.client, None, mock_msg)
+
+        mock_main_screen.command_signal.command_received.emit.assert_called_once()
+        call_args = mock_main_screen.command_signal.command_received.emit.call_args[0]
+        assert call_args[0] == b"AIR3TOH:TOGGLE"
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     def test_receive_air_reset_button_invalid(self, mock_main_screen):

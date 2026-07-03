@@ -37,8 +37,10 @@
 
 import argparse
 import logging
+import math
 import re
 import sys
+from datetime import datetime, timedelta
 
 from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, pyqtSignal, QObject
 from PyQt6.QtGui import QCursor, QPalette, QIcon, QPixmap, QFont, QColor
@@ -186,6 +188,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.Air3Seconds = 0
         self.statusAIR3 = False
         self.radioTimerMode = 0  # count up mode
+        self.topOfHourActive = False
         self.Air4Seconds = 0
         self.statusAIR4 = False
         self.streamTimerMode = 0  # count up mode
@@ -281,6 +284,7 @@ class MainScreen(QWidget, Ui_MainScreen):
             air_num: AIR number (3 or 4)
         """
         if timer_type == 'radio':
+            self.topOfHourActive = False
             self.reset_air3()
             self.radioTimerMode = 0  # count up mode
         elif timer_type == 'stream':
@@ -307,6 +311,49 @@ class MainScreen(QWidget, Ui_MainScreen):
         
         # Log timer set event
         self.event_logger.log_timer_set(3, seconds, mode)
+
+    def _seconds_until_top_of_hour(self) -> int:
+        """Return seconds until the next full hour (rounded up to whole seconds)."""
+        now = datetime.now()
+        next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        return math.ceil((next_hour - now).total_seconds())
+
+    def _milliseconds_until_next_wall_second(self) -> int:
+        """Return milliseconds until the next wall-clock second boundary."""
+        ms_into_second = datetime.now().microsecond // 1000
+        remaining_ms = 1000 - ms_into_second
+        return remaining_ms if remaining_ms > 0 else 1000
+
+    def _align_air3_timer_to_wall_clock(self) -> None:
+        """Align AIR3 timer ticks to wall-clock second boundaries."""
+        if self.statusAIR3 and self.topOfHourActive:
+            self.timerAIR3.start(self._milliseconds_until_next_wall_second())
+
+    def start_top_of_hour_countdown(self) -> None:
+        """Start countdown to the next full hour in the AIR3 timer display."""
+        self.topOfHourActive = True
+        seconds = self._seconds_until_top_of_hour()
+        self.radio_timer_set(seconds)
+        if not self.statusAIR3:
+            self.start_air3()
+        else:
+            self._align_air3_timer_to_wall_clock()
+        self._publish_mqtt_status("air3toh")
+
+    def stop_top_of_hour_countdown(self) -> None:
+        """Stop top-of-hour countdown and reset AIR3 timer to 0:00."""
+        self.topOfHourActive = False
+        if self.statusAIR3:
+            self.stop_air3()
+        self.radio_timer_reset()
+        self._publish_mqtt_status("air3toh")
+
+    def toggle_top_of_hour_countdown(self) -> None:
+        """Toggle top-of-hour countdown in the AIR3 timer display."""
+        if self.topOfHourActive:
+            self.stop_top_of_hour_countdown()
+        else:
+            self.start_top_of_hour_countdown()
 
     def get_timer_dialog(self) -> None:
         """
@@ -463,7 +510,10 @@ class MainScreen(QWidget, Ui_MainScreen):
                 # Set status and start timer
                 setattr(self, status_attr, True)
                 timer = getattr(self, timer_attr)
-                timer.start(1000)
+                if air_num == 3 and getattr(self, 'topOfHourActive', False):
+                    timer.start(self._milliseconds_until_next_wall_second())
+                else:
+                    timer.start(1000)
                 
                 # Log AIR started event
                 self.event_logger.log_air_started(air_num, "manual")
@@ -476,8 +526,9 @@ class MainScreen(QWidget, Ui_MainScreen):
                     mode_attr = config['special_mode']
                     mode = getattr(self, mode_attr, 0)
                     if mode == 1 and seconds > 1:
-                        update_method = getattr(self, f'update_air{air_num}_seconds')
-                        update_method()
+                        if not (air_num == 3 and getattr(self, 'topOfHourActive', False)):
+                            update_method = getattr(self, f'update_air{air_num}_seconds')
+                            update_method()
         else:
             with settings_group(settings, "LEDS"):
                 inactive_text_color = settings.value('inactivetextcolor', '#555555')
@@ -535,13 +586,30 @@ class MainScreen(QWidget, Ui_MainScreen):
             if mode == 0:  # count up mode
                 setattr(self, seconds_attr, getattr(self, seconds_attr) + 1)
             else:  # countdown mode
-                current_seconds = getattr(self, seconds_attr)
-                setattr(self, seconds_attr, current_seconds - 1)
-                if getattr(self, seconds_attr) < 1:
-                    stop_method = getattr(self, f'stop_air{air_num}')
-                    stop_method()
-                    # Reset the correct mode attribute
-                    setattr(self, mode_attr, 0)
+                if air_num == 3 and getattr(self, 'topOfHourActive', False):
+                    current_seconds = getattr(self, seconds_attr)
+                    remaining = self._seconds_until_top_of_hour()
+                    # Detect hour boundary: remaining jumps up when the hour is reached
+                    if current_seconds > 0 and remaining > current_seconds:
+                        remaining = 0
+                    setattr(self, seconds_attr, remaining)
+                    if remaining < 1:
+                        self.topOfHourActive = False
+                        self._publish_mqtt_status("air3toh")
+                        stop_method = getattr(self, f'stop_air{air_num}')
+                        stop_method()
+                        setattr(self, mode_attr, 0)
+                else:
+                    current_seconds = getattr(self, seconds_attr)
+                    setattr(self, seconds_attr, current_seconds - 1)
+                    if getattr(self, seconds_attr) < 1:
+                        if air_num == 3:
+                            self.topOfHourActive = False
+                            self._publish_mqtt_status("air3toh")
+                        stop_method = getattr(self, f'stop_air{air_num}')
+                        stop_method()
+                        # Reset the correct mode attribute
+                        setattr(self, mode_attr, 0)
         else:
             # Simple count up for AIR1 and AIR2
             setattr(self, seconds_attr, getattr(self, seconds_attr) + 1)
@@ -551,6 +619,9 @@ class MainScreen(QWidget, Ui_MainScreen):
             label_text = settings.value(config['label'], config['label_default'])
             seconds = getattr(self, seconds_attr)
             label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+
+        if air_num == 3 and getattr(self, 'topOfHourActive', False) and self.statusAIR3:
+            self._align_air3_timer_to_wall_clock()
 
     def show_settings(self) -> None:
         """

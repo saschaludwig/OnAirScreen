@@ -1090,7 +1090,167 @@ class TestStartStopAir3:
         
         MainScreen.stop_air3(mock_main_screen)
         
-        mock_main_screen.set_air3.assert_called_once_with(False)
+        mock_main_screen.stop_air3.assert_called_once_with(False)
+
+
+class TestTopOfHourCountdown:
+    """Tests for top-of-hour countdown functionality"""
+
+    def test_seconds_until_top_of_hour_mid_hour(self, mock_main_screen):
+        """Test seconds until next full hour during the hour"""
+        from datetime import datetime
+
+        with patch('start.datetime') as mock_datetime:
+            mock_datetime.now.return_value = datetime(2026, 7, 3, 14, 37, 22)
+            result = MainScreen._seconds_until_top_of_hour(mock_main_screen)
+
+        assert result == 1358
+
+    def test_seconds_until_top_of_hour_on_the_hour(self, mock_main_screen):
+        """Test seconds until next full hour exactly on the hour"""
+        from datetime import datetime
+
+        with patch('start.datetime') as mock_datetime:
+            mock_datetime.now.return_value = datetime(2026, 7, 3, 14, 0, 0)
+            result = MainScreen._seconds_until_top_of_hour(mock_main_screen)
+
+        assert result == 3600
+
+    def test_start_top_of_hour_countdown(self, mock_main_screen):
+        """Test starting top-of-hour countdown"""
+        mock_main_screen._seconds_until_top_of_hour = Mock(return_value=1358)
+        mock_main_screen.statusAIR3 = False
+        mock_main_screen._publish_mqtt_status = Mock()
+
+        MainScreen.start_top_of_hour_countdown(mock_main_screen)
+
+        mock_main_screen.radio_timer_set.assert_called_once_with(1358)
+        assert mock_main_screen.topOfHourActive is True
+        mock_main_screen.start_air3.assert_called_once()
+        mock_main_screen._publish_mqtt_status.assert_called_once_with("air3toh")
+
+    def test_start_top_of_hour_countdown_when_already_running(self, mock_main_screen):
+        """Test starting top-of-hour countdown does not restart AIR3 if already running"""
+        mock_main_screen._seconds_until_top_of_hour = Mock(return_value=120)
+        mock_main_screen.statusAIR3 = True
+        mock_main_screen._publish_mqtt_status = Mock()
+        mock_main_screen._align_air3_timer_to_wall_clock = Mock()
+
+        MainScreen.start_top_of_hour_countdown(mock_main_screen)
+
+        mock_main_screen.start_air3.assert_not_called()
+        mock_main_screen._align_air3_timer_to_wall_clock.assert_called_once()
+
+    def test_stop_top_of_hour_countdown(self, mock_main_screen):
+        """Test stopping top-of-hour countdown"""
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.statusAIR3 = True
+        mock_main_screen._publish_mqtt_status = Mock()
+
+        MainScreen.stop_top_of_hour_countdown(mock_main_screen)
+
+        assert mock_main_screen.topOfHourActive is False
+        mock_main_screen.stop_air3.assert_called_once()
+        mock_main_screen.radio_timer_reset.assert_called_once()
+        mock_main_screen._publish_mqtt_status.assert_called_once_with("air3toh")
+
+    def test_toggle_top_of_hour_countdown_starts_when_inactive(self, mock_main_screen):
+        """Test toggle starts countdown when inactive"""
+        mock_main_screen.topOfHourActive = False
+        mock_main_screen.start_top_of_hour_countdown = Mock()
+        mock_main_screen.stop_top_of_hour_countdown = Mock()
+
+        MainScreen.toggle_top_of_hour_countdown(mock_main_screen)
+
+        mock_main_screen.start_top_of_hour_countdown.assert_called_once()
+        mock_main_screen.stop_top_of_hour_countdown.assert_not_called()
+
+    def test_toggle_top_of_hour_countdown_stops_when_active(self, mock_main_screen):
+        """Test toggle stops countdown when active"""
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.start_top_of_hour_countdown = Mock()
+        mock_main_screen.stop_top_of_hour_countdown = Mock()
+
+        MainScreen.toggle_top_of_hour_countdown(mock_main_screen)
+
+        mock_main_screen.stop_top_of_hour_countdown.assert_called_once()
+        mock_main_screen.start_top_of_hour_countdown.assert_not_called()
+
+    @patch('start.QSettings')
+    def test_reset_timer_clears_top_of_hour_flag(self, mock_qsettings, mock_main_screen):
+        """Test radio timer reset clears top-of-hour flag"""
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.reset_air3 = Mock()
+
+        MainScreen._reset_timer(mock_main_screen, 'radio', 3)
+
+        assert mock_main_screen.topOfHourActive is False
+
+    @patch('start.QSettings')
+    def test_update_air3_seconds_clears_top_of_hour_at_zero(self, mock_qsettings, mock_main_screen):
+        """Test countdown reaching zero clears top-of-hour flag"""
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'Timer'
+        mock_qsettings.return_value = mock_settings
+
+        mock_main_screen.Air3Seconds = 1
+        mock_main_screen.radioTimerMode = 1
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.stop_air3 = Mock()
+        mock_main_screen._publish_mqtt_status = Mock()
+        mock_main_screen._seconds_until_top_of_hour = Mock(return_value=0)
+
+        MainScreen.update_air3_seconds(mock_main_screen)
+
+        assert mock_main_screen.Air3Seconds == 0
+        assert mock_main_screen.topOfHourActive is False
+        mock_main_screen.stop_air3.assert_called_once()
+        mock_main_screen._publish_mqtt_status.assert_called_once_with("air3toh")
+
+    @patch('start.QSettings')
+    def test_update_air3_seconds_top_of_hour_syncs_wall_clock(self, mock_qsettings, mock_main_screen):
+        """Test top-of-hour countdown syncs from wall clock instead of decrementing"""
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'Timer'
+        mock_qsettings.return_value = mock_settings
+
+        mock_main_screen.Air3Seconds = 1358
+        mock_main_screen.radioTimerMode = 1
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.statusAIR3 = True
+        mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.stop_air3 = Mock()
+        mock_main_screen._publish_mqtt_status = Mock()
+        mock_main_screen._seconds_until_top_of_hour = Mock(return_value=1355)
+        mock_main_screen._align_air3_timer_to_wall_clock = Mock()
+
+        MainScreen.update_air3_seconds(mock_main_screen)
+
+        assert mock_main_screen.Air3Seconds == 1355
+        mock_main_screen.stop_air3.assert_not_called()
+        mock_main_screen.AirLabel_3.setText.assert_called_once_with("Timer\n22:35")
+
+    @patch('start.QSettings')
+    def test_update_air3_seconds_top_of_hour_stops_at_hour_boundary(self, mock_qsettings, mock_main_screen):
+        """Test top-of-hour countdown stops when the hour boundary is crossed"""
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'Timer'
+        mock_qsettings.return_value = mock_settings
+
+        mock_main_screen.Air3Seconds = 1
+        mock_main_screen.radioTimerMode = 1
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.stop_air3 = Mock()
+        mock_main_screen._publish_mqtt_status = Mock()
+        mock_main_screen._seconds_until_top_of_hour = Mock(return_value=3600)
+
+        MainScreen.update_air3_seconds(mock_main_screen)
+
+        assert mock_main_screen.Air3Seconds == 0
+        assert mock_main_screen.topOfHourActive is False
+        mock_main_screen.stop_air3.assert_called_once()
 
 
 class TestStartStopAir4:

@@ -268,30 +268,52 @@ class TestClockWidgetDrawDigit:
 class TestClockWidgetResyncTime:
     """Test resync_time() method"""
 
-    def test_resync_time(self, clock_widget):
-        """Test resync_time() starts timer"""
+    def test_resync_time_schedules_half_second_boundary(self, clock_widget):
+        """Test resync_time() schedules next update at 500ms when colon blinks"""
+        with patch.object(clock_widget, 'update') as mock_update:
+            with patch('clockwidget.QtCore.QTime') as mock_time:
+                mock_current_time = Mock()
+                mock_current_time.msec.return_value = 0
+                mock_time.currentTime.return_value = mock_current_time
+
+                clock_widget.staticColon = False
+                clock_widget.resync_time()
+
+                mock_update.assert_called_once()
+                clock_widget.timer.start.assert_called_once_with(500)
+
+    def test_resync_time_schedules_second_boundary_with_static_colon(self, clock_widget):
+        """Test resync_time() schedules next update at second boundary when colon is static"""
+        with patch.object(clock_widget, 'update') as mock_update:
+            with patch('clockwidget.QtCore.QTime') as mock_time:
+                mock_current_time = Mock()
+                mock_current_time.msec.return_value = 250
+                mock_time.currentTime.return_value = mock_current_time
+
+                clock_widget.staticColon = True
+                clock_widget.resync_time()
+
+                mock_update.assert_called_once()
+                clock_widget.timer.start.assert_called_once_with(750)
+
+    def test_on_timer_timeout_repaints_and_reschedules(self, clock_widget):
+        """Test timer timeout repaints and schedules the next aligned update"""
+        with patch.object(clock_widget, 'update') as mock_update:
+            with patch.object(clock_widget, '_schedule_next_clock_update') as mock_schedule:
+                clock_widget._on_timer_timeout()
+
+                mock_update.assert_called_once()
+                mock_schedule.assert_called_once()
+
+    def test_milliseconds_until_next_clock_boundary_mid_second(self, clock_widget):
+        """Test boundary calculation between colon blink points"""
         with patch('clockwidget.QtCore.QTime') as mock_time:
             mock_current_time = Mock()
-            mock_current_time.msec.return_value = 0
+            mock_current_time.msec.return_value = 320
             mock_time.currentTime.return_value = mock_current_time
-            
-            clock_widget.resync_time()
-            
-            clock_widget.timer.start.assert_called_once_with(500)
 
-    def test_resync_time_waits_for_msec(self, clock_widget):
-        """Test resync_time() waits when msec > 5"""
-        with patch('clockwidget.QtCore.QTime') as mock_time:
-            with patch('clockwidget.pytime.sleep') as mock_sleep:
-                mock_current_time = Mock()
-                # First call returns > 5, second call returns 0
-                mock_current_time.msec.side_effect = [10, 0]
-                mock_time.currentTime.return_value = mock_current_time
-                
-                clock_widget.resync_time()
-                
-                mock_sleep.assert_called()
-                clock_widget.timer.start.assert_called_once_with(500)
+            clock_widget.staticColon = False
+            assert clock_widget._milliseconds_until_next_clock_boundary() == 180
 
 
 class TestClockWidgetLogo:

@@ -124,7 +124,8 @@ class StatusExporter:
             air[air_num] = {
                 'status': getattr(self.main_screen, status_attr, False),
                 'seconds': getattr(self.main_screen, seconds_attr, 0),
-                'text': air_text
+                'text': air_text,
+                'topOfHour': getattr(self.main_screen, 'topOfHourActive', False) if air_num == 3 else False,
             }
         
         # Get text field values
