@@ -1,8 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [TBA]
+## [0.9.8]
 ### Added
+- Top-of-Hour countdown for Radio Timer (AIR3): wall-clock synchronized countdown to the next full hour (display format M:SS)
+- Top-of-Hour: Hotkey `T` to toggle countdown (stop resets display to 0:00)
+- Top-of-Hour: API command `AIR3TOH:[ON/OFF/TOGGLE]` via UDP and HTTP
+- Top-of-Hour: MQTT topic `{base_topic}/air3/toh` and status topic `air3/toh/state` (Home Assistant button via Autodiscovery)
+- Top-of-Hour: Web-UI "Top of Hour" button for AIR3
+- Top-of-Hour: `topOfHour` field in `/api/status` for `air[3]`
 - Refactoring: Extracted NTP management to ntp_manager.py module
 - Refactoring: Extracted font loading to font_loader.py module
 - Refactoring: Extracted signal handlers to signal_handlers.py module
@@ -58,6 +64,7 @@ All notable changes to this project will be documented in this file.
 - Refactoring: Extracted logging configuration to logging_config.py module
 
 ### Changed
+- Clock: Digital clock second LEDs and colon now repaint aligned to wall-clock second boundaries (removes visible lag at second rollover)
 - Refactoring: Reduced start.py from 1711 lines to ~1415 lines by extracting logical components into separate modules
 - Refactoring: Improved code modularity and maintainability by separating concerns into dedicated modules
 - Refactoring: All tests updated to use new modular structure (583 tests passing)
