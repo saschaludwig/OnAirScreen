@@ -16,6 +16,13 @@ If you need ready-to-run Linux/Win/Mac executables, please visit https://www.ast
 I also have a RaspberryPi version and a ready-to-run RaspberryPi SD-Card image in my shop. \
 And if you need extended support, please contact me.
 
+#### Documentation
+
+Complete user manuals covering all settings, hotkeys, and remote control:
+
+ * [USER_MANUAL.md](USER_MANUAL.md) – English
+ * [BEDIENUNGSANLEITUNG.md](BEDIENUNGSANLEITUNG.md) – Deutsch
+
 #### Screenshots
 <img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/OAS3.png" width="600px">
 <img src="https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_1.png" width="300px">
