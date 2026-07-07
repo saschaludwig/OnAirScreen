@@ -45,6 +45,7 @@ import json
 import logging
 import os
 import socket
+import sys
 import asyncio
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -935,9 +936,11 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     
     def _get_web_ui_html(self) -> str:
         """Load HTML content for Web-UI from template file"""
-        # Get the directory where this script is located
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        template_path = os.path.join(script_dir, 'templates', 'web_ui.html')
+        if getattr(sys, 'frozen', False):
+            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+        template_path = os.path.join(base_dir, 'templates', 'web_ui.html')
         
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
