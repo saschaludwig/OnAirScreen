@@ -52,6 +52,11 @@ class TimeFormatter:
     """
     
     @staticmethod
+    def _to_text_clock_hour(hour: int) -> int:
+        """Convert 24-hour time to 12-hour form for spoken text clock (1-12)."""
+        return hour % 12 or 12
+    
+    @staticmethod
     def format_time(hour: int, minute: int, language: str = "English", is_am_pm: bool = False) -> str:
         """
         Format time as text based on language
@@ -80,8 +85,7 @@ class TimeFormatter:
     @staticmethod
     def _format_time_german(hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
         """Format time in German text clock style"""
-        if hour > 12:
-            hour -= 12
+        hour = TimeFormatter._to_text_clock_hour(hour)
         
         if minute == 0:
             return f"{hour} Uhr"
@@ -101,8 +105,7 @@ class TimeFormatter:
     @staticmethod
     def _format_time_dutch(hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
         """Format time in Dutch text clock style"""
-        if is_am_pm and hour > 12:
-            hour -= 12
+        hour = TimeFormatter._to_text_clock_hour(hour)
         
         if minute == 0:
             return f"Het is {hour} uur"
@@ -149,8 +152,7 @@ class TimeFormatter:
     @staticmethod
     def _format_time_english(hour: int, minute: int, remain_min: int, is_am_pm: bool) -> str:
         """Format time in English text clock style"""
-        if is_am_pm and hour > 12:
-            hour -= 12
+        hour = TimeFormatter._to_text_clock_hour(hour)
         
         if minute == 0:
             return f"it's {hour} o'clock"
