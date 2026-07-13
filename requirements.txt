@@ -3,5 +3,5 @@ ntplib
 PyInstaller
 pytest
 pytest-asyncio
-websockets>=12.0
+websockets>=16.1
 paho-mqtt>=1.6.0
