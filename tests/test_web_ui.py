@@ -39,18 +39,20 @@ def mock_main_screen():
                 screen.Air2Seconds = 0
                 screen.Air3Seconds = 3600
                 screen.Air4Seconds = 45
+                screen.topOfHourActive = False
                 screen.labelCurrentSong = Mock()
                 screen.labelCurrentSong.text.return_value = "Current Song"
                 screen.labelNews = Mock()
                 screen.labelNews.text.return_value = "Next Item"
                 screen.labelWarning = Mock()
                 screen.labelWarning.text.return_value = "Warning Message"
-                # Mock settings for autoflash access
+                # Mock settings for autoflash/timedflash access
                 screen.settings = Mock()
                 for i in range(1, 5):
-                    autoflash_attr = f'LED{i}Autoflash'
-                    setattr(screen.settings, autoflash_attr, Mock())
-                    getattr(screen.settings, autoflash_attr).isChecked.return_value = False
+                    for suffix in ('Autoflash', 'Timedflash'):
+                        attr = f'LED{i}{suffix}'
+                        setattr(screen.settings, attr, Mock())
+                        getattr(screen.settings, attr).isChecked.return_value = False
                 return screen
 
 
@@ -332,6 +334,8 @@ class TestGetStatusJSON:
             assert i in status['leds']
             assert 'status' in status['leds'][i]
             assert 'text' in status['leds'][i]
+            assert 'autoflash' in status['leds'][i]
+            assert 'timedflash' in status['leds'][i]
         
         # Verify all AIR timers are present
         for i in range(1, 5):
@@ -362,6 +366,25 @@ class TestGetStatusJSON:
         assert status['leds'][2]['status'] is True
         assert status['leds'][3]['status'] is False
         assert status['leds'][4]['status'] is True
+        assert status['leds'][1]['autoflash'] is False
+        assert status['leds'][1]['timedflash'] is False
+    
+    @patch('start.QSettings')
+    @patch('start.settings_group')
+    def test_get_status_json_led_timedflash(self, mock_settings_group, mock_qsettings, mock_main_screen):
+        """Test get_status_json reports timedflash when enabled"""
+        mock_settings = Mock()
+        mock_settings.value.return_value = "LED1"
+        mock_qsettings.return_value = mock_settings
+        mock_settings_group.return_value.__enter__ = Mock(return_value=mock_settings)
+        mock_settings_group.return_value.__exit__ = Mock(return_value=None)
+        mock_main_screen.settings.LED4Timedflash.isChecked.return_value = True
+        
+        status = MainScreen.get_status_json(mock_main_screen)
+        
+        assert status['leds'][4]['timedflash'] is True
+        assert status['leds'][4]['autoflash'] is False
+        assert status['leds'][1]['timedflash'] is False
     
     @patch('start.QSettings')
     @patch('start.settings_group')
@@ -429,18 +452,20 @@ class TestGetStatusJSON:
                     screen.Air2Seconds = 0
                     screen.Air3Seconds = 0
                     screen.Air4Seconds = 0
+                    screen.topOfHourActive = False
                     screen.labelCurrentSong = Mock()
                     screen.labelCurrentSong.text.return_value = ""
                     screen.labelNews = Mock()
                     screen.labelNews.text.return_value = ""
                     screen.labelWarning = Mock()
                     screen.labelWarning.text.return_value = ""
-                    # Mock settings for autoflash access
+                    # Mock settings for autoflash/timedflash access
                     screen.settings = Mock()
                     for i in range(1, 5):
-                        autoflash_attr = f'LED{i}Autoflash'
-                        setattr(screen.settings, autoflash_attr, Mock())
-                        getattr(screen.settings, autoflash_attr).isChecked.return_value = False
+                        for suffix in ('Autoflash', 'Timedflash'):
+                            attr = f'LED{i}{suffix}'
+                            setattr(screen.settings, attr, Mock())
+                            getattr(screen.settings, attr).isChecked.return_value = False
         
         mock_settings = Mock()
         mock_settings.value.return_value = "default"

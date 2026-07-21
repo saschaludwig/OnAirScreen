@@ -755,11 +755,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         self._toggle_led(4)
 
     def _toggle_led(self, led_num: int) -> None:
-        """Generic method to toggle LED using led_logic"""
-        # Use LED{num}on for logical status, not statusLED{num} which is the visual blinking state
-        led_on_attr = f'LED{led_num}on'
-        current_state = getattr(self, led_on_attr, False)
-        self.led_logic(led_num, not current_state)
+        """Toggle LED visual state only (used by autoflash/timedflash timers).
+
+        Must not call led_logic: that would clear the logical LED{n}on state and
+        stop the flash timer. Logical toggles belong in _manual_toggle_led.
+        """
+        status_attr = f'statusLED{led_num}'
+        current_state = getattr(self, status_attr, False)
+        set_led_method = getattr(self, f'set_led{led_num}')
+        set_led_method(not current_state)
 
     def toggle_air1(self) -> None:
         """Toggle AIR1"""

@@ -51,6 +51,7 @@ def mock_main_screen():
                 screen.Air2Seconds = 0
                 screen.Air3Seconds = 0
                 screen.Air4Seconds = 0
+                screen.topOfHourActive = False
                 screen.labelCurrentSong = Mock()
                 screen.labelCurrentSong.text.return_value = ""
                 screen.labelNews = Mock()
@@ -70,12 +71,13 @@ def mock_main_screen():
                 screen.stop_air3 = Mock()
                 screen.start_air4 = Mock()
                 screen.stop_air4 = Mock()
-                # Mock settings for autoflash access
+                # Mock settings for autoflash/timedflash access
                 screen.settings = Mock()
                 for i in range(1, 5):
-                    autoflash_attr = f'LED{i}Autoflash'
-                    setattr(screen.settings, autoflash_attr, Mock())
-                    getattr(screen.settings, autoflash_attr).isChecked.return_value = False
+                    for suffix in ('Autoflash', 'Timedflash'):
+                        attr = f'LED{i}{suffix}'
+                        setattr(screen.settings, attr, Mock())
+                        getattr(screen.settings, attr).isChecked.return_value = False
                 screen.command_handler = CommandHandler(screen)
                 screen.get_status_json = MainScreen.get_status_json.__get__(screen, MainScreen)
                 return screen

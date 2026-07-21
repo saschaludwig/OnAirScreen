@@ -33,10 +33,10 @@ def mock_main_screen():
     
     # Mock LED methods
     main_screen.led_logic = Mock()
-    main_screen.toggle_led1 = Mock()
-    main_screen.toggle_led2 = Mock()
-    main_screen.toggle_led3 = Mock()
-    main_screen.toggle_led4 = Mock()
+    main_screen.manual_toggle_led1 = Mock()
+    main_screen.manual_toggle_led2 = Mock()
+    main_screen.manual_toggle_led3 = Mock()
+    main_screen.manual_toggle_led4 = Mock()
     
     # Mock AIR methods
     main_screen.set_air1 = Mock()
@@ -206,22 +206,22 @@ class TestLedCommands:
     def test_led1_toggle(self, command_handler, mock_main_screen):
         """Test LED1 TOGGLE command"""
         command_handler.parse_cmd(b"LED1:TOGGLE")
-        mock_main_screen.toggle_led1.assert_called_once()
+        mock_main_screen.manual_toggle_led1.assert_called_once()
     
     def test_led2_toggle(self, command_handler, mock_main_screen):
         """Test LED2 TOGGLE command"""
         command_handler.parse_cmd(b"LED2:TOGGLE")
-        mock_main_screen.toggle_led2.assert_called_once()
+        mock_main_screen.manual_toggle_led2.assert_called_once()
     
     def test_led3_toggle(self, command_handler, mock_main_screen):
         """Test LED3 TOGGLE command"""
         command_handler.parse_cmd(b"LED3:TOGGLE")
-        mock_main_screen.toggle_led3.assert_called_once()
+        mock_main_screen.manual_toggle_led3.assert_called_once()
     
     def test_led4_toggle(self, command_handler, mock_main_screen):
         """Test LED4 TOGGLE command"""
         command_handler.parse_cmd(b"LED4:TOGGLE")
-        mock_main_screen.toggle_led4.assert_called_once()
+        mock_main_screen.manual_toggle_led4.assert_called_once()
 
 
 class TestWarnCommand:

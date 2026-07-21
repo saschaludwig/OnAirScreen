@@ -351,7 +351,8 @@ class CommandHandler:
         
         value_upper = value.upper()
         if value_upper == "TOGGLE":
-            getattr(self.main_screen, f"toggle_led{led_num}")()
+            # Use manual_toggle (led_logic), not toggle_led (visual flash only)
+            getattr(self.main_screen, f"manual_toggle_led{led_num}")()
         else:
             self.main_screen.led_logic(led_num, value_upper != "OFF")
     

@@ -684,13 +684,13 @@
         let ledBlinkElements = {};
         
         // Function to start/stop blinking for a LED status display
-        // Only blinks if autoflash is enabled AND LED is ON (from server)
+        // Blinks if autoflash or timedflash is enabled AND LED is ON (from server)
         // Only restarts blinking if state actually changed
-        function manageLEDBlinking(ledNum, autoflashEnabled, ledIsOn, statusElement, forceRestart = false) {
+        function manageLEDBlinking(ledNum, flashEnabled, ledIsOn, statusElement, forceRestart = false) {
             const key = `led${ledNum}`;
             
             // Check if we need to change anything
-            const shouldBlink = autoflashEnabled && ledIsOn && statusElement;
+            const shouldBlink = flashEnabled && ledIsOn && statusElement;
             const currentlyBlinking = ledBlinkIntervals[key] !== undefined;
             
             // If state hasn't changed and not forced, don't touch blinking at all
@@ -725,7 +725,7 @@
                 }
             }
             
-            // Only start blinking if: autoflash is enabled AND LED is actually ON
+            // Only start blinking if flash (autoflash or timedflash) is enabled AND LED is ON
             if (shouldBlink) {
                 // Store element reference for interval (so it works even if element is temporarily removed from DOM)
                 ledBlinkElements[key] = statusElement;
@@ -789,6 +789,8 @@
                 // Get actual status from server
                 const ledIsOn = led.status === true;
                 const autoflashEnabled = led.autoflash === true;
+                const timedflashEnabled = led.timedflash === true;
+                const flashEnabled = autoflashEnabled || timedflashEnabled;
                 
                 // Check if element already exists
                 let item = document.getElementById(`ledStatus${i}`);
@@ -797,12 +799,14 @@
                 const currentState = {
                     status: ledIsOn,
                     autoflash: autoflashEnabled,
+                    timedflash: timedflashEnabled,
                     text: led.text || `LED${i}`
                 };
                 
                 const stateChanged = !lastLEDDisplayState[i] || 
                     lastLEDDisplayState[i].status !== currentState.status ||
                     lastLEDDisplayState[i].autoflash !== currentState.autoflash ||
+                    lastLEDDisplayState[i].timedflash !== currentState.timedflash ||
                     lastLEDDisplayState[i].text !== currentState.text;
                 
                 if (stateChanged) {
@@ -852,7 +856,7 @@
                     }
                     
                     // Update blinking state (only restarts if state changed)
-                    manageLEDBlinking(i, autoflashEnabled, ledIsOn, item, stateChanged);
+                    manageLEDBlinking(i, flashEnabled, ledIsOn, item, stateChanged);
                 }
                 // If state hasn't changed, don't touch the blinking - it's already running correctly
             }
@@ -1030,11 +1034,13 @@
                 const currentState = led.status ? 'on' : 'off';
                 const currentText = led.text;
                 const currentAutoflash = led.autoflash || false;
+                const currentTimedflash = led.timedflash || false;
                 
                 if (!lastLEDState[key] || 
                     lastLEDState[key].status !== currentState || 
                     lastLEDState[key].text !== currentText ||
-                    lastLEDState[key].autoflash !== currentAutoflash) {
+                    lastLEDState[key].autoflash !== currentAutoflash ||
+                    lastLEDState[key].timedflash !== currentTimedflash) {
                     needsUpdate = true;
                     break;
                 }
@@ -1046,7 +1052,8 @@
                 lastLEDState[`led${i}`] = {
                     status: led.status ? 'on' : 'off',
                     text: led.text,
-                    autoflash: led.autoflash || false
+                    autoflash: led.autoflash || false,
+                    timedflash: led.timedflash || false
                 };
             }
             

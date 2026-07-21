@@ -72,6 +72,20 @@ class StatusExporter:
             main_screen: Reference to MainScreen instance
         """
         self.main_screen = main_screen
+
+    def _is_led_setting_checked(self, led_num: int, setting_suffix: str) -> bool:
+        """Return True if LED{n}{suffix} checkbox (e.g. Autoflash/Timedflash) is checked."""
+        try:
+            settings = getattr(self.main_screen, 'settings', None)
+            if not settings:
+                return False
+            widget_attr = f'LED{led_num}{setting_suffix}'
+            if not hasattr(settings, widget_attr):
+                return False
+            return bool(getattr(settings, widget_attr).isChecked())
+        except (AttributeError, RuntimeError) as e:
+            logger.debug(f"Could not access {setting_suffix} status for LED{led_num}: {e}")
+            return False
     
     def get_status_json(self) -> dict:
         """
@@ -95,23 +109,15 @@ class StatusExporter:
             # Get logical LED status (True if LED is on, regardless of blinking state)
             led_status = getattr(self.main_screen, led_on_attr, False)
             
-            # Get autoflash status
-            autoflash_enabled = False
-            try:
-                if hasattr(self.main_screen, 'settings') and self.main_screen.settings:
-                    autoflash_attr = f'LED{led_num}Autoflash'
-                    if hasattr(self.main_screen.settings, autoflash_attr):
-                        autoflash_widget = getattr(self.main_screen.settings, autoflash_attr)
-                        autoflash_enabled = autoflash_widget.isChecked()
-            except (AttributeError, RuntimeError) as e:
-                # If autoflash widget is not accessible, default to False
-                logger.debug(f"Could not access autoflash status for LED{led_num}: {e}")
-                autoflash_enabled = False
+            # Get flash settings (web UI blinks locally when either is enabled)
+            autoflash_enabled = self._is_led_setting_checked(led_num, 'Autoflash')
+            timedflash_enabled = self._is_led_setting_checked(led_num, 'Timedflash')
             
             leds[led_num] = {
                 'status': led_status,  # Use logical status (LED{num}on), not visual status (statusLED{num})
                 'text': led_text,
-                'autoflash': autoflash_enabled
+                'autoflash': autoflash_enabled,
+                'timedflash': timedflash_enabled,
             }
         
         # Get AIR timer status
@@ -125,8 +131,16 @@ class StatusExporter:
                 'status': getattr(self.main_screen, status_attr, False),
                 'seconds': getattr(self.main_screen, seconds_attr, 0),
                 'text': air_text,
-                'topOfHour': getattr(self.main_screen, 'topOfHourActive', False) if air_num == 3 else False,
+                'topOfHour': False,
             }
+            if air_num == 3:
+                try:
+                    air[air_num]['topOfHour'] = bool(
+                        getattr(self.main_screen, 'topOfHourActive', False)
+                    )
+                except RuntimeError:
+                    # Uninitialized Qt object (e.g. in unit tests)
+                    air[air_num]['topOfHour'] = False
         
         # Get text field values
         now_text = ""
