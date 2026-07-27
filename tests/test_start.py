@@ -329,6 +329,10 @@ def mock_main_screen():
                 return False
             
             screen._original_parse_cmd = _original_parse_cmd
+
+            # Required by AIR3 top-of-hour paths; __new__ skips MainScreen.__init__
+            # so getattr(self, 'topOfHourActive', False) would hit Qt and raise RuntimeError
+            screen.topOfHourActive = False
             
             return screen
 
@@ -1090,7 +1094,7 @@ class TestStartStopAir3:
         
         MainScreen.stop_air3(mock_main_screen)
         
-        mock_main_screen.stop_air3.assert_called_once_with(False)
+        mock_main_screen.set_air3.assert_called_once_with(False)
 
 
 class TestTopOfHourCountdown:
