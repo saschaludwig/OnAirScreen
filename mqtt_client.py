@@ -144,8 +144,9 @@ class MqttClient(QThread):
         self._load_config()
         
         try:
-            # Create MQTT client
+            # Create MQTT client (explicit VERSION1 avoids DeprecationWarning on paho-mqtt 2.x)
             self.client = mqtt.Client(
+                mqtt.CallbackAPIVersion.VERSION1,
                 client_id=self.client_id,
                 protocol=mqtt.MQTTv311
             )
