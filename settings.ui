@@ -4032,6 +4032,26 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </property>
         </widget>
        </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="logfolderLabel">
+         <property name="text">
+          <string>Log Folder: ???</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextSelectableByKeyboard|Qt::TextInteractionFlag::TextSelectableByMouse</set>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QPushButton" name="openLogFolderButton">
+         <property name="text">
+          <string>Open log folder</string>
+         </property>
+        </widget>
+       </item>
        <item row="4" column="0">
         <widget class="QLabel" name="label_8">
          <property name="text">
@@ -4233,7 +4253,7 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item row="9" column="0">
+       <item row="11" column="0">
         <widget class="QPushButton" name="ResetSettingsButton">
          <property name="enabled">
           <bool>false</bool>
@@ -4282,7 +4302,7 @@ p, li { white-space: pre-wrap; }
          </property>
         </widget>
        </item>
-       <item row="8" column="0">
+       <item row="10" column="0">
         <widget class="QCheckBox" name="enableResetButton">
          <property name="text">
           <string>Enable Reset all settings button</string>
@@ -4564,6 +4584,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>checkBox_LtcWarn</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>owmTestOutput</tabstop>
+  <tabstop>openLogFolderButton</tabstop>
   <tabstop>enableResetButton</tabstop>
   <tabstop>ResetSettingsButton</tabstop>
   <tabstop>ExitButton</tabstop>

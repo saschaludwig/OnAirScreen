@@ -30,13 +30,15 @@ from PySide6.QtCore import (
     QRectF, QPointF, QRegularExpression, QSize, QFile, QIODevice,
 )
 from PySide6.QtGui import (
-    QPalette, QColor, QFont, QIcon, QPixmap, QPainter, QPen, QAction, QRegularExpressionValidator,
+    QPalette, QColor, QFont, QIcon, QPixmap, QPainter, QPen, QAction,
+    QRegularExpressionValidator, QDesktopServices,
 )
 from PySide6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
                               QInputDialog, QLineEdit, QScrollArea, QFrame, QVBoxLayout,
                               QSizePolicy)
 
 from settings import Ui_Settings
+from crash_handler import get_log_directory, ensure_log_directory
 from utils import TimerUpdateMessageBox, settings_group, INSTANCE_NAME_REGEX, normalize_instance_name
 from version import versionString
 from weatherwidget import WeatherWidget as ww, extract_owm_city_id, parse_owm_geocode_results
@@ -408,6 +410,7 @@ class Settings(QWidget, Ui_Settings):
         self.distributionLabel.setText(f"Distribution: {distributionString}")
         # set settings path
         self.settingspathLabel.setText(f"Settings Path: {self.settingsPath}")
+        self.logfolderLabel.setText(f"Log Folder: {get_log_directory()}")
         # set update check mode
         self.manual_update_check = False
         self.sigCheckForUpdate.connect(self.check_for_updates)
@@ -503,6 +506,20 @@ class Settings(QWidget, Ui_Settings):
         self.sigConfigFinished.emit()
         self.close()
 
+    def open_log_folder(self) -> None:
+        """Open the application log folder in the system file manager."""
+        try:
+            log_dir = ensure_log_directory()
+        except OSError as error:
+            log_exception(logger, error, use_exc_info=False)
+            QMessageBox.warning(
+                self,
+                "Log folder",
+                f"Could not create or open the log folder:\n{error}",
+            )
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(log_dir)))
+
     def _connectSlots(self):
         self.ApplyButton.clicked.connect(self.applySettings)
         self.CloseButton.clicked.connect(self.closeSettings)
@@ -527,6 +544,7 @@ class Settings(QWidget, Ui_Settings):
         self.AIR4BGColor.clicked.connect(self.setAIR4BGColor)
         self.AIR4FGColor.clicked.connect(self.setAIR4FGColor)
         self.ResetSettingsButton.clicked.connect(self.resetSettings)
+        self.openLogFolderButton.clicked.connect(self.open_log_folder)
 
         self.DigitalHourColorButton.clicked.connect(self.setDigitalHourColor)
         self.DigitalSecondColorButton.clicked.connect(self.setDigitalSecondColor)
@@ -2237,6 +2255,12 @@ class Settings(QWidget, Ui_Settings):
         self.CloseButton.setToolTip("Close the settings dialog without applying changes")
         self.ExitButton.setToolTip("Exit OnAirScreen application")
         self.ResetSettingsButton.setToolTip("Reset all settings to default values (this cannot be undone)")
+        self.openLogFolderButton.setToolTip(
+            "Open the folder with onairscreen.log and crash reports"
+        )
+        self.logfolderLabel.setToolTip(
+            "Application log and crash reports. Send this folder to support if asked."
+        )
 
         # Preset management tooltips
         self.SaveSettingsButton.setToolTip("Save current configuration as a preset")

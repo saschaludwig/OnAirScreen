@@ -32,6 +32,8 @@ from typing import List, NamedTuple, Optional, Tuple
 
 import numpy as np
 
+from defaults import DEFAULT_AUDIO_LAYOUT
+
 
 class MeterUnit(str, Enum):
     """Display unit for audio meters."""
@@ -123,11 +125,11 @@ def floor_readings(*, integrated_running: bool = False) -> MeterReadings:
 
 
 def normalize_meter_layout(layout: str | None) -> str:
-    """Return a valid meter layout key, defaulting to L/R."""
-    value = (layout or METER_LAYOUT_LR).strip().lower()
+    """Return a valid meter layout key, defaulting to DEFAULT_AUDIO_LAYOUT."""
+    value = (layout or DEFAULT_AUDIO_LAYOUT).strip().lower()
     if value in METER_LAYOUTS:
         return value
-    return METER_LAYOUT_LR
+    return DEFAULT_AUDIO_LAYOUT
 
 
 def normalize_lr_unit(unit: MeterUnit | str) -> MeterUnit:

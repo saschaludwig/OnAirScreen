@@ -39,6 +39,7 @@ from PySide6.QtNetwork import QUdpSocket, QHostAddress
 from utils import settings_group, host_address_is_ipv4
 from settings_functions import versionString
 from defaults import DEFAULT_UDP_PORT, DEFAULT_HTTP_PORT, DEFAULT_MULTICAST_ADDRESS
+from crash_handler import install_asyncio_exception_handler
 from exceptions import (
     UdpError, HttpError, WebSocketError, PortInUseError, PermissionDeniedError,
     CommandParseError, InvalidCommandFormatError, EncodingError, JsonSerializationError, log_exception
@@ -986,6 +987,7 @@ class WebSocketDaemon(QThread):
         # Create new event loop for this thread
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
+        install_asyncio_exception_handler(self._loop)
         
         try:
             # Start WebSocket server using the new API

@@ -2886,11 +2886,14 @@ class TestSetLogLevel:
         root_logger.handlers.clear()
         
         set_log_level("DEBUG")
-        
-        # Should have created a handler
-        assert len(root_logger.handlers) > 0
-        handler = root_logger.handlers[0]
-        assert isinstance(handler, logging.StreamHandler)
+
+        stream_handlers = [
+            handler for handler in root_logger.handlers
+            if isinstance(handler, logging.StreamHandler)
+            and not isinstance(handler, logging.FileHandler)
+        ]
+        assert len(stream_handlers) > 0
+        handler = stream_handlers[0]
         assert handler.formatter is not None
 
     def test_set_log_level_handler_format(self):
@@ -2902,8 +2905,13 @@ class TestSetLogLevel:
         root_logger.handlers.clear()
         
         set_log_level("INFO")
-        
-        handler = root_logger.handlers[0]
+
+        stream_handlers = [
+            handler for handler in root_logger.handlers
+            if isinstance(handler, logging.StreamHandler)
+            and not isinstance(handler, logging.FileHandler)
+        ]
+        handler = stream_handlers[0]
         formatter = handler.formatter
         format_string = formatter._fmt
         

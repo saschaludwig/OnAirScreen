@@ -196,7 +196,7 @@ The settings dialog opens with `Ctrl+S` or `Ctrl+,` (or right-click → **Settin
 | **Timers**            | AIR timers 1–4                           |
 | **Fonts**             | Fonts for all elements                   |
 | **Audio Meters**      | Level meters, source, TooLoud, Silence Detection |
-| **About**             | Version, license info, log level, reset  |
+| **About**             | Version, license info, log level, log folder, reset  |
 | **License**           | OASL 1.0 plus third-party notices (PySide6/Qt, fonts, examples) |
 
 
@@ -529,6 +529,8 @@ Fonts from the `fonts/` directory are also loaded at startup.
 | Version            | Current OnAirScreen version                             |
 | Distribution       | `OpenSource` or commercial distribution                 |
 | Settings Path      | Path to the configuration file on this system           |
+| Log Folder         | Folder with `onairscreen.log` and crash reports         |
+| Open log folder    | Opens that folder in the system file manager            |
 | Loglevel           | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`, `NONE` |
 | Enable Reset       | Checkbox to enable the reset button                     |
 | Reset all settings | Resets **all** settings to defaults (cannot be undone)  |
@@ -560,10 +562,10 @@ Existing configs with `Audio/unit=lufs` (no `layout` key) are migrated to layout
 | AES67 Sample Rate     | `Audio/aes67_rate`           | `48000`      | `44100`, `48000`, or `96000`                        |
 | AES67 Channels        | `Audio/aes67_channels`       | `2`          | Stream channel count (meter uses first two)         |
 | AES67 Pasted SDP      | `Audio/aes67_manual`         | `false`      | `true` if the stream was added via Paste SDP        |
-| Meter Layout          | `Audio/layout`               | `lr`         | `lr`, `lufs`, or `both`                             |
+| Meter Layout          | `Audio/layout`               | `both`       | `lr`, `lufs`, or `both`                             |
 | Display Unit          | `Audio/unit`                 | `dbtp`       | L/R unit: `dbfs`, `dbtp`, `bbc_ppm` (PPM only in `lr`) |
 | Display Style         | `Audio/display_style`        | `bargraph`   | `solid` or `bargraph`                               |
-| Meter Width           | `Audio/meter_width`          | `79`         | Overall width in pixels (53–117); extra width thickens visible bars |
+| Meter Width           | `Audio/meter_width`          | `115`        | Overall width in pixels (53–150); extra width thickens visible bars |
 | LUFS Reference Preset | `Audio/lufs_reference_preset`| `ebu_r128`   | `ebu_r128`, `atsc_a85`, `aes_16`, `aes_18`, `custom` |
 | LUFS Reference        | `Audio/lufs_reference`       | `-23.0`      | Target level in LUFS (peg on the scale)             |
 | Peak Hold             | `Audio/peak_hold`            | `true`       | Hold peak marker                                    |
@@ -1123,6 +1125,25 @@ The exact path is shown in the **About** tab under **Settings Path**. Typical lo
 | Windows  | Registry: `HKEY_CURRENT_USER\Software\astrastudio\OnAirScreen` |
 
 
+Logs and crash reports are stored separately. The exact path is shown in the **About** tab under **Log Folder**:
+
+
+| Platform | Log folder                                      |
+| -------- | ----------------------------------------------- |
+| Linux    | `~/.local/share/astrastudio/OnAirScreen/logs/` |
+| macOS    | `~/Library/Logs/OnAirScreen/`                   |
+| Windows  | `%LOCALAPPDATA%\astrastudio\OnAirScreen\logs\`   |
+
+
+Files in that folder:
+
+- `onairscreen.log` — rotating application log (same content as stderr, follows the log level)
+- `crash-YYYYMMDD-HHMMSS.txt` — uncaught Python exceptions (traceback, version, OS; no settings or passwords)
+- `fault.log` — native crash dumps (segfaults in Qt or C extensions)
+
+Crash files are always written, even if the log level is `NONE`. Send the log folder to support when asked; do not post it publicly (DEBUG logs may contain host names or commands).
+
+
 ---
 
 
@@ -1211,6 +1232,19 @@ The exact path is shown in the **About** tab under **Settings Path**. Typical lo
 3. Click **Reset all OnAirScreen settings to default**
 4. Click **Apply**
 
+
+
+### Sending logs for support
+
+If OnAirScreen crashes or behaves unexpectedly:
+
+1. Open **Settings → About**
+2. Click **Open log folder** (or copy the **Log Folder** path)
+3. Send `onairscreen.log` and any `crash-*.txt` files (plus `fault.log` if it is not empty)
+
+The reports do not include settings, MQTT passwords, or API keys. Prefer `--loglevel DEBUG` only for a short reproduction run before sending logs.
+
+
 ---
 
 
@@ -1226,7 +1260,7 @@ OnAirScreen internally logs the following event types:
 - Settings changes
 - System events (start, quit, reboot)
 
-The log level controls output verbosity. For troubleshooting, temporarily use `--loglevel DEBUG`.
+The log level controls output verbosity. For troubleshooting, temporarily use `--loglevel DEBUG`. Logs are also written to `onairscreen.log` in the log folder (see **About**).
 
 ---
 

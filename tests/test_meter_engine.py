@@ -15,6 +15,7 @@ from meter_engine import (
     db_to_bbc_ppm,
     linear_to_db,
     migrate_audio_layout_and_unit,
+    normalize_meter_layout,
     normalize_meter_value,
     normalize_lr_unit,
 )
@@ -59,6 +60,28 @@ class TestScaleHelpers:
         layout, unit = migrate_audio_layout_and_unit("lufs", "both")
         assert layout == "both"
         assert unit == "dbtp"
+
+    def test_migrate_missing_layout_uses_default_both(self):
+        layout, unit = migrate_audio_layout_and_unit("dbtp", None)
+        assert layout == "both"
+        assert unit == "dbtp"
+        layout, unit = migrate_audio_layout_and_unit("dbfs", None)
+        assert layout == "both"
+        assert unit == "dbfs"
+        layout, unit = migrate_audio_layout_and_unit(None, None)
+        assert layout == "both"
+        assert unit == "dbtp"
+
+    def test_migrate_keeps_explicit_lr(self):
+        layout, unit = migrate_audio_layout_and_unit("dbtp", "lr")
+        assert layout == "lr"
+        assert unit == "dbtp"
+
+    def test_normalize_meter_layout_defaults_to_both(self):
+        assert normalize_meter_layout(None) == "both"
+        assert normalize_meter_layout("") == "both"
+        assert normalize_meter_layout("nope") == "both"
+        assert normalize_meter_layout("lr") == "lr"
 
 
 class TestMeterEngineDbfs:

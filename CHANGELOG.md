@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Added
+
+- Persistent log folder with rotating `onairscreen.log`, crash reports for uncaught Python exceptions, and `fault.log` for native faults; About tab shows the path and can open the folder
+
+### Fixed
+
+- Fresh installs without `Audio/layout` now use L/R + LUFS (`both`) instead of falling back to L/R only
+
 ## [1.0.0beta4]
 
 ### Changed

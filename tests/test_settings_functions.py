@@ -14,6 +14,7 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QColor, QCloseEvent, QFont
 from PySide6.QtWidgets import QApplication
 
+from crash_handler import set_log_directory_override
 from settings_functions import (
     OASSettings,
     Settings,
@@ -884,5 +885,28 @@ class TestLicenseDialog:
         text = dialog.plainTextEdit.toPlainText()
         assert text == composed_license_dialog_text()
         assert "PySide6" in text
+
+
+class TestOpenLogFolder:
+    """About tab can open the log folder in the system file manager."""
+
+    @pytest.fixture
+    def qapp(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        return app
+
+    def test_open_log_folder_uses_desktop_services(self, qapp, tmp_path):
+        set_log_directory_override(tmp_path)
+        try:
+            dialog = Settings(oacmode=True)
+            with patch("settings_functions.QDesktopServices.openUrl") as open_url:
+                dialog.open_log_folder()
+            open_url.assert_called_once()
+            opened = open_url.call_args[0][0]
+            assert tmp_path.as_posix() in opened.toLocalFile()
+        finally:
+            set_log_directory_override(None)
 
 

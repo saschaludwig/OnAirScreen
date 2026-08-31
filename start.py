@@ -58,7 +58,13 @@ from system_operations import SystemOperations
 from status_exporter import StatusExporter
 from ui_updater import UIUpdater
 from hotkey_manager import HotkeyManager
-from logging_config import set_log_level, get_command_line_log_level, set_command_line_log_level
+from logging_config import (
+    set_log_level, get_command_line_log_level, set_command_line_log_level,
+    setup_file_logging,
+)
+from crash_handler import (
+    install_crash_hooks, install_qt_message_handler, ensure_log_directory,
+)
 from utils import settings_group, host_address_is_ipv4, host_address_is_ipv6
 from defaults import *  # noqa: F403, F405
 from exceptions import WidgetAccessError, log_exception
@@ -2236,6 +2242,12 @@ class MainScreen(QWidget, Ui_MainScreen):
 ###################################
 if __name__ == "__main__":
     setup_signal_handlers()
+    try:
+        log_dir = ensure_log_directory()
+    except OSError as error:
+        print(f"Could not create log directory: {error}", file=sys.stderr)
+        log_dir = None
+    install_crash_hooks(log_dir)
     
     # Parse command-line arguments before QApplication initialization
     parser = argparse.ArgumentParser(description='OnAirScreen')
@@ -2245,6 +2257,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     app = QApplication(sys.argv)
+    install_qt_message_handler()
     
     # Initialize logging: load from settings first, then override with command-line if provided
     settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
@@ -2262,11 +2275,15 @@ if __name__ == "__main__":
     
     # Configure logging with determined level
     set_log_level(log_level)
+    if log_dir is not None:
+        setup_file_logging(log_dir)
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     # Always print log level change, regardless of current log level
     print(f"Log level set to: {log_level}", file=sys.stderr)
+    if log_dir is not None:
+        print(f"Log folder: {log_dir}", file=sys.stderr)
     
     # Load fonts from fonts/ directory before creating UI
     load_fonts()

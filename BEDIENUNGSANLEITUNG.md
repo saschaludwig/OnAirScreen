@@ -196,7 +196,7 @@ Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,` (oder Rechtsklick
 | **Timers**            | AIR-Timer 1–4                          |
 | **Fonts**             | Schriftarten für alle Elemente         |
 | **Audio Meters**      | Pegelanzeige, Quelle, TooLoud, Silence Detection |
-| **About**             | Version, Lizenzinfo, Log-Level, Reset  |
+| **About**             | Version, Lizenzinfo, Log-Level, Log-Ordner, Reset  |
 | **License**           | OASL 1.0 und Third-Party-Hinweise (PySide6/Qt, Fonts, Beispiele) |
 
 
@@ -529,6 +529,8 @@ Zusätzlich werden Schriftarten aus dem `fonts/`-Verzeichnis beim Start geladen.
 | Version            | Aktuelle OnAirScreen-Version                                           |
 | Distribution       | `OpenSource` oder kommerzielle Distribution                            |
 | Settings Path      | Pfad zur Konfigurationsdatei auf diesem System                         |
+| Log Folder         | Ordner mit `onairscreen.log` und Crash-Reports                         |
+| Open log folder    | Öffnet diesen Ordner im Dateimanager                                   |
 | Loglevel           | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`, `NONE`                |
 | Enable Reset       | Checkbox zum Freischalten des Reset-Buttons                            |
 | Reset all settings | Setzt **alle** Einstellungen auf Standardwerte zurück (unwiderruflich) |
@@ -560,10 +562,10 @@ Bestehende Configs mit `Audio/unit=lufs` (ohne `layout`) werden auf Layout `lufs
 | AES67 Sample Rate     | `Audio/aes67_rate`           | `48000`      | `44100`, `48000` oder `96000`                     |
 | AES67 Channels        | `Audio/aes67_channels`       | `2`          | Kanalzahl im Stream (Meter nutzt die ersten zwei) |
 | AES67 Pasted SDP      | `Audio/aes67_manual`         | `false`      | `true`, wenn der Stream per Paste SDP kam         |
-| Meter Layout          | `Audio/layout`               | `lr`         | `lr`, `lufs` oder `both`                           |
+| Meter Layout          | `Audio/layout`               | `both`       | `lr`, `lufs` oder `both`                           |
 | Display Unit          | `Audio/unit`                 | `dbtp`       | L/R-Einheit: `dbfs`, `dbtp`, `bbc_ppm` (PPM nur bei `lr`) |
 | Display Style         | `Audio/display_style`        | `bargraph`   | `solid` oder `bargraph`                           |
-| Meter Width           | `Audio/meter_width`          | `79`         | Gesamtbreite in Pixel (53–117); extra Breite verdickt sichtbare Balken |
+| Meter Width           | `Audio/meter_width`          | `115`        | Gesamtbreite in Pixel (53–150); extra Breite verdickt sichtbare Balken |
 | LUFS Reference Preset | `Audio/lufs_reference_preset`| `ebu_r128`   | `ebu_r128`, `atsc_a85`, `aes_16`, `aes_18`, `custom` |
 | LUFS Reference        | `Audio/lufs_reference`       | `-23.0`      | Zielpegel in LUFS (Peg auf der Skala)             |
 | Peak Hold             | `Audio/peak_hold`            | `true`       | Peak-Marke halten                                 |
@@ -1120,6 +1122,25 @@ Der genaue Pfad wird im Register **About** unter **Settings Path** angezeigt. Ty
 | Windows   | Registry: `HKEY_CURRENT_USER\Software\astrastudio\OnAirScreen` |
 
 
+Logs und Crash-Reports liegen separat. Der genaue Pfad steht im Register **About** unter **Log Folder**:
+
+
+| Plattform | Log-Ordner                                      |
+| --------- | ----------------------------------------------- |
+| Linux     | `~/.local/share/astrastudio/OnAirScreen/logs/` |
+| macOS     | `~/Library/Logs/OnAirScreen/`                   |
+| Windows   | `%LOCALAPPDATA%\astrastudio\OnAirScreen\logs\`   |
+
+
+Dateien in diesem Ordner:
+
+- `onairscreen.log` — rotierendes Anwendungs-Log (gleicher Inhalt wie stderr, folgt dem Log-Level)
+- `crash-YYYYMMDD-HHMMSS.txt` — ungefangene Python-Exceptions (Traceback, Version, OS; keine Settings oder Passwörter)
+- `fault.log` — native Abstürze (Segfaults in Qt oder C-Erweiterungen)
+
+Crash-Dateien werden immer geschrieben, auch wenn das Log-Level `NONE` ist. Den Log-Ordner nur an den Support schicken, nicht öffentlich posten (DEBUG-Logs können Hostnamen oder Befehle enthalten).
+
+
 ---
 
 
@@ -1208,6 +1229,19 @@ Der genaue Pfad wird im Register **About** unter **Settings Path** angezeigt. Ty
 3. **Reset all OnAirScreen settings to default** klicken
 4. **Apply** klicken
 
+
+
+### Logs an den Support schicken
+
+Wenn OnAirScreen abstürzt oder sich unerwartet verhält:
+
+1. **Settings → About** öffnen
+2. **Open log folder** klicken (oder den Pfad unter **Log Folder** kopieren)
+3. `onairscreen.log` und vorhandene `crash-*.txt`-Dateien schicken (plus `fault.log`, falls nicht leer)
+
+Die Reports enthalten keine Settings, MQTT-Passwörter oder API-Keys. `--loglevel DEBUG` nur kurz zum Reproduzieren nutzen, bevor die Logs verschickt werden.
+
+
 ---
 
 
@@ -1223,7 +1257,7 @@ OnAirScreen protokolliert intern folgende Ereignistypen:
 - Einstellungsänderungen
 - Systemereignisse (Start, Beenden, Neustart)
 
-Das Log-Level steuert die Ausgabemenge. Bei Problemen empfiehlt sich temporär `--loglevel DEBUG`.
+Das Log-Level steuert die Ausgabemenge. Bei Problemen empfiehlt sich temporär `--loglevel DEBUG`. Logs werden zusätzlich nach `onairscreen.log` im Log-Ordner geschrieben (siehe **About**).
 
 ---
 
