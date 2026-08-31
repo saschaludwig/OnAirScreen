@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0beta4  
 **Author:** Sascha Ludwig, [astrastudio.de](http://www.astrastudio.de)  
-**Project:** [OnAirScreen on GitHub](http://saschaludwig.github.io/OnAirScreen/)  
+**Project:** [OnAirScreen](https://www.astrastudio.de/en/onairscreen/)  
 **German version:** [BEDIENUNGSANLEITUNG.md](BEDIENUNGSANLEITUNG.md)
 
 ---
