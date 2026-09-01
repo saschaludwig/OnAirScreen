@@ -1,6 +1,6 @@
 # OnAirScreen – User Manual
 
-**Version:** 1.0.0beta4  
+**Version:** 1.0.0beta5  
 **Author:** Sascha Ludwig, [astrastudio.de](http://www.astrastudio.de)  
 **Project:** [OnAirScreen](https://www.astrastudio.de/en/onairscreen/)  
 **German version:** [BEDIENUNGSANLEITUNG.md](BEDIENUNGSANLEITUNG.md)
@@ -807,7 +807,7 @@ Response (simplified):
   "lufsI": null,
   "lra": null,
   "instance": "Studio-1",
-  "version": "1.0.0beta4",
+  "version": "1.0.0beta5",
   "distribution": "OpenSource"
 }
 ```
@@ -891,7 +891,7 @@ The dedicated **astrastudio-OnAirScreen** Companion module is the recommended wa
 
 Drag presets for LED1–4 (toggle + colour), AIR1–4 with live caption and time on the button (MIC = AIR1), TOTH, Reset AIR3/4, NOW / NEXT / WARN, Silence, Loudness I+LRA, and Reset I+LRA.
 
-Variables such as `$(oas:air1_time)`, `$(oas:lufs_i)`, and `$(oas:lra)` and feedbacks (LED on, AIR running, TOTH, Silence, WARN, Loudness I+LRA) update from WebSocket or the status poll. Set the connection Label to `oas` so those examples match. The connection status shows instance name and version, for example `Studio-1 · 1.0.0beta4`. The module `HELP.md` lists every action, feedback, and variable.
+Variables such as `$(oas:air1_time)`, `$(oas:lufs_i)`, and `$(oas:lra)` and feedbacks (LED on, AIR running, TOTH, Silence, WARN, Loudness I+LRA) update from WebSocket or the status poll. Set the connection Label to `oas` so those examples match. The connection status shows instance name and version, for example `Studio-1 · 1.0.0beta5`. The module `HELP.md` lists every action, feedback, and variable.
 
 If you cannot load a custom module, **Generic OSC** remains available (next section). Status push over OSC is slower (every 5 seconds) than the HTTP poll / WebSocket.
 
