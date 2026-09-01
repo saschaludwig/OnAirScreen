@@ -86,3 +86,20 @@ def load_fonts() -> None:
             logger.info(f"Loaded font: {font_file} -> {families}")
         else:
             logger.warning(f"Failed to load font: {font_file}")
+
+
+def available_font_families() -> list[str]:
+    """
+    Return unique family names from Qt's font database.
+
+    Calling this once at startup warms the database so the first Fonts-tab
+    open does not trigger a heavy system-font scan on Windows.
+    """
+    seen: set[str] = set()
+    families: list[str] = []
+    for family in QFontDatabase.families():
+        if family in seen:
+            continue
+        seen.add(family)
+        families.append(family)
+    return families

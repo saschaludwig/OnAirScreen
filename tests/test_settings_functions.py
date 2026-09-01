@@ -31,6 +31,7 @@ from defaults import (
     DEFAULT_FONT_SIZE_STATION,
     DEFAULT_FONT_SIZE_TIMER,
     DEFAULT_FONT_WEIGHT_BOLD,
+    DEFAULT_TOTH_TIMER_TEXT,
 )
 
 
@@ -836,7 +837,7 @@ class TestRestoreTimer:
             "inactivetextcolor": "#555555",
             "inactivebgcolor": "#222222",
             "TimerAIRMinWidth": 200,
-            "TimerTOTHText": "TOTH Timer",
+            "TimerTOTHText": DEFAULT_TOTH_TIMER_TEXT,
         }
         return values.get(key, default)
 
@@ -864,7 +865,9 @@ class TestRestoreTimer:
 
         restorer.restore_timer(settings)
 
-        main_screen.AirLabel_3.setText.assert_called_once_with("TOTH Timer\n22:35")
+        main_screen.AirLabel_3.setText.assert_called_once_with(
+            f"{DEFAULT_TOTH_TIMER_TEXT}\n22:35"
+        )
         main_screen.AirCountMark_3.setText.assert_called_once_with("▼")
         stylesheet = main_screen.AirLabel_3.setStyleSheet.call_args[0][0]
         assert "#FF0000" in stylesheet

@@ -32,7 +32,7 @@ import time
 from datetime import timedelta
 
 from PySide6.QtCore import (
-    Qt, QByteArray, QEvent, QPoint, QSettings, QCoreApplication, QTimer,
+    Qt, QByteArray, QChildEvent, QEvent, QPoint, QSettings, QCoreApplication, QTimer,
     Signal, QObject, QElapsedTimer, QUrl,
 )
 from PySide6.QtGui import QCursor, QPalette, QIcon, QPixmap, QFont, QColor, QMouseEvent, QContextMenuEvent
@@ -52,7 +52,7 @@ from settings_functions import SettingsRestorer
 from timer_input import TimerInputDialog
 from ntp_manager import NTPManager
 from time_source import TimeSourceManager, wall_datetime
-from font_loader import load_fonts
+from font_loader import available_font_families, load_fonts
 from signal_handlers import setup_signal_handlers
 from system_operations import SystemOperations
 from status_exporter import StatusExporter
@@ -1679,16 +1679,52 @@ class MainScreen(QWidget, Ui_MainScreen):
         """Catch double-click and right-click on child widgets as well."""
         self.installEventFilter(self)
         for child in self.findChildren(QWidget):
-            if not isinstance(child, QMenu):
+            if self._should_track_main_screen_child(child):
                 child.installEventFilter(self)
+
+    def _should_track_main_screen_child(self, widget: QObject) -> bool:
+        """True for main-screen content widgets that should forward mouse events."""
+        if not isinstance(widget, QWidget) or isinstance(widget, QMenu):
+            return False
+        if widget.window() is not self:
+            return False
+        if widget.windowFlags() & Qt.WindowType.Popup:
+            return False
+        return True
+
+    def _install_filter_if_still_ours(self, widget: QObject) -> None:
+        """Install the mouse filter after the child has finished constructing."""
+        try:
+            if self._should_track_main_screen_child(widget):
+                widget.installEventFilter(self)
+        except RuntimeError:
+            return
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         """Forward child double-clicks and context menus to the main window."""
-        if event.type() == QEvent.Type.ChildAdded:
-            child = event.child() if hasattr(event, "child") else None
-            if isinstance(child, QWidget) and not isinstance(child, QMenu):
-                child.installEventFilter(self)
-            return super().eventFilter(obj, event)
+        event_type = event.type()
+        # QShortcut sees ShortcutOverride/KeyPress before the window map.
+        # Never consume those here or hotkeys on the main screen die.
+        if event_type in (
+            QEvent.Type.ShortcutOverride,
+            QEvent.Type.KeyPress,
+            QEvent.Type.KeyRelease,
+            QEvent.Type.Shortcut,
+        ):
+            return False
+
+        if event_type == QEvent.Type.ChildAdded:
+            # Do not touch the new child here: widgets can still be constructing.
+            if (
+                isinstance(obj, QWidget)
+                and not isinstance(obj, QMenu)
+                and obj.window() is self
+                and isinstance(event, QChildEvent)
+            ):
+                child = event.child()
+                if isinstance(child, QWidget) and not isinstance(child, QMenu):
+                    QTimer.singleShot(0, lambda w=child: self._install_filter_if_still_ours(w))
+            return False
 
         if (
             obj is not self
@@ -1696,13 +1732,13 @@ class MainScreen(QWidget, Ui_MainScreen):
             and not isinstance(obj, QMenu)
             and obj.window() is self
         ):
-            if event.type() == QEvent.Type.MouseButtonDblClick:
+            if event_type == QEvent.Type.MouseButtonDblClick:
                 self.mouseDoubleClickEvent(event)
                 return True
-            if event.type() == QEvent.Type.ContextMenu:
+            if event_type == QEvent.Type.ContextMenu:
                 self.contextMenuEvent(event)
                 return True
-        return super().eventFilter(obj, event)
+        return False
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         """Toggle windowed/fullscreen mode on left double-click."""
@@ -2288,6 +2324,8 @@ if __name__ == "__main__":
     
     # Load fonts from fonts/ directory before creating UI
     load_fonts()
+    # Warm the font database so the first Fonts-tab open is not a full system scan
+    available_font_families()
     app.setFont(QFont(DEFAULT_FONT_NAME))
     
     icon = QIcon()

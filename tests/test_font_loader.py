@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from defaults import DEFAULT_FONT_NAME
-from font_loader import get_fonts_dir, load_fonts, resolve_font_name
+from font_loader import available_font_families, get_fonts_dir, load_fonts, resolve_font_name
 
 class TestResolveFontName:
     def test_maps_freesans_to_default(self):
@@ -73,3 +73,10 @@ class TestLoadFonts:
             with patch("font_loader.logger") as logger:
                 load_fonts()
                 logger.warning.assert_called()
+
+
+class TestAvailableFontFamilies:
+    def test_deduplicates_and_keeps_order(self):
+        with patch("font_loader.QFontDatabase") as font_db:
+            font_db.families.return_value = ["Roboto", "Noto Sans", "Roboto"]
+            assert available_font_families() == ["Roboto", "Noto Sans"]

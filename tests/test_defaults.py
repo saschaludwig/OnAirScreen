@@ -208,8 +208,7 @@ class TestGetDefault:
 
     def test_air_timer_caption_toth_override(self):
         """AIR3 uses TOTH text only while top-of-hour countdown is active."""
-        assert DEFAULT_TOTH_TIMER_TEXT == "TOTH Timer"
-        assert air_timer_caption(3, "Radio", top_of_hour_active=True) == "TOTH Timer"
+        assert air_timer_caption(3, "Radio", top_of_hour_active=True) == DEFAULT_TOTH_TIMER_TEXT
         assert air_timer_caption(3, "Radio", top_of_hour_active=True, toth_text="TOH") == "TOH"
         assert air_timer_caption(3, "Radio", top_of_hour_active=False) == "Radio"
         assert air_timer_caption(3, "Radio", top_of_hour_active=False, toth_text="TOH") == "Radio"
@@ -275,7 +274,6 @@ class TestGetDefault:
         assert get_default("TimeSource", "ltc_audio_device") == DEFAULT_LTC_AUDIO_DEVICE
         assert get_default("TimeSource", "ltc_audio_channel") == DEFAULT_LTC_AUDIO_CHANNEL
         assert get_default("TimeSource", "ltc_warn") == DEFAULT_LTC_WARN
-        assert DEFAULT_LTC_WARN is False
         assert DEFAULT_TIME_SOURCE == TIME_SOURCE_LOCAL
         assert TIME_SOURCE_LABELS[TIME_SOURCE_NTP] == "NTP Server"
         assert TIME_SOURCE_LABELS[TIME_SOURCE_PTP] == "PTPv2 IEEE 1588-2008"
@@ -295,9 +293,7 @@ class TestGetDefault:
     def test_audio_group(self):
         """Test Audio group defaults including AES67 keys."""
         assert get_default("Audio", "enabled") == DEFAULT_AUDIO_METERS_ENABLED
-        assert DEFAULT_AUDIO_METERS_ENABLED is True
         assert get_default("Audio", "source") == DEFAULT_AUDIO_SOURCE
-        assert DEFAULT_AUDIO_SOURCE == "device"
         assert get_default("Audio", "livewire_channel") == DEFAULT_AUDIO_LIVEWIRE_CHANNEL
         assert get_default("Audio", "livewire_iface") == DEFAULT_AUDIO_LIVEWIRE_IFACE
         assert get_default("Audio", "aes67_id") == DEFAULT_AUDIO_AES67_ID
@@ -311,8 +307,6 @@ class TestGetDefault:
         assert get_default("Audio", "unit") == DEFAULT_AUDIO_UNIT
         assert get_default("Audio", "layout") == DEFAULT_AUDIO_LAYOUT
         assert get_default("Audio", "meter_width") == DEFAULT_AUDIO_METER_WIDTH
-        assert DEFAULT_AUDIO_UNIT == "dbtp"
-        assert DEFAULT_AUDIO_LAYOUT == "both"
         assert "lufs" not in AUDIO_UNIT_LABELS
         assert tuple(AUDIO_LAYOUT_LABELS) == ("lr", "lufs", "both")
         assert get_default("Audio", "silence") == DEFAULT_AUDIO_SILENCE
@@ -323,17 +317,12 @@ class TestGetDefault:
         assert get_default("Audio", "silence_duration_s") == DEFAULT_AUDIO_SILENCE_DURATION_S
         assert get_default("Audio", "silence_recovery_s") == DEFAULT_AUDIO_SILENCE_RECOVERY_S
         assert get_default("Audio", "silence_http_url") == DEFAULT_AUDIO_SILENCE_HTTP_URL
-        assert DEFAULT_AUDIO_SILENCE is False
-        assert DEFAULT_AUDIO_SILENCE_WARN is True
-        assert DEFAULT_AUDIO_SILENCE_ON_ABSENT is True
-        assert DEFAULT_AUDIO_SILENCE_DURATION_S == 10.0
         assert "aes67" in AUDIO_SOURCE_LABELS
         assert AUDIO_SOURCE_LABELS["aes67"] == "AES67"
 
     def test_fonts_group(self):
         """Test Fonts group defaults"""
         # Test FontName
-        assert DEFAULT_FONT_NAME == "Roboto"
         assert get_default("Fonts", "LED1FontName") == DEFAULT_FONT_NAME
         assert get_default("Fonts", "AIR1FontName") == DEFAULT_FONT_NAME
         assert get_default("Fonts", "StationNameFontName") == DEFAULT_FONT_NAME

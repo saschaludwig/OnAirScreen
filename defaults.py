@@ -71,7 +71,7 @@ DEFAULT_TIMER_AIR_TEXTS: Dict[int, str] = {
     3: "Timer",
     4: "Stream"
 }
-DEFAULT_TOTH_TIMER_TEXT: str = "TOTH Timer"
+DEFAULT_TOTH_TIMER_TEXT: str = "TOTH"
 
 
 def air_timer_caption(

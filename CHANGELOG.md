@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0beta6]
+
+### Changed
+
+- Default TOTH timer label is `TOTH` instead of `TOTH Timer`
+
+### Fixed
+
+- Windows: opening **Settings → Fonts** no longer access-violates on first open. The mouse event filter is installed after widgets exist, and the font database is warmed at startup
+- Main-screen hotkeys work again. The mouse event filter no longer consumes `ShortcutOverride` and key events, so `QShortcut` still reaches Qt
+
 ## [1.0.0beta5]
 
 ### Added
