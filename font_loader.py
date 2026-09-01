@@ -41,7 +41,6 @@ def get_fonts_dir() -> str:
     """
     Return the path to the bundled fonts directory.
 
-    Frozen (PyInstaller) builds unpack data files into sys._MEIPASS.
     """
     if getattr(sys, "frozen", False):
         base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
