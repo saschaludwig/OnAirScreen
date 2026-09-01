@@ -566,7 +566,9 @@ class Settings(QWidget, Ui_Settings):
         self.enableosc.toggled.connect(self._on_osc_enabled_changed)
 
         # Audio meters
-        self.pushButton_AudioRefresh.clicked.connect(self.refresh_audio_input_devices)
+        self.pushButton_AudioRefresh.clicked.connect(
+            lambda: self.refresh_audio_input_devices(rescan=True)
+        )
         self.pushButton_Aes67PasteSdp.clicked.connect(self._paste_aes67_sdp)
         self.comboBox_Aes67Stream.currentIndexChanged.connect(self._on_aes67_stream_changed)
         self.comboBox_LivewireStream.currentIndexChanged.connect(self._on_livewire_stream_changed)
@@ -2179,7 +2181,9 @@ class Settings(QWidget, Ui_Settings):
             "Meter audio source: local PortAudio input, Axia Livewire, or AES67 (SAP)"
         )
         self.comboBox_AudioInput.setToolTip("Select the live audio input device used for metering")
-        self.pushButton_AudioRefresh.setToolTip("Refresh the list of available audio input devices")
+        self.pushButton_AudioRefresh.setToolTip(
+            "Re-scan the system for audio input devices (newly plugged or unplugged hardware)"
+        )
         self.spinBox_LivewireChannel.setToolTip(
             "Livewire channel number (1–32767). Multicast = 239.192.0.0 + channel"
         )
@@ -2462,10 +2466,21 @@ class Settings(QWidget, Ui_Settings):
                 self.comboBox_LufsReferencePreset.blockSignals(False)
                 self.doubleSpinBox_LufsReference.setEnabled(True)
 
-    def refresh_audio_input_devices(self, selected_name: str | None = None) -> None:
-        """Populate the audio input device combo box."""
+    def refresh_audio_input_devices(
+        self, selected_name: str | None = None, *, rescan: bool = False
+    ) -> None:
+        """Populate the audio input device combo box.
+
+        Args:
+            selected_name: Device name to keep selected. QPushButton.clicked
+                may pass a bool; that is ignored so the current choice stays.
+            rescan: If True, reinitialize PortAudio so hot-plugged or
+                unplugged devices appear in (or leave) the list.
+        """
         from audio_capture import list_input_devices
 
+        if not isinstance(selected_name, str):
+            selected_name = None
         if selected_name is None:
             selected_name = self.comboBox_AudioInput.currentData()
             if selected_name is None:
@@ -2474,7 +2489,7 @@ class Settings(QWidget, Ui_Settings):
         self.comboBox_AudioInput.blockSignals(True)
         self.comboBox_AudioInput.clear()
         self.comboBox_AudioInput.addItem("System Default", "")
-        devices = list_input_devices()
+        devices = list_input_devices(refresh=rescan)
         for device in devices:
             self.comboBox_AudioInput.addItem(str(device), device.name)
 
@@ -2485,6 +2500,8 @@ class Settings(QWidget, Ui_Settings):
             index = self.comboBox_AudioInput.findData(selected_name)
         self.comboBox_AudioInput.setCurrentIndex(max(0, index))
         self.comboBox_AudioInput.blockSignals(False)
+        if rescan:
+            self.refresh_ltc_audio_devices()
 
     def _on_time_source_changed(self, _value=None) -> None:
         """Enable PTP, LTC, and NTP fields based on the selected time source."""

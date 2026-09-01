@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fresh installs without `Audio/layout` now use L/R + LUFS (`both`) instead of falling back to L/R only
+- Settings audio-device Refresh re-scans PortAudio so newly plugged or unplugged inputs appear immediately
 
 ## [1.0.0beta4]
 

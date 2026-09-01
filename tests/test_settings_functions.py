@@ -639,6 +639,57 @@ class TestLtcInputUi:
         assert not dialog.checkBox_LtcWarn.isEnabled()
 
 
+class TestAudioInputRefresh:
+    @pytest.fixture
+    def qapp(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        return app
+
+    @pytest.fixture
+    def dialog(self, qapp):
+        return Settings(oacmode=True)
+
+    def test_clicked_bool_keeps_current_device(self, dialog, monkeypatch):
+        from audio_capture import AudioInputDevice
+
+        dialog.comboBox_AudioInput.blockSignals(True)
+        dialog.comboBox_AudioInput.clear()
+        dialog.comboBox_AudioInput.addItem("System Default", "")
+        dialog.comboBox_AudioInput.addItem("Mic", "Mic")
+        dialog.comboBox_AudioInput.setCurrentIndex(1)
+        dialog.comboBox_AudioInput.blockSignals(False)
+
+        devices = [
+            AudioInputDevice(index=0, name="Mic", channels=2, default_samplerate=48000.0)
+        ]
+        monkeypatch.setattr(
+            "audio_capture.list_input_devices",
+            lambda *, refresh=False: devices,
+        )
+        dialog.refresh_audio_input_devices(False)
+        assert dialog.comboBox_AudioInput.currentData() == "Mic"
+
+    def test_rescan_asks_portaudio_to_refresh(self, dialog, monkeypatch):
+        from audio_capture import AudioInputDevice
+
+        calls = []
+
+        def fake_list(*, refresh=False):
+            calls.append(refresh)
+            return [
+                AudioInputDevice(
+                    index=0, name="USB", channels=2, default_samplerate=48000.0
+                )
+            ]
+
+        monkeypatch.setattr("audio_capture.list_input_devices", fake_list)
+        dialog.refresh_audio_input_devices(rescan=True)
+        assert calls[0] is True
+        assert dialog.comboBox_AudioInput.findData("USB") >= 0
+
+
 class TestShowSettings:
     """Tests for opening or raising the settings window."""
 

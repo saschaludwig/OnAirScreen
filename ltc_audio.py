@@ -401,6 +401,9 @@ class LtcAudioReader(QObject):
             daemon=True,
         )
         self._thread.start()
+        from audio_capture import register_portaudio_owner
+
+        register_portaudio_owner(self)
         logger.info(
             "LTC audio reader started (device=%s, channel=%s)",
             self._device_name or "default",
@@ -424,6 +427,18 @@ class LtcAudioReader(QObject):
         self._thread = None
         if thread is not None and thread.is_alive() and thread is not threading.current_thread():
             thread.join(timeout=2.0)
+
+    def pause_for_portaudio_rescan(self) -> bool:
+        """Stop LTC capture so PortAudio can re-enumerate devices."""
+        if not self.is_running and self._stream is None:
+            return False
+        self.stop()
+        return True
+
+    def restore_after_portaudio_rescan(self) -> None:
+        """Restart LTC capture after a PortAudio device rescan."""
+        if not self.is_running:
+            self.start()
 
     def _reacquire(self) -> None:
         """Try the other Manchester phase, then a full PLL reset, in a cycle."""

@@ -28,6 +28,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+import weakref
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -63,6 +64,9 @@ AUDIO_SOURCE_LIVEWIRE = "livewire"
 AUDIO_SOURCE_AES67 = "aes67"
 AUDIO_SOURCES = (AUDIO_SOURCE_DEVICE, AUDIO_SOURCE_LIVEWIRE, AUDIO_SOURCE_AES67)
 
+# PortAudio snapshots devices at Pa_Initialize(); owners pause around a rescan.
+_portaudio_owners: weakref.WeakSet[object] = weakref.WeakSet()
+
 
 @dataclass
 class AudioInputDevice:
@@ -79,8 +83,78 @@ class AudioInputDevice:
         return f"{self.name}{suffix}"
 
 
-def list_input_devices() -> List[AudioInputDevice]:
-    """Return available input devices, or an empty list if sounddevice is unavailable."""
+def register_portaudio_owner(owner: object) -> None:
+    """Track a local PortAudio stream so device rescans can pause it safely."""
+    _portaudio_owners.add(owner)
+
+
+def reinitialize_portaudio() -> None:
+    """Force PortAudio to re-enumerate host devices after plug/unplug.
+
+    PortAudio caches the device list at initialize time, so query_devices()
+    stays stale until terminate + initialize. Open streams are paused first
+    and restored afterwards so the C library is not torn down under them.
+    """
+    try:
+        import sounddevice as sd
+    except Exception as exc:  # pragma: no cover - depends on system libs
+        logger.warning("sounddevice unavailable: %s", exc)
+        return
+
+    terminate = getattr(sd, "_terminate", None)
+    initialize = getattr(sd, "_initialize", None)
+    if not callable(terminate) or not callable(initialize):
+        logger.warning("sounddevice cannot reinitialize PortAudio")
+        return
+
+    paused: list[object] = []
+    for owner in list(_portaudio_owners):
+        pause = getattr(owner, "pause_for_portaudio_rescan", None)
+        if not callable(pause):
+            continue
+        try:
+            if pause():
+                paused.append(owner)
+        except Exception as exc:
+            logger.warning("Error pausing PortAudio stream for rescan: %s", exc)
+
+    try:
+        initialized = getattr(sd, "_initialized", 1)
+        try:
+            rounds = max(int(initialized), 0)
+        except (TypeError, ValueError):
+            rounds = 1
+        for _ in range(rounds):
+            try:
+                terminate()
+            except Exception as exc:
+                logger.debug("PortAudio terminate during device rescan: %s", exc)
+                break
+        initialize()
+        logger.debug("PortAudio reinitialized to refresh the audio device list")
+    except Exception as exc:
+        logger.error("Failed to reinitialize PortAudio: %s", exc)
+
+    for owner in paused:
+        restore = getattr(owner, "restore_after_portaudio_rescan", None)
+        if not callable(restore):
+            continue
+        try:
+            restore()
+        except Exception as exc:
+            logger.warning("Error restoring PortAudio stream after rescan: %s", exc)
+
+
+def list_input_devices(*, refresh: bool = False) -> List[AudioInputDevice]:
+    """Return available input devices, or an empty list if sounddevice is unavailable.
+
+    Args:
+        refresh: If True, reinitialize PortAudio so newly plugged or unplugged
+            devices are included (or dropped) in the returned list.
+    """
+    if refresh:
+        reinitialize_portaudio()
+
     try:
         import sounddevice as sd
     except Exception as exc:  # pragma: no cover - depends on system libs
@@ -324,6 +398,7 @@ class AudioCaptureController(QObject):
                 callback=callback,
             )
             self._stream.start()
+            register_portaudio_owner(self)
             self._poll_timer.start()
             logger.info(
                 "Audio capture started (device=%s, sr=%s, ch=%s)",
@@ -429,6 +504,25 @@ class AudioCaptureController(QObject):
 
         self._engine.reset()
         self._reset_level_state()
+
+    def pause_for_portaudio_rescan(self) -> bool:
+        """Close the local PortAudio stream so the host API can be reinitialized."""
+        stream = self._stream
+        self._stream = None
+        if stream is None:
+            return False
+        try:
+            stream.stop()
+            stream.close()
+        except Exception as exc:
+            logger.warning("Error while pausing audio capture for device rescan: %s", exc)
+        return True
+
+    def restore_after_portaudio_rescan(self) -> None:
+        """Re-open the local device stream after a PortAudio rescan."""
+        if self._source != AUDIO_SOURCE_DEVICE or self._stream is not None:
+            return
+        self._start_device()
 
     def _reset_level_state(self) -> None:
         now = time.monotonic()

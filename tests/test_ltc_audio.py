@@ -190,3 +190,15 @@ class TestLtcAudioReader:
         assert reader.channel == 1
         assert reader.input_kind == "audio"
         assert reader.is_running is False
+
+    def test_pause_without_stream_returns_false(self):
+        import sys
+
+        from PySide6.QtWidgets import QApplication
+
+        from ltc_audio import LtcAudioReader
+
+        if not QApplication.instance():
+            QApplication(sys.argv)
+        reader = LtcAudioReader(device_name="Mic")
+        assert reader.pause_for_portaudio_rescan() is False

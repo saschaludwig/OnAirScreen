@@ -141,3 +141,92 @@ class TestIntegratedSession:
         assert received
         assert received[-1].lufs_m > -120.0
         assert received[-1].integrated_running is False
+
+
+def _fake_sounddevice(monkeypatch, devices):
+    """Install a fake sounddevice module for device-list tests."""
+    import sys
+    from unittest.mock import Mock
+
+    fake = Mock()
+    fake._initialized = 1
+    fake.default.device = [0, 1]
+    fake.query_devices.return_value = devices
+
+    def terminate():
+        fake._initialized -= 1
+
+    def initialize():
+        fake._initialized += 1
+
+    fake._terminate.side_effect = terminate
+    fake._initialize.side_effect = initialize
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    return fake
+
+
+class TestListInputDevicesRefresh:
+    @pytest.fixture(autouse=True)
+    def _clear_portaudio_owners(self):
+        from audio_capture import _portaudio_owners
+
+        _portaudio_owners.clear()
+        yield
+        _portaudio_owners.clear()
+
+    def test_without_refresh_does_not_reinitialize(self, monkeypatch):
+        from audio_capture import list_input_devices
+
+        fake = _fake_sounddevice(
+            monkeypatch,
+            [
+                {"max_input_channels": 2, "name": "Mic", "default_samplerate": 48000},
+                {"max_input_channels": 0, "name": "Out", "default_samplerate": 48000},
+            ],
+        )
+        devices = list_input_devices()
+        assert [device.name for device in devices] == ["Mic"]
+        fake._terminate.assert_not_called()
+        fake._initialize.assert_not_called()
+
+    def test_refresh_reinitializes_portaudio(self, monkeypatch):
+        from audio_capture import list_input_devices
+
+        fake = _fake_sounddevice(
+            monkeypatch,
+            [{"max_input_channels": 1, "name": "USB", "default_samplerate": 44100}],
+        )
+        devices = list_input_devices(refresh=True)
+        assert [device.name for device in devices] == ["USB"]
+        fake._terminate.assert_called()
+        fake._initialize.assert_called()
+        assert fake._initialized == 1
+
+    def test_refresh_pauses_and_restores_stream_owners(self, monkeypatch):
+        from unittest.mock import Mock
+
+        from audio_capture import list_input_devices, register_portaudio_owner
+
+        _fake_sounddevice(monkeypatch, [])
+        owner = Mock()
+        order = []
+        owner.pause_for_portaudio_rescan.side_effect = lambda: (order.append("pause") or True)
+        owner.restore_after_portaudio_rescan.side_effect = lambda: order.append("restore")
+        register_portaudio_owner(owner)
+        list_input_devices(refresh=True)
+        assert order == ["pause", "restore"]
+
+    def test_pause_closes_local_stream_without_touching_aoip(self):
+        capture = AudioCaptureController()
+        stream = type("Stream", (), {})()
+        stream.stop = lambda: None
+        stream.close = lambda: None
+        capture._stream = stream
+        capture._rtp = object()
+        assert capture.pause_for_portaudio_rescan() is True
+        assert capture._stream is None
+        assert capture._rtp is not None
+
+    def test_pause_without_stream_returns_false(self):
+        capture = AudioCaptureController()
+        assert capture.pause_for_portaudio_rescan() is False
