@@ -28,6 +28,7 @@ faulthandler. Settings and secrets are never dumped.
 from __future__ import annotations
 
 import faulthandler
+import json
 import logging
 import os
 import platform
@@ -43,6 +44,8 @@ FAULT_LOG_NAME = "fault.log"
 CRASH_FILE_PREFIX = "crash-"
 CRASH_FILE_SUFFIX = ".txt"
 MAX_CRASH_FILES = 10
+PENDING_NOTICE_NAME = "crash_notice_pending"
+NOTICE_STATE_NAME = "crash_notice_state"
 
 _log_directory_override: Optional[Path] = None
 _hooks_installed = False
@@ -183,6 +186,70 @@ def write_crash_report(
     _prune_old_crash_files(log_dir)
     print(f"Crash report written to: {crash_path}", file=sys.stderr)
     return crash_path
+
+
+def mark_crash_for_next_start() -> None:
+    """Record that this session is ending with a process crash."""
+    try:
+        log_dir = ensure_log_directory()
+        (log_dir / PENDING_NOTICE_NAME).write_text(
+            datetime.now().astimezone().isoformat(timespec="seconds"),
+            encoding="utf-8",
+        )
+    except OSError as error:
+        print(f"Could not write crash notice marker: {error}", file=sys.stderr)
+
+
+def should_show_crash_notice() -> bool:
+    """True if the previous session crashed (pending marker or larger fault.log)."""
+    try:
+        log_dir = get_log_directory()
+    except Exception:
+        return False
+    pending = log_dir / PENDING_NOTICE_NAME
+    if pending.is_file():
+        return True
+    current_size = _fault_log_size(log_dir)
+    last_size = _read_notice_state_fault_size(log_dir)
+    return current_size > last_size
+
+
+def acknowledge_crash_notice() -> None:
+    """Clear the pending marker and store the current fault.log size."""
+    try:
+        log_dir = ensure_log_directory()
+    except OSError:
+        return
+    pending = log_dir / PENDING_NOTICE_NAME
+    try:
+        pending.unlink(missing_ok=True)
+    except OSError:
+        pass
+    state = {"fault_log_size": _fault_log_size(log_dir)}
+    try:
+        (log_dir / NOTICE_STATE_NAME).write_text(
+            json.dumps(state) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as error:
+        print(f"Could not write crash notice state: {error}", file=sys.stderr)
+
+
+def _fault_log_size(log_dir: Path) -> int:
+    fault_path = log_dir / FAULT_LOG_NAME
+    try:
+        return fault_path.stat().st_size
+    except OSError:
+        return 0
+
+
+def _read_notice_state_fault_size(log_dir: Path) -> int:
+    state_path = log_dir / NOTICE_STATE_NAME
+    try:
+        data = json.loads(state_path.read_text(encoding="utf-8"))
+        return int(data.get("fault_log_size", 0))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return 0
 
 
 def install_crash_hooks(log_dir: Optional[Path] = None) -> None:
@@ -331,6 +398,7 @@ def _terminate_after_crash(exit_code: int = 1) -> None:
     """Stop the Qt loop if present, then exit. No-op when disabled for tests."""
     if not _terminate_on_uncaught:
         return
+    mark_crash_for_next_start()
     try:
         from PySide6.QtCore import QCoreApplication
         app = QCoreApplication.instance()
@@ -345,6 +413,7 @@ def _abort_after_crash() -> None:
     """Abort after a Qt fatal dump. No-op when disabled for tests."""
     if not _terminate_on_uncaught:
         return
+    mark_crash_for_next_start()
     os.abort()
 
 

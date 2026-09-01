@@ -1141,7 +1141,7 @@ Files in that folder:
 - `crash-YYYYMMDD-HHMMSS.txt` — uncaught Python exceptions (traceback, version, OS; no settings or passwords). After a main-thread or Qt fatal crash the application quits; errors in background threads are logged only.
 - `fault.log` — native crash dumps (segfaults in Qt or C extensions)
 
-Crash files are always written, even if the log level is `NONE`. Send the log folder to support when asked; do not post it publicly (DEBUG logs may contain host names or commands).
+Crash files are always written, even if the log level is `NONE`. Send the log folder to support when asked; do not post it publicly (DEBUG logs may contain host names or commands). After a process crash, the next start shows a dialog with **Open log folder**; it closes automatically after 30 seconds.
 
 
 ---
@@ -1242,7 +1242,7 @@ If OnAirScreen crashes or behaves unexpectedly:
 2. Click **Open log folder** (or copy the **Log Folder** path)
 3. Send `onairscreen.log` and any `crash-*.txt` files (plus `fault.log` if it is not empty)
 
-The reports do not include settings, MQTT passwords, or API keys. Prefer `--loglevel DEBUG` only for a short reproduction run before sending logs.
+The reports do not include settings, MQTT passwords, or API keys. Prefer `--loglevel DEBUG` only for a short reproduction run before sending logs. After a crash, OnAirScreen also shows this dialog on the next start (auto-closes after 30 seconds).
 
 
 ---

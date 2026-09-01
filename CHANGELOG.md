@@ -7,10 +7,11 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Persistent log folder with rotating `onairscreen.log`, crash reports for uncaught Python exceptions, and `fault.log` for native faults; About tab shows the path and can open the folder
+- After a crash, the next start shows a dialog (open log folder, auto-closes after 30 seconds with a progress bar)
 
 ### Changed
 
-- Uncaught main-thread exceptions and Qt fatal messages still write a crash report, then quit the application (no dialog). Thread and asyncio errors are logged without exiting.
+- Uncaught main-thread exceptions and Qt fatal messages write a crash report, then quit (no dialog at crash time). Thread and asyncio errors are logged without exiting.
 
 ### Fixed
 

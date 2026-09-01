@@ -65,6 +65,7 @@ from logging_config import (
 from crash_handler import (
     install_crash_hooks, install_qt_message_handler, ensure_log_directory,
 )
+from crash_notice_dialog import maybe_show_crash_notice
 from utils import settings_group, host_address_is_ipv4, host_address_is_ipv6
 from defaults import *  # noqa: F403, F405
 from exceptions import WidgetAccessError, log_exception
@@ -2305,5 +2306,6 @@ if __name__ == "__main__":
         main_screen._set_air_state(i, False)
 
     main_screen.show()
+    maybe_show_crash_notice(main_screen)
 
     sys.exit(app.exec())

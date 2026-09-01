@@ -20,12 +20,16 @@ from crash_handler import (
     CRASH_FILE_SUFFIX,
     FAULT_LOG_NAME,
     MAX_CRASH_FILES,
+    PENDING_NOTICE_NAME,
+    acknowledge_crash_notice,
     collect_environment_info,
     get_log_directory,
     install_asyncio_exception_handler,
     install_crash_hooks,
+    mark_crash_for_next_start,
     set_log_directory_override,
     set_terminate_on_uncaught,
+    should_show_crash_notice,
     uninstall_crash_hooks,
     write_crash_report,
 )
@@ -288,3 +292,39 @@ class TestFileLogging:
         lines = get_recent_log_lines()
         assert any("buffered-warning" in line for line in lines)
         assert any(isinstance(h, RingBufferHandler) for h in isolated_root_logger.handlers)
+
+
+class TestCrashNoticeMarkers:
+    def test_no_notice_on_fresh_log_dir(self, log_dir):
+        assert should_show_crash_notice() is False
+
+    def test_pending_marker_shows_notice(self, log_dir):
+        mark_crash_for_next_start()
+        assert (log_dir / PENDING_NOTICE_NAME).is_file()
+        assert should_show_crash_notice() is True
+
+    def test_acknowledge_clears_pending(self, log_dir):
+        mark_crash_for_next_start()
+        acknowledge_crash_notice()
+        assert should_show_crash_notice() is False
+        assert not (log_dir / PENDING_NOTICE_NAME).exists()
+
+    def test_fault_log_growth_shows_notice(self, log_dir):
+        acknowledge_crash_notice()
+        assert should_show_crash_notice() is False
+        fault = log_dir / FAULT_LOG_NAME
+        fault.write_bytes(b"native dump\n")
+        assert should_show_crash_notice() is True
+        acknowledge_crash_notice()
+        assert should_show_crash_notice() is False
+
+    def test_terminate_marks_pending(self, log_dir):
+        import crash_handler
+
+        crash_handler.set_terminate_on_uncaught(True)
+        try:
+            with pytest.raises(SystemExit):
+                crash_handler._terminate_after_crash(1)
+            assert should_show_crash_notice() is True
+        finally:
+            crash_handler.set_terminate_on_uncaught(False)
