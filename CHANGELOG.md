@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Persistent log folder with rotating `onairscreen.log`, crash reports for uncaught Python exceptions, and `fault.log` for native faults; About tab shows the path and can open the folder
 
+### Changed
+
+- Uncaught main-thread exceptions and Qt fatal messages still write a crash report, then quit the application (no dialog). Thread and asyncio errors are logged without exiting.
+
 ### Fixed
 
 - Fresh installs without `Audio/layout` now use L/R + LUFS (`both`) instead of falling back to L/R only

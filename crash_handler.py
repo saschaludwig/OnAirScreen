@@ -20,7 +20,8 @@
 Crash reporting and log-directory helpers for OnAirScreen.
 
 Unhandled Python exceptions, thread failures, asyncio errors, and Qt fatal
-messages are written to crash-*.txt. Native faults go to fault.log via
+messages are written to crash-*.txt. Main-thread crashes and Qt fatal
+messages then terminate the process. Native faults go to fault.log via
 faulthandler. Settings and secrets are never dumped.
 """
 
@@ -49,12 +50,20 @@ _qt_handler_installed = False
 _original_excepthook = None
 _original_thread_excepthook = None
 _fault_log_file: Optional[TextIO] = None
+# Tests set this to False so invoking sys.excepthook does not kill pytest.
+_terminate_on_uncaught = True
 
 
 def set_log_directory_override(path: Optional[Path]) -> None:
     """Override the log directory (used by tests). Pass None to restore default."""
     global _log_directory_override
     _log_directory_override = Path(path) if path is not None else None
+
+
+def set_terminate_on_uncaught(enabled: bool) -> None:
+    """Enable or disable process exit after an uncaught main-thread crash (tests)."""
+    global _terminate_on_uncaught
+    _terminate_on_uncaught = enabled
 
 
 def get_log_directory() -> Path:
@@ -181,7 +190,9 @@ def install_crash_hooks(log_dir: Optional[Path] = None) -> None:
     Install sys.excepthook, threading.excepthook, and faulthandler.
 
     Safe to call more than once. Crash dumps are always written, independent
-    of the configured log level.
+    of the configured log level. Uncaught main-thread exceptions and Qt fatal
+    messages terminate the process after the dump; thread and asyncio errors
+    do not.
     """
     global _hooks_installed, _original_excepthook, _original_thread_excepthook
     global _fault_log_file
@@ -225,6 +236,7 @@ def install_qt_message_handler() -> None:
                 thread_name="Qt",
                 source="qt-fatal",
             )
+            _abort_after_crash()
         elif mode == QtMsgType.QtCriticalMsg:
             qt_logger.error("%s", message)
         elif mode == QtMsgType.QtWarningMsg:
@@ -286,11 +298,18 @@ def uninstall_crash_hooks() -> None:
 
 
 def _excepthook(exc_type, exc_value, exc_tb) -> None:
+    if exc_type is not None and issubclass(exc_type, (KeyboardInterrupt, SystemExit)):
+        if _original_excepthook is not None:
+            _original_excepthook(exc_type, exc_value, exc_tb)
+        else:
+            sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
     write_crash_report(exc_type, exc_value, exc_tb, source="sys.excepthook")
     if _original_excepthook is not None:
         _original_excepthook(exc_type, exc_value, exc_tb)
     else:
         sys.__excepthook__(exc_type, exc_value, exc_tb)
+    _terminate_after_crash()
 
 
 def _thread_excepthook(args) -> None:
@@ -306,6 +325,27 @@ def _thread_excepthook(args) -> None:
     )
     if _original_thread_excepthook is not None:
         _original_thread_excepthook(args)
+
+
+def _terminate_after_crash(exit_code: int = 1) -> None:
+    """Stop the Qt loop if present, then exit. No-op when disabled for tests."""
+    if not _terminate_on_uncaught:
+        return
+    try:
+        from PySide6.QtCore import QCoreApplication
+        app = QCoreApplication.instance()
+        if app is not None:
+            app.exit(exit_code)
+    except Exception:
+        pass
+    sys.exit(exit_code)
+
+
+def _abort_after_crash() -> None:
+    """Abort after a Qt fatal dump. No-op when disabled for tests."""
+    if not _terminate_on_uncaught:
+        return
+    os.abort()
 
 
 def _enable_faulthandler(log_dir: Path) -> None:

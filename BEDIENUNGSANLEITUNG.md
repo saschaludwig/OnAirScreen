@@ -1135,7 +1135,7 @@ Logs und Crash-Reports liegen separat. Der genaue Pfad steht im Register **About
 Dateien in diesem Ordner:
 
 - `onairscreen.log` — rotierendes Anwendungs-Log (gleicher Inhalt wie stderr, folgt dem Log-Level)
-- `crash-YYYYMMDD-HHMMSS.txt` — ungefangene Python-Exceptions (Traceback, Version, OS; keine Settings oder Passwörter)
+- `crash-YYYYMMDD-HHMMSS.txt` — ungefangene Python-Exceptions (Traceback, Version, OS; keine Settings oder Passwörter). Nach einem Main-Thread- oder Qt-Fatal-Crash beendet sich die Anwendung; Fehler in Hintergrund-Threads werden nur geloggt.
 - `fault.log` — native Abstürze (Segfaults in Qt oder C-Erweiterungen)
 
 Crash-Dateien werden immer geschrieben, auch wenn das Log-Level `NONE` ist. Den Log-Ordner nur an den Support schicken, nicht öffentlich posten (DEBUG-Logs können Hostnamen oder Befehle enthalten).

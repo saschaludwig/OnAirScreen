@@ -25,6 +25,7 @@ from crash_handler import (
     install_asyncio_exception_handler,
     install_crash_hooks,
     set_log_directory_override,
+    set_terminate_on_uncaught,
     uninstall_crash_hooks,
     write_crash_report,
 )
@@ -45,8 +46,10 @@ SECRET_MARKERS = ("mqttpassword", "owmAPIKey", "updatekey")
 def log_dir(tmp_path):
     """Isolate crash/log files in a temp directory and restore hooks afterwards."""
     set_log_directory_override(tmp_path)
+    set_terminate_on_uncaught(False)
     yield tmp_path
     uninstall_crash_hooks()
+    set_terminate_on_uncaught(True)
     set_log_directory_override(None)
 
 
@@ -160,11 +163,42 @@ class TestCrashHooks:
         assert len(crashes) == 1
         assert "hooked" in crashes[0].read_text(encoding="utf-8")
 
-    def test_thread_excepthook_writes_file(self, log_dir):
+    def test_sys_excepthook_terminates_after_write(self, log_dir, monkeypatch):
+        install_crash_hooks(log_dir)
+        terminate = MagicMock()
+        monkeypatch.setattr("crash_handler._terminate_after_crash", terminate)
+        sys.excepthook(ValueError, ValueError("hooked"), None)
+        terminate.assert_called_once()
+
+    def test_terminate_after_crash_raises_systemexit(self, log_dir):
+        import crash_handler
+
+        crash_handler.set_terminate_on_uncaught(True)
+        try:
+            with pytest.raises(SystemExit) as exc_info:
+                crash_handler._terminate_after_crash(1)
+            assert exc_info.value.code == 1
+        finally:
+            crash_handler.set_terminate_on_uncaught(False)
+
+    def test_keyboard_interrupt_does_not_write_or_terminate(self, log_dir, monkeypatch):
+        import crash_handler
+
+        install_crash_hooks(log_dir)
+        crash_handler._original_excepthook = lambda *args: None
+        terminate = MagicMock()
+        monkeypatch.setattr("crash_handler._terminate_after_crash", terminate)
+        sys.excepthook(KeyboardInterrupt, KeyboardInterrupt(), None)
+        assert list(log_dir.glob(f"{CRASH_FILE_PREFIX}*{CRASH_FILE_SUFFIX}")) == []
+        terminate.assert_not_called()
+
+    def test_thread_excepthook_does_not_terminate(self, log_dir, monkeypatch):
         import crash_handler
 
         install_crash_hooks(log_dir)
         crash_handler._original_thread_excepthook = lambda args: None
+        terminate = MagicMock()
+        monkeypatch.setattr("crash_handler._terminate_after_crash", terminate)
         args = MagicMock()
         args.exc_type = RuntimeError
         args.exc_value = RuntimeError("thread-fail")
@@ -176,12 +210,15 @@ class TestCrashHooks:
         text = crashes[0].read_text(encoding="utf-8")
         assert "thread-fail" in text
         assert "threading.excepthook" in text
+        terminate.assert_not_called()
 
     def test_faulthandler_opens_fault_log(self, log_dir):
         install_crash_hooks(log_dir)
         assert (log_dir / FAULT_LOG_NAME).exists()
 
-    def test_asyncio_handler_writes_file(self, log_dir):
+    def test_asyncio_handler_does_not_terminate(self, log_dir, monkeypatch):
+        terminate = MagicMock()
+        monkeypatch.setattr("crash_handler._terminate_after_crash", terminate)
         loop = asyncio.new_event_loop()
         try:
             install_asyncio_exception_handler(loop)
@@ -191,6 +228,7 @@ class TestCrashHooks:
         crashes = list(log_dir.glob(f"{CRASH_FILE_PREFIX}*{CRASH_FILE_SUFFIX}"))
         assert len(crashes) == 1
         assert "aio-fail" in crashes[0].read_text(encoding="utf-8")
+        terminate.assert_not_called()
 
     def test_install_is_idempotent(self, log_dir):
         install_crash_hooks(log_dir)
