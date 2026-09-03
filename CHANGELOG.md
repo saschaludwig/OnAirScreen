@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Settings tabs (except General) scroll vertically in the UI; content stays within the window width instead of shifting sideways
 - Audio meters use much less CPU on Raspberry Pi and other software-rendered displays: bars paint from cached pixmaps, and true-peak / BBC PPM / LUFS DSP runs only when the current meter setup needs it
 - Opening Settings no longer segfaults: the main-screen mouse filter watches the application instead of installing on every new child widget
 - Replaced deprecated `QColor.setNamedColor()` with `QColor.fromString()`

@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QColor, QCloseEvent, QFont
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -458,6 +458,23 @@ class TestSettingsWindowSize:
         assert settings_oac.width() == expected.width()
         assert settings_oac.height() == expected.height()
         assert settings_oac.maximumHeight() == QWidget().maximumHeight()
+
+    def test_wrapped_tabs_have_no_horizontal_scrollbar(self, settings_oac):
+        scroll = settings_oac.tab_advanced_scroll
+        assert scroll.widgetResizable() is True
+        assert scroll.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        assert scroll.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAsNeeded
+
+    def test_advanced_tab_content_fits_viewport_width(self, settings_oac):
+        settings_oac.tabWidget.setCurrentWidget(settings_oac.tab_advanced)
+        settings_oac.show()
+        QApplication.processEvents()
+        scroll = settings_oac.tab_advanced_scroll
+        inner = scroll.widget()
+        assert inner is not None
+        assert inner.width() <= scroll.viewport().width()
+        assert scroll.horizontalScrollBar().maximum() == 0
+        settings_oac.hide()
 
 
 class TestAes67SapWanted:

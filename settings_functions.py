@@ -34,8 +34,7 @@ from PySide6.QtGui import (
     QRegularExpressionValidator, QDesktopServices,
 )
 from PySide6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
-                              QInputDialog, QLineEdit, QScrollArea, QFrame, QVBoxLayout,
-                              QSizePolicy)
+                              QInputDialog, QLineEdit)
 
 from settings import Ui_Settings
 from crash_handler import get_log_directory, ensure_log_directory
@@ -264,14 +263,6 @@ def validate_color_value(color_str: str) -> tuple[bool, str]:
     return False, ""
 
 
-class _ShrinkableScrollArea(QScrollArea):
-    """Scroll area that does not force the parent window to grow with its content."""
-
-    def minimumSizeHint(self) -> QSize:
-        hint = super().minimumSizeHint()
-        return QSize(hint.width(), 0)
-
-
 # class OASSettings for use from OAC
 class OASSettings:
     """
@@ -360,7 +351,6 @@ class Settings(QWidget, Ui_Settings):
         self._station_name_color = QColor(DEFAULT_STATION_COLOR)
         self._slogan_color = QColor(DEFAULT_SLOGAN_COLOR)
         self.resize(self._initial_settings_window_size())
-        self._wrap_tabs_in_scroll_areas()
         self.InstanceName.setValidator(
             QRegularExpressionValidator(QRegularExpression(INSTANCE_NAME_REGEX), self)
         )
@@ -445,29 +435,6 @@ class Settings(QWidget, Ui_Settings):
             width = min(width, available.width())
             height = min(height, available.height())
         return QSize(width, height)
-
-    def _wrap_tabs_in_scroll_areas(self) -> None:
-        """Wrap each tab page so QTabWidget can shrink below the tallest page."""
-        for index in range(self.tabWidget.count()):
-            page = self.tabWidget.widget(index)
-            if page is self.tab_general:
-                continue
-            old_layout = page.layout()
-            if old_layout is None:
-                continue
-            container = QWidget()
-            container.setLayout(old_layout)
-            scroll = _ShrinkableScrollArea()
-            scroll.setWidget(container)
-            scroll.setWidgetResizable(True)
-            scroll.setFrameShape(QFrame.Shape.NoFrame)
-            scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-            new_layout = QVBoxLayout(page)
-            new_layout.setContentsMargins(0, 0, 0, 0)
-            new_layout.setSpacing(0)
-            new_layout.addWidget(scroll)
 
     def showEvent(self, event):
         super().showEvent(event)
