@@ -32,12 +32,13 @@ import time
 from datetime import timedelta
 
 from PySide6.QtCore import (
-    Qt, QByteArray, QChildEvent, QEvent, QPoint, QSettings, QCoreApplication, QTimer,
+    Qt, QByteArray, QEvent, QPoint, QSettings, QCoreApplication, QTimer,
     Signal, QObject, QElapsedTimer, QUrl,
 )
 from PySide6.QtGui import QCursor, QPalette, QIcon, QPixmap, QFont, QColor, QMouseEvent, QContextMenuEvent
 from PySide6.QtNetwork import QNetworkInterface, QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox, QMenu
+from shiboken6 import isValid
 
 # Import resources FIRST to register them with Qt before UI files are loaded
 import resources_rc  # noqa: F401
@@ -1678,68 +1679,48 @@ class MainScreen(QWidget, Ui_MainScreen):
                 settings.setValue('fullscreen', False)
 
     def _install_main_screen_mouse_filter(self) -> None:
-        """Catch double-click and right-click on child widgets as well."""
-        self.installEventFilter(self)
-        for child in self.findChildren(QWidget):
-            if self._should_track_main_screen_child(child):
-                child.installEventFilter(self)
+        """Watch double-click and right-click on main-screen children via the app."""
+        # Do not install on every child: ChildAdded + installEventFilter during
+        # widget construction segfaults in Qt/PySide (Settings, fonts, meters).
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
 
-    def _should_track_main_screen_child(self, widget: QObject) -> bool:
-        """True for main-screen content widgets that should forward mouse events."""
-        if not isinstance(widget, QWidget) or isinstance(widget, QMenu):
+    def _is_main_screen_child_target(self, obj: QObject) -> bool:
+        """True when a mouse event on obj should toggle fullscreen or the menu."""
+        if obj is self or obj is None:
             return False
-        if widget.window() is not self:
-            return False
-        if widget.windowFlags() & Qt.WindowType.Popup:
+        try:
+            if not isValid(obj):
+                return False
+            if not isinstance(obj, QWidget) or isinstance(obj, QMenu):
+                return False
+            if obj.window() is not self:
+                return False
+            if obj.windowFlags() & Qt.WindowType.Popup:
+                return False
+        except RuntimeError:
             return False
         return True
 
-    def _install_filter_if_still_ours(self, widget: QObject) -> None:
-        """Install the mouse filter after the child has finished constructing."""
-        try:
-            if self._should_track_main_screen_child(widget):
-                widget.installEventFilter(self)
-        except RuntimeError:
-            return
-
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         """Forward child double-clicks and context menus to the main window."""
-        event_type = event.type()
-        # QShortcut sees ShortcutOverride/KeyPress before the window map.
-        # Never consume those here or hotkeys on the main screen die.
-        if event_type in (
-            QEvent.Type.ShortcutOverride,
-            QEvent.Type.KeyPress,
-            QEvent.Type.KeyRelease,
-            QEvent.Type.Shortcut,
-        ):
+        try:
+            event_type = event.type()
+        except RuntimeError:
             return False
-
-        if event_type == QEvent.Type.ChildAdded:
-            # Do not touch the new child here: widgets can still be constructing.
-            if (
-                isinstance(obj, QWidget)
-                and not isinstance(obj, QMenu)
-                and obj.window() is self
-                and isinstance(event, QChildEvent)
-            ):
-                child = event.child()
-                if isinstance(child, QWidget) and not isinstance(child, QMenu):
-                    QTimer.singleShot(0, lambda w=child: self._install_filter_if_still_ours(w))
-            return False
-
-        if (
-            obj is not self
-            and isinstance(obj, QWidget)
-            and not isinstance(obj, QMenu)
-            and obj.window() is self
-        ):
-            if event_type == QEvent.Type.MouseButtonDblClick:
+        # App-level filter sees every Qt event. Handle only mouse gestures so
+        # ChildAdded, hotkeys, and Settings widgets are never touched.
+        if event_type == QEvent.Type.MouseButtonDblClick:
+            if self._is_main_screen_child_target(obj):
                 self.mouseDoubleClickEvent(event)
                 return True
-            if event_type == QEvent.Type.ContextMenu:
+            return False
+        if event_type == QEvent.Type.ContextMenu:
+            if self._is_main_screen_child_target(obj):
                 self.contextMenuEvent(event)
                 return True
+            return False
         return False
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:

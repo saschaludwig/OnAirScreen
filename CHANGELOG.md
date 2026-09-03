@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Opening Settings no longer segfaults: the main-screen mouse filter watches the application instead of installing on every new child widget
 - Replaced deprecated `QColor.setNamedColor()` with `QColor.fromString()`
 - Web UI: Instance/Version/Connection block stays top-right; settings gear sits to its left
 

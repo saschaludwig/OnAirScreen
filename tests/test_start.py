@@ -3114,6 +3114,13 @@ class TestWindowGeometry:
 class TestMainScreenMouseActions:
     """Tests for double-click fullscreen toggle and right-click context menu."""
 
+    @staticmethod
+    def _main_screen_child(screen):
+        child = MagicMock(spec=QWidget)
+        child.window.return_value = screen
+        child.windowFlags.return_value = Qt.WindowType.Widget
+        return child
+
     def test_left_double_click_toggles_fullscreen(self):
         """Left double-click on the main screen toggles fullscreen."""
         screen = MainScreen.__new__(MainScreen)
@@ -3126,12 +3133,23 @@ class TestMainScreenMouseActions:
         screen.toggle_full_screen.assert_called_once()
         event.accept.assert_called_once()
 
+    def test_event_filter_does_not_consume_clicks_on_main_window(self):
+        """Clicks on the main window itself use the native handlers, not the filter."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.mouseDoubleClickEvent = Mock()
+        event = Mock()
+        event.type.return_value = QEvent.Type.MouseButtonDblClick
+
+        handled = MainScreen.eventFilter(screen, screen, event)
+
+        assert handled is False
+        screen.mouseDoubleClickEvent.assert_not_called()
+
     def test_event_filter_forwards_child_double_click(self):
         """Double-clicks on child widgets are handled by the main screen."""
         screen = MainScreen.__new__(MainScreen)
         screen.mouseDoubleClickEvent = Mock()
-        child = MagicMock(spec=QWidget)
-        child.window.return_value = screen
+        child = self._main_screen_child(screen)
         event = Mock()
         event.type.return_value = QEvent.Type.MouseButtonDblClick
 
@@ -3144,8 +3162,7 @@ class TestMainScreenMouseActions:
         """Right-clicks on child widgets open the main screen context menu."""
         screen = MainScreen.__new__(MainScreen)
         screen.contextMenuEvent = Mock()
-        child = MagicMock(spec=QWidget)
-        child.window.return_value = screen
+        child = self._main_screen_child(screen)
         event = Mock()
         event.type.return_value = QEvent.Type.ContextMenu
 
@@ -3173,8 +3190,7 @@ class TestMainScreenMouseActions:
     def test_event_filter_does_not_consume_shortcut_override(self):
         """Hotkeys (QShortcut) must still see ShortcutOverride/KeyPress."""
         screen = MainScreen.__new__(MainScreen)
-        child = MagicMock(spec=QWidget)
-        child.window.return_value = screen
+        child = self._main_screen_child(screen)
         for event_type in (
             QEvent.Type.ShortcutOverride,
             QEvent.Type.KeyPress,
@@ -3185,27 +3201,10 @@ class TestMainScreenMouseActions:
             event.type.return_value = event_type
             assert MainScreen.eventFilter(screen, child, event) is False
 
-    def test_event_filter_ignores_child_added_on_foreign_window(self):
-        """Settings/Fonts widgets must not receive the main screen mouse filter."""
+    def test_event_filter_ignores_child_added(self):
+        """ChildAdded must not install filters on new widgets (native crash)."""
         screen = MainScreen.__new__(MainScreen)
-        foreign = MagicMock(spec=QWidget)
-        foreign.window.return_value = object()
-        child = MagicMock(spec=QWidget)
-        event = MagicMock(spec=QChildEvent)
-        event.type.return_value = QEvent.Type.ChildAdded
-        event.child.return_value = child
-
-        with patch("start.QTimer") as mock_timer:
-            handled = MainScreen.eventFilter(screen, foreign, event)
-
-        assert handled is False
-        mock_timer.singleShot.assert_not_called()
-        child.installEventFilter.assert_not_called()
-
-    def test_event_filter_defers_child_added_filter_install(self):
-        """ChildAdded must not call installEventFilter on a half-built widget."""
-        screen = MainScreen.__new__(MainScreen)
-        screen._install_filter_if_still_ours = Mock()
+        screen.mouseDoubleClickEvent = Mock()
         parent = MagicMock(spec=QWidget)
         parent.window.return_value = screen
         child = MagicMock(spec=QWidget)
@@ -3215,13 +3214,54 @@ class TestMainScreenMouseActions:
 
         with patch("start.QTimer") as mock_timer:
             handled = MainScreen.eventFilter(screen, parent, event)
-            mock_timer.singleShot.assert_called_once()
-            delay, callback = mock_timer.singleShot.call_args[0]
-            assert delay == 0
-            callback()
 
         assert handled is False
-        screen._install_filter_if_still_ours.assert_called_once_with(child)
+        mock_timer.singleShot.assert_not_called()
+        child.installEventFilter.assert_not_called()
+        parent.installEventFilter.assert_not_called()
+        screen.mouseDoubleClickEvent.assert_not_called()
+
+    def test_event_filter_ignores_settings_window_clicks(self):
+        """Clicks in Settings (a separate window) must not reach the main screen."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.mouseDoubleClickEvent = Mock()
+        screen.contextMenuEvent = Mock()
+        foreign = MagicMock(spec=QWidget)
+        foreign.window.return_value = object()
+        event = Mock()
+        event.type.return_value = QEvent.Type.MouseButtonDblClick
+
+        handled = MainScreen.eventFilter(screen, foreign, event)
+
+        assert handled is False
+        screen.mouseDoubleClickEvent.assert_not_called()
+        screen.contextMenuEvent.assert_not_called()
+
+    def test_event_filter_ignores_popup_window_flags(self):
+        """Combo/menu popups on the main screen must not be intercepted."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.mouseDoubleClickEvent = Mock()
+        popup = self._main_screen_child(screen)
+        popup.windowFlags.return_value = Qt.WindowType.Popup
+        event = Mock()
+        event.type.return_value = QEvent.Type.MouseButtonDblClick
+
+        handled = MainScreen.eventFilter(screen, popup, event)
+
+        assert handled is False
+        screen.mouseDoubleClickEvent.assert_not_called()
+
+    def test_install_mouse_filter_uses_application(self):
+        """The mouse filter is installed once on QApplication, not on children."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.installEventFilter = Mock()
+        screen.findChildren = Mock(return_value=[MagicMock(spec=QWidget)])
+        mock_app = Mock()
+        with patch("start.QApplication.instance", return_value=mock_app):
+            MainScreen._install_main_screen_mouse_filter(screen)
+        mock_app.installEventFilter.assert_called_once_with(screen)
+        screen.installEventFilter.assert_not_called()
+        screen.findChildren.assert_not_called()
 
     @patch("start.QMenu")
     def test_context_menu_toggle_fullscreen(self, mock_qmenu_cls):
