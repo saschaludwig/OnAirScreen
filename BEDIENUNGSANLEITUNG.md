@@ -112,7 +112,7 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 
 - Standard: Vollbild mit verstecktem Mauszeiger
 - Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf den Hauptbildschirm, oder Rechtsklick → **Toggle Fullscreen**
-- **Rechtsklick-Menü:** Toggle Fullscreen, Settings; bei aktiven Metern zusätzlich **Reset I+LRA**
+- **Rechtsklick-Menü:** Toggle Fullscreen, Settings; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
 - Der Vollbild-Zustand wird in den Einstellungen (`General/fullscreen`) gespeichert
 - Im Fenstermodus werden Position und Größe gespeichert (`Window/geometry`) und beim nächsten Start wiederhergestellt
 
@@ -542,7 +542,7 @@ Zusätzlich werden Schriftarten aus dem `fonts/`-Verzeichnis beim Start geladen.
 
 ### 5.8 Audio Meters
 
-Stereo-Pegelanzeige am linken Bildschirmrand: L/R (Sample-Peak, True Peak oder BBC PPM), ein einzelner Programme-LUFS-Balken (EBU R128) oder beides. L/R füllen mit RMS und legen den aktuellen Peak darüber. Programme-LUFS ist ein Balken (Momentary M, Short-term-S-Tick). Integrated I und LRA sind standardmäßig aus und starten mit `LUFSI:START` (Web-UI, MQTT-Home-Assistant-Schalter, Companion, OSC, UDP/HTTP). `LUFSI:RESET` startet eine laufende Session neu; ist sie gestoppt, verschwinden I und LRA im Meter. Rechtsklick auf den Main Screen → **Reset I+LRA**. Konfiguration unter **Settings → Audio Meters**.
+Stereo-Pegelanzeige am linken Bildschirmrand: L/R (Sample-Peak, True Peak oder BBC PPM), ein einzelner Programme-LUFS-Balken (EBU R128) oder beides. L/R füllen mit RMS und legen den aktuellen Peak darüber. Programme-LUFS ist ein Balken (Momentary M, Short-term-S-Tick). Integrated I und LRA sind standardmäßig aus und starten mit `LUFSI:START` (Web-UI, MQTT-Home-Assistant-Schalter, Companion, OSC, UDP/HTTP oder Rechtsklick). `LUFSI:RESET` startet eine laufende Session neu; ist sie gestoppt, verschwinden I und LRA im Meter. Rechtsklick auf den Main Screen → **Start I+LRA**, **Stop I+LRA** oder **Reset I+LRA**. Konfiguration unter **Settings → Audio Meters**.
 
 Bestehende Configs mit `Audio/unit=lufs` (ohne `layout`) werden auf Layout `lufs` und L/R-Unit `dbtp` gemappt.
 

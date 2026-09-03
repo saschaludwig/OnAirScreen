@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Changed
+
+
+### Fixed
+
+
+### Added
+
+- Right-click **Start I+LRA** and **Stop I+LRA** on the main screen (when meters are enabled)
+
 ## [1.0.0beta6]
 
 ### Changed

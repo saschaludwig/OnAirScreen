@@ -112,7 +112,7 @@ The main screen is divided into the following areas:
 
 - Default: fullscreen with hidden mouse cursor
 - Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** the main screen, or right-click → **Toggle Fullscreen**
-- **Right-click menu:** Toggle Fullscreen, Settings; when meters are enabled also **Reset I+LRA**
+- **Right-click menu:** Toggle Fullscreen, Settings; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
 - Fullscreen state is saved in settings (`General/fullscreen`)
 - In windowed mode, position and size are saved (`Window/geometry`) and restored on the next start
 
@@ -542,7 +542,7 @@ Fonts from the `fonts/` directory are also loaded at startup.
 
 ### 5.8 Audio Meters
 
-Stereo level meters on the left side of the screen: L/R (sample peak, true peak, or BBC PPM), a single programme LUFS bar (EBU R128), or both. L/R bars fill with RMS and overlay the current peak. Programme LUFS is one bar (momentary M, short-term S tick). Integrated I and loudness range (LRA) are off by default and start with `LUFSI:START` (Web UI, MQTT Home Assistant switch, Companion, OSC, UDP/HTTP). `LUFSI:RESET` restarts a running session; if the session is stopped it hides I and LRA on the meter. Right-click the main screen → **Reset I+LRA**. Configure under **Settings → Audio Meters**.
+Stereo level meters on the left side of the screen: L/R (sample peak, true peak, or BBC PPM), a single programme LUFS bar (EBU R128), or both. L/R bars fill with RMS and overlay the current peak. Programme LUFS is one bar (momentary M, short-term S tick). Integrated I and loudness range (LRA) are off by default and start with `LUFSI:START` (Web UI, MQTT Home Assistant switch, Companion, OSC, UDP/HTTP, or right-click). `LUFSI:RESET` restarts a running session; if the session is stopped it hides I and LRA on the meter. Right-click the main screen → **Start I+LRA**, **Stop I+LRA**, or **Reset I+LRA**. Configure under **Settings → Audio Meters**.
 
 Existing configs with `Audio/unit=lufs` (no `layout` key) are migrated to layout `lufs` and L/R unit `dbtp`.
 

@@ -1759,9 +1759,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         menu = QMenu(self)
         toggle_action = menu.addAction("Toggle Fullscreen")
         settings_action = menu.addAction("Settings")
+        start_lufs_action = None
+        stop_lufs_action = None
         reset_lufs_action = None
         if getattr(self, "_audio_meters_enabled", False):
             menu.addSeparator()
+            start_lufs_action = menu.addAction("Start I+LRA")
+            stop_lufs_action = menu.addAction("Stop I+LRA")
             reset_lufs_action = menu.addAction("Reset I+LRA")
 
         # Make the cursor visible while the menu is open (hidden in fullscreen).
@@ -1775,6 +1779,10 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.toggle_full_screen()
         elif chosen == settings_action:
             self.show_settings()
+        elif start_lufs_action is not None and chosen == start_lufs_action:
+            self.start_integrated_loudness()
+        elif stop_lufs_action is not None and chosen == stop_lufs_action:
+            self.stop_integrated_loudness()
         elif reset_lufs_action is not None and chosen == reset_lufs_action:
             self.reset_integrated_loudness()
 

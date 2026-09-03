@@ -3290,13 +3290,23 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.start_integrated_loudness = Mock()
+        screen.stop_integrated_loudness = Mock()
         screen.reset_integrated_loudness = Mock()
         screen._audio_meters_enabled = True
         toggle_action = object()
         settings_action = object()
+        start_action = object()
+        stop_action = object()
         reset_action = object()
         mock_menu = MagicMock()
-        mock_menu.addAction.side_effect = [toggle_action, settings_action, reset_action]
+        mock_menu.addAction.side_effect = [
+            toggle_action,
+            settings_action,
+            start_action,
+            stop_action,
+            reset_action,
+        ]
         mock_menu.exec.return_value = reset_action
         mock_qmenu_cls.return_value = mock_menu
 
@@ -3304,6 +3314,78 @@ class TestMainScreenMouseActions:
             MainScreen._show_main_context_menu(screen, QPoint(10, 20))
 
         screen.reset_integrated_loudness.assert_called_once()
+        screen.start_integrated_loudness.assert_not_called()
+        screen.stop_integrated_loudness.assert_not_called()
+        screen.toggle_full_screen.assert_not_called()
+        screen.show_settings.assert_not_called()
+
+    @patch("start.QMenu")
+    def test_context_menu_start_lufs(self, mock_qmenu_cls):
+        """Choosing Start I+LRA from the context menu starts the session."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen.start_integrated_loudness = Mock()
+        screen.stop_integrated_loudness = Mock()
+        screen.reset_integrated_loudness = Mock()
+        screen._audio_meters_enabled = True
+        toggle_action = object()
+        settings_action = object()
+        start_action = object()
+        stop_action = object()
+        reset_action = object()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [
+            toggle_action,
+            settings_action,
+            start_action,
+            stop_action,
+            reset_action,
+        ]
+        mock_menu.exec.return_value = start_action
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.start_integrated_loudness.assert_called_once()
+        screen.stop_integrated_loudness.assert_not_called()
+        screen.reset_integrated_loudness.assert_not_called()
+        screen.toggle_full_screen.assert_not_called()
+        screen.show_settings.assert_not_called()
+
+    @patch("start.QMenu")
+    def test_context_menu_stop_lufs(self, mock_qmenu_cls):
+        """Choosing Stop I+LRA from the context menu stops the session."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen.start_integrated_loudness = Mock()
+        screen.stop_integrated_loudness = Mock()
+        screen.reset_integrated_loudness = Mock()
+        screen._audio_meters_enabled = True
+        toggle_action = object()
+        settings_action = object()
+        start_action = object()
+        stop_action = object()
+        reset_action = object()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [
+            toggle_action,
+            settings_action,
+            start_action,
+            stop_action,
+            reset_action,
+        ]
+        mock_menu.exec.return_value = stop_action
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.stop_integrated_loudness.assert_called_once()
+        screen.start_integrated_loudness.assert_not_called()
+        screen.reset_integrated_loudness.assert_not_called()
         screen.toggle_full_screen.assert_not_called()
         screen.show_settings.assert_not_called()
 
