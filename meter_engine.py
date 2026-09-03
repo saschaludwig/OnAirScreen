@@ -90,6 +90,9 @@ DIGITAL_PEAK_FALL_DB = 20.0
 DIGITAL_PEAK_FALL_S = 1.7
 DIGITAL_RMS_SECONDS = 0.250
 
+# True-peak estimate: 4x upsample + windowed-sinc FIR (cached on MeterEngine).
+TRUE_PEAK_OVERSAMPLE = 4
+
 # L/R units shown on the stereo bars (LUFS is a separate programme meter)
 LR_METER_UNITS = (MeterUnit.DBFS, MeterUnit.DBTP, MeterUnit.BBC_PPM)
 
@@ -304,7 +307,21 @@ def _biquad_filter(
     return y, np.array([z1, z2], dtype=np.float64)
 
 
-def _true_peak_block(samples: np.ndarray, oversample: int = 4) -> float:
+def _design_true_peak_fir(oversample: int = TRUE_PEAK_OVERSAMPLE) -> np.ndarray:
+    """Windowed-sinc low-pass for zero-stuffed true-peak interpolation."""
+    taps = 32 * oversample + 1
+    n = np.arange(taps) - (taps - 1) / 2.0
+    h = np.sinc(n / oversample) / oversample
+    h *= np.hanning(taps)
+    h /= np.sum(h)
+    return h.astype(np.float64, copy=False)
+
+
+def _true_peak_block(
+    samples: np.ndarray,
+    fir: np.ndarray,
+    oversample: int = TRUE_PEAK_OVERSAMPLE,
+) -> float:
     """
     Estimate true-peak of a mono block via 4x upsampling.
 
@@ -316,15 +333,9 @@ def _true_peak_block(samples: np.ndarray, oversample: int = 4) -> float:
     if sample_peak == 0.0:
         return 0.0
 
-    taps = 32 * oversample + 1
-    n = np.arange(taps) - (taps - 1) / 2.0
-    h = np.sinc(n / oversample) / oversample
-    h *= np.hanning(taps)
-    h /= np.sum(h)
-
     up = np.zeros(samples.size * oversample, dtype=np.float64)
-    up[::oversample] = samples.astype(np.float64)
-    filtered = np.convolve(up, h, mode="same")
+    up[::oversample] = samples.astype(np.float64, copy=False)
+    filtered = np.convolve(up, fir, mode="same")
     return float(max(sample_peak, np.max(np.abs(filtered))))
 
 
@@ -458,6 +469,10 @@ class MeterEngine:
         self.sample_rate = int(sample_rate)
         self.channels = max(1, int(channels))
         self.unit = MeterUnit.DBFS
+        self._layout = normalize_meter_layout(DEFAULT_AUDIO_LAYOUT)
+        self._true_peak_needed = False
+        self._tp_oversample = TRUE_PEAK_OVERSAMPLE
+        self._tp_fir = _design_true_peak_fir(self._tp_oversample)
         self._b_pre, self._a_pre, self._b_rlb, self._a_rlb = _design_k_weighting(self.sample_rate)
         self._momentary_samples = max(1, int(MOMENTARY_SECONDS * self.sample_rate))
         self._short_term_samples = max(1, int(SHORT_TERM_SECONDS * self.sample_rate))
@@ -503,6 +518,26 @@ class MeterEngine:
     def set_unit(self, unit: MeterUnit | str) -> None:
         """Set L/R display unit (legacy lufs maps to dBTP)."""
         self.unit = normalize_lr_unit(unit)
+
+    def set_layout(self, layout: str) -> None:
+        """Set which meter tracks are computed: lr, lufs, or both."""
+        self._layout = normalize_meter_layout(layout)
+
+    def set_true_peak_needed(self, needed: bool) -> None:
+        """Compute true peak even when the L/R unit is not dBTP (TooLoud)."""
+        self._true_peak_needed = bool(needed)
+
+    def _wants_true_peak(self) -> bool:
+        return self.unit == MeterUnit.DBTP or self._true_peak_needed
+
+    def _wants_ppm(self) -> bool:
+        return self.unit == MeterUnit.BBC_PPM
+
+    def _wants_lufs(self) -> bool:
+        return (
+            self._layout in (METER_LAYOUT_LUFS, METER_LAYOUT_BOTH)
+            or self._integrated_running
+        )
 
     @property
     def integrated_running(self) -> bool:
@@ -573,13 +608,21 @@ class MeterEngine:
         true_peaks = []
         sample_peaks = []
         powers = []
+        want_tp = self._wants_true_peak()
+        want_ppm = self._wants_ppm()
+        want_lufs = self._wants_lufs()
 
         for ch in range(min(self.channels, 2)):
             mono = frames[:, ch].astype(np.float64, copy=False)
             state = self._states[ch]
 
             sample_peak = float(np.max(np.abs(mono))) if n else 0.0
-            true_peak = _true_peak_block(mono) if n else 0.0
+            if want_tp:
+                true_peak = _true_peak_block(
+                    mono, self._tp_fir, self._tp_oversample
+                ) if n else 0.0
+            else:
+                true_peak = sample_peak
             state.sample_peak = sample_peak
             state.true_peak = true_peak
             sample_peaks.append(sample_peak)
@@ -587,8 +630,14 @@ class MeterEngine:
 
             self._update_rms_window(state, mono)
             self._update_digital_peak(state, sample_peak, true_peak, n)
-            self._update_ppm(state, mono)
-            powers.append(self._update_lufs(state, mono))
+            if want_ppm:
+                self._update_ppm(state, mono)
+            if want_lufs:
+                powers.append(self._update_lufs(state, mono))
+            else:
+                state.mean_sq = 0.0
+                state.lufs_momentary = LUFS_SILENCE
+                powers.append(np.zeros(0, dtype=np.float64))
 
         while len(sample_peaks) < 2:
             sample_peaks.append(sample_peaks[0] if sample_peaks else 0.0)
@@ -603,17 +652,31 @@ class MeterEngine:
         rms_left = linear_to_db(self._states[0].rms)
         rms_right = linear_to_db(self._states[1 if self.channels > 1 else 0].rms)
 
-        left_power = powers[0] if powers else np.zeros(0, dtype=np.float64)
-        right_power = powers[1] if len(powers) > 1 else left_power
-        n_power = min(left_power.size, right_power.size)
-        stereo_power = left_power[:n_power] + right_power[:n_power] if n_power else np.zeros(0)
-        if n_power:
-            self._push_short_term(stereo_power)
-        lufs_m = mean_square_to_lufs(
-            self._states[0].mean_sq + self._states[1 if self.channels > 1 else 0].mean_sq
-        )
-        if self._integrated_running and n_power:
-            self._integrated.ingest_power(stereo_power)
+        if want_lufs:
+            left_power = powers[0] if powers else np.zeros(0, dtype=np.float64)
+            right_power = powers[1] if len(powers) > 1 else left_power
+            n_power = min(left_power.size, right_power.size)
+            stereo_power = (
+                left_power[:n_power] + right_power[:n_power] if n_power else np.zeros(0)
+            )
+            if n_power:
+                self._push_short_term(stereo_power)
+            lufs_m = mean_square_to_lufs(
+                self._states[0].mean_sq
+                + self._states[1 if self.channels > 1 else 0].mean_sq
+            )
+            if self._integrated_running and n_power:
+                self._integrated.ingest_power(stereo_power)
+            lufs_s = self._lufs_short_term
+            lufs_i = self._integrated.integrated
+            lra_low = self._integrated.lra_low
+            lra_high = self._integrated.lra_high
+        else:
+            lufs_m = LUFS_SILENCE
+            lufs_s = LUFS_SILENCE
+            lufs_i = self._integrated.integrated if self._integrated_running else LUFS_SILENCE
+            lra_low = self._integrated.lra_low if self._integrated_running else LUFS_SILENCE
+            lra_high = self._integrated.lra_high if self._integrated_running else LUFS_SILENCE
 
         max_tp = linear_to_db(max(true_peaks) if true_peaks else 0.0)
         max_sp = linear_to_db(max(sample_peaks) if sample_peaks else 0.0)
@@ -625,10 +688,10 @@ class MeterEngine:
             max_true_peak_dbtp=max_tp,
             max_sample_peak_dbfs=max_sp,
             lufs_m=lufs_m,
-            lufs_s=self._lufs_short_term,
-            lufs_i=self._integrated.integrated,
-            lra_low=self._integrated.lra_low,
-            lra_high=self._integrated.lra_high,
+            lufs_s=lufs_s,
+            lufs_i=lufs_i,
+            lra_low=lra_low,
+            lra_high=lra_high,
             rms_left=rms_left,
             rms_right=rms_right,
             integrated_running=self._integrated_running,

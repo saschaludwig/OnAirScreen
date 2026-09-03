@@ -383,3 +383,91 @@ class TestDigitalPeakBallistics:
         reading = engine.process(np.zeros((256, 1), dtype=np.float64))
         assert reading.left == pytest.approx(-120.0)
         assert reading.rms_left == pytest.approx(-120.0)
+
+
+class TestMeterEngineSkipPaths:
+    def test_dbtp_does_not_update_ppm_envelope(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=1)
+        engine.set_unit(MeterUnit.DBTP)
+        engine.set_layout("lr")
+        t = np.arange(1024) / sr
+        tone = (0.5 * np.sin(2 * np.pi * 1000 * t)).astype(np.float64).reshape(-1, 1)
+        engine.process(tone)
+        assert engine._states[0].ppm_linear == 0.0
+        assert engine._states[0].ppm_peak == 0.0
+
+    def test_bbc_ppm_still_updates_envelope(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=1)
+        engine.set_unit(MeterUnit.BBC_PPM)
+        engine.set_layout("lr")
+        t = np.arange(int(0.2 * sr)) / sr
+        amp = 10 ** (-18.0 / 20.0)
+        tone = (amp * np.sin(2 * np.pi * 1000 * t)).astype(np.float64)
+        for i in range(0, len(tone), 1024):
+            engine.process(tone[i:i + 1024].reshape(-1, 1))
+        assert engine._states[0].ppm_linear > 0.0
+
+    def test_lr_layout_skips_lufs(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=2)
+        engine.set_unit(MeterUnit.DBFS)
+        engine.set_layout("lr")
+        t = np.arange(sr) / sr
+        amp = 10 ** (-18.0 / 20.0)
+        tone = (amp * np.sin(2 * np.pi * 1000 * t)).astype(np.float64)
+        frames = np.column_stack([tone, tone])
+        reading = None
+        for i in range(0, len(tone), 2048):
+            reading = engine.process(frames[i:i + 2048])
+        assert reading.lufs_m == LUFS_SILENCE
+        assert reading.lufs_s == LUFS_SILENCE
+        assert engine._states[0].mean_sq == 0.0
+
+    def test_integrated_session_computes_lufs_on_lr_layout(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=2)
+        engine.set_unit(MeterUnit.DBFS)
+        engine.set_layout("lr")
+        engine.start_integrated()
+        t = np.arange(int(1.2 * sr)) / sr
+        amp = 10 ** (-18.0 / 20.0)
+        tone = (amp * np.sin(2 * np.pi * 1000 * t)).astype(np.float64)
+        frames = np.column_stack([tone, tone])
+        reading = None
+        for i in range(0, len(tone), 2048):
+            reading = engine.process(frames[i:i + 2048])
+        assert reading.lufs_m > LUFS_SILENCE + 10
+        assert reading.integrated_running is True
+        assert reading.lufs_i > LUFS_SILENCE + 10
+
+    def test_dbfs_without_true_peak_flag_matches_sample_peak(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=2)
+        engine.set_unit(MeterUnit.DBFS)
+        engine.set_true_peak_needed(False)
+        engine.set_layout("lr")
+        mono = np.array([0.0, 0.9, 0.0, -0.9] * 2000, dtype=np.float64)
+        frames = np.column_stack([mono, mono])
+        reading = engine.process(frames)
+        assert reading.max_true_peak_dbtp == pytest.approx(reading.max_sample_peak_dbfs)
+
+    def test_true_peak_needed_computes_intersample_on_dbfs(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=2)
+        engine.set_unit(MeterUnit.DBFS)
+        engine.set_true_peak_needed(True)
+        engine.set_layout("lr")
+        mono = np.array([0.0, 0.9, 0.0, -0.9] * 2000, dtype=np.float64)
+        frames = np.column_stack([mono, mono])
+        reading = engine.process(frames)
+        assert reading.max_true_peak_dbtp >= reading.max_sample_peak_dbfs - 0.01
+
+    def test_true_peak_fir_is_reused(self):
+        engine = MeterEngine(sample_rate=48000, channels=1)
+        engine.set_unit(MeterUnit.DBTP)
+        fir = engine._tp_fir
+        engine.process(np.full((256, 1), 0.5, dtype=np.float64))
+        assert engine._tp_fir is fir
+

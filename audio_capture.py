@@ -47,7 +47,14 @@ from livewire_address import (
     validate_channel,
 )
 from livewire_capture import LivewireReceiver
-from meter_engine import MeterEngine, MeterReadings, MeterUnit, floor_readings, normalize_lr_unit
+from meter_engine import (
+    MeterEngine,
+    MeterReadings,
+    MeterUnit,
+    floor_readings,
+    normalize_lr_unit,
+    normalize_meter_layout,
+)
 from sap_sdp import SUPPORTED_RATES
 
 logger = logging.getLogger("OnAirScreen")
@@ -223,6 +230,8 @@ class AudioCaptureController(QObject):
         self._aes67_rate = DEFAULT_SAMPLE_RATE
         self._aes67_channels = 2
         self._unit: MeterUnit = MeterUnit.DBFS
+        self._layout = normalize_meter_layout(None)
+        self._true_peak_needed = False
         self._stream = None
         self._rtp: Optional[MulticastRtpReceiver] = None
         self._engine = MeterEngine(sample_rate=DEFAULT_SAMPLE_RATE, channels=2)
@@ -248,6 +257,8 @@ class AudioCaptureController(QObject):
         aes67_codec: str = CODEC_L24,
         aes67_rate: int = DEFAULT_SAMPLE_RATE,
         aes67_channels: int = 2,
+        layout: str | None = None,
+        true_peak_needed: bool = False,
     ) -> None:
         """Update desired source/device/unit (does not start/stop the stream)."""
         self._source = normalize_audio_source(source)
@@ -277,12 +288,34 @@ class AudioCaptureController(QObject):
             channels = 2
         self._aes67_channels = max(1, min(MAX_STREAM_CHANNELS, channels))
         self._unit = normalize_lr_unit(unit)
-        self._engine.set_unit(self._unit)
+        self._layout = normalize_meter_layout(layout)
+        self._true_peak_needed = bool(true_peak_needed)
+        self._apply_engine_options()
+
+    def _apply_engine_options(self) -> None:
+        """Push unit/layout/true-peak flags onto the current engine."""
+        with self._lock:
+            self._engine.set_unit(self._unit)
+            self._engine.set_layout(self._layout)
+            self._engine.set_true_peak_needed(self._true_peak_needed)
 
     def set_unit(self, unit: str | MeterUnit) -> None:
         """Update meter unit without restarting the stream."""
         self._unit = normalize_lr_unit(unit)
-        self._engine.set_unit(self._unit)
+        with self._lock:
+            self._engine.set_unit(self._unit)
+
+    def set_layout(self, layout: str) -> None:
+        """Update meter layout without restarting the stream."""
+        self._layout = normalize_meter_layout(layout)
+        with self._lock:
+            self._engine.set_layout(self._layout)
+
+    def set_true_peak_needed(self, needed: bool) -> None:
+        """Enable true-peak DSP when TooLoud needs it independently of unit."""
+        self._true_peak_needed = bool(needed)
+        with self._lock:
+            self._engine.set_true_peak_needed(self._true_peak_needed)
 
     def start_integrated(self) -> None:
         """Reset and start the I/LRA session (thread-safe)."""
@@ -380,7 +413,7 @@ class AudioCaptureController(QObject):
                 pass
 
         self._engine = MeterEngine(sample_rate=sample_rate, channels=2)
-        self._engine.set_unit(self._unit)
+        self._apply_engine_options()
         self._reset_level_state()
 
         def callback(indata, frames, time_info, status):  # noqa: ARG001
@@ -413,7 +446,7 @@ class AudioCaptureController(QObject):
 
     def _start_livewire(self) -> None:
         self._engine = MeterEngine(sample_rate=LIVEWIRE_SAMPLE_RATE, channels=2)
-        self._engine.set_unit(self._unit)
+        self._apply_engine_options()
         self._reset_level_state()
 
         def on_error(message: str) -> None:
@@ -445,7 +478,7 @@ class AudioCaptureController(QObject):
             return
 
         self._engine = MeterEngine(sample_rate=self._aes67_rate, channels=2)
-        self._engine.set_unit(self._unit)
+        self._apply_engine_options()
         self._reset_level_state()
 
         def on_error(message: str) -> None:

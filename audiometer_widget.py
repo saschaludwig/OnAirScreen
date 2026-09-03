@@ -81,6 +81,10 @@ _PEAK_HOLD_COLOR = QtGui.QColor(255, 255, 255)
 _PEAK_HOLD_CLIP_COLOR = QtGui.QColor(220, 40, 40)
 _BG_COLOR = QtGui.QColor(10, 10, 10)
 _BAR_TRACK_COLOR = QtGui.QColor(18, 18, 18)
+_ZONE_GREEN = QtGui.QColor(40, 200, 60)
+_ZONE_YELLOW = QtGui.QColor(220, 200, 40)
+_ZONE_RED = QtGui.QColor(220, 40, 40)
+_DIM_TRACK_FACTOR = 0.22
 
 
 def _chrome_and_bar_counts(layout: str) -> Tuple[int, int, int]:
@@ -170,6 +174,12 @@ class AudioMeterWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Expanding,
         )
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
+        self._bar_cache_key: Optional[tuple] = None
+        self._lr_dim_pm: Optional[QtGui.QPixmap] = None
+        self._lr_fill_pm: Optional[QtGui.QPixmap] = None
+        self._lr_overlay_pm: Optional[QtGui.QPixmap] = None
+        self._lufs_dim_pm: Optional[QtGui.QPixmap] = None
+        self._lufs_fill_pm: Optional[QtGui.QPixmap] = None
 
     def sizeHint(self) -> QtCore.QSize:  # noqa: N802
         return QtCore.QSize(self._meter_width, 400)
@@ -349,6 +359,7 @@ class AudioMeterWidget(QtWidgets.QWidget):
         scale_right = rect.right() - _METER_MARGIN_RIGHT + 1
 
         now = time.monotonic()
+        self._ensure_bar_cache(height)
         if self._shows_lr():
             use_rms = self._unit != MeterUnit.BBC_PPM
             self._draw_bar(
@@ -447,6 +458,111 @@ class AudioMeterWidget(QtWidgets.QWidget):
         self._draw_labels(painter, left_x, right_x, lufs_x, bottom + 4)
         painter.end()
 
+    def _lr_zone_stops(self) -> List[Tuple[float, QtGui.QColor]]:
+        """Upper fractions and colors of L/R meter zones, from bottom to top."""
+        if self._unit == MeterUnit.BBC_PPM:
+            return [(5.0 / 6.0, _ZONE_GREEN), (1.0, _ZONE_RED)]
+        if self._unit == MeterUnit.DBFS:
+            return [
+                ((-12.0 - (-60.0)) / 60.0, _ZONE_GREEN),
+                ((-3.0 - (-60.0)) / 60.0, _ZONE_YELLOW),
+                (1.0, _ZONE_RED),
+            ]
+        return [(0.7, _ZONE_GREEN), (0.9, _ZONE_YELLOW), (1.0, _ZONE_RED)]
+
+    def _lufs_zone_stops(self) -> List[Tuple[float, QtGui.QColor]]:
+        """Upper fractions and colors of the programme LUFS bar, from bottom to top."""
+        reference = -23.0 if self._lufs_reference is None else float(self._lufs_reference)
+        yellow_frac = (reference - (-60.0)) / 60.0
+        red_frac = (reference + LUFS_YELLOW_SPAN_LU - (-60.0)) / 60.0
+        return [
+            (yellow_frac, _ZONE_GREEN),
+            (red_frac, _ZONE_YELLOW),
+            (1.0, _ZONE_RED),
+        ]
+
+    def _build_styled_bar_pixmap(
+        self,
+        width: int,
+        height: int,
+        stops: List[Tuple[float, QtGui.QColor]],
+        factor: float,
+    ) -> QtGui.QPixmap:
+        """Pre-render a full-height bar (solid or striped) for one brightness factor."""
+        pixmap = QtGui.QPixmap(max(1, width), max(1, height))
+        pixmap.fill(_BAR_TRACK_COLOR)
+        painter = QtGui.QPainter(pixmap)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, False)
+        inner_x = 1
+        inner_w = max(1, width - 2)
+        prev_px = 0
+        for frac, color in stops:
+            hi = height if frac >= 1.0 else max(0, min(height, int(frac * height)))
+            if hi > prev_px:
+                fill = color if factor == 1.0 else self._dim_color(color, factor)
+                painter.fillRect(inner_x, height - hi, inner_w, hi - prev_px, fill)
+            prev_px = hi
+        if self._display_style == DISPLAY_STYLE_BARGRAPH:
+            for y_off in range(1, height, 2):
+                painter.fillRect(0, height - 1 - y_off, width, 1, _BAR_TRACK_COLOR)
+        painter.end()
+        return pixmap
+
+    def _ensure_bar_cache(self, height: int) -> None:
+        """Rebuild L/R and LUFS bar pixmaps when size, style, or colors change."""
+        key = (
+            height,
+            self._bar_width,
+            self._lufs_bar_width,
+            self._display_style,
+            self._unit,
+            self._lufs_reference,
+            self._layout_mode,
+        )
+        if key == self._bar_cache_key:
+            return
+        self._bar_cache_key = key
+        if self._shows_lr() and self._bar_width > 0 and height > 0:
+            lr_stops = self._lr_zone_stops()
+            self._lr_dim_pm = self._build_styled_bar_pixmap(
+                self._bar_width, height, lr_stops, _DIM_TRACK_FACTOR
+            )
+            self._lr_fill_pm = self._build_styled_bar_pixmap(
+                self._bar_width, height, lr_stops, 1.0
+            )
+            self._lr_overlay_pm = self._build_styled_bar_pixmap(
+                self._bar_width, height, lr_stops, _PEAK_OVERLAY_FACTOR
+            )
+        else:
+            self._lr_dim_pm = self._lr_fill_pm = self._lr_overlay_pm = None
+        if self._shows_lufs() and self._lufs_bar_width > 0 and height > 0:
+            lufs_stops = self._lufs_zone_stops()
+            self._lufs_dim_pm = self._build_styled_bar_pixmap(
+                self._lufs_bar_width, height, lufs_stops, _DIM_TRACK_FACTOR
+            )
+            self._lufs_fill_pm = self._build_styled_bar_pixmap(
+                self._lufs_bar_width, height, lufs_stops, 1.0
+            )
+        else:
+            self._lufs_dim_pm = self._lufs_fill_pm = None
+
+    def _blit_bar_slice(
+        self,
+        painter: QtGui.QPainter,
+        pixmap: Optional[QtGui.QPixmap],
+        x: int,
+        top: int,
+        height: int,
+        from_bottom: int,
+        to_bottom: int,
+    ) -> None:
+        """Copy a vertical slice of a cached bar, measured from the bottom."""
+        if pixmap is None or pixmap.isNull() or to_bottom <= from_bottom:
+            return
+        span = to_bottom - from_bottom
+        src_y = height - to_bottom
+        painter.drawPixmap(x, top + src_y, pixmap, 0, src_y, pixmap.width(), span)
+
     def _draw_bar(
         self,
         painter: QtGui.QPainter,
@@ -469,45 +585,38 @@ class AudioMeterWidget(QtWidgets.QWidget):
             if overlay is not None
             else 0
         )
-        bargraph = self._display_style == DISPLAY_STYLE_BARGRAPH
-        x1, x2 = x + 1, x + width - 2
+        if scale_unit == MeterUnit.LUFS:
+            dim_pm, fill_pm, overlay_pm = (
+                self._lufs_dim_pm,
+                self._lufs_fill_pm,
+                None,
+            )
+        else:
+            dim_pm, fill_pm, overlay_pm = (
+                self._lr_dim_pm,
+                self._lr_fill_pm,
+                self._lr_overlay_pm,
+            )
 
-        for y_off in range(height):
-            if bargraph and (y_off % 2) != 0:
-                continue
-            frac = y_off / max(1, height)
-            color = self._dim_color(color_for_fraction(frac))
-            y = top + height - 1 - y_off
-            painter.setPen(color)
-            painter.drawLine(x1, y, x2, y)
+        self._blit_bar_slice(painter, dim_pm, x, top, height, 0, height)
 
         if overlay is not None and overlay_filled > filled:
+            self._blit_bar_slice(
+                painter, overlay_pm, x, top, height, filled, overlay_filled
+            )
             pip_off = overlay_filled - 1
-            if bargraph and (pip_off % 2) != 0:
+            if self._display_style == DISPLAY_STYLE_BARGRAPH and (pip_off % 2) != 0:
                 pip_off -= 1
-            if pip_off < filled:
-                pip_off = None
-            for y_off in range(filled, overlay_filled):
-                if bargraph and (y_off % 2) != 0:
-                    continue
-                y = top + height - 1 - y_off
-                frac = y_off / max(1, height)
-                factor = (
-                    _PEAK_PIP_FACTOR if y_off == pip_off else _PEAK_OVERLAY_FACTOR
+            if pip_off >= filled:
+                frac = pip_off / max(1, height)
+                color = self._dim_color(
+                    color_for_fraction(frac), factor=_PEAK_PIP_FACTOR
                 )
-                color = self._dim_color(color_for_fraction(frac), factor=factor)
-                painter.setPen(color)
-                painter.drawLine(x1, y, x2, y)
+                y = top + height - 1 - pip_off
+                painter.fillRect(x + 1, y, max(1, width - 2), 1, color)
 
         if filled > 0:
-            for y_off in range(filled):
-                if bargraph and (y_off % 2) != 0:
-                    continue
-                frac = y_off / max(1, height)
-                color = color_for_fraction(frac)
-                y = top + height - 1 - y_off
-                painter.setPen(color)
-                painter.drawLine(x1, y, x2, y)
+            self._blit_bar_slice(painter, fill_pm, x, top, height, 0, filled)
 
         if draw_peak_hold and self._peak_hold_enabled:
             peak_n = normalize_meter_value(peak, scale_unit)
@@ -578,28 +687,27 @@ class AudioMeterWidget(QtWidgets.QWidget):
         y_low = top + height - int(normalize_meter_value(low, MeterUnit.LUFS) * height)
         y_high = max(top, min(top + height - 1, y_high))
         y_low = max(top, min(top + height, y_low))
-        painter.setPen(_LUFS_LRA_COLOR)
-        x2 = x + _LRA_BAR_WIDTH - 1
-        for y in range(y_high, y_low):
-            painter.drawLine(x, y, x2, y)
+        span = y_low - y_high
+        if span > 0:
+            painter.fillRect(x, y_high, _LRA_BAR_WIDTH, span, _LUFS_LRA_COLOR)
 
     def _color_for_lr_fraction(self, frac: float) -> QtGui.QColor:
         """frac 0=bottom/low, 1=top/high."""
         if self._unit == MeterUnit.BBC_PPM:
             if frac >= 5.0 / 6.0:
-                return QtGui.QColor(220, 40, 40)
-            return QtGui.QColor(40, 200, 60)
+                return _ZONE_RED
+            return _ZONE_GREEN
         if self._unit == MeterUnit.DBFS:
             if frac >= (-3.0 - (-60.0)) / 60.0:
-                return QtGui.QColor(220, 40, 40)
+                return _ZONE_RED
             if frac >= (-12.0 - (-60.0)) / 60.0:
-                return QtGui.QColor(220, 200, 40)
-            return QtGui.QColor(40, 200, 60)
+                return _ZONE_YELLOW
+            return _ZONE_GREEN
         if frac >= 0.9:
-            return QtGui.QColor(220, 40, 40)
+            return _ZONE_RED
         if frac >= 0.7:
-            return QtGui.QColor(220, 200, 40)
-        return QtGui.QColor(40, 200, 60)
+            return _ZONE_YELLOW
+        return _ZONE_GREEN
 
     def _color_for_lufs(self, frac: float) -> QtGui.QColor:
         """Green below the target peg, yellow to +9 LU, red above (EBU +9)."""
@@ -607,10 +715,10 @@ class AudioMeterWidget(QtWidgets.QWidget):
         yellow_frac = (reference - (-60.0)) / 60.0
         red_frac = (reference + LUFS_YELLOW_SPAN_LU - (-60.0)) / 60.0
         if frac >= red_frac:
-            return QtGui.QColor(220, 40, 40)
+            return _ZONE_RED
         if frac >= yellow_frac:
-            return QtGui.QColor(220, 200, 40)
-        return QtGui.QColor(40, 200, 60)
+            return _ZONE_YELLOW
+        return _ZONE_GREEN
 
     def _scale_unit(self) -> MeterUnit:
         if self._layout_mode == METER_LAYOUT_LUFS:

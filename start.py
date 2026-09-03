@@ -1342,6 +1342,8 @@ class MainScreen(QWidget, Ui_MainScreen):
             aes67_codec=aes67_codec,
             aes67_rate=aes67_rate,
             aes67_channels=aes67_channels,
+            layout=layout,
+            true_peak_needed=self._audio_tooloud_enabled,
         )
         if should_capture and not aes67_without_stream:
             self.audio_capture.configure(**capture_kwargs)
@@ -1349,6 +1351,8 @@ class MainScreen(QWidget, Ui_MainScreen):
                 self.audio_capture.start()
             else:
                 self.audio_capture.set_unit(meter_unit)
+                self.audio_capture.set_layout(layout)
+                self.audio_capture.set_true_peak_needed(self._audio_tooloud_enabled)
             if not self.audio_capture.is_running:
                 self._reset_audio_meter_display()
         else:
