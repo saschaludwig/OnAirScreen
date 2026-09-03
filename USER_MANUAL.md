@@ -104,14 +104,14 @@ The main screen is divided into the following areas:
 | **WARN**            | `labelWarning`            | Warning message; hides NOW/NEXT when active              |
 
 
-> **Note:** Status LEDs and AIR timers are primarily controlled via **keyboard** or **remote control**.
+> **Note:** Status LEDs and AIR timers can be toggled by **left-click**, **keyboard**, or **remote control**. Double-clicking a LED/timer does not toggle fullscreen.
 
 
 
 ### Fullscreen Mode
 
 - Default: fullscreen with hidden mouse cursor
-- Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** the main screen, or right-click → **Toggle Fullscreen**
+- Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** an empty area of the main screen, or right-click → **Toggle Fullscreen**
 - **Right-click menu:** Toggle Fullscreen, Settings, Quit OnAirScreen; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
 - Fullscreen state is saved in settings (`General/fullscreen`)
 - In windowed mode, position and size are saved (`Window/geometry`) and restored on the next start
@@ -151,6 +151,8 @@ While quitting, the main screen shows WARN `QUITTING ONAIRSCREEN` until the wind
 | `3` | LED 3 on/off |
 | `4` | LED 4 on/off |
 
+Left-click on a status LED toggles it as well.
+
 
 
 
@@ -167,6 +169,8 @@ While quitting, the main screen shows WARN `QUITTING ONAIRSCREEN` until the wind
 | `Alt+S`             | Reset to 0:00                | AIR4 (Stream Timer) |
 | `T`                 | Top-of-Hour countdown on/off | AIR3                |
 | `Enter` / `Return`  | Open timer input dialog      | AIR3                |
+
+Left-click on an AIR timer starts or stops it (same as `M` / `P` / Space / `S`). Reset, TOTH, and the timer dialog stay keyboard or remote.
 
 
 
@@ -612,7 +616,7 @@ The on-screen WARN uses priority **2** (high), so it is shown above TooLoud (pri
 
 ### 6.1 Status LEDs
 
-Each LED can be switched on and off individually. In the active state, configured foreground and background colors are used; in the inactive state, the shared inactive colors apply.
+Each LED can be switched on and off individually (keys `1`–`4`, left-click, or remote control). In the active state, configured foreground and background colors are used; in the inactive state, the shared inactive colors apply.
 
 **Blink modes:**
 
@@ -628,7 +632,7 @@ All AIR timers display elapsed time in **M:SS** format (e.g. `3:45`). AIR3 shows
 #### AIR1 (Microphone) and AIR2 (Phone)
 
 - Simple stopwatch: start/stop, seconds reset to 0 on start
-- Control: `M`/`/` (AIR1), `P`/`*` (AIR2)
+- Control: `M`/`/` (AIR1), `P`/`*` (AIR2), or left-click the timer
 
 
 
@@ -639,6 +643,8 @@ The most versatile timer with three operating modes:
 1. **Count-Up:** Default mode, counts from 0:00 upward
 2. **Count-Down:** Set via `AIR3TIME:seconds` or timer dialog
 3. **Top-of-Hour (TOH):** Countdown to the next full hour (format MM:SS, e.g. `22:38`)
+
+Start/stop: Space, `,` / `.`, or left-click the timer.
 
 **Top-of-Hour behavior:**
 
@@ -662,7 +668,7 @@ The most versatile timer with three operating modes:
 #### AIR4 (Stream Timer)
 
 - Like AIR3, but without Top-of-Hour function
-- Control: `S` (start/stop), `Alt+S` (reset)
+- Control: `S` or left-click (start/stop), `Alt+S` (reset)
 
 
 

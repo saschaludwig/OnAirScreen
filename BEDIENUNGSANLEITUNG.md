@@ -104,14 +104,14 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 | **WARN**            | `labelWarning`            | Warnmeldung; blendet NOW/NEXT aus, wenn aktiv              |
 
 
-> **Hinweis:** Die Status-LEDs und AIR-Timer werden primär per **Tastatur** oder **Fernsteuerung** bedient.
+> **Hinweis:** Status-LEDs und AIR-Timer lassen sich per **Linksklick**, **Tastatur** oder **Fernsteuerung** umschalten. Doppelklick auf LED/Timer ändert den Vollbildmodus nicht.
 
 
 
 ### Vollbildmodus
 
 - Standard: Vollbild mit verstecktem Mauszeiger
-- Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf den Hauptbildschirm, oder Rechtsklick → **Toggle Fullscreen**
+- Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf eine leere Fläche des Hauptbildschirms, oder Rechtsklick → **Toggle Fullscreen**
 - **Rechtsklick-Menü:** Toggle Fullscreen, Settings, Quit OnAirScreen; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
 - Der Vollbild-Zustand wird in den Einstellungen (`General/fullscreen`) gespeichert
 - Im Fenstermodus werden Position und Größe gespeichert (`Window/geometry`) und beim nächsten Start wiederhergestellt
@@ -151,6 +151,8 @@ Beim Beenden erscheint die WARN-Meldung `QUITTING ONAIRSCREEN` auf dem Hauptbild
 | `3`   | LED 3 ein/aus |
 | `4`   | LED 4 ein/aus |
 
+Linksklick auf eine Status-LED schaltet sie ebenso um.
+
 
 
 
@@ -167,6 +169,8 @@ Beim Beenden erscheint die WARN-Meldung `QUITTING ONAIRSCREEN` auf dem Hauptbild
 | `Alt+S`                 | Zurücksetzen auf 0:00         | AIR4 (Stream-Timer) |
 | `T`                     | Top-of-Hour-Countdown ein/aus | AIR3                |
 | `Enter` / `Return`      | Timer-Eingabedialog öffnen    | AIR3                |
+
+Linksklick auf einen AIR-Timer startet oder stoppt ihn (wie `M` / `P` / Leertaste / `S`). Reset, TOTH und Timer-Dialog bleiben Tastatur bzw. Fernsteuerung.
 
 
 
@@ -612,7 +616,7 @@ Das Bildschirm-WARN nutzt Priorität **2** (hoch) und liegt damit über TooLoud 
 
 ### 6.1 Status-LEDs
 
-Jede LED kann einzeln ein- und ausgeschaltet werden. Im aktiven Zustand werden konfigurierte Vorder- und Hintergrundfarben verwendet; im inaktiven Zustand die gemeinsamen Inaktiv-Farben.
+Jede LED kann einzeln ein- und ausgeschaltet werden (Tasten `1`–`4`, Linksklick, oder Fernsteuerung). Im aktiven Zustand werden konfigurierte Vorder- und Hintergrundfarben verwendet; im inaktiven Zustand die gemeinsamen Inaktiv-Farben.
 
 **Blinkmodi:**
 
@@ -628,7 +632,7 @@ Alle AIR-Timer zählen die verstrichene Zeit im Format **M:SS** (z. B. `3:45`). 
 #### AIR1 (Mikrofon) und AIR2 (Telefon)
 
 - Einfache Stoppuhr: Start/Stopp, Sekunden werden bei Start auf 0 zurückgesetzt
-- Steuerung: `M`/`/` (AIR1), `P`/`*` (AIR2)
+- Steuerung: `M`/`/` (AIR1), `P`/`*` (AIR2), oder Linksklick auf den Timer
 
 
 
@@ -639,6 +643,8 @@ Der vielseitigste Timer mit drei Betriebsarten:
 1. **Hochzählen (Count-Up):** Standardmodus, zählt von 0:00 aufwärts
 2. **Runterzählen (Count-Down):** Wird per `AIR3TIME:seconds` oder Timer-Dialog gesetzt
 3. **Top-of-Hour (TOH):** Countdown bis zur nächsten vollen Stunde (Format MM:SS, z. B. `22:38`)
+
+Start/Stopp: Leertaste, `,` / `.`, oder Linksklick auf den Timer.
 
 **Top-of-Hour-Verhalten:**
 
@@ -662,7 +668,7 @@ Der vielseitigste Timer mit drei Betriebsarten:
 #### AIR4 (Stream-Timer)
 
 - Wie AIR3, aber ohne Top-of-Hour-Funktion
-- Steuerung: `S` (Start/Stopp), `Alt+S` (Reset)
+- Steuerung: `S` oder Linksklick (Start/Stopp), `Alt+S` (Reset)
 
 
 

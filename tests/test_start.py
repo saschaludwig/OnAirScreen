@@ -3179,6 +3179,99 @@ class TestMainScreenMouseActions:
         install_on_parent.assert_not_called()
         mock_app_instance.return_value.installEventFilter.assert_not_called()
 
+    def test_click_through_skips_led_and_air_widgets(self):
+        """Status LEDs and AIR frames stay clickable; their children stay click-through."""
+        parent = QWidget()
+        led = QLabel(parent)
+        led.setObjectName("buttonLED1")
+        air = QWidget(parent)
+        air.setObjectName("AirLED_1")
+        icon = QLabel(air)
+        icon.setObjectName("AirIcon_1")
+        other = QLabel(parent)
+
+        MainScreen._make_children_click_through(parent)
+
+        assert not led.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        assert not air.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        assert icon.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        assert other.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def test_left_click_on_led_toggles(self):
+        """Left-click on a bound LED/AIR widget calls the toggle callback."""
+        screen = MainScreen.__new__(MainScreen)
+        callback = Mock()
+        widget = QLabel()
+        MainScreen._bind_left_click_toggle(screen, widget, callback)
+
+        event = Mock()
+        event.button.return_value = Qt.MouseButton.LeftButton
+        widget.mousePressEvent(event)
+
+        callback.assert_called_once()
+        event.accept.assert_called_once()
+        assert not widget.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def test_double_click_on_led_does_not_toggle_fullscreen(self):
+        """Double-click on a LED/AIR widget must not toggle fullscreen."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        widget = QLabel()
+        MainScreen._bind_left_click_toggle(screen, widget, Mock())
+
+        event = Mock()
+        event.button.return_value = Qt.MouseButton.LeftButton
+        widget.mouseDoubleClickEvent(event)
+
+        screen.toggle_full_screen.assert_not_called()
+        event.accept.assert_called_once()
+
+    def test_right_click_on_led_shows_context_menu(self):
+        """Right-click on a LED/AIR widget opens the main context menu."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._show_main_context_menu = Mock()
+        widget = QLabel()
+        MainScreen._bind_left_click_toggle(screen, widget, Mock())
+
+        event = Mock()
+        event.globalPos.return_value = QPoint(5, 5)
+        widget.contextMenuEvent(event)
+
+        screen._show_main_context_menu.assert_called_once_with(QPoint(5, 5))
+        event.accept.assert_called_once()
+
+    def test_install_toggle_clicks_binds_leds_and_air(self):
+        """Left-click on each LED and AIR frame calls the matching toggle."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.manual_toggle_led1 = Mock()
+        screen.manual_toggle_led2 = Mock()
+        screen.manual_toggle_led3 = Mock()
+        screen.manual_toggle_led4 = Mock()
+        screen.toggle_air1 = Mock()
+        screen.toggle_air2 = Mock()
+        screen.radio_timer_start_stop = Mock()
+        screen.toggle_air4 = Mock()
+        screen._show_main_context_menu = Mock()
+
+        widgets = {}
+        for name in MainScreen.CLICKABLE_CHILD_NAMES:
+            label = QLabel()
+            label.setObjectName(name)
+            setattr(screen, name, label)
+            widgets[name] = label
+
+        MainScreen._install_toggle_clicks(screen)
+
+        event = Mock()
+        event.button.return_value = Qt.MouseButton.LeftButton
+        widgets["buttonLED1"].mousePressEvent(event)
+        widgets["AirLED_3"].mousePressEvent(event)
+
+        screen.manual_toggle_led1.assert_called_once()
+        screen.radio_timer_start_stop.assert_called_once()
+        screen.manual_toggle_led2.assert_not_called()
+        screen.toggle_air1.assert_not_called()
+
     @patch("start.QMenu")
     def test_context_menu_toggle_fullscreen(self, mock_qmenu_cls):
         """Choosing Toggle Fullscreen from the context menu toggles fullscreen."""

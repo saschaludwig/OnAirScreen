@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Left-click on status LEDs and AIR timers toggles them (same as the hotkeys)
 - Right-click **Quit OnAirScreen** on the main screen
 - On-screen WARN `QUITTING ONAIRSCREEN` while the app is shutting down
 

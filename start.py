@@ -108,6 +108,12 @@ class MainScreen(QWidget, Ui_MainScreen):
                  "German": 'de_DE',
                  "Dutch": 'nl_NL',
                  "French": 'fr_FR'}
+    # Receive left-clicks so LEDs and AIR timers can toggle; children stay
+    # click-through so icon/label hits still reach these frames.
+    CLICKABLE_CHILD_NAMES = frozenset({
+        "buttonLED1", "buttonLED2", "buttonLED3", "buttonLED4",
+        "AirLED_1", "AirLED_2", "AirLED_3", "AirLED_4",
+    })
 
     def __init__(self) -> None:
         """Initialize the main screen and load settings"""
@@ -115,6 +121,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
         self._make_children_click_through()
+        self._install_toggle_clicks()
 
         self.settings = Settings()
         self.restore_settings_from_config()
@@ -1697,7 +1704,51 @@ class MainScreen(QWidget, Ui_MainScreen):
                 continue
             if child.windowFlags() & Qt.WindowType.Popup:
                 continue
+            if child.objectName() in MainScreen.CLICKABLE_CHILD_NAMES:
+                continue
             child.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+    def _install_toggle_clicks(self) -> None:
+        """Bind left-click toggle on status LEDs and AIR timer frames."""
+        bindings = (
+            ("buttonLED1", self.manual_toggle_led1),
+            ("buttonLED2", self.manual_toggle_led2),
+            ("buttonLED3", self.manual_toggle_led3),
+            ("buttonLED4", self.manual_toggle_led4),
+            ("AirLED_1", self.toggle_air1),
+            ("AirLED_2", self.toggle_air2),
+            ("AirLED_3", self.radio_timer_start_stop),
+            ("AirLED_4", self.toggle_air4),
+        )
+        for name, callback in bindings:
+            widget = getattr(self, name, None)
+            if widget is None:
+                continue
+            self._bind_left_click_toggle(widget, callback)
+
+    def _bind_left_click_toggle(self, widget: QWidget, callback) -> None:
+        """Toggle on left-click; keep right-click menu; do not toggle fullscreen."""
+        widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+        widget.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        def mouse_press(event: QMouseEvent, cb=callback) -> None:
+            if event.button() == Qt.MouseButton.LeftButton:
+                cb()
+                event.accept()
+                return
+            event.ignore()
+
+        def mouse_double_click(event: QMouseEvent) -> None:
+            # Consume so MainScreen does not toggle fullscreen.
+            event.accept()
+
+        def context_menu(event: QContextMenuEvent) -> None:
+            self._show_main_context_menu(event.globalPos())
+            event.accept()
+
+        widget.mousePressEvent = mouse_press
+        widget.mouseDoubleClickEvent = mouse_double_click
+        widget.contextMenuEvent = context_menu
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         """Toggle windowed/fullscreen mode on left double-click."""
@@ -2210,6 +2261,7 @@ class MainScreen(QWidget, Ui_MainScreen):
 
         # Re-apply after Apply: settings may recreate main-screen children.
         self._make_children_click_through()
+        self._install_toggle_clicks()
 
     def reboot_host(self):
         """Reboot the host system safely using subprocess"""
