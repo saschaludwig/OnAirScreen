@@ -163,15 +163,13 @@ class TestSettingsHelperFunctions:
         # But Settings requires many dependencies, so we test the logic directly
         from PySide6.QtGui import QColor
         
-        color = QColor()
-        color.setNamedColor("#FF0000")
+        color = QColor.fromString("#FF0000")
         assert color.isValid()
         assert color.red() == 255
         assert color.green() == 0
         assert color.blue() == 0
         
-        color2 = QColor()
-        color2.setNamedColor("#00FF00")
+        color2 = QColor.fromString("#00FF00")
         assert color2.isValid()
         assert color2.green() == 255
     
@@ -179,8 +177,7 @@ class TestSettingsHelperFunctions:
         """Test that getColorFromName handles invalid color names"""
         from PySide6.QtGui import QColor
         
-        color = QColor()
-        color.setNamedColor("invalid_color_name_xyz")
+        color = QColor.fromString("invalid_color_name_xyz")
         # QColor should return a Color object even for invalid names
         # but isValid() should be False
         assert isinstance(color, QColor)

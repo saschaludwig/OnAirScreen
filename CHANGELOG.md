@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Replaced deprecated `QColor.setNamedColor()` with `QColor.fromString()`
 - Web UI: Instance/Version/Connection block stays top-right; settings gear sits to its left
 
 ### Added

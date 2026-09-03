@@ -256,8 +256,7 @@ def validate_color_value(color_str: str) -> tuple[bool, str]:
     
     # Check if it's a valid Qt named color
     # Qt supports many named colors, we'll let QColor validate it
-    test_color = QColor()
-    test_color.setNamedColor(color_str)
+    test_color = QColor.fromString(color_str)
     if test_color.isValid():
         return True, color_str
     
@@ -1959,8 +1958,7 @@ class Settings(QWidget, Ui_Settings):
             return QColor(0, 0, 0)  # Return black as fallback
         
         # Create color from validated string
-        color = QColor()
-        color.setNamedColor(normalized_color)
+        color = QColor.fromString(normalized_color)
         
         # Double-check that QColor accepted it
         if not color.isValid():
