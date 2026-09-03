@@ -145,6 +145,23 @@ def resolve_meter_width(
     return widget_width, lr_width, lufs_width
 
 
+def lufs_heading_rect(lufs_x: int, lufs_bar_width: int) -> Tuple[int, int, int, int]:
+    """Return (x, y, width, height) for the LUFS heading in the both layout.
+
+    The heading uses chrome around the bar (gap after L/R, LRA lane, scale gap)
+    so "LUFS" is not clipped to the narrow bar width.
+    """
+    x = lufs_x - _LUFS_BAR_GAP
+    width = (
+        _LUFS_BAR_GAP
+        + lufs_bar_width
+        + _LRA_BAR_GAP
+        + _LRA_BAR_WIDTH
+        + _METER_SCALE_GAP
+    )
+    return x, 2, width, 16
+
+
 class AudioMeterWidget(QtWidgets.QWidget):
     """Vertical L/R and/or programme LUFS meter."""
 
@@ -834,12 +851,15 @@ class AudioMeterWidget(QtWidgets.QWidget):
                     unit_label,
                 )
             if lufs_x >= 0:
+                hx, hy, hw, hh = lufs_heading_rect(lufs_x, self._lufs_bar_width)
                 painter.drawText(
-                    lufs_x,
-                    2,
-                    self._lufs_bar_width,
-                    16,
-                    QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignTop,
+                    hx,
+                    hy,
+                    hw,
+                    hh,
+                    QtCore.Qt.AlignmentFlag.AlignHCenter
+                    | QtCore.Qt.AlignmentFlag.AlignTop
+                    | QtCore.Qt.TextFlag.TextDontClip,
                     "LUFS",
                 )
         else:

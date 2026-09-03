@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 - Ctrl+C / SIGINT shows the same `QUITTING ONAIRSCREEN` WARN as Q and the context menu
 - Opening Settings / Apply no longer segfaults on Raspberry Pi: the Python mouse event filter is gone; main-screen children let double-click and right-click through to the window
+- Audio meter heading "LUFS" in the L/R + LUFS layout is no longer clipped on the left and right
 
 ## [1.0.0beta7]
 

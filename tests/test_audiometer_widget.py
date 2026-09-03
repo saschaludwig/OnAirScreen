@@ -10,6 +10,10 @@ from audiometer_widget import (
     DISPLAY_STYLE_SOLID,
     METER_WIDTH_MAX,
     METER_WIDTH_MIN,
+    _LUFS_BAR_GAP,
+    _METER_BAR_GAP,
+    _METER_MARGIN_LEFT,
+    lufs_heading_rect,
     resolve_meter_width,
 )
 from meter_engine import (
@@ -53,6 +57,22 @@ class TestResolveMeterWidth:
         wide, lr_w, _ = resolve_meter_width(117, METER_LAYOUT_LR)
         assert wide > narrow
         assert lr_w > lr_n
+
+
+class TestLufsHeadingRect:
+    def test_wider_than_bar(self):
+        _, _, lufs = resolve_meter_width(115, METER_LAYOUT_BOTH)
+        _x, _y, width, _h = lufs_heading_rect(50, lufs)
+        assert width > lufs
+
+    def test_does_not_overlap_lr_unit(self):
+        _widget_width, lr, lufs = resolve_meter_width(115, METER_LAYOUT_BOTH)
+        left_x = _METER_MARGIN_LEFT
+        lufs_x = left_x + lr + _METER_BAR_GAP + lr + _LUFS_BAR_GAP
+        lr_unit_right = left_x + lr * 2 + _METER_BAR_GAP
+        hx, _hy, hw, _hh = lufs_heading_rect(lufs_x, lufs)
+        assert hx >= lr_unit_right
+        assert hx + hw > lufs_x + lufs
 
 
 class TestDbtpCeiling:
