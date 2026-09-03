@@ -32,13 +32,12 @@ import time
 from datetime import timedelta
 
 from PySide6.QtCore import (
-    Qt, QByteArray, QEvent, QPoint, QSettings, QCoreApplication, QTimer,
+    Qt, QByteArray, QPoint, QSettings, QCoreApplication, QTimer,
     Signal, QObject, QElapsedTimer, QUrl,
 )
 from PySide6.QtGui import QCursor, QPalette, QIcon, QPixmap, QFont, QColor, QMouseEvent, QContextMenuEvent
 from PySide6.QtNetwork import QNetworkInterface, QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox, QMenu
-from shiboken6 import isValid
 
 # Import resources FIRST to register them with Qt before UI files are loaded
 import resources_rc  # noqa: F401
@@ -115,7 +114,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
-        self._install_main_screen_mouse_filter()
+        self._make_children_click_through()
 
         self.settings = Settings()
         self.restore_settings_from_config()
@@ -1689,50 +1688,16 @@ class MainScreen(QWidget, Ui_MainScreen):
                 app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
                 settings.setValue('fullscreen', False)
 
-    def _install_main_screen_mouse_filter(self) -> None:
-        """Watch double-click and right-click on main-screen children via the app."""
-        # Do not install on every child: ChildAdded + installEventFilter during
-        # widget construction segfaults in Qt/PySide (Settings, fonts, meters).
-        app = QApplication.instance()
-        if app is not None:
-            app.installEventFilter(self)
-
-    def _is_main_screen_child_target(self, obj: QObject) -> bool:
-        """True when a mouse event on obj should toggle fullscreen or the menu."""
-        if obj is self or obj is None:
-            return False
-        try:
-            if not isValid(obj):
-                return False
-            if not isinstance(obj, QWidget) or isinstance(obj, QMenu):
-                return False
-            if obj.window() is not self:
-                return False
-            if obj.windowFlags() & Qt.WindowType.Popup:
-                return False
-        except RuntimeError:
-            return False
-        return True
-
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        """Forward child double-clicks and context menus to the main window."""
-        try:
-            event_type = event.type()
-        except RuntimeError:
-            return False
-        # App-level filter sees every Qt event. Handle only mouse gestures so
-        # ChildAdded, hotkeys, and Settings widgets are never touched.
-        if event_type == QEvent.Type.MouseButtonDblClick:
-            if self._is_main_screen_child_target(obj):
-                self.mouseDoubleClickEvent(event)
-                return True
-            return False
-        if event_type == QEvent.Type.ContextMenu:
-            if self._is_main_screen_child_target(obj):
-                self.contextMenuEvent(event)
-                return True
-            return False
-        return False
+    def _make_children_click_through(self) -> None:
+        """Let double-click and right-click reach MainScreen through child widgets."""
+        # Do not use a Python eventFilter: ChildAdded and QApplication filters
+        # segfault in Qt/PySide when wrapping half-built or internal objects.
+        for child in self.findChildren(QWidget):
+            if isinstance(child, QMenu):
+                continue
+            if child.windowFlags() & Qt.WindowType.Popup:
+                continue
+            child.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         """Toggle windowed/fullscreen mode on left double-click."""
@@ -2242,6 +2207,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Restart OSC only when OSC-related settings changed (handled inside restart())
         if hasattr(self, 'osc_daemon') and self.osc_daemon:
             self.osc_daemon.restart()
+
+        # Re-apply after Apply: settings may recreate main-screen children.
+        self._make_children_click_through()
 
     def reboot_host(self):
         """Reboot the host system safely using subprocess"""
