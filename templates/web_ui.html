@@ -454,7 +454,7 @@
         }
         .version-info {
             position: fixed;
-            top: 20px;
+            top: 80px;
             right: 20px;
             background: var(--bg-version);
             padding: 10px 15px;
@@ -542,6 +542,198 @@
         .theme-toggle:active {
             transform: scale(0.95);
         }
+        .settings-gear {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-version);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px var(--shadow-strong);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+        }
+        .settings-gear:hover {
+            transform: scale(1.1);
+        }
+        .settings-gear:active {
+            transform: scale(0.95);
+        }
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 1100;
+            align-items: stretch;
+            justify-content: center;
+            padding: 24px;
+            backdrop-filter: blur(2px);
+        }
+        .settings-overlay.show {
+            display: flex;
+        }
+        .settings-panel {
+            background: var(--bg-modal);
+            border-radius: 12px;
+            width: min(980px, 100%);
+            max-height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px var(--shadow-modal);
+            overflow: hidden;
+        }
+        #settingsEditor {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--input-border);
+            flex-shrink: 0;
+        }
+        .settings-header h2 {
+            font-size: 20px;
+            color: var(--text-primary);
+        }
+        .settings-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 12px 16px 0 16px;
+            flex-shrink: 0;
+        }
+        .settings-tab {
+            border: none;
+            background: var(--bg-item);
+            color: var(--text-primary);
+            border-radius: 999px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .settings-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .settings-body {
+            padding: 16px 20px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        .settings-footer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 12px 20px 16px 20px;
+            border-top: 1px solid var(--input-border);
+            flex-shrink: 0;
+        }
+        .settings-form-grid {
+            display: grid;
+            grid-template-columns: minmax(160px, 240px) 1fr;
+            gap: 10px 16px;
+            align-items: center;
+        }
+        .settings-field-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        .settings-field-label.is-disabled,
+        .settings-field-control.is-disabled {
+            opacity: 0.45;
+        }
+        .settings-field-control.is-disabled input,
+        .settings-field-control.is-disabled select,
+        .settings-field-control.is-disabled button {
+            cursor: not-allowed;
+        }
+        .settings-field-control input,
+        .settings-field-control select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--bg-panel);
+            color: var(--text-primary);
+        }
+        .settings-field-control input[type="checkbox"] {
+            width: auto;
+        }
+        .settings-field-control input[type="color"] {
+            padding: 2px;
+            height: 36px;
+        }
+        .settings-hint {
+            grid-column: 2;
+            color: var(--text-tertiary);
+            font-size: 12px;
+            margin-top: -6px;
+        }
+        .settings-restart {
+            color: #e65100;
+        }
+        .settings-secret-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            min-width: 0;
+        }
+        .settings-secret-row input {
+            flex: 1;
+            width: auto;
+            min-width: 0;
+        }
+        .settings-secret-row .text-btn {
+            flex-shrink: 0;
+        }
+        .settings-weather-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .settings-status {
+            margin-right: auto;
+            color: var(--text-secondary);
+            font-size: 13px;
+            align-self: center;
+        }
+        .settings-pin-box {
+            max-width: 420px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        .settings-pin-box input {
+            width: 100%;
+            margin: 12px 0;
+            padding: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--bg-panel);
+            color: var(--text-primary);
+        }
+        .settings-hidden {
+            display: none !important;
+        }
         @media (max-width: 768px) {
             .button-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -562,6 +754,15 @@
             .modal-dialog {
                 padding: 20px;
             }
+            .settings-form-grid {
+                grid-template-columns: 1fr;
+            }
+            .settings-hint {
+                grid-column: 1;
+            }
+            .settings-overlay {
+                padding: 8px;
+            }
         }
     </style>
 </head>
@@ -570,6 +771,8 @@
     <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
         <span id="themeIcon">🌙</span>
     </button>
+
+    <button class="settings-gear" id="settingsGear" title="Settings" aria-label="Open settings">⚙</button>
     
     <!-- Version Info -->
     <div class="version-info" id="versionInfo">
@@ -672,6 +875,32 @@
             <h2>Connection Error</h2>
             <p>Unable to connect to OnAirScreen.<br>Please check if the application is running.</p>
             <p style="font-size: 14px; color: var(--text-tertiary); margin-top: 20px;">The interface will automatically reconnect when the connection is restored.</p>
+        </div>
+    </div>
+
+    <div class="settings-overlay" id="settingsOverlay" aria-hidden="true">
+        <div class="settings-panel" role="dialog" aria-labelledby="settingsTitle">
+            <div class="settings-header">
+                <h2 id="settingsTitle">OnAirScreen Settings</h2>
+                <button type="button" class="text-btn warn-clear" id="settingsCloseTop" aria-label="Close settings">Close</button>
+            </div>
+            <div id="settingsPinGate" class="settings-pin-box settings-hidden">
+                <p>Enter the Web Settings PIN to continue.</p>
+                <input type="password" id="settingsPinInput" autocomplete="off" placeholder="PIN">
+                <p id="settingsPinError" class="settings-restart"></p>
+                <button type="button" class="text-btn" id="settingsPinUnlock">Unlock</button>
+            </div>
+            <div id="settingsEditor" class="settings-hidden">
+                <div class="settings-tabs" id="settingsTabs"></div>
+                <div class="settings-body" id="settingsBody"></div>
+                <div class="settings-footer">
+                    <span class="settings-status" id="settingsStatus"></span>
+                    <button type="button" class="text-btn" id="settingsLoadPreset">Load Preset</button>
+                    <button type="button" class="text-btn" id="settingsSavePreset">Save Preset</button>
+                    <button type="button" class="text-btn" id="settingsApply">Apply</button>
+                    <button type="button" class="text-btn warn-clear" id="settingsClose">Close</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -1694,8 +1923,522 @@
             sendCommand('LED' + ledNum + ':TOGGLE');
         }
 
+        const SETTINGS_TOKEN_KEY = 'oasSettingsToken';
+        let settingsUiOpen = false;
+        let settingsSchema = null;
+        let settingsConfig = null;
+        let settingsActiveTab = 'general';
+        const UNCHANGED_SENTINEL = '__unchanged__';
+
+        function settingsHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = sessionStorage.getItem(SETTINGS_TOKEN_KEY);
+            if (token) {
+                headers['X-Settings-Token'] = token;
+            }
+            return headers;
+        }
+
+        async function settingsFetch(path, options) {
+            const response = await fetch(API_BASE + path, Object.assign({
+                headers: settingsHeaders()
+            }, options || {}));
+            let payload = {};
+            const text = await response.text();
+            if (text) {
+                try {
+                    payload = JSON.parse(text);
+                } catch (err) {
+                    payload = { error: text };
+                }
+            }
+            if (!response.ok) {
+                const error = new Error(payload.error || ('HTTP ' + response.status));
+                error.status = response.status;
+                error.payload = payload;
+                throw error;
+            }
+            return payload;
+        }
+
+        function setSettingsStatus(message, isError) {
+            const el = document.getElementById('settingsStatus');
+            el.textContent = message || '';
+            el.style.color = isError ? '#d32f2f' : '';
+        }
+
+        function closeSettingsOverlay() {
+            settingsUiOpen = false;
+            const overlay = document.getElementById('settingsOverlay');
+            overlay.classList.remove('show');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+
+        function showSettingsPanel(mode) {
+            document.getElementById('settingsPinGate').classList.toggle('settings-hidden', mode !== 'pin');
+            document.getElementById('settingsEditor').classList.toggle('settings-hidden', mode !== 'editor');
+        }
+
+        async function openSettingsOverlay() {
+            settingsUiOpen = true;
+            const overlay = document.getElementById('settingsOverlay');
+            overlay.classList.add('show');
+            overlay.setAttribute('aria-hidden', 'false');
+            setSettingsStatus('');
+            document.getElementById('settingsPinError').textContent = '';
+            try {
+                const auth = await settingsFetch('/api/settings/auth');
+                if (auth.required && !sessionStorage.getItem(SETTINGS_TOKEN_KEY)) {
+                    showSettingsPanel('pin');
+                    document.getElementById('settingsPinInput').focus();
+                    return;
+                }
+                await loadSettingsEditor();
+            } catch (err) {
+                if (err.status === 401) {
+                    sessionStorage.removeItem(SETTINGS_TOKEN_KEY);
+                    showSettingsPanel('pin');
+                    document.getElementById('settingsPinError').textContent = 'PIN required';
+                    return;
+                }
+                setSettingsStatus(err.message || 'Could not open settings', true);
+                showSettingsPanel('editor');
+            }
+        }
+
+        async function unlockSettingsPin() {
+            const pin = document.getElementById('settingsPinInput').value;
+            document.getElementById('settingsPinError').textContent = '';
+            try {
+                const result = await settingsFetch('/api/settings/auth', {
+                    method: 'POST',
+                    body: JSON.stringify({ pin: pin })
+                });
+                if (result.token) {
+                    sessionStorage.setItem(SETTINGS_TOKEN_KEY, result.token);
+                }
+                document.getElementById('settingsPinInput').value = '';
+                await loadSettingsEditor();
+            } catch (err) {
+                document.getElementById('settingsPinError').textContent = err.message || 'Invalid PIN';
+            }
+        }
+
+        async function loadSettingsEditor() {
+            showSettingsPanel('editor');
+            setSettingsStatus('Loading…');
+            const schema = await settingsFetch('/api/settings/schema');
+            const values = await settingsFetch('/api/settings');
+            settingsSchema = schema;
+            settingsConfig = values.config || {};
+            settingsActiveTab = (schema.tabs && schema.tabs[0] && schema.tabs[0].id) || 'general';
+            renderSettingsTabs();
+            renderSettingsTab(settingsActiveTab);
+            setSettingsStatus('');
+        }
+
+        function renderSettingsTabs() {
+            const tabsEl = document.getElementById('settingsTabs');
+            tabsEl.innerHTML = '';
+            (settingsSchema.tabs || []).forEach(function(tab) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'settings-tab' + (tab.id === settingsActiveTab ? ' active' : '');
+                button.textContent = tab.label;
+                button.addEventListener('click', function() {
+                    collectSettingsFormIntoConfig();
+                    settingsActiveTab = tab.id;
+                    renderSettingsTabs();
+                    renderSettingsTab(tab.id);
+                });
+                tabsEl.appendChild(button);
+            });
+        }
+
+        function fieldValue(field) {
+            const group = settingsConfig[field.group] || {};
+            if (Object.prototype.hasOwnProperty.call(group, field.key)) {
+                return group[field.key];
+            }
+            return field.default;
+        }
+
+        function optionList(field) {
+            if (field.options && field.options.length) {
+                return field.options;
+            }
+            if (field.optionsKey && settingsSchema.options) {
+                return settingsSchema.options[field.optionsKey] || [];
+            }
+            return [];
+        }
+
+        function ensureOption(options, value) {
+            if (value === undefined || value === null || value === '') {
+                return options;
+            }
+            const exists = options.some(function(opt) {
+                return String(opt.value) === String(value);
+            });
+            if (exists) {
+                return options;
+            }
+            return options.concat([{ value: value, label: String(value) + ' (current)' }]);
+        }
+
+        function renderSettingsTab(tabId) {
+            const tab = (settingsSchema.tabs || []).find(function(item) { return item.id === tabId; });
+            const body = document.getElementById('settingsBody');
+            body.innerHTML = '';
+            if (!tab) {
+                return;
+            }
+            const grid = document.createElement('div');
+            grid.className = 'settings-form-grid';
+            tab.fields.forEach(function(field) {
+                const label = document.createElement('label');
+                label.className = 'settings-field-label';
+                label.textContent = field.label;
+                const controlWrap = document.createElement('div');
+                controlWrap.className = 'settings-field-control';
+                const value = fieldValue(field);
+                let control;
+                if (field.type === 'bool' || field.type === 'font_bold') {
+                    control = document.createElement('input');
+                    control.type = 'checkbox';
+                    control.checked = !!value;
+                } else if (field.type === 'color') {
+                    control = document.createElement('input');
+                    control.type = 'color';
+                    control.value = (typeof value === 'string' && value.charAt(0) === '#') ? value : '#000000';
+                } else if (field.type === 'enum') {
+                    control = document.createElement('select');
+                    const options = ensureOption(optionList(field), value);
+                    options.forEach(function(opt) {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        if (String(opt.value) === String(value)) {
+                            option.selected = true;
+                        }
+                        control.appendChild(option);
+                    });
+                } else if (field.type === 'int' || field.type === 'float') {
+                    control = document.createElement('input');
+                    control.type = 'number';
+                    if (field.minimum !== null && field.minimum !== undefined) control.min = field.minimum;
+                    if (field.maximum !== null && field.maximum !== undefined) control.max = field.maximum;
+                    if (field.step) control.step = field.step;
+                    else control.step = field.type === 'float' ? '0.1' : '1';
+                    control.value = value;
+                } else if (field.secret || field.type === 'secret') {
+                    const row = document.createElement('div');
+                    row.className = 'settings-secret-row';
+                    control = document.createElement('input');
+                    control.type = 'password';
+                    control.autocomplete = 'off';
+                    const isUnchanged = value === UNCHANGED_SENTINEL;
+                    control.placeholder = isUnchanged ? 'unchanged' : '';
+                    control.dataset.wasUnchanged = isUnchanged ? 'true' : 'false';
+                    if (!isUnchanged && value) {
+                        control.value = value;
+                    }
+                    const toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'text-btn settings-secret-toggle';
+                    toggle.textContent = 'Show';
+                    toggle.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const hidden = control.type === 'password';
+                        const wasDisabled = control.disabled;
+                        control.disabled = false;
+                        control.type = hidden ? 'text' : 'password';
+                        control.disabled = wasDisabled;
+                        toggle.textContent = hidden ? 'Hide' : 'Show';
+                    });
+                    row.appendChild(control);
+                    row.appendChild(toggle);
+                    controlWrap.appendChild(row);
+                } else if (field.widget === 'weather_city') {
+                    const row = document.createElement('div');
+                    row.className = 'settings-weather-row';
+                    control = document.createElement('input');
+                    control.type = 'text';
+                    control.value = value || '';
+                    const search = document.createElement('input');
+                    search.type = 'text';
+                    search.placeholder = 'City name';
+                    const findBtn = document.createElement('button');
+                    findBtn.type = 'button';
+                    findBtn.className = 'text-btn';
+                    findBtn.textContent = 'Find';
+                    const results = document.createElement('select');
+                    results.innerHTML = '<option value="">Search results</option>';
+                    findBtn.addEventListener('click', function() {
+                        searchWeatherCities(search.value, control, results);
+                    });
+                    results.addEventListener('change', function() {
+                        if (results.value) {
+                            control.value = results.value;
+                        }
+                    });
+                    row.appendChild(control);
+                    row.appendChild(search);
+                    row.appendChild(findBtn);
+                    row.appendChild(results);
+                    controlWrap.appendChild(row);
+                } else {
+                    control = document.createElement('input');
+                    control.type = 'text';
+                    control.value = value == null ? '' : value;
+                }
+                if (!controlWrap.contains(control)) {
+                    controlWrap.appendChild(control);
+                }
+                control.dataset.settingsGroup = field.group;
+                control.dataset.settingsKey = field.key;
+                control.dataset.settingsType = field.type;
+                grid.appendChild(label);
+                grid.appendChild(controlWrap);
+                if (field.hint || field.restartRequired) {
+                    const hint = document.createElement('div');
+                    hint.className = 'settings-hint' + (field.restartRequired ? ' settings-restart' : '');
+                    hint.textContent = field.restartRequired
+                        ? ((field.hint ? field.hint + ' ' : '') + 'Requires an application restart.')
+                        : field.hint;
+                    grid.appendChild(hint);
+                }
+            });
+            body.appendChild(grid);
+            applySettingsEnablement();
+        }
+
+        function settingsValuesEqual(actual, expected) {
+            if (typeof expected === 'boolean') {
+                if (typeof actual === 'string') {
+                    const truthy = ['1', 'true', 'yes', 'on'].indexOf(actual.trim().toLowerCase()) !== -1;
+                    return expected ? truthy : !truthy;
+                }
+                return Boolean(actual) === expected;
+            }
+            return String(actual) === String(expected);
+        }
+
+        function settingsRuleMatches(rule) {
+            const actual = (settingsConfig[rule.group] || {})[rule.key];
+            if (Object.prototype.hasOwnProperty.call(rule, 'eq')) {
+                return settingsValuesEqual(actual, rule.eq);
+            }
+            if (Object.prototype.hasOwnProperty.call(rule, 'neq')) {
+                return !settingsValuesEqual(actual, rule.neq);
+            }
+            if (Object.prototype.hasOwnProperty.call(rule, 'in')) {
+                return (rule.in || []).some(function(item) {
+                    return settingsValuesEqual(actual, item);
+                });
+            }
+            return true;
+        }
+
+        function settingsFieldIsEnabled(field) {
+            const andRules = field.enabledWhen || [];
+            const orRules = field.enabledWhenAny || [];
+            const andOk = andRules.every(settingsRuleMatches);
+            const orOk = !orRules.length || orRules.some(settingsRuleMatches);
+            return andOk && orOk;
+        }
+
+        function applySettingsEnablement() {
+            collectSettingsFormIntoConfig();
+            const tab = (settingsSchema.tabs || []).find(function(item) {
+                return item.id === settingsActiveTab;
+            });
+            if (!tab) {
+                return;
+            }
+            const layout = (settingsConfig.Audio || {}).layout;
+            tab.fields.forEach(function(field) {
+                const control = document.querySelector(
+                    '#settingsBody [data-settings-group="' + field.group + '"][data-settings-key="' + field.key + '"]'
+                );
+                if (!control) {
+                    return;
+                }
+                const controlWrap = control.closest('.settings-field-control');
+                const label = controlWrap && controlWrap.previousElementSibling;
+                const enabled = settingsFieldIsEnabled(field);
+                if (label && label.classList.contains('settings-field-label')) {
+                    label.classList.toggle('is-disabled', !enabled);
+                }
+                if (controlWrap) {
+                    controlWrap.classList.toggle('is-disabled', !enabled);
+                    controlWrap.querySelectorAll('input, select, button, textarea').forEach(function(el) {
+                        if (el.classList.contains('settings-secret-toggle')) {
+                            return;
+                        }
+                        el.disabled = !enabled;
+                    });
+                } else {
+                    control.disabled = !enabled;
+                }
+                if (field.group === 'Audio' && field.key === 'unit') {
+                    Array.from(control.options || []).forEach(function(opt) {
+                        opt.disabled = String(layout) === 'both' && String(opt.value) === 'bbc_ppm';
+                    });
+                }
+            });
+        }
+
+        function readControlValue(control) {
+            const type = control.dataset.settingsType;
+            if (type === 'bool' || type === 'font_bold') {
+                return control.checked;
+            }
+            if (type === 'int') {
+                return control.value === '' ? 0 : parseInt(control.value, 10);
+            }
+            if (type === 'float') {
+                return control.value === '' ? 0 : parseFloat(control.value);
+            }
+            if (control.dataset.wasUnchanged === 'true' && control.value === '') {
+                return UNCHANGED_SENTINEL;
+            }
+            return control.value;
+        }
+
+        function collectSettingsFormIntoConfig() {
+            const controls = document.querySelectorAll('#settingsBody [data-settings-group]');
+            controls.forEach(function(control) {
+                const group = control.dataset.settingsGroup;
+                const key = control.dataset.settingsKey;
+                if (!settingsConfig[group]) {
+                    settingsConfig[group] = {};
+                }
+                settingsConfig[group][key] = readControlValue(control);
+            });
+        }
+
+        async function searchWeatherCities(query, idInput, resultsSelect) {
+            setSettingsStatus('Searching cities…');
+            try {
+                const apiKeyControl = document.querySelector('[data-settings-key="owmAPIKey"]');
+                const payload = { q: query };
+                if (apiKeyControl && apiKeyControl.value) {
+                    payload.apiKey = apiKeyControl.value;
+                }
+                const data = await settingsFetch('/api/weather/search', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                resultsSelect.innerHTML = '<option value="">Search results</option>';
+                (data.results || []).forEach(function(item) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.label;
+                    resultsSelect.appendChild(option);
+                });
+                if (data.results && data.results[0]) {
+                    resultsSelect.value = data.results[0].id;
+                    idInput.value = data.results[0].id;
+                }
+                setSettingsStatus((data.results || []).length ? '' : 'No cities found');
+            } catch (err) {
+                setSettingsStatus(err.message || 'City search failed', true);
+            }
+        }
+
+        async function applySettingsFromForm() {
+            collectSettingsFormIntoConfig();
+            setSettingsStatus('Applying…');
+            try {
+                await settingsFetch('/api/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({ config: settingsConfig })
+                });
+                const refreshed = await settingsFetch('/api/settings');
+                settingsConfig = refreshed.config || settingsConfig;
+                renderSettingsTab(settingsActiveTab);
+                setSettingsStatus('Settings applied');
+            } catch (err) {
+                setSettingsStatus(err.message || 'Apply failed', true);
+            }
+        }
+
+        async function saveSettingsPreset() {
+            const name = window.prompt('Preset name');
+            if (!name) {
+                return;
+            }
+            setSettingsStatus('Saving preset…');
+            try {
+                await settingsFetch('/api/presets', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: name })
+                });
+                setSettingsStatus('Preset saved (currently applied settings)');
+            } catch (err) {
+                setSettingsStatus(err.message || 'Could not save preset', true);
+            }
+        }
+
+        async function loadSettingsPreset() {
+            try {
+                const data = await settingsFetch('/api/presets');
+                const presets = data.presets || [];
+                if (!presets.length) {
+                    setSettingsStatus('No presets found');
+                    return;
+                }
+                const names = presets.map(function(item) { return item.filename; });
+                const choice = window.prompt('Load preset (filename):\n' + names.join('\n'));
+                if (!choice) {
+                    return;
+                }
+                const loaded = await settingsFetch('/api/presets/load', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: choice })
+                });
+                settingsConfig = loaded.config || settingsConfig;
+                renderSettingsTab(settingsActiveTab);
+                setSettingsStatus('Preset loaded — click Apply to use it');
+            } catch (err) {
+                setSettingsStatus(err.message || 'Could not load preset', true);
+            }
+        }
+
+        function initSettingsUi() {
+            document.getElementById('settingsGear').addEventListener('click', openSettingsOverlay);
+            document.getElementById('settingsClose').addEventListener('click', closeSettingsOverlay);
+            document.getElementById('settingsCloseTop').addEventListener('click', closeSettingsOverlay);
+            document.getElementById('settingsApply').addEventListener('click', applySettingsFromForm);
+            document.getElementById('settingsSavePreset').addEventListener('click', saveSettingsPreset);
+            document.getElementById('settingsLoadPreset').addEventListener('click', loadSettingsPreset);
+            document.getElementById('settingsPinUnlock').addEventListener('click', unlockSettingsPin);
+            document.getElementById('settingsPinInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    unlockSettingsPin();
+                }
+            });
+            document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+                if (e.target.id === 'settingsOverlay') {
+                    closeSettingsOverlay();
+                }
+            });
+            const settingsBody = document.getElementById('settingsBody');
+            settingsBody.addEventListener('change', applySettingsEnablement);
+            settingsBody.addEventListener('input', applySettingsEnablement);
+        }
+
         document.addEventListener('keydown', function(e) {
             if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) {
+                return;
+            }
+            if (settingsUiOpen) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeSettingsOverlay();
+                }
                 return;
             }
             if (isEditableTarget(e.target)) {
@@ -1733,6 +2476,7 @@
         
         // Initialize theme on page load
         initTheme();
+        initSettingsUi();
         
         // Connect WebSocket for real-time updates
         connectWebSocket();

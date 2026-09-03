@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Right-click **Start I+LRA** and **Stop I+LRA** on the main screen (when meters are enabled)
+- Web UI settings overlay (gear, top right): edit all OnAirScreen settings, optional PIN (`Network/websettingspin`), Apply, and preset load/save
 
 ## [1.0.0beta6]
 

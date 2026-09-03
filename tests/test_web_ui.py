@@ -769,3 +769,21 @@ class TestWebUIUxExtras:
         assert "setConnectionState('polling')" in web_ui_html
         assert "setConnectionState('offline')" in web_ui_html
         assert "connectionErrorModal" in web_ui_html
+
+    def test_settings_gear_and_overlay(self, web_ui_html):
+        assert 'id="settingsGear"' in web_ui_html
+        assert 'id="settingsOverlay"' in web_ui_html
+        assert "function openSettingsOverlay" in web_ui_html
+        assert "function initSettingsUi" in web_ui_html
+        assert "/api/settings/schema" in web_ui_html
+        assert "X-Settings-Token" in web_ui_html
+        assert "if (settingsUiOpen)" in web_ui_html
+        assert "function applySettingsEnablement" in web_ui_html
+        assert "enabledWhen" in web_ui_html
+        assert "enabledWhenAny" in web_ui_html
+        assert "bbc_ppm" in web_ui_html
+        assert "#settingsEditor" in web_ui_html
+        assert "min-height: 0" in web_ui_html
+        assert ".settings-secret-row input" in web_ui_html
+        assert "settings-secret-toggle" in web_ui_html
+        assert "if (!isUnchanged && value)" in web_ui_html

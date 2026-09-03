@@ -141,6 +141,15 @@ DEFAULT_TIMER_AIR_ICON_PATHS: Dict[int, str] = {
 DEFAULT_UDP_PORT: int = 3310
 DEFAULT_HTTP_PORT: int = 8010
 DEFAULT_MULTICAST_ADDRESS: str = "239.194.0.1"
+DEFAULT_WEB_SETTINGS_PIN: str = ""
+
+# MQTT Settings
+DEFAULT_MQTT_ENABLED: bool = False
+DEFAULT_MQTT_SERVER: str = "localhost"
+DEFAULT_MQTT_PORT: int = 1883
+DEFAULT_MQTT_USER: str = ""
+DEFAULT_MQTT_PASSWORD: str = ""
+DEFAULT_MQTT_DEVICE_NAME: str = "OnAirScreen"
 
 # OSC Settings
 DEFAULT_OSC_ENABLED: bool = False
@@ -382,6 +391,19 @@ def get_default(group: str, key: str, default: Any = None) -> Any:
             "udpport": str(DEFAULT_UDP_PORT),
             "httpport": str(DEFAULT_HTTP_PORT),
             "multicast_address": DEFAULT_MULTICAST_ADDRESS,
+            "websettingspin": DEFAULT_WEB_SETTINGS_PIN,
+        }
+        return defaults.get(key, default)
+
+    # MQTT group
+    if group == "MQTT":
+        defaults = {
+            "enablemqtt": DEFAULT_MQTT_ENABLED,
+            "mqttserver": DEFAULT_MQTT_SERVER,
+            "mqttport": str(DEFAULT_MQTT_PORT),
+            "mqttuser": DEFAULT_MQTT_USER,
+            "mqttpassword": DEFAULT_MQTT_PASSWORD,
+            "mqttdevicename": DEFAULT_MQTT_DEVICE_NAME,
         }
         return defaults.get(key, default)
 

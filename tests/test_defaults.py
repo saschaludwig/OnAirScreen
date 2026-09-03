@@ -52,6 +52,13 @@ from defaults import (
     DEFAULT_UDP_PORT,
     DEFAULT_HTTP_PORT,
     DEFAULT_MULTICAST_ADDRESS,
+    DEFAULT_WEB_SETTINGS_PIN,
+    DEFAULT_MQTT_ENABLED,
+    DEFAULT_MQTT_SERVER,
+    DEFAULT_MQTT_PORT,
+    DEFAULT_MQTT_USER,
+    DEFAULT_MQTT_PASSWORD,
+    DEFAULT_MQTT_DEVICE_NAME,
     DEFAULT_OSC_ENABLED,
     DEFAULT_OSC_PORT,
     DEFAULT_OSC_SEND_HOST,
@@ -245,6 +252,16 @@ class TestGetDefault:
         assert get_default("Network", "udpport") == str(DEFAULT_UDP_PORT)
         assert get_default("Network", "httpport") == str(DEFAULT_HTTP_PORT)
         assert get_default("Network", "multicast_address") == DEFAULT_MULTICAST_ADDRESS
+        assert get_default("Network", "websettingspin") == DEFAULT_WEB_SETTINGS_PIN
+
+    def test_mqtt_group(self):
+        """Test MQTT group defaults"""
+        assert get_default("MQTT", "enablemqtt") == DEFAULT_MQTT_ENABLED
+        assert get_default("MQTT", "mqttserver") == DEFAULT_MQTT_SERVER
+        assert get_default("MQTT", "mqttport") == str(DEFAULT_MQTT_PORT)
+        assert get_default("MQTT", "mqttuser") == DEFAULT_MQTT_USER
+        assert get_default("MQTT", "mqttpassword") == DEFAULT_MQTT_PASSWORD
+        assert get_default("MQTT", "mqttdevicename") == DEFAULT_MQTT_DEVICE_NAME
 
     def test_osc_group(self):
         """Test OSC group defaults"""

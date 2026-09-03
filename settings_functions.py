@@ -369,6 +369,9 @@ class Settings(QWidget, Ui_Settings):
         setup_secret_line_edit(self.updateKey)
         setup_secret_line_edit(self.mqttpassword)
         setup_secret_line_edit(self.owmAPIKey)
+        setup_secret_line_edit(self.websettingspin)
+        self._web_pin_edited = False
+        self.websettingspin.textEdited.connect(self._on_web_settings_pin_edited)
         self.owm_search_nam = QtNetwork.QNetworkAccessManager(self)
         self.owm_search_nam.finished.connect(self._handleOWMCitySearchResponse)
         self._sap_discovery = None
@@ -638,10 +641,14 @@ class Settings(QWidget, Ui_Settings):
         presets_dir.mkdir(parents=True, exist_ok=True)
         return presets_dir
 
-    def export_config_to_json(self) -> dict:
+    def export_config_to_json(self, include_mqtt: bool = False) -> dict:
         """
         Export current QSettings configuration to a dictionary
         
+        Args:
+            include_mqtt: When True, include the MQTT group (web settings).
+                Preset exports keep MQTT omitted on purpose.
+
         Returns:
             Dictionary containing all configuration groups and their values
         """
@@ -657,6 +664,8 @@ class Settings(QWidget, Ui_Settings):
             "General", "NTP", "TimeSource", "LEDS", "LED1", "LED2", "LED3", "LED4",
             "Clock", "Network", "OSC", "Formatting", "WeatherWidget", "Timers", "Fonts", "Audio"
         ]
+        if include_mqtt:
+            groups.append("MQTT")
         
         for group in groups:
             group_dict = {}
@@ -1004,6 +1013,17 @@ class Settings(QWidget, Ui_Settings):
             self.udpport.setText(str(settings.value('udpport', str(DEFAULT_UDP_PORT))))
             self.httpport.setText(str(settings.value('httpport', str(DEFAULT_HTTP_PORT))))
             self.multicast_group.setText(settings.value('multicast_address', DEFAULT_MULTICAST_ADDRESS))
+            stored_pin = settings.value('websettingspin', DEFAULT_WEB_SETTINGS_PIN, type=str) or ""
+        self.websettingspin.blockSignals(True)
+        self.websettingspin.clear()
+        self.websettingspin.blockSignals(False)
+        self._web_pin_edited = False
+        if stored_pin:
+            self.websettingspin.setPlaceholderText(
+                "Leave empty to keep the current PIN. Enter - to remove it."
+            )
+        else:
+            self.websettingspin.setPlaceholderText("Optional. Empty = no PIN.")
 
         with settings_group(settings, "MQTT"):
             self.enablemqtt.setChecked(settings.value('enablemqtt', False, type=bool))
@@ -1203,6 +1223,14 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('udpport', self.udpport.displayText())
             settings.setValue('httpport', self.httpport.displayText())
             settings.setValue('multicast_address', self.multicast_group.displayText())
+            if getattr(self, "_web_pin_edited", False):
+                from web_settings import PIN_CLEAR_TOKEN, hash_web_settings_pin
+
+                pin_text = self.websettingspin.text()
+                if pin_text in ("", PIN_CLEAR_TOKEN):
+                    settings.setValue('websettingspin', "")
+                else:
+                    settings.setValue('websettingspin', hash_web_settings_pin(pin_text))
 
         with settings_group(settings, "MQTT"):
             settings.setValue('enablemqtt', self.enablemqtt.isChecked())
@@ -2132,6 +2160,11 @@ class Settings(QWidget, Ui_Settings):
         self.udpport.setToolTip("UDP port for receiving commands (default: 3310)")
         self.httpport.setToolTip("HTTP port for receiving commands (default: 8010)")
         self.multicast_group.setToolTip("Multicast address for UDP commands (default: 239.194.0.1)")
+        self.websettingspin.setToolTip(
+            "Optional PIN that protects the Web UI settings overlay. "
+            "Leave empty to keep the current PIN. Enter a minus sign (-) to remove PIN protection. "
+            "Remote Control stays unprotected."
+        )
         
         # MQTT settings
         self.enablemqtt.setToolTip("Enable MQTT integration with Home Assistant Autodiscovery")
@@ -2271,6 +2304,10 @@ class Settings(QWidget, Ui_Settings):
         self.LoadSettingsButton.setToolTip("Load a saved preset configuration")
         self.DeleteSettingsButton.setToolTip("Delete a saved preset")
         
+    def _on_web_settings_pin_edited(self, _text: str) -> None:
+        """Remember that the user changed the Web Settings PIN field."""
+        self._web_pin_edited = True
+
     def _on_mqtt_enabled_changed(self, enabled: bool) -> None:
         """Handle MQTT enabled checkbox state change"""
         self.mqttserver.setEnabled(enabled)

@@ -44,6 +44,14 @@ from exceptions import (
     UdpError, HttpError, WebSocketError, PortInUseError, PermissionDeniedError,
     CommandParseError, InvalidCommandFormatError, EncodingError, JsonSerializationError, log_exception
 )
+from web_settings import (
+    SettingsApiError,
+    authenticate_web_settings_pin,
+    resolve_weather_api_key,
+    search_weather_cities,
+    session_store,
+    web_settings_pin_required,
+)
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -261,17 +269,24 @@ class HttpDaemon(QThread):
     and forwards them to the UDP command handler.
     """
     
-    def __init__(self, main_screen: Optional["MainScreen"] = None, command_signal: Optional[object] = None) -> None:
+    def __init__(
+        self,
+        main_screen: Optional["MainScreen"] = None,
+        command_signal: Optional[object] = None,
+        settings_bridge: Optional[object] = None,
+    ) -> None:
         """
         Initialize HTTP daemon
         
         Args:
             main_screen: Reference to MainScreen instance for status queries (optional)
             command_signal: Signal object for thread-safe command execution (optional)
+            settings_bridge: GUI-thread bridge for the settings API (optional)
         """
         super().__init__()
         self.main_screen = main_screen
         self.command_signal = command_signal
+        self.settings_bridge = settings_bridge
     
     def run(self) -> None:
         """
@@ -298,6 +313,7 @@ class HttpDaemon(QThread):
             # Pass main_screen reference and command_signal to handler class
             OASHTTPRequestHandler.main_screen = self.main_screen
             OASHTTPRequestHandler.command_signal = self.command_signal
+            OASHTTPRequestHandler.settings_bridge = self.settings_bridge
             handler = OASHTTPRequestHandler
             # Use ReusableHTTPServer to prevent TIME_WAIT issues
             self._server = ReusableHTTPServer((HOST, port), handler)
@@ -405,6 +421,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
     server_version = f"OnAirScreen/{versionString}"
     main_screen = None  # Will be set by HttpDaemon
     command_signal = None  # Will be set by HttpDaemon
+    settings_bridge = None  # Will be set by HttpDaemon
 
     def log_message(self, format: str, *args: object) -> None:
         """
@@ -425,6 +442,83 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             # Use INFO level for other requests
             logger.info(f"{self.address_string()} - {format % args}")
 
+    def _add_cors_headers(self) -> None:
+        """Send CORS headers used by the Web UI and REST API."""
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-Settings-Token')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+
+    def _send_json(self, status_code: int, payload: object) -> None:
+        """Write a JSON response with CORS headers."""
+        try:
+            body = json.dumps(payload).encode('utf-8')
+        except (TypeError, ValueError) as json_error:
+            error = JsonSerializationError(
+                f"JSON serialization error: {json_error}",
+                data=payload if isinstance(payload, dict) else None
+            )
+            log_exception(logger, error, use_exc_info=False)
+            self.send_error(_exception_to_http_status(error), str(error))
+            return
+        self.send_response(status_code)
+        self.send_header('Content-type', 'application/json; charset=utf-8')
+        self._add_cors_headers()
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (OSError, BrokenPipeError) as write_error:
+            logger.warning(f"Error writing JSON response to client: {write_error}")
+
+    def _read_json_body(self) -> dict:
+        """Parse a JSON object from the request body."""
+        try:
+            length = int(self.headers.get('Content-Length', '0') or 0)
+        except (TypeError, ValueError):
+            length = 0
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            payload = json.loads(raw.decode('utf-8'))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise SettingsApiError(f"Invalid JSON body: {exc}", 400) from exc
+        if payload is None:
+            return {}
+        if not isinstance(payload, dict):
+            raise SettingsApiError("JSON body must be an object", 400)
+        return payload
+
+    def _settings_auth_ok(self) -> bool:
+        """Return True when the request may access protected settings endpoints."""
+        if not web_settings_pin_required():
+            return True
+        token = self.headers.get('X-Settings-Token', '')
+        if session_store.valid(token):
+            return True
+        self._send_json(401, {'error': 'unauthorized', 'required': True})
+        return False
+
+    def _call_settings_api(self, action: str, payload: Optional[object] = None) -> object:
+        """Dispatch a settings API action, marshalling to the GUI thread when possible."""
+        bridge = getattr(self, 'settings_bridge', None)
+        if bridge is not None and hasattr(bridge, 'call'):
+            return bridge.call(action, payload)
+        from web_settings import dispatch_settings_api
+        return dispatch_settings_api(self.main_screen, action, payload)
+
+    def _handle_settings_api_error(self, error: Exception) -> None:
+        if isinstance(error, SettingsApiError):
+            self._send_json(error.status_code, {'error': str(error)})
+            return
+        from exceptions import OnAirScreenError
+        if isinstance(error, OnAirScreenError):
+            log_exception(logger, error)
+            self.send_error(_exception_to_http_status(error), str(error))
+            return
+        wrapped = HttpError(f"Settings API error: {error}", status_code=500)
+        log_exception(logger, wrapped)
+        self.send_error(500, str(wrapped))
+
     def do_HEAD(self) -> None:
         """
         Handle HEAD request
@@ -442,6 +536,7 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
         Routes requests to appropriate handlers:
         - /api/status -> Status API
         - /api/command -> Command API (REST-style)
+        - /api/settings... -> Settings API
         - /?cmd=... or /cmd=... -> Legacy command format
         - / or /index.html -> Web-UI
         - Other paths -> 404 error
@@ -461,6 +556,10 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
         if path == '/api/command':
             self._handle_api_command(parsed_path.query)
             return
+
+        if path.startswith('/api/settings') or path.startswith('/api/presets') or path.startswith('/api/weather'):
+            self._handle_settings_http('GET', path, parsed_path.query)
+            return
         
         # API endpoint for command (backward compatible)
         if path == '/' and parsed_path.query and parsed_path.query.startswith('cmd='):
@@ -479,7 +578,83 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
             return
         
         self.send_error(404, 'file not found')
-    
+
+    def do_OPTIONS(self) -> None:
+        """Handle CORS preflight for the REST API."""
+        self.send_response(204)
+        self._add_cors_headers()
+        self.end_headers()
+
+    def do_POST(self) -> None:
+        """Handle POST requests for settings auth, presets, and weather search."""
+        parsed_path = urlparse(self.path)
+        self._handle_settings_http('POST', parsed_path.path, parsed_path.query)
+
+    def do_PUT(self) -> None:
+        """Handle PUT requests for applying settings."""
+        parsed_path = urlparse(self.path)
+        self._handle_settings_http('PUT', parsed_path.path, parsed_path.query)
+
+    def _handle_settings_http(self, method: str, path: str, query: str) -> None:
+        """Route settings, preset, and weather API calls."""
+        try:
+            if path == '/api/settings/auth' and method == 'GET':
+                self._send_json(200, {'required': web_settings_pin_required()})
+                return
+            if path == '/api/settings/auth' and method == 'POST':
+                body = self._read_json_body()
+                token = authenticate_web_settings_pin(str(body.get('pin', '')))
+                self._send_json(200, {'token': token, 'required': web_settings_pin_required()})
+                return
+            if path == '/api/weather/search' and method in ('GET', 'POST'):
+                if not self._settings_auth_ok():
+                    return
+                params = parse_qs(query)
+                body = self._read_json_body() if method == 'POST' else {}
+                query_text = body.get('q') or (params.get('q') or [''])[0]
+                api_key = resolve_weather_api_key(body.get('apiKey'))
+                results = search_weather_cities(str(query_text), api_key)
+                self._send_json(200, {'results': results})
+                return
+            if path == '/api/settings/schema' and method == 'GET':
+                if not self._settings_auth_ok():
+                    return
+                self._send_json(200, self._call_settings_api('schema'))
+                return
+            if path == '/api/settings' and method == 'GET':
+                if not self._settings_auth_ok():
+                    return
+                self._send_json(200, self._call_settings_api('get'))
+                return
+            if path == '/api/settings' and method == 'PUT':
+                if not self._settings_auth_ok():
+                    return
+                body = self._read_json_body()
+                self._send_json(200, self._call_settings_api('put', body))
+                return
+            if path == '/api/presets' and method == 'GET':
+                if not self._settings_auth_ok():
+                    return
+                self._send_json(200, self._call_settings_api('presets_list'))
+                return
+            if path == '/api/presets' and method == 'POST':
+                if not self._settings_auth_ok():
+                    return
+                body = self._read_json_body()
+                self._send_json(200, self._call_settings_api('presets_save', body))
+                return
+            if path == '/api/presets/load' and method == 'POST':
+                if not self._settings_auth_ok():
+                    return
+                body = self._read_json_body()
+                self._send_json(200, self._call_settings_api('presets_load', body))
+                return
+            self.send_error(404, 'file not found')
+        except SettingsApiError as error:
+            self._handle_settings_api_error(error)
+        except Exception as error:
+            self._handle_settings_api_error(error)
+
     def _handle_command_api(self, query_string: str) -> None:
         """
         Handle command API request (backward compatible format)

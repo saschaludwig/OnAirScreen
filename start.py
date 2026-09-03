@@ -269,7 +269,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.udp_server = UdpServer(udp_command_callback)
 
         # Setup HTTP Server with reference to MainScreen for status API and command signal
-        self.httpd = HttpDaemon(self, self.command_signal)
+        from web_settings import SettingsApiBridge
+        self.settings_api = SettingsApiBridge(self)
+        self.httpd = HttpDaemon(self, self.command_signal, self.settings_api)
         self.httpd.start()
         
         # Setup WebSocket Server for real-time status updates

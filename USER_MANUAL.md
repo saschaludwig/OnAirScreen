@@ -341,6 +341,7 @@ Buttons: `...` (file picker), `reset` (restore default logo).
 | UDP Port          | `Network/udpport`           | `3310`        | Port for UDP commands     |
 | HTTP Port         | `Network/httpport`          | `8010`        | Port for HTTP/Web UI      |
 | Multicast Address | `Network/multicast_address` | `239.194.0.1` | Multicast address for UDP |
+| Web Settings PIN  | `Network/websettingspin`    | *(empty)*     | Optional PIN for the Web UI settings overlay (stored hashed). Empty = no PIN. Leave the field empty to keep the current PIN; enter `-` to remove it. Remote Control stays unprotected. |
 
 
 #### MQTT
@@ -783,7 +784,7 @@ Open in browser: `http://<IP-address>:8010/`
 - Warnings with priority and delete button
 - Version and distribution information
 - Persistent connection badge (Live / Polling / Offline) plus error modal
-
+- Settings gear (top right): tabbed overlay for all editable settings, optional PIN, Apply, and preset load/save
 
 
 ### 7.4 REST API
@@ -820,6 +821,16 @@ The `silence` field is `true` while Silence Detection has latched, even if the o
 curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 ```
 
+**Web settings** (optional PIN via `X-Settings-Token` after `POST /api/settings/auth`):
+
+```bash
+curl http://127.0.0.1:8010/api/settings/auth
+curl -X POST http://127.0.0.1:8010/api/settings/auth -H 'Content-Type: application/json' -d '{"pin":"1234"}'
+curl http://127.0.0.1:8010/api/settings
+curl -X PUT http://127.0.0.1:8010/api/settings -H 'Content-Type: application/json' -d '{"config":{"General":{"slogan":"On air"}}}'
+```
+
+Secrets (`updatekey`, MQTT password, OpenWeatherMap API key) are returned in plaintext so the settings overlay can show them. The PIN is returned as `__unchanged__` (only a hash is stored). Send that sentinel to keep the PIN, or `-` to clear it. UDP/HTTP port changes are stored immediately but need an application restart.
 
 
 ### 7.5 MQTT
