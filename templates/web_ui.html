@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OnAirScreen Remote Control</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=2">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+    <link rel="icon" type="image/png" sizes="180x180" href="/favicon.png?v=2">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="OnAirScreen">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <script>
         // Set theme immediately to prevent flash of light mode
         (function() {
@@ -13,51 +21,53 @@
     </script>
     <style>
         :root {
-            /* Light mode colors */
-            --bg-gradient-start: #667eea;
-            --bg-gradient-end: #764ba2;
-            --bg-panel: white;
-            --bg-item: #f5f5f5;
-            --bg-item-active: #e8f5e9;
-            --bg-info: #e3f2fd;
-            --bg-version: rgba(255, 255, 255, 0.95);
-            --bg-modal: white;
-            --text-primary: #333;
-            --text-secondary: #666;
-            --text-tertiary: #999;
-            --text-white: white;
-            --text-info: #1976d2;
-            --border-item: #667eea;
-            --border-item-active: #4caf50;
-            --shadow: rgba(0, 0, 0, 0.1);
-            --shadow-strong: rgba(0, 0, 0, 0.2);
-            --shadow-modal: rgba(0, 0, 0, 0.3);
-            --input-border: #ddd;
-            --input-focus: #667eea;
+            --bg-page: #f4f4f4;
+            --bg-panel: #ffffff;
+            --bg-item: #fbfbfb;
+            --bg-item-active: #e8f0e8;
+            --bg-info: #eef6fb;
+            --bg-version: #ffffff;
+            --bg-modal: #ffffff;
+            --text-primary: #222529;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+            --text-heading: #222529;
+            --text-info: #1b88cf;
+            --accent: #66b6eb;
+            --accent-hover: #1b88cf;
+            --border-item: #66b6eb;
+            --border-item-active: #2e7d32;
+            --shadow: rgba(34, 37, 41, 0.08);
+            --shadow-strong: rgba(34, 37, 41, 0.14);
+            --shadow-modal: rgba(0, 0, 0, 0.35);
+            --input-border: #dddddd;
+            --input-focus: #66b6eb;
+            --input-radius: 0;
+            --panel-radius: 2px;
         }
-        
+
         [data-theme="dark"] {
-            /* Dark mode colors */
-            --bg-gradient-start: #1a1a2e;
-            --bg-gradient-end: #16213e;
-            --bg-panel: #2d2d44;
-            --bg-item: #3a3a5c;
-            --bg-item-active: #2d5a3d;
-            --bg-info: #1e3a5f;
-            --bg-version: rgba(45, 45, 68, 0.95);
-            --bg-modal: #2d2d44;
-            --text-primary: #e0e0e0;
+            --bg-page: #1a1a1c;
+            --bg-panel: #242426;
+            --bg-item: #2c2c2e;
+            --bg-item-active: #1e3a28;
+            --bg-info: #1e2a38;
+            --bg-version: #242426;
+            --bg-modal: #242426;
+            --text-primary: #e8e8e8;
             --text-secondary: #b0b0b0;
-            --text-tertiary: #808080;
-            --text-white: #e0e0e0;
-            --text-info: #64b5f6;
-            --border-item: #667eea;
+            --text-tertiary: #888888;
+            --text-heading: #e8e8e8;
+            --text-info: #66b6eb;
+            --accent: #66b6eb;
+            --accent-hover: #1b88cf;
+            --border-item: #66b6eb;
             --border-item-active: #66bb6a;
-            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow: rgba(0, 0, 0, 0.35);
             --shadow-strong: rgba(0, 0, 0, 0.5);
             --shadow-modal: rgba(0, 0, 0, 0.7);
-            --input-border: #555;
-            --input-focus: #667eea;
+            --input-border: #444444;
+            --input-focus: #66b6eb;
         }
         
         * {
@@ -67,21 +77,22 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            background: var(--bg-page);
             min-height: 100vh;
             padding: 20px;
             color: var(--text-primary);
-            transition: background 0.3s ease;
+            overflow-x: hidden;
+            transition: background 0.15s ease;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
-            color: var(--text-white);
+            color: var(--text-heading);
             text-align: center;
             margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 600;
         }
         .instance-subtitle {
             display: block;
@@ -93,11 +104,12 @@
         }
         .status-panel {
             background: var(--bg-panel);
-            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px var(--shadow);
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: background 0.15s ease, box-shadow 0.15s ease;
         }
         .status-grid {
             display: grid;
@@ -120,9 +132,9 @@
         .status-item {
             background: var(--bg-item);
             padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--border-item);
-            transition: background 0.3s ease, border-color 0.3s ease;
+            border-radius: var(--panel-radius);
+            border-left: 3px solid var(--border-item);
+            transition: background 0.15s ease, border-color 0.15s ease;
         }
         .status-item.active {
             background: var(--bg-item-active);
@@ -145,9 +157,9 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.08);
             border: none;
-            border-radius: 50%;
+            border-radius: var(--panel-radius);
             width: 24px;
             height: 24px;
             cursor: pointer;
@@ -156,23 +168,20 @@
             justify-content: center;
             font-size: 16px;
             color: var(--text-secondary);
-            transition: all 0.2s;
+            transition: background 0.15s ease, color 0.15s ease;
             padding: 0;
         }
         .status-item .close-btn:hover {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.16);
             color: var(--text-primary);
-            transform: scale(1.1);
-        }
-        .status-item .close-btn:active {
-            transform: scale(0.95);
         }
         .control-panel {
             background: var(--bg-panel);
-            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
             padding: 20px;
-            box-shadow: 0 4px 6px var(--shadow);
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: background 0.15s ease, box-shadow 0.15s ease;
         }
         .section {
             margin-bottom: 30px;
@@ -188,28 +197,20 @@
             gap: 10px;
         }
         button {
-            padding: 15px 20px;
+            padding: 12px 16px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: var(--panel-radius);
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px var(--shadow-strong);
-        }
-        button:active {
-            transform: translateY(0);
+            transition: background 0.15s ease, color 0.15s ease;
         }
         .led-btn {
-            background: #ff5252;
+            background: #c62828;
             color: white;
         }
         .led-btn.active {
-            background: #4caf50;
+            background: #2e7d32;
         }
         .led-btn.blinking {
             animation: ledBlink 1s infinite;
@@ -232,22 +233,22 @@
             }
         }
         .air-btn {
-            background: #2196f3;
+            background: #1b88cf;
             color: white;
         }
         .air-btn.active {
-            background: #ff9800;
+            background: #e65100;
         }
         .timer-display {
             font-size: 32px;
-            font-weight: bold;
+            font-weight: 600;
             text-align: center;
             padding: 10px;
             background: var(--bg-item);
-            border-radius: 8px;
+            border-radius: var(--panel-radius);
             margin: 10px 0;
             color: var(--text-primary);
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: background 0.15s ease, color 0.15s ease;
         }
         .timer-controls {
             display: flex;
@@ -260,13 +261,15 @@
         }
         .air-controls-compact {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
         }
         .air-control-group {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
-            align-items: center;
+            align-items: stretch;
+            min-width: 0;
         }
         .air-control-label {
             font-size: 13px;
@@ -275,9 +278,10 @@
             min-width: 60px;
             text-align: right;
         }
-        .air-control-group .air-btn {
-            flex: 1;
-            min-width: 100px;
+        .air-control-group .air-btn,
+        .air-control-group .lufs-btn {
+            flex: 1 1 8rem;
+            min-width: 0;
         }
         .air3-time-row {
             display: flex;
@@ -295,43 +299,43 @@
             flex: 1;
         }
         .status-item.silence-active {
-            border-left-color: #d32f2f;
-            background: #ffcdd2;
+            border-left-color: #c62828;
+            background: #fbe9e9;
         }
         .status-item.silence-active .value {
             color: #b71c1c;
         }
         [data-theme="dark"] .status-item.silence-active {
-            background: #5c1a1a;
+            background: #3a1a1a;
             border-left-color: #ef5350;
         }
         [data-theme="dark"] .status-item.silence-active .value {
             color: #ef9a9a;
         }
         .status-item.lufs-active {
-            border-left-color: #9c27b0;
-            background: #f3e5f5;
+            border-left-color: #1565a8;
+            background: #e8f1f8;
         }
         .status-item.lufs-active .value {
-            color: #6a1b9a;
+            color: #0d47a1;
         }
         .status-item .value.lufs-lra {
             font-size: 18px;
             margin-top: 2px;
         }
         [data-theme="dark"] .status-item.lufs-active {
-            background: #4a1a55;
-            border-left-color: #ce93d8;
+            background: #1a2c3a;
+            border-left-color: #64b5f6;
         }
         [data-theme="dark"] .status-item.lufs-active .value {
-            color: #e1bee7;
+            color: #90caf9;
         }
         .lufs-btn {
-            background: #7b1fa2;
+            background: #1565a8;
             color: white;
         }
         .lufs-btn.active {
-            background: #ab47bc;
+            background: #0d47a1;
         }
         .loudness-hint {
             font-size: 13px;
@@ -341,10 +345,10 @@
         .info {
             background: var(--bg-info);
             padding: 15px;
-            border-radius: 8px;
+            border-radius: var(--panel-radius);
             margin-top: 20px;
             color: var(--text-info);
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: background 0.15s ease, color 0.15s ease;
         }
         .text-controls {
             display: flex;
@@ -375,40 +379,51 @@
         }
         .input-with-button input {
             flex: 1;
-            padding: 12px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 10px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--input-radius);
+            font-size: 15px;
             background: var(--bg-panel);
             color: var(--text-primary);
-            transition: border-color 0.3s, background 0.3s ease, color 0.3s ease;
+            transition: border-color 0.15s, background 0.15s ease, color 0.15s ease;
         }
         .input-with-button input:focus {
             outline: none;
             border-color: var(--input-focus);
         }
-        .text-btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
+        .warn-priority {
+            padding: 10px 12px;
+            margin-right: 5px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--input-radius);
+            background: var(--bg-panel);
+            color: var(--text-primary);
             font-size: 14px;
-            font-weight: bold;
+        }
+        .warn-priority:focus {
+            outline: none;
+            border-color: var(--input-focus);
+        }
+        .text-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--panel-radius);
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            background: #667eea;
+            transition: background 0.15s ease;
+            background: var(--accent);
             color: white;
             white-space: nowrap;
         }
         .text-btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: var(--accent-hover);
         }
         .text-btn.warn-clear {
-            background: #ff5252;
+            background: #c62828;
         }
         .text-btn.warn-clear:hover {
-            background: #e53935;
+            background: #b71c1c;
         }
         .modal-overlay {
             display: none;
@@ -419,7 +434,6 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
             z-index: 1000;
-            backdrop-filter: blur(2px);
         }
         .modal-overlay.show {
             display: flex;
@@ -428,14 +442,15 @@
         }
         .modal-dialog {
             background: var(--bg-modal);
-            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
             padding: 30px;
             max-width: 500px;
             width: 90%;
-            box-shadow: 0 8px 32px var(--shadow-modal);
+            box-shadow: 0 8px 24px var(--shadow-modal);
             z-index: 1001;
             text-align: center;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
         }
         .modal-dialog h2 {
             color: #d32f2f;
@@ -452,51 +467,59 @@
             font-size: 48px;
             margin-bottom: 15px;
         }
-        .top-right-controls {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+        .page-chrome {
             display: flex;
             align-items: flex-start;
+            justify-content: space-between;
             gap: 12px;
-            z-index: 100;
+            max-width: 1200px;
+            margin: 0 auto 16px auto;
+        }
+        .top-right-controls {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            gap: 12px;
+            min-width: 0;
         }
         .version-info {
             background: var(--bg-version);
             padding: 10px 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px var(--shadow-strong);
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
+            box-shadow: 0 1px 3px var(--shadow);
             font-size: 13px;
             color: var(--text-primary);
             text-align: right;
-            backdrop-filter: blur(10px);
-            transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
         }
         .version-info .version-label {
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 600;
+            color: var(--accent-hover);
             margin-right: 5px;
         }
         .version-info .instance-label {
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 600;
+            color: var(--accent-hover);
             margin-right: 5px;
         }
         .version-info .distribution-label {
-            font-weight: bold;
-            color: #764ba2;
+            font-weight: 600;
+            color: var(--accent-hover);
             margin-right: 5px;
         }
         .version-info .connection-label {
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 600;
+            color: var(--accent-hover);
             margin-right: 5px;
         }
         .connection-badge {
             display: inline-block;
-            font-weight: bold;
+            font-weight: 600;
             padding: 1px 8px;
-            border-radius: 999px;
+            border-radius: var(--panel-radius);
             font-size: 12px;
         }
         .connection-live {
@@ -524,50 +547,43 @@
             color: #ef9a9a;
         }
         .theme-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
+            flex-shrink: 0;
             background: var(--bg-version);
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            font-size: 18px;
             cursor: pointer;
-            box-shadow: 0 2px 8px var(--shadow-strong);
-            z-index: 100;
+            box-shadow: 0 1px 3px var(--shadow);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            transition: background 0.15s ease;
         }
         .theme-toggle:hover {
-            transform: scale(1.1);
-        }
-        .theme-toggle:active {
-            transform: scale(0.95);
+            background: var(--bg-item);
         }
         .settings-gear {
             flex-shrink: 0;
             background: var(--bg-version);
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            font-size: 18px;
             cursor: pointer;
-            box-shadow: 0 2px 8px var(--shadow-strong);
+            box-shadow: 0 1px 3px var(--shadow);
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--text-primary);
-            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            transition: background 0.15s ease;
         }
         .settings-gear:hover {
-            transform: scale(1.1);
-        }
-        .settings-gear:active {
-            transform: scale(0.95);
+            background: var(--bg-item);
         }
         .settings-overlay {
             display: none;
@@ -581,20 +597,20 @@
             align-items: stretch;
             justify-content: center;
             padding: 24px;
-            backdrop-filter: blur(2px);
         }
         .settings-overlay.show {
             display: flex;
         }
         .settings-panel {
             background: var(--bg-modal);
-            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
             width: min(980px, 100%);
             max-height: 100%;
             min-height: 0;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 8px 32px var(--shadow-modal);
+            box-shadow: 0 8px 24px var(--shadow-modal);
             overflow: hidden;
         }
         #settingsEditor {
@@ -612,28 +628,45 @@
             flex-shrink: 0;
         }
         .settings-header h2 {
-            font-size: 20px;
+            font-size: 18px;
+            font-weight: 600;
             color: var(--text-primary);
+        }
+        .settings-main {
+            display: flex;
+            flex: 1;
+            min-height: 0;
         }
         .settings-tabs {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            padding: 12px 16px 0 16px;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            width: 160px;
             flex-shrink: 0;
+            gap: 0;
+            padding: 8px 0;
+            border-right: 1px solid var(--input-border);
+            overflow-y: auto;
         }
         .settings-tab {
             border: none;
-            background: var(--bg-item);
+            border-radius: 0;
+            border-left: 3px solid transparent;
+            background: transparent;
             color: var(--text-primary);
-            border-radius: 999px;
-            padding: 6px 12px;
+            padding: 10px 14px;
             cursor: pointer;
             font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+        }
+        .settings-tab:hover {
+            background: var(--bg-item);
         }
         .settings-tab.active {
-            background: #667eea;
-            color: white;
+            background: var(--bg-item);
+            border-left-color: var(--accent);
+            color: var(--text-primary);
         }
         .settings-body {
             padding: 16px 20px;
@@ -673,17 +706,22 @@
         .settings-field-control select {
             width: 100%;
             padding: 8px 10px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--input-radius);
             background: var(--bg-panel);
             color: var(--text-primary);
+        }
+        .settings-field-control input:focus,
+        .settings-field-control select:focus {
+            outline: none;
+            border-color: var(--input-focus);
         }
         .settings-field-control input[type="checkbox"] {
             width: auto;
         }
         .settings-field-control input[type="color"] {
             padding: 2px;
-            height: 36px;
+            height: 32px;
         }
         .settings-hint {
             grid-column: 2;
@@ -730,8 +768,8 @@
         .settings-sdp-dialog {
             margin: 16px 0 0 0;
             padding: 16px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--panel-radius);
             background: var(--bg-panel);
         }
         .settings-sdp-dialog textarea {
@@ -739,12 +777,16 @@
             min-height: 160px;
             margin: 8px 0 12px 0;
             padding: 8px 10px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
-            background: var(--bg-card, var(--bg-panel));
+            border: 1px solid var(--input-border);
+            border-radius: var(--input-radius);
+            background: var(--bg-panel);
             color: var(--text-primary);
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 12px;
+        }
+        .settings-sdp-dialog textarea:focus {
+            outline: none;
+            border-color: var(--input-focus);
         }
         .settings-sdp-actions {
             display: flex;
@@ -766,20 +808,30 @@
             width: 100%;
             margin: 12px 0;
             padding: 10px;
-            border: 2px solid var(--input-border);
-            border-radius: 8px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--input-radius);
             background: var(--bg-panel);
             color: var(--text-primary);
+        }
+        .settings-pin-box input:focus {
+            outline: none;
+            border-color: var(--input-focus);
         }
         .settings-hidden {
             display: none !important;
         }
         @media (max-width: 768px) {
             .button-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
             .status-grid {
                 grid-template-columns: 1fr;
+            }
+            .air-controls-compact {
+                grid-template-columns: 1fr;
+            }
+            .text-input-row {
+                flex-direction: column;
             }
             .input-with-button {
                 flex-direction: column;
@@ -803,22 +855,43 @@
             .settings-overlay {
                 padding: 8px;
             }
+            .settings-main {
+                flex-direction: column;
+            }
+            .settings-tabs {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+                border-right: none;
+                border-bottom: 1px solid var(--input-border);
+                padding: 0;
+            }
+            .settings-tab {
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            .settings-tab.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--accent);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
-        <span id="themeIcon">🌙</span>
-    </button>
-
-    <div class="top-right-controls">
-        <button class="settings-gear" id="settingsGear" title="Settings" aria-label="Open settings">⚙</button>
-        <div class="version-info" id="versionInfo">
-            <div><span class="instance-label">Instance:</span><span id="instanceValue">-</span></div>
-            <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
-            <div><span class="distribution-label">Distribution:</span><span id="distributionValue">-</span></div>
-            <div><span class="connection-label">Connection:</span><span id="connectionValue" class="connection-badge connection-offline">Offline</span></div>
+    <div class="page-chrome">
+        <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
+            <span id="themeIcon">🌙</span>
+        </button>
+        <div class="top-right-controls">
+            <button class="settings-gear" id="settingsGear" title="Settings" aria-label="Open settings">⚙</button>
+            <div class="version-info" id="versionInfo">
+                <div><span class="instance-label">Instance:</span><span id="instanceValue">-</span></div>
+                <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
+                <div><span class="distribution-label">Distribution:</span><span id="distributionValue">-</span></div>
+                <div><span class="connection-label">Connection:</span><span id="connectionValue" class="connection-badge connection-offline">Offline</span></div>
+            </div>
         </div>
     </div>
     
@@ -889,7 +962,7 @@
                         <label for="warnInput">WARN (Warning Message):</label>
                         <div class="input-with-button">
                             <input type="text" id="warnInput" placeholder="Enter warning message..." />
-                            <select id="warnPriority" style="padding: 8px; margin-right: 5px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary);">
+                            <select id="warnPriority" class="warn-priority">
                                 <option value="0" selected>Priority 0 (Normal)</option>
                                 <option value="1">Priority 1 (Medium)</option>
                                 <option value="2">Priority 2 (High)</option>
@@ -931,8 +1004,10 @@
                 <button type="button" class="text-btn" id="settingsPinUnlock">Unlock</button>
             </div>
             <div id="settingsEditor" class="settings-hidden">
-                <div class="settings-tabs" id="settingsTabs"></div>
-                <div class="settings-body" id="settingsBody"></div>
+                <div class="settings-main">
+                    <div class="settings-tabs" id="settingsTabs"></div>
+                    <div class="settings-body" id="settingsBody"></div>
+                </div>
                 <div class="settings-footer">
                     <span class="settings-status" id="settingsStatus"></span>
                     <button type="button" class="text-btn" id="settingsLoadPreset">Load Preset</button>

@@ -69,6 +69,37 @@ except ImportError:
     logger.warning("websockets library not available. WebSocket support will be disabled.")
 
 HOST = '0.0.0.0'
+# iOS probes several apple-touch-icon filenames at the site root.
+_WEB_UI_ICON_FILES = {
+    '/apple-touch-icon.png': 'apple-touch-icon.png',
+    '/apple-touch-icon-precomposed.png': 'apple-touch-icon.png',
+    '/apple-touch-icon-180x180.png': 'apple-touch-icon.png',
+    '/apple-touch-icon-180x180-precomposed.png': 'apple-touch-icon.png',
+    '/apple-touch-icon-167x167.png': 'apple-touch-icon.png',
+    '/apple-touch-icon-152x152.png': 'apple-touch-icon.png',
+    '/apple-touch-icon-120x120.png': 'apple-touch-icon.png',
+    '/favicon.png': 'apple-touch-icon.png',
+    '/favicon.ico': 'apple-touch-icon.png',
+    '/web-app-icon-512.png': 'web-app-icon-512.png',
+}
+
+
+def _web_ui_base_dir() -> str:
+    """Directory that contains templates/ (and images/ when not frozen)."""
+    if getattr(sys, 'frozen', False):
+        return getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _read_web_ui_icon_png(filename: str) -> Optional[bytes]:
+    """Load a PNG from templates/ (bundled with the Web-UI HTML)."""
+    path = os.path.join(_web_ui_base_dir(), 'templates', filename)
+    try:
+        with open(path, 'rb') as handle:
+            data = handle.read()
+    except OSError:
+        return None
+    return data or None
 
 
 class ReusableHTTPServer(HTTPServer):
@@ -539,6 +570,8 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
         - /api/settings... -> Settings API
         - /?cmd=... or /cmd=... -> Legacy command format
         - / or /index.html -> Web-UI
+        - /apple-touch-icon.png, /favicon.png -> App icon
+        - /manifest.webmanifest -> Add-to-Home-Screen name and icon
         - Other paths -> 404 error
         """
         logger.debug(f"HTTP request path: {self.path}")
@@ -575,6 +608,14 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
         # Web-UI
         if path == '/' or path == '/index.html':
             self._handle_web_ui()
+            return
+
+        if path in _WEB_UI_ICON_FILES:
+            self._handle_web_ui_icon(path)
+            return
+
+        if path == '/manifest.webmanifest':
+            self._handle_web_manifest()
             return
         
         self.send_error(404, 'file not found')
@@ -1129,13 +1170,60 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 log_exception(logger, error)
                 self.send_error(500, str(error))
     
+    def _handle_web_ui_icon(self, path: str) -> None:
+        """Serve the OnAirScreen icon for iOS/Android Add to Home Screen and favicons."""
+        filename = _WEB_UI_ICON_FILES.get(path)
+        data = _read_web_ui_icon_png(filename) if filename else None
+        if not data:
+            self.send_error(404, 'file not found')
+            return
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'image/png')
+            self.send_header('Content-Length', str(len(data)))
+            self.send_header('Cache-Control', 'public, max-age=86400')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(data)
+        except (OSError, BrokenPipeError) as write_error:
+            logger.warning(f"Error writing Web-UI icon to client: {write_error}")
+
+    def _handle_web_manifest(self) -> None:
+        """Serve a short web app manifest so home-screen shortcuts get a name and icon."""
+        payload = {
+            'name': 'OnAirScreen Remote Control',
+            'short_name': 'OnAirScreen',
+            'display': 'standalone',
+            'start_url': '/',
+            'icons': [
+                {
+                    'src': '/apple-touch-icon.png',
+                    'sizes': '180x180',
+                    'type': 'image/png',
+                    'purpose': 'any',
+                },
+                {
+                    'src': '/web-app-icon-512.png',
+                    'sizes': '512x512',
+                    'type': 'image/png',
+                    'purpose': 'any',
+                },
+            ],
+        }
+        body = json.dumps(payload).encode('utf-8')
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'application/manifest+json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(body)
+        except (OSError, BrokenPipeError) as write_error:
+            logger.warning(f"Error writing Web-UI manifest to client: {write_error}")
+
     def _get_web_ui_html(self) -> str:
         """Load HTML content for Web-UI from template file"""
-        if getattr(sys, 'frozen', False):
-            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-        else:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-        template_path = os.path.join(base_dir, 'templates', 'web_ui.html')
+        template_path = os.path.join(_web_ui_base_dir(), 'templates', 'web_ui.html')
         
         try:
             with open(template_path, 'r', encoding='utf-8') as f:

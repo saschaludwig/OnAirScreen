@@ -9,9 +9,17 @@ All notable changes to this project will be documented in this file.
 - Left-click on status LEDs and AIR timers toggles them (same as the hotkeys)
 - Right-click **Quit OnAirScreen** on the main screen
 - On-screen WARN `QUITTING ONAIRSCREEN` while the app is shutting down
+- Web UI Add to Home Screen on iPhone/Android uses the OnAirScreen icon
+
+### Changed
+
+- Web UI uses a flat studio look: CI color blue, square inputs, and settings tabs on the left like the desktop dialog
+- Web UI theme, settings, and version controls scroll with the page instead of staying pinned to the corners
 
 ### Fixed
 
+- Web UI AIR timer and loudness buttons no longer overflow the viewport on phones
+- Web UI home-screen icon is an opaque 180×180 PNG at the site root so iOS picks it up
 - Ctrl+C / SIGINT shows the same `QUITTING ONAIRSCREEN` WARN as Q and the context menu
 - Opening Settings / Apply no longer segfaults on Raspberry Pi: the Python mouse event filter is gone; main-screen children let double-click and right-click through to the window
 - Audio meter heading "LUFS" in the L/R + LUFS layout is no longer clipped on the left and right

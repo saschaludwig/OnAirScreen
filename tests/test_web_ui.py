@@ -309,6 +309,39 @@ class TestWebUI:
         written_data = b''.join(call[0][0] for call in handler.wfile.write.call_args_list if isinstance(call[0][0], bytes))
         assert b"Error: Web UI template not found" in written_data
 
+    def test_apple_touch_icon_served(self, mock_handler):
+        """iOS Add to Home Screen needs an opaque 180×180 PNG at the site root."""
+        import struct
+
+        handler = mock_handler
+        handler.path = "/apple-touch-icon-180x180.png"
+        handler.do_GET()
+
+        handler.send_response.assert_called_once_with(200)
+        handler.send_header.assert_any_call('Content-type', 'image/png')
+        written_data = b''.join(
+            call[0][0] for call in handler.wfile.write.call_args_list if isinstance(call[0][0], bytes)
+        )
+        assert written_data.startswith(b'\x89PNG\r\n\x1a\n')
+        width, height = struct.unpack('>II', written_data[16:24])
+        assert (width, height) == (180, 180)
+        assert written_data[25] == 2  # RGB, no alpha
+
+    def test_web_manifest_served(self, mock_handler):
+        handler = mock_handler
+        handler.path = "/manifest.webmanifest"
+        handler.do_GET()
+
+        handler.send_response.assert_called_once_with(200)
+        handler.send_header.assert_any_call('Content-type', 'application/manifest+json; charset=utf-8')
+        written_data = b''.join(
+            call[0][0] for call in handler.wfile.write.call_args_list if isinstance(call[0][0], bytes)
+        )
+        manifest = json.loads(written_data.decode('utf-8'))
+        assert manifest['short_name'] == 'OnAirScreen'
+        assert manifest['icons'][0]['src'] == '/apple-touch-icon.png'
+        assert manifest['icons'][0]['sizes'] == '180x180'
+
 
 class TestGetStatusJSON:
     """Tests for get_status_json method"""
@@ -770,6 +803,20 @@ class TestWebUIUxExtras:
         assert "setConnectionState('offline')" in web_ui_html
         assert "connectionErrorModal" in web_ui_html
 
+    def test_chrome_scrolls_and_air_controls_wrap(self, web_ui_html):
+        assert 'class="page-chrome"' in web_ui_html
+        theme_css = web_ui_html.split(".theme-toggle {", 1)[1].split(".theme-toggle:hover", 1)[0]
+        chrome_css = web_ui_html.split(".top-right-controls {", 1)[1].split(".version-info {", 1)[0]
+        assert "position: fixed" not in theme_css
+        assert "position: fixed" not in chrome_css
+        assert "grid-template-columns: 1fr;" in web_ui_html.split(".air-controls-compact {", 2)[-1]
+        assert "flex-wrap: wrap" in web_ui_html.split(".air-control-group {", 1)[1].split("}", 1)[0]
+        assert 'rel="apple-touch-icon"' in web_ui_html
+        assert 'sizes="180x180"' in web_ui_html
+        assert 'apple-touch-icon-180x180.png' in web_ui_html
+        assert 'apple-mobile-web-app-title' in web_ui_html
+        assert 'href="/manifest.webmanifest"' in web_ui_html
+
     def test_settings_gear_and_overlay(self, web_ui_html):
         assert 'id="settingsGear"' in web_ui_html
         assert 'class="top-right-controls"' in web_ui_html
@@ -785,6 +832,8 @@ class TestWebUIUxExtras:
         assert "bbc_ppm" in web_ui_html
         assert "#settingsEditor" in web_ui_html
         assert "min-height: 0" in web_ui_html
+        assert ".settings-main" in web_ui_html
+        assert "--input-radius: 0" in web_ui_html
         assert ".settings-secret-row input" in web_ui_html
         assert "settings-secret-toggle" in web_ui_html
         assert "if (!isUnchanged && value)" in web_ui_html
