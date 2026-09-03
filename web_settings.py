@@ -212,6 +212,8 @@ class SettingsField:
     maximum: Optional[float] = None
     step: Optional[float] = None
     widget: Optional[str] = None
+    hidden: bool = False
+    virtual: bool = False
     enabled_when: Optional[list[dict[str, Any]]] = None
     enabled_when_any: Optional[list[dict[str, Any]]] = None
 
@@ -585,31 +587,38 @@ def build_settings_schema() -> list[SettingsTab]:
                       options=_enum_options(AUDIO_SOURCE_LABELS), enabled_when=meters_on),
         SettingsField("Audio", "input_device", "Audio Input", "enum", DEFAULT_AUDIO_INPUT_DEVICE,
                       options_key="audio_devices", enabled_when=source_device),
-        SettingsField("Audio", "livewire_channel", "Livewire Channel", "int",
-                      DEFAULT_AUDIO_LIVEWIRE_CHANNEL, minimum=1, maximum=32767,
-                      enabled_when=source_livewire),
         SettingsField("Audio", "livewire_iface", "AoIP Interface", "enum",
                       DEFAULT_AUDIO_LIVEWIRE_IFACE, options_key="ipv4_interfaces",
                       enabled_when=source_aoip),
+        SettingsField("Audio", "livewire_source", "Livewire Source", "enum", "",
+                      widget="livewire_source", virtual=True, enabled_when=source_livewire,
+                      hint="Announced sources appear while this overlay is open. "
+                           "Pick a source or type a channel number below."),
+        SettingsField("Audio", "livewire_channel", "Livewire Channel", "int",
+                      DEFAULT_AUDIO_LIVEWIRE_CHANNEL, minimum=1, maximum=32767,
+                      enabled_when=source_livewire),
+        SettingsField("Audio", "aes67_stream", "AES67 Stream", "enum", "",
+                      widget="aes67_stream", virtual=True, enabled_when=source_aes67,
+                      hint="None, live SAP, or pasted SDP while this overlay is open."),
         SettingsField("Audio", "aes67_id", "AES67 Stream ID", "string", "",
-                      enabled_when=source_aes67),
+                      hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_addr", "AES67 Address", "string", "",
-                      enabled_when=source_aes67),
+                      hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_port", "AES67 Port", "int", DEFAULT_AUDIO_AES67_PORT,
-                      minimum=PORT_MIN, maximum=PORT_MAX, enabled_when=source_aes67),
+                      minimum=PORT_MIN, maximum=PORT_MAX, hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_name", "AES67 Name", "string", "",
-                      enabled_when=source_aes67),
+                      hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_codec", "AES67 Codec", "enum", DEFAULT_AUDIO_AES67_CODEC,
-                      options=_string_options(["L16", "L24"]), enabled_when=source_aes67),
+                      options=_string_options(["L16", "L24"]), hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_rate", "AES67 Sample Rate", "enum", DEFAULT_AUDIO_AES67_RATE,
                       options=[{"value": 44100, "label": "44100"}, {"value": 48000, "label": "48000"},
                                {"value": 96000, "label": "96000"}],
-                      enabled_when=source_aes67),
+                      hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_channels", "AES67 Channels", "int",
                       DEFAULT_AUDIO_AES67_CHANNELS, minimum=1, maximum=64,
-                      enabled_when=source_aes67),
+                      hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "aes67_manual", "AES67 Pasted SDP", "bool", DEFAULT_AUDIO_AES67_MANUAL,
-                      enabled_when=source_aes67),
+                      hidden=True, enabled_when=source_aes67),
         SettingsField("Audio", "layout", "Meter Layout", "enum", DEFAULT_AUDIO_LAYOUT,
                       options=_enum_options(AUDIO_LAYOUT_LABELS), enabled_when=meters_on),
         SettingsField("Audio", "unit", "Display Unit", "enum", DEFAULT_AUDIO_UNIT,
@@ -785,6 +794,8 @@ def get_web_config(settings: Optional[QSettings] = None) -> dict[str, dict[str, 
     exported = export_config_dict(include_mqtt=True, settings=settings)
     result: dict[str, dict[str, Any]] = {}
     for field_def in iter_schema_fields():
+        if field_def.virtual:
+            continue
         raw = exported.get(field_def.group, {}).get(field_def.key, field_def.default)
         if field_def.secret:
             if field_def.group == "Network" and field_def.key == "websettingspin":
@@ -878,6 +889,8 @@ def schema_as_json() -> dict[str, Any]:
                 "maximum": item.maximum,
                 "step": item.step,
                 "widget": item.widget,
+                "hidden": item.hidden,
+                "virtual": item.virtual,
             }
             if item.enabled_when:
                 payload["enabledWhen"] = item.enabled_when
@@ -954,6 +967,8 @@ def apply_web_config(
             field_def = index.get((group, key))
             if field_def is None:
                 raise SettingsApiError(f"Unknown setting {group}/{key}")
+            if field_def.virtual:
+                continue
             converted = _validate_and_convert(field_def, value)
             if converted == UNCHANGED_SENTINEL:
                 continue
@@ -1137,6 +1152,18 @@ def dispatch_settings_api(main_screen: Optional[Any], action: str, payload: Any 
     if action == "presets_load":
         name = str(payload.get("name") or payload.get("filename") or "")
         return {"config": load_web_preset(name)}
+    if action == "aoip_list":
+        from web_aoip import list_web_aoip_streams
+
+        return list_web_aoip_streams(payload)
+    if action == "aoip_sdp":
+        from web_aoip import paste_web_aoip_sdp
+
+        return paste_web_aoip_sdp(payload)
+    if action == "aoip_stop":
+        from web_aoip import stop_web_aoip_discovery
+
+        return stop_web_aoip_discovery()
     raise SettingsApiError(f"Unknown settings action: {action}", 404)
 
 

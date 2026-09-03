@@ -772,6 +772,7 @@ class TestWebUIUxExtras:
 
     def test_settings_gear_and_overlay(self, web_ui_html):
         assert 'id="settingsGear"' in web_ui_html
+        assert 'class="top-right-controls"' in web_ui_html
         assert 'id="settingsOverlay"' in web_ui_html
         assert "function openSettingsOverlay" in web_ui_html
         assert "function initSettingsUi" in web_ui_html
@@ -787,3 +788,10 @@ class TestWebUIUxExtras:
         assert ".settings-secret-row input" in web_ui_html
         assert "settings-secret-toggle" in web_ui_html
         assert "if (!isUnchanged && value)" in web_ui_html
+        assert "widget === 'livewire_source'" in web_ui_html
+        assert "widget === 'aes67_stream'" in web_ui_html
+        assert "/api/settings/aoip" in web_ui_html
+        assert "Paste SDP" in web_ui_html
+        assert "function refreshAoipStreams" in web_ui_html
+        assert "function stopAoipDiscoveryPoll" in web_ui_html
+        assert "field.hidden" in web_ui_html

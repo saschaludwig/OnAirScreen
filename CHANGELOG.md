@@ -9,11 +9,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Web UI: Instance/Version/Connection block stays top-right; settings gear sits to its left
 
 ### Added
 
 - Right-click **Start I+LRA** and **Stop I+LRA** on the main screen (when meters are enabled)
 - Web UI settings overlay (gear, top right): edit all OnAirScreen settings, optional PIN (`Network/websettingspin`), Apply, and preset load/save
+- Web UI Audio Meters: **Livewire Source** and **AES67 Stream** dropdowns with live discovery and **Paste SDP**, matching the desktop Settings dialog
 
 ## [1.0.0beta6]
 

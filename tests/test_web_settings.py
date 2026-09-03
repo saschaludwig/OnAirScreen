@@ -107,6 +107,33 @@ class TestConfigRoundtrip:
         assert snapshot["MQTT"]["mqttpassword"] == "broker-secret"
         assert snapshot["Network"]["websettingspin"] == ""
 
+    def test_apply_skips_virtual_aoip_widgets(self, ini_settings):
+        apply_web_config(
+            {
+                "Audio": {
+                    "livewire_source": "should-not-write",
+                    "aes67_stream": "also-virtual",
+                    "livewire_channel": 42,
+                    "aes67_id": "abc",
+                    "aes67_addr": "239.69.1.1",
+                    "aes67_port": 5004,
+                    "aes67_name": "Studio Mix",
+                    "aes67_codec": "L24",
+                    "aes67_rate": 48000,
+                    "aes67_channels": 2,
+                    "aes67_manual": True,
+                }
+            },
+            settings=ini_settings,
+        )
+        snapshot = get_web_config(ini_settings)
+        assert "livewire_source" not in snapshot["Audio"]
+        assert "aes67_stream" not in snapshot["Audio"]
+        assert snapshot["Audio"]["livewire_channel"] == 42
+        assert snapshot["Audio"]["aes67_id"] == "abc"
+        assert snapshot["Audio"]["aes67_addr"] == "239.69.1.1"
+        assert snapshot["Audio"]["aes67_manual"] is True
+
     def test_unchanged_sentinel_keeps_secret(self, ini_settings):
         apply_web_config({"MQTT": {"mqttpassword": "keep-me"}}, settings=ini_settings)
         apply_web_config(
@@ -209,6 +236,15 @@ class TestEnablement:
             {"group": "TimeSource", "key": "source", "eq": "ntp"},
         ]
         assert "enabledWhen" not in _json_field(schema, "Audio", "enabled")
+        livewire_source = _json_field(schema, "Audio", "livewire_source")
+        assert livewire_source["widget"] == "livewire_source"
+        assert livewire_source["virtual"] is True
+        aes67_stream = _json_field(schema, "Audio", "aes67_stream")
+        assert aes67_stream["widget"] == "aes67_stream"
+        assert aes67_stream["virtual"] is True
+        assert _json_field(schema, "Audio", "aes67_id")["hidden"] is True
+        assert _json_field(schema, "Audio", "aes67_addr")["hidden"] is True
+        assert _json_field(schema, "Audio", "livewire_channel")["hidden"] is False
 
     def test_livewire_vs_aes67(self):
         livewire = {"Audio": {"enabled": True, "source": "livewire"}}
@@ -227,6 +263,12 @@ class TestEnablement:
         assert field_is_enabled(aoip, aes67) is True
         assert field_is_enabled(device, livewire) is False
         assert field_is_enabled(device, {"Audio": {"enabled": True, "source": "device"}}) is True
+        source_combo = _schema_field("Audio", "livewire_source")
+        aes_combo = _schema_field("Audio", "aes67_stream")
+        assert field_is_enabled(source_combo, livewire) is True
+        assert field_is_enabled(source_combo, aes67) is False
+        assert field_is_enabled(aes_combo, aes67) is True
+        assert field_is_enabled(aes_combo, livewire) is False
 
     def test_mqtt_fields_follow_enablemqtt(self):
         server = _schema_field("MQTT", "mqttserver")
@@ -314,3 +356,36 @@ class TestHttpRoutes:
         with patch("network.authenticate_web_settings_pin", side_effect=SettingsApiError("Invalid PIN", 401)):
             handler.do_POST()
         assert handler.send_response.call_args[0][0] == 401
+
+    def test_aoip_list_route(self, handler):
+        handler.path = "/api/settings/aoip?source=livewire&iface=&channel=1"
+        with patch("network.web_settings_pin_required", return_value=False):
+            with patch.object(
+                handler,
+                "_call_settings_api",
+                return_value={"source": "livewire", "running": False, "streams": []},
+            ) as mocked:
+                handler.do_GET()
+                mocked.assert_called_once()
+                assert mocked.call_args[0][0] == "aoip_list"
+        handler.send_response.assert_called_with(200)
+
+    def test_aoip_sdp_and_stop_routes(self, handler):
+        payload = {"sdp": "v=0", "iface": ""}
+        raw = json.dumps(payload).encode("utf-8")
+        handler.rfile = BytesIO(raw)
+        handler.headers = {"Content-Length": str(len(raw))}
+        handler.path = "/api/settings/aoip/sdp"
+        with patch("network.web_settings_pin_required", return_value=False):
+            with patch.object(handler, "_call_settings_api", return_value={"streams": []}) as mocked:
+                handler.do_POST()
+                mocked.assert_called_once_with("aoip_sdp", payload)
+        handler.send_response.assert_called_with(200)
+
+        handler.path = "/api/settings/aoip/stop"
+        handler.rfile = BytesIO(b"")
+        handler.headers = {"Content-Length": "0"}
+        with patch("network.web_settings_pin_required", return_value=False):
+            with patch.object(handler, "_call_settings_api", return_value={"status": "ok"}) as mocked:
+                handler.do_POST()
+                mocked.assert_called_once_with("aoip_stop")

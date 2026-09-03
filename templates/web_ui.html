@@ -452,17 +452,22 @@
             font-size: 48px;
             margin-bottom: 15px;
         }
-        .version-info {
+        .top-right-controls {
             position: fixed;
-            top: 80px;
+            top: 20px;
             right: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            z-index: 100;
+        }
+        .version-info {
             background: var(--bg-version);
             padding: 10px 15px;
             border-radius: 8px;
             box-shadow: 0 2px 8px var(--shadow-strong);
             font-size: 13px;
             color: var(--text-primary);
-            z-index: 100;
             text-align: right;
             backdrop-filter: blur(10px);
             transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
@@ -543,9 +548,7 @@
             transform: scale(0.95);
         }
         .settings-gear {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+            flex-shrink: 0;
             background: var(--bg-version);
             border: none;
             border-radius: 50%;
@@ -554,7 +557,6 @@
             font-size: 24px;
             cursor: pointer;
             box-shadow: 0 2px 8px var(--shadow-strong);
-            z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -711,6 +713,44 @@
             flex-wrap: wrap;
             gap: 8px;
         }
+        .settings-aoip-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            min-width: 0;
+        }
+        .settings-aoip-row select {
+            flex: 1;
+            width: auto;
+            min-width: 0;
+        }
+        .settings-aoip-row .text-btn {
+            flex-shrink: 0;
+        }
+        .settings-sdp-dialog {
+            margin: 16px 0 0 0;
+            padding: 16px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--bg-panel);
+        }
+        .settings-sdp-dialog textarea {
+            width: 100%;
+            min-height: 160px;
+            margin: 8px 0 12px 0;
+            padding: 8px 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--bg-card, var(--bg-panel));
+            color: var(--text-primary);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+        }
+        .settings-sdp-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
         .settings-status {
             margin-right: auto;
             color: var(--text-secondary);
@@ -772,14 +812,14 @@
         <span id="themeIcon">🌙</span>
     </button>
 
-    <button class="settings-gear" id="settingsGear" title="Settings" aria-label="Open settings">⚙</button>
-    
-    <!-- Version Info -->
-    <div class="version-info" id="versionInfo">
-        <div><span class="instance-label">Instance:</span><span id="instanceValue">-</span></div>
-        <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
-        <div><span class="distribution-label">Distribution:</span><span id="distributionValue">-</span></div>
-        <div><span class="connection-label">Connection:</span><span id="connectionValue" class="connection-badge connection-offline">Offline</span></div>
+    <div class="top-right-controls">
+        <button class="settings-gear" id="settingsGear" title="Settings" aria-label="Open settings">⚙</button>
+        <div class="version-info" id="versionInfo">
+            <div><span class="instance-label">Instance:</span><span id="instanceValue">-</span></div>
+            <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
+            <div><span class="distribution-label">Distribution:</span><span id="distributionValue">-</span></div>
+            <div><span class="connection-label">Connection:</span><span id="connectionValue" class="connection-badge connection-offline">Offline</span></div>
+        </div>
     </div>
     
     <div class="container">
@@ -899,6 +939,15 @@
                     <button type="button" class="text-btn" id="settingsSavePreset">Save Preset</button>
                     <button type="button" class="text-btn" id="settingsApply">Apply</button>
                     <button type="button" class="text-btn warn-clear" id="settingsClose">Close</button>
+                </div>
+                <div id="settingsSdpDialog" class="settings-sdp-dialog settings-hidden">
+                    <h3>Paste SDP</h3>
+                    <p>AES67 SDP announcement:</p>
+                    <textarea id="settingsSdpText" spellcheck="false"></textarea>
+                    <div class="settings-sdp-actions">
+                        <button type="button" class="text-btn warn-clear" id="settingsSdpCancel">Cancel</button>
+                        <button type="button" class="text-btn" id="settingsSdpOk">Add</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1929,6 +1978,20 @@
         let settingsConfig = null;
         let settingsActiveTab = 'general';
         const UNCHANGED_SENTINEL = '__unchanged__';
+        const AES67_EMPTY_SNAPSHOT = {
+            id: '',
+            name: '',
+            addr: '',
+            port: 5004,
+            codec: 'L24',
+            rate: 48000,
+            channels: 2,
+            dante: false,
+            manual: false
+        };
+        let aoipPollTimer = null;
+        let aoipPollInFlight = false;
+        let aoipPollKey = '';
 
         function settingsHeaders() {
             const headers = { 'Content-Type': 'application/json' };
@@ -1969,6 +2032,8 @@
 
         function closeSettingsOverlay() {
             settingsUiOpen = false;
+            closeSdpDialog();
+            stopAoipDiscoveryPoll();
             const overlay = document.getElementById('settingsOverlay');
             overlay.classList.remove('show');
             overlay.setAttribute('aria-hidden', 'true');
@@ -2096,6 +2161,9 @@
             const grid = document.createElement('div');
             grid.className = 'settings-form-grid';
             tab.fields.forEach(function(field) {
+                if (field.hidden) {
+                    return;
+                }
                 const label = document.createElement('label');
                 label.className = 'settings-field-label';
                 label.textContent = field.label;
@@ -2111,6 +2179,35 @@
                     control = document.createElement('input');
                     control.type = 'color';
                     control.value = (typeof value === 'string' && value.charAt(0) === '#') ? value : '#000000';
+                } else if (field.widget === 'livewire_source') {
+                    control = document.createElement('select');
+                    control.dataset.settingsVirtual = 'true';
+                    fillAoipSelectPlaceholder(control, 'Discovering sources…');
+                    control.addEventListener('change', function() {
+                        const channelInput = document.querySelector('#settingsBody [data-settings-key="livewire_channel"]');
+                        if (channelInput && control.value !== '') {
+                            channelInput.value = control.value;
+                        }
+                    });
+                } else if (field.widget === 'aes67_stream') {
+                    const row = document.createElement('div');
+                    row.className = 'settings-aoip-row';
+                    control = document.createElement('select');
+                    control.dataset.settingsVirtual = 'true';
+                    fillAoipSelectPlaceholder(control, 'Discovering streams…');
+                    control.addEventListener('change', function() {
+                        applyAes67SnapshotFromSelect(control);
+                    });
+                    const pasteBtn = document.createElement('button');
+                    pasteBtn.type = 'button';
+                    pasteBtn.className = 'text-btn';
+                    pasteBtn.textContent = 'Paste SDP';
+                    pasteBtn.addEventListener('click', function() {
+                        openSdpDialog();
+                    });
+                    row.appendChild(control);
+                    row.appendChild(pasteBtn);
+                    controlWrap.appendChild(row);
                 } else if (field.type === 'enum') {
                     control = document.createElement('select');
                     const options = ensureOption(optionList(field), value);
@@ -2212,6 +2309,7 @@
             });
             body.appendChild(grid);
             applySettingsEnablement();
+            refreshAoipStreams();
         }
 
         function settingsValuesEqual(actual, expected) {
@@ -2288,6 +2386,18 @@
                     });
                 }
             });
+            const channelInput = document.querySelector('#settingsBody [data-settings-key="livewire_channel"]');
+            const sourceSelect = document.querySelector('#settingsBody [data-settings-key="livewire_source"]');
+            if (channelInput && sourceSelect) {
+                const channelValue = String(channelInput.value);
+                const hasOption = Array.from(sourceSelect.options).some(function(opt) {
+                    return opt.value === channelValue;
+                });
+                if (hasOption) {
+                    sourceSelect.value = channelValue;
+                }
+            }
+            syncAoipDiscoveryPoll();
         }
 
         function readControlValue(control) {
@@ -2310,6 +2420,9 @@
         function collectSettingsFormIntoConfig() {
             const controls = document.querySelectorAll('#settingsBody [data-settings-group]');
             controls.forEach(function(control) {
+                if (control.dataset.settingsVirtual === 'true') {
+                    return;
+                }
                 const group = control.dataset.settingsGroup;
                 const key = control.dataset.settingsKey;
                 if (!settingsConfig[group]) {
@@ -2317,6 +2430,210 @@
                 }
                 settingsConfig[group][key] = readControlValue(control);
             });
+        }
+
+        function fillAoipSelectPlaceholder(select, label) {
+            select.innerHTML = '';
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = label;
+            select.appendChild(option);
+        }
+
+        function applyAes67Snapshot(snapshot) {
+            if (!settingsConfig.Audio) {
+                settingsConfig.Audio = {};
+            }
+            const data = snapshot || AES67_EMPTY_SNAPSHOT;
+            settingsConfig.Audio.aes67_id = data.id || '';
+            settingsConfig.Audio.aes67_name = data.name || '';
+            settingsConfig.Audio.aes67_addr = data.addr || '';
+            settingsConfig.Audio.aes67_port = data.port == null ? AES67_EMPTY_SNAPSHOT.port : data.port;
+            settingsConfig.Audio.aes67_codec = data.codec || AES67_EMPTY_SNAPSHOT.codec;
+            settingsConfig.Audio.aes67_rate = data.rate == null ? AES67_EMPTY_SNAPSHOT.rate : data.rate;
+            settingsConfig.Audio.aes67_channels = data.channels == null
+                ? AES67_EMPTY_SNAPSHOT.channels : data.channels;
+            settingsConfig.Audio.aes67_manual = !!data.manual;
+        }
+
+        function applyAes67SnapshotFromSelect(select) {
+            const option = select.options[select.selectedIndex];
+            let snapshot = null;
+            if (option && option.dataset.snapshot) {
+                try {
+                    snapshot = JSON.parse(option.dataset.snapshot);
+                } catch (err) {
+                    snapshot = null;
+                }
+            }
+            applyAes67Snapshot(snapshot);
+        }
+
+        function replaceAoipSelectOptions(select, streams, selectedValue) {
+            const signature = JSON.stringify((streams || []).map(function(item) {
+                return [item.value, item.label];
+            }));
+            if (select.dataset.aoipSignature === signature) {
+                if (String(select.value) !== String(selectedValue)) {
+                    select.value = String(selectedValue);
+                }
+                return;
+            }
+            select.dataset.aoipSignature = signature;
+            select.innerHTML = '';
+            (streams || []).forEach(function(item) {
+                const option = document.createElement('option');
+                option.value = item.value == null ? '' : String(item.value);
+                option.textContent = item.label;
+                if (item.snapshot) {
+                    option.dataset.snapshot = JSON.stringify(item.snapshot);
+                }
+                select.appendChild(option);
+            });
+            select.value = String(selectedValue);
+            if (select.value !== String(selectedValue) && streams && streams.length) {
+                select.selectedIndex = 0;
+            }
+        }
+
+        function applyAoipStreamsToUi(data) {
+            const audio = settingsConfig.Audio || {};
+            const source = data.source || audio.source;
+            if (source === 'livewire') {
+                const select = document.querySelector('#settingsBody [data-settings-key="livewire_source"]');
+                if (select) {
+                    replaceAoipSelectOptions(select, data.streams, audio.livewire_channel);
+                }
+                return;
+            }
+            if (source === 'aes67') {
+                const select = document.querySelector('#settingsBody [data-settings-key="aes67_stream"]');
+                if (select) {
+                    const selected = audio.aes67_id == null ? '' : String(audio.aes67_id);
+                    replaceAoipSelectOptions(select, data.streams, selected);
+                }
+            }
+        }
+
+        function aoipPollWantedKey() {
+            const audio = (settingsConfig && settingsConfig.Audio) || {};
+            if (!settingsUiOpen || !audio.enabled) {
+                return '';
+            }
+            if (audio.source === 'livewire' || audio.source === 'aes67') {
+                return audio.source + '|' + (audio.livewire_iface || '');
+            }
+            return '';
+        }
+
+        function stopAoipDiscoveryPoll() {
+            if (aoipPollTimer) {
+                clearInterval(aoipPollTimer);
+                aoipPollTimer = null;
+            }
+            aoipPollKey = '';
+            settingsFetch('/api/settings/aoip/stop', {
+                method: 'POST',
+                body: '{}'
+            }).catch(function() {});
+        }
+
+        function syncAoipDiscoveryPoll() {
+            const key = aoipPollWantedKey();
+            if (!key) {
+                if (aoipPollTimer) {
+                    stopAoipDiscoveryPoll();
+                }
+                return;
+            }
+            const keyChanged = key !== aoipPollKey;
+            aoipPollKey = key;
+            if (!aoipPollTimer) {
+                refreshAoipStreams();
+                aoipPollTimer = setInterval(refreshAoipStreams, 2000);
+            } else if (keyChanged) {
+                refreshAoipStreams();
+            }
+        }
+
+        async function refreshAoipStreams() {
+            if (!settingsUiOpen || aoipPollInFlight || !settingsConfig) {
+                return;
+            }
+            const audio = settingsConfig.Audio || {};
+            if (!audio.enabled || (audio.source !== 'livewire' && audio.source !== 'aes67')) {
+                return;
+            }
+            aoipPollInFlight = true;
+            try {
+                const params = new URLSearchParams();
+                params.set('source', audio.source);
+                params.set('iface', audio.livewire_iface || '');
+                if (audio.source === 'livewire') {
+                    params.set('channel', String(audio.livewire_channel || 1));
+                } else {
+                    params.set('selected', audio.aes67_id == null ? '' : String(audio.aes67_id));
+                    params.set('saved_id', audio.aes67_id || '');
+                    params.set('saved_addr', audio.aes67_addr || '');
+                    params.set('saved_port', String(audio.aes67_port || AES67_EMPTY_SNAPSHOT.port));
+                    params.set('saved_name', audio.aes67_name || '');
+                    params.set('saved_codec', audio.aes67_codec || AES67_EMPTY_SNAPSHOT.codec);
+                    params.set('saved_rate', String(audio.aes67_rate || AES67_EMPTY_SNAPSHOT.rate));
+                    params.set('saved_channels', String(audio.aes67_channels || AES67_EMPTY_SNAPSHOT.channels));
+                    params.set('saved_manual', audio.aes67_manual ? '1' : '0');
+                }
+                const data = await settingsFetch('/api/settings/aoip?' + params.toString());
+                if (!settingsUiOpen) {
+                    return;
+                }
+                applyAoipStreamsToUi(data);
+            } catch (err) {
+                if (settingsUiOpen) {
+                    setSettingsStatus(err.message || 'AoIP discovery failed', true);
+                }
+            } finally {
+                aoipPollInFlight = false;
+            }
+        }
+
+        function sdpDialogIsOpen() {
+            const dialog = document.getElementById('settingsSdpDialog');
+            return dialog && !dialog.classList.contains('settings-hidden');
+        }
+
+        function openSdpDialog() {
+            const dialog = document.getElementById('settingsSdpDialog');
+            const text = document.getElementById('settingsSdpText');
+            dialog.classList.remove('settings-hidden');
+            text.value = '';
+            text.focus();
+        }
+
+        function closeSdpDialog() {
+            const dialog = document.getElementById('settingsSdpDialog');
+            if (dialog) {
+                dialog.classList.add('settings-hidden');
+            }
+        }
+
+        async function submitSdpDialog() {
+            const text = document.getElementById('settingsSdpText').value;
+            const audio = (settingsConfig && settingsConfig.Audio) || {};
+            setSettingsStatus('Adding SDP…');
+            try {
+                const data = await settingsFetch('/api/settings/aoip/sdp', {
+                    method: 'POST',
+                    body: JSON.stringify({ sdp: text, iface: audio.livewire_iface || '' })
+                });
+                closeSdpDialog();
+                if (data.stream) {
+                    applyAes67Snapshot(data.stream);
+                }
+                applyAoipStreamsToUi(data);
+                setSettingsStatus('');
+            } catch (err) {
+                setSettingsStatus(err.message || 'Invalid SDP', true);
+            }
         }
 
         async function searchWeatherCities(query, idInput, resultsSelect) {
@@ -2420,6 +2737,8 @@
                     unlockSettingsPin();
                 }
             });
+            document.getElementById('settingsSdpCancel').addEventListener('click', closeSdpDialog);
+            document.getElementById('settingsSdpOk').addEventListener('click', submitSdpDialog);
             document.getElementById('settingsOverlay').addEventListener('click', function(e) {
                 if (e.target.id === 'settingsOverlay') {
                     closeSettingsOverlay();
@@ -2437,6 +2756,10 @@
             if (settingsUiOpen) {
                 if (e.key === 'Escape') {
                     e.preventDefault();
+                    if (sdpDialogIsOpen()) {
+                        closeSdpDialog();
+                        return;
+                    }
                     closeSettingsOverlay();
                 }
                 return;

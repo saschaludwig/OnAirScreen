@@ -616,6 +616,45 @@ class OASHTTPRequestHandler(BaseHTTPRequestHandler):
                 results = search_weather_cities(str(query_text), api_key)
                 self._send_json(200, {'results': results})
                 return
+            if path == '/api/settings/aoip' and method == 'GET':
+                if not self._settings_auth_ok():
+                    return
+                params = parse_qs(query)
+
+                def query_value(name: str, default: str = '') -> str:
+                    return (params.get(name) or [default])[0]
+
+                selected_present = 'selected' in params
+                payload = {
+                    'source': query_value('source'),
+                    'iface': query_value('iface'),
+                    'channel': query_value('channel'),
+                    'selected': query_value('selected') if selected_present else None,
+                    'saved': {
+                        'id': query_value('saved_id'),
+                        'addr': query_value('saved_addr'),
+                        'port': query_value('saved_port'),
+                        'name': query_value('saved_name'),
+                        'codec': query_value('saved_codec'),
+                        'rate': query_value('saved_rate'),
+                        'channels': query_value('saved_channels'),
+                        'manual': query_value('saved_manual'),
+                        'dante': query_value('saved_dante'),
+                    },
+                }
+                self._send_json(200, self._call_settings_api('aoip_list', payload))
+                return
+            if path == '/api/settings/aoip/sdp' and method == 'POST':
+                if not self._settings_auth_ok():
+                    return
+                body = self._read_json_body()
+                self._send_json(200, self._call_settings_api('aoip_sdp', body))
+                return
+            if path == '/api/settings/aoip/stop' and method == 'POST':
+                if not self._settings_auth_ok():
+                    return
+                self._send_json(200, self._call_settings_api('aoip_stop'))
+                return
             if path == '/api/settings/schema' and method == 'GET':
                 if not self._settings_auth_ok():
                     return

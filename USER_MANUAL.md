@@ -593,9 +593,9 @@ The alarm latches after the level stays below the threshold for the configured d
 
 The on-screen WARN uses priority **2** (high), so it is shown above TooLoud (priority 1). The `silence` API/MQTT flag is independent of `texts.warn` and of `warning/active`.
 
-**Livewire:** The PC must be on the AoIP/Livewire VLAN (IGMP/multicast). While Settings are open, advertised sources appear in the **Livewire Source** combo (`239.192.255.3` UDP **4001**, standard stereo streams only). Pick a source or type a channel. Channel *N* maps to multicast `239.192.0.0 + N` on UDP port **5004** (48 kHz / 24‑bit stereo RTP). After Apply, capture continues from the stored channel if advertisements stop.
+**Livewire:** The PC must be on the AoIP/Livewire VLAN (IGMP/multicast). While Settings (desktop dialog or Web UI overlay) are open, advertised sources appear in the **Livewire Source** combo (`239.192.255.3` UDP **4001**, standard stereo streams only). Pick a source or type a channel. Channel *N* maps to multicast `239.192.0.0 + N` on UDP port **5004** (48 kHz / 24‑bit stereo RTP). After Apply, capture continues from the stored channel if advertisements stop.
 
-**AES67:** SAP discovery uses multicast `239.255.255.255` and RFC 2974 `224.2.127.254` UDP **9875** while the settings dialog is open. The stream list updates live **only when streams appear or disappear** (no flicker while the set is unchanged). The combo always has **None** (no stream). SAP entries disappear after they stop announcing (deletion or timeout). Use **Paste SDP** if a device does not announce via SAP — those entries stay in the list and are labeled **pasted SDP**. Supported: L16/L24 at 44.1/48/96 kHz, 1–64 channels (meters show channels 1–2). Dante AES67 SAP streams are listed like others (`a=keywords:Dante` is label-only). No PTP and no playout — metering only. After Apply, capture continues from the stored address/port even if SAP is silent. Apply with **None** stops AES67 capture and clears the meter.
+**AES67:** SAP discovery uses multicast `239.255.255.255` and RFC 2974 `224.2.127.254` UDP **9875** while the settings dialog or Web UI overlay is open. The stream list updates live **only when streams appear or disappear** (no flicker while the set is unchanged). The combo always has **None** (no stream). SAP entries disappear after they stop announcing (deletion or timeout). Use **Paste SDP** if a device does not announce via SAP — those entries stay in the list and are labeled **pasted SDP**. Supported: L16/L24 at 44.1/48/96 kHz, 1–64 channels (meters show channels 1–2). Dante AES67 SAP streams are listed like others (`a=keywords:Dante` is label-only). No PTP and no playout — metering only. After Apply, capture continues from the stored address/port even if SAP is silent. Apply with **None** stops AES67 capture and clears the meter.
 
 **Local input:** on macOS grant microphone permission to OnAirScreen.
 
@@ -785,6 +785,7 @@ Open in browser: `http://<IP-address>:8010/`
 - Version and distribution information
 - Persistent connection badge (Live / Polling / Offline) plus error modal
 - Settings gear (top right): tabbed overlay for all editable settings, optional PIN, Apply, and preset load/save
+- Audio Meters in the overlay: Livewire Source and AES67 Stream dropdowns (live discovery while the overlay is open) plus Paste SDP
 
 
 ### 7.4 REST API
@@ -827,6 +828,7 @@ curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 curl http://127.0.0.1:8010/api/settings/auth
 curl -X POST http://127.0.0.1:8010/api/settings/auth -H 'Content-Type: application/json' -d '{"pin":"1234"}'
 curl http://127.0.0.1:8010/api/settings
+curl "http://127.0.0.1:8010/api/settings/aoip?source=livewire&channel=1"
 curl -X PUT http://127.0.0.1:8010/api/settings -H 'Content-Type: application/json' -d '{"config":{"General":{"slogan":"On air"}}}'
 ```
 
@@ -1225,13 +1227,13 @@ Crash files are always written, even if the log level is `NONE`. Send the log fo
 - PC on the AoIP/Livewire VLAN? IGMP/multicast not filtered?
 - Correct network interface selected (not “Default” if multiple NICs)?
 - UDP port 5004 allowed?
-- **No names in Livewire Source:** advertisements are `239.192.255.3:4001` and only run while Settings is open. You can still type the channel number.
+- **No names in Livewire Source:** advertisements are `239.192.255.3:4001` and only run while Settings (desktop or Web UI overlay) is open. You can still type the channel number.
 
 
 
 ### AES67 meters: no streams or no levels
 
-- **No streams in the combo:** AoIP interface, VLAN, and IGMP; SAP is `239.255.255.255:9875` and `224.2.127.254:9875` and only runs while Settings is open. If the device does not announce, use **Paste SDP**.
+- **No streams in the combo:** AoIP interface, VLAN, and IGMP; SAP is `239.255.255.255:9875` and `224.2.127.254:9875` and only runs while Settings (desktop or Web UI overlay) is open. If the device does not announce, use **Paste SDP**.
 - **Stream listed, meter silent:** RTP address/port and codec (L16 vs L24). Dante must be in AES67/SAP mode. No PTP is required for metering.
 
 
