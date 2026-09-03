@@ -146,7 +146,7 @@ class TestCheckNTPOffsetThread:
         mock_ntp_manager.ntp_had_warning = True
         mock_ntp_manager.ntp_warn_message = "Previous warning"
         
-        from PyQt6.QtCore import QThread
+        from PySide6.QtCore import QThread
         thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
         QThread.__init__(thread)
         thread.ntp_manager = mock_ntp_manager
@@ -179,7 +179,7 @@ class TestCheckNTPOffsetThread:
         mock_ntp_manager.ntp_had_warning = False
         mock_ntp_manager.ntp_warn_message = ""
         
-        from PyQt6.QtCore import QThread
+        from PySide6.QtCore import QThread
         thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
         QThread.__init__(thread)
         thread.ntp_manager = mock_ntp_manager
@@ -211,8 +211,10 @@ class TestCheckNTPOffsetThread:
         mock_ntp_manager = Mock()
         mock_ntp_manager.ntp_had_warning = False
         mock_ntp_manager.ntp_warn_message = ""
+        mock_ntp_manager._poll_generation = 0
+        mock_ntp_manager.poll_failed = Mock()
         
-        from PyQt6.QtCore import QThread
+        from PySide6.QtCore import QThread
         thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
         QThread.__init__(thread)
         thread.ntp_manager = mock_ntp_manager
@@ -221,6 +223,46 @@ class TestCheckNTPOffsetThread:
         
         assert mock_ntp_manager.ntp_had_warning is True
         assert "not NTP synchronized" in mock_ntp_manager.ntp_warn_message
+        mock_ntp_manager.poll_failed.emit.assert_called_once()
+    
+    @patch('ntp_manager.CheckNTPOffsetThread.__del__')
+    @patch('ntp_manager.ntplib')
+    @patch('ntp_manager.QSettings')
+    @patch('ntp_manager.settings_group')
+    def test_check_ntp_offset_ignores_stale_timeout(self, mock_settings_group, mock_qsettings, mock_ntplib, mock_del):
+        """Stale NTP poll after settings change must not unlock or warn."""
+        from ntp_manager import CheckNTPOffsetThread
+        import socket
+        
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'pool.ntp.org'
+        mock_qsettings.return_value = mock_settings
+        mock_settings_group.return_value.__enter__ = Mock()
+        mock_settings_group.return_value.__exit__ = Mock(return_value=None)
+        
+        mock_ntp_manager = Mock()
+        mock_ntp_manager.ntp_had_warning = False
+        mock_ntp_manager.ntp_warn_message = ""
+        mock_ntp_manager._poll_generation = 0
+        mock_ntp_manager.poll_failed = Mock()
+        
+        def request_and_invalidate(*_args, **_kwargs):
+            mock_ntp_manager._poll_generation = 1
+            raise socket.timeout()
+        
+        mock_client = Mock()
+        mock_client.request.side_effect = request_and_invalidate
+        mock_ntplib.NTPClient.return_value = mock_client
+        
+        from PySide6.QtCore import QThread
+        thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
+        QThread.__init__(thread)
+        thread.ntp_manager = mock_ntp_manager
+        
+        CheckNTPOffsetThread.run(thread)
+        
+        assert mock_ntp_manager.ntp_had_warning is False
+        mock_ntp_manager.poll_failed.emit.assert_not_called()
     
     @patch('ntp_manager.CheckNTPOffsetThread.__del__')
     @patch('ntp_manager.ntplib')
@@ -244,8 +286,10 @@ class TestCheckNTPOffsetThread:
         mock_ntp_manager = Mock()
         mock_ntp_manager.ntp_had_warning = False
         mock_ntp_manager.ntp_warn_message = ""
+        mock_ntp_manager._poll_generation = 0
+        mock_ntp_manager.poll_failed = Mock()
         
-        from PyQt6.QtCore import QThread
+        from PySide6.QtCore import QThread
         thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
         QThread.__init__(thread)
         thread.ntp_manager = mock_ntp_manager
@@ -254,6 +298,7 @@ class TestCheckNTPOffsetThread:
         
         assert mock_ntp_manager.ntp_had_warning is True
         assert "not NTP synchronized" in mock_ntp_manager.ntp_warn_message
+        mock_ntp_manager.poll_failed.emit.assert_called_once()
     
     @patch('ntp_manager.CheckNTPOffsetThread.__del__')
     @patch('ntp_manager.ntplib.NTPClient')
@@ -278,8 +323,10 @@ class TestCheckNTPOffsetThread:
         mock_ntp_manager = Mock()
         mock_ntp_manager.ntp_had_warning = False
         mock_ntp_manager.ntp_warn_message = ""
+        mock_ntp_manager._poll_generation = 0
+        mock_ntp_manager.poll_failed = Mock()
         
-        from PyQt6.QtCore import QThread
+        from PySide6.QtCore import QThread
         thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
         QThread.__init__(thread)
         thread.ntp_manager = mock_ntp_manager
@@ -288,12 +335,13 @@ class TestCheckNTPOffsetThread:
         
         assert mock_ntp_manager.ntp_had_warning is True
         assert mock_ntp_manager.ntp_warn_message == "NTP error message"
+        mock_ntp_manager.poll_failed.emit.assert_called_once()
     
     @patch('ntp_manager.CheckNTPOffsetThread.__del__')
     def test_check_ntp_offset_thread_stop(self, mock_del):
         """Test CheckNTPOffsetThread stop method"""
         from ntp_manager import CheckNTPOffsetThread
-        from PyQt6.QtCore import QThread
+        from PySide6.QtCore import QThread
         
         thread = CheckNTPOffsetThread.__new__(CheckNTPOffsetThread)
         QThread.__init__(thread)

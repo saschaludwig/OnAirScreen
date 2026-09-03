@@ -83,6 +83,14 @@
             margin-bottom: 30px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
+        .instance-subtitle {
+            display: block;
+            font-size: 0.45em;
+            font-weight: 600;
+            margin-top: 8px;
+            letter-spacing: 0.04em;
+            opacity: 0.95;
+        }
         .status-panel {
             background: var(--bg-panel);
             border-radius: 10px;
@@ -271,6 +279,65 @@
             flex: 1;
             min-width: 100px;
         }
+        .air3-time-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .air3-time-row label {
+            font-weight: bold;
+            color: var(--text-primary);
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .air3-time-row .input-with-button {
+            flex: 1;
+        }
+        .status-item.silence-active {
+            border-left-color: #d32f2f;
+            background: #ffcdd2;
+        }
+        .status-item.silence-active .value {
+            color: #b71c1c;
+        }
+        [data-theme="dark"] .status-item.silence-active {
+            background: #5c1a1a;
+            border-left-color: #ef5350;
+        }
+        [data-theme="dark"] .status-item.silence-active .value {
+            color: #ef9a9a;
+        }
+        .status-item.lufs-active {
+            border-left-color: #9c27b0;
+            background: #f3e5f5;
+        }
+        .status-item.lufs-active .value {
+            color: #6a1b9a;
+        }
+        .status-item .value.lufs-lra {
+            font-size: 18px;
+            margin-top: 2px;
+        }
+        [data-theme="dark"] .status-item.lufs-active {
+            background: #4a1a55;
+            border-left-color: #ce93d8;
+        }
+        [data-theme="dark"] .status-item.lufs-active .value {
+            color: #e1bee7;
+        }
+        .lufs-btn {
+            background: #7b1fa2;
+            color: white;
+        }
+        .lufs-btn.active {
+            background: #ab47bc;
+        }
+        .loudness-hint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
         .info {
             background: var(--bg-info);
             padding: 15px;
@@ -405,10 +472,51 @@
             color: #667eea;
             margin-right: 5px;
         }
+        .version-info .instance-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 5px;
+        }
         .version-info .distribution-label {
             font-weight: bold;
             color: #764ba2;
             margin-right: 5px;
+        }
+        .version-info .connection-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 5px;
+        }
+        .connection-badge {
+            display: inline-block;
+            font-weight: bold;
+            padding: 1px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+        .connection-live {
+            background: #c8e6c9;
+            color: #1b5e20;
+        }
+        .connection-polling {
+            background: #ffe0b2;
+            color: #e65100;
+        }
+        .connection-offline {
+            background: #ffcdd2;
+            color: #b71c1c;
+        }
+        [data-theme="dark"] .connection-live {
+            background: #1b5e20;
+            color: #a5d6a7;
+        }
+        [data-theme="dark"] .connection-polling {
+            background: #5d3a00;
+            color: #ffcc80;
+        }
+        [data-theme="dark"] .connection-offline {
+            background: #5c1a1a;
+            color: #ef9a9a;
         }
         .theme-toggle {
             position: fixed;
@@ -447,6 +555,10 @@
             .input-with-button input {
                 width: 100%;
             }
+            .air3-time-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
             .modal-dialog {
                 padding: 20px;
             }
@@ -461,12 +573,14 @@
     
     <!-- Version Info -->
     <div class="version-info" id="versionInfo">
+        <div><span class="instance-label">Instance:</span><span id="instanceValue">-</span></div>
         <div><span class="version-label">Version:</span><span id="versionValue">-</span></div>
         <div><span class="distribution-label">Distribution:</span><span id="distributionValue">-</span></div>
+        <div><span class="connection-label">Connection:</span><span id="connectionValue" class="connection-badge connection-offline">Offline</span></div>
     </div>
     
     <div class="container">
-        <h1>🎙️ OnAirScreen Remote Control</h1>
+        <h1>🎙️ OnAirScreen Remote Control<span class="instance-subtitle" id="instanceName"></span></h1>
         
         <div class="status-panel">
             <h2>Current Status</h2>
@@ -488,6 +602,23 @@
                 <div class="air-controls-compact" id="airControls">
                     <!-- AIR controls will be populated by JavaScript -->
                 </div>
+                <div class="air3-time-row">
+                    <label for="air3TimeInput">AIR3 time:</label>
+                    <div class="input-with-button">
+                        <input type="text" id="air3TimeInput" placeholder="2:05 or 125" title="m:ss, m,ss, or seconds (max 24 hours)" />
+                        <button class="text-btn" onclick="sendAir3Time()">Set</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Loudness</h2>
+                <div class="air-control-group">
+                    <button class="lufs-btn" id="lufsStartBtn" title="Start a new I + LRA session (always resets)" onclick="sendCommand('LUFSI:START')">Start I+LRA</button>
+                    <button class="lufs-btn" id="lufsStopBtn" title="Stop measuring; last I and LRA stay on the meter" onclick="sendCommand('LUFSI:STOP')">Stop</button>
+                    <button class="lufs-btn" id="lufsResetBtn" title="Running: restart. Stopped: hide I and LRA on the meter" onclick="sendCommand('LUFSI:RESET')">Reset</button>
+                </div>
+                <p class="loudness-hint">Start resets I and LRA. Stop freezes the last values. Reset restarts a running session or hides I and LRA when stopped.</p>
             </div>
             
             <div class="section">
@@ -550,16 +681,69 @@
         const WS_PORT = parseInt(window.location.port || '8010') + 1;  // HTTP port + 1
         const WS_URL = `${WS_BASE}:${WS_PORT}`;
         
+        const WS_RECONNECT_MS = 3000;
         let ws = null;
         let wsReconnectTimeout = null;
-        let useWebSocket = true;
         let pollingInterval = null;
+        let pageUnloading = false;
+        
+        function isWebSocketInUse() {
+            return ws && (
+                ws.readyState === WebSocket.CONNECTING
+                || ws.readyState === WebSocket.OPEN
+                || ws.readyState === WebSocket.CLOSING
+            );
+        }
+        
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+        
+        function scheduleWebSocketReconnect(delayMs) {
+            if (pageUnloading) {
+                return;
+            }
+            if (wsReconnectTimeout) {
+                return;
+            }
+            if (isWebSocketInUse()) {
+                return;
+            }
+            const delay = (typeof delayMs === 'number') ? delayMs : WS_RECONNECT_MS;
+            wsReconnectTimeout = setTimeout(function() {
+                wsReconnectTimeout = null;
+                connectWebSocket();
+            }, delay);
+        }
+        
+        function tryRestoreWebSocket() {
+            if (pageUnloading) {
+                return;
+            }
+            if (isWebSocketInUse()) {
+                return;
+            }
+            if (wsReconnectTimeout) {
+                clearTimeout(wsReconnectTimeout);
+                wsReconnectTimeout = null;
+            }
+            connectWebSocket();
+        }
         
         // WebSocket connection management
         function connectWebSocket() {
-            if (!useWebSocket) {
-                // Fallback to polling
+            if (pageUnloading) {
+                return;
+            }
+            if (typeof WebSocket === 'undefined') {
+                console.log('WebSocket not supported, using polling');
                 startPolling();
+                return;
+            }
+            if (isWebSocketInUse()) {
                 return;
             }
             
@@ -569,11 +753,12 @@
                 ws.onopen = function() {
                     console.log('WebSocket connected');
                     hideConnectionError();
-                    // Stop polling if it was running
-                    if (pollingInterval) {
-                        clearInterval(pollingInterval);
-                        pollingInterval = null;
+                    stopPolling();
+                    if (wsReconnectTimeout) {
+                        clearTimeout(wsReconnectTimeout);
+                        wsReconnectTimeout = null;
                     }
+                    setConnectionState('live');
                 };
                 
                 ws.onmessage = function(event) {
@@ -583,13 +768,8 @@
                             updateStatusDisplay(data);
                             updateLEDButtons(data.leds);
                             updateAIRControls(data.air);
-                            // Update version info
-                            if (data.version) {
-                                document.getElementById('versionValue').textContent = data.version;
-                            }
-                            if (data.distribution) {
-                                document.getElementById('distributionValue').textContent = data.distribution;
-                            }
+                            updateLoudnessControls(data);
+                            applyStatusMeta(data);
                         } else {
                             console.error('Invalid data format:', data);
                         }
@@ -600,39 +780,32 @@
                 
                 ws.onerror = function(error) {
                     console.error('WebSocket error:', error);
-                    // Fallback to polling on error
-                    if (useWebSocket) {
-                        console.log('Falling back to polling');
-                        useWebSocket = false;
-                        startPolling();
-                    }
+                    startPolling();
                 };
                 
                 ws.onclose = function() {
                     console.log('WebSocket disconnected');
-                    ws = null;
-                    // Try to reconnect after 3 seconds
-                    if (useWebSocket) {
-                        wsReconnectTimeout = setTimeout(connectWebSocket, 3000);
-                    } else {
-                        // If WebSocket is disabled, use polling
-                        startPolling();
+                    if (ws !== this) {
+                        return;
                     }
+                    ws = null;
+                    startPolling();
+                    scheduleWebSocketReconnect();
                 };
             } catch (e) {
                 console.error('Error creating WebSocket:', e);
-                // Fallback to polling
-                useWebSocket = false;
                 startPolling();
+                scheduleWebSocketReconnect();
             }
         }
         
-        // Polling fallback
+        // Polling fallback while WebSocket is down; WS is retried from onclose and on successful poll
         function startPolling() {
             if (pollingInterval) {
                 return;  // Already polling
             }
             console.log('Using polling for status updates');
+            setConnectionState('polling');
             updateStatus();  // Initial update
             // Poll every 1000ms (1 second) - reasonable update frequency
             pollingInterval = setInterval(updateStatus, 1000);
@@ -652,14 +825,11 @@
                         updateStatusDisplay(data);
                         updateLEDButtons(data.leds);
                         updateAIRControls(data.air);
-                        // Update version info
-                        if (data.version) {
-                            document.getElementById('versionValue').textContent = data.version;
-                        }
-                        if (data.distribution) {
-                            document.getElementById('distributionValue').textContent = data.distribution;
-                        }
+                        updateLoudnessControls(data);
+                        applyStatusMeta(data);
                         hideConnectionError();
+                        // HTTP is back: restore WebSocket instead of staying on polling
+                        tryRestoreWebSocket();
                     } else {
                         console.error('Invalid data format:', data);
                         showConnectionError();
@@ -677,6 +847,16 @@
         }
         
         let connectionErrorShown = false;
+
+        function setConnectionState(state) {
+            const el = document.getElementById('connectionValue');
+            if (!el) {
+                return;
+            }
+            const labels = { live: 'Live', polling: 'Polling', offline: 'Offline' };
+            el.textContent = labels[state] || state;
+            el.className = 'connection-badge connection-' + state;
+        }
         
         // Store blinking intervals for LEDs
         let ledBlinkIntervals = {};
@@ -778,6 +958,36 @@
         // Store last LED state to detect changes
         let lastLEDDisplayState = {};
         
+        function applyStatusMeta(data) {
+            if (data.version) {
+                document.getElementById('versionValue').textContent = data.version;
+            }
+            if (data.distribution) {
+                document.getElementById('distributionValue').textContent = data.distribution;
+            }
+            const instance = data.instance || '';
+            const subtitle = document.getElementById('instanceName');
+            const instanceValue = document.getElementById('instanceValue');
+            if (subtitle) {
+                subtitle.textContent = instance;
+            }
+            if (instanceValue) {
+                instanceValue.textContent = instance || '-';
+            }
+            document.title = instance ? (instance + ' · OnAirScreen') : 'OnAirScreen Remote Control';
+        }
+        
+        function formatLoudnessValue(value, unit) {
+            if (value === null || value === undefined || value === '') {
+                return '—';
+            }
+            const n = Number(value);
+            if (!Number.isFinite(n)) {
+                return '—';
+            }
+            return `${n.toFixed(1)} ${unit}`;
+        }
+
         function updateStatusDisplay(data) {
             const grid = document.getElementById('statusGrid');
             
@@ -881,13 +1091,44 @@
                 item.className = 'status-item' + (air.status ? ' active' : '');
                 const minutes = Math.floor(air.seconds / 60);
                 const secs = air.seconds % 60;
+                const countDown = air.countDown === true;
+                const clock = `${minutes}:${String(secs).padStart(2, '0')}`;
+                let runLabel = air.status ? 'Running' : 'Stopped';
+                if (i === 3) {
+                    const modeLabel = countDown ? 'Countdown' : 'Count-up';
+                    runLabel = air.status ? modeLabel : (modeLabel + ' · Stopped');
+                }
                 item.innerHTML = `
                     <h3>AIR ${i} (${air.text})</h3>
-                    <div class="value">${minutes}:${String(secs).padStart(2, '0')}</div>
-                    <div style="font-size: 12px; color: var(--text-tertiary);">${air.status ? 'Running' : 'Stopped'}</div>
+                    <div class="value">${clock}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">${runLabel}</div>
                 `;
                 grid.appendChild(item);
             }
+
+            const silenceActive = data.silence === true;
+            const silenceItem = document.createElement('div');
+            silenceItem.id = 'silenceStatus';
+            silenceItem.className = 'status-item' + (silenceActive ? ' silence-active active' : '');
+            silenceItem.style.gridColumn = 'span 2';
+            silenceItem.innerHTML = `
+                <h3>Silence</h3>
+                <div class="value">${silenceActive ? 'ACTIVE' : 'OK'}</div>
+            `;
+            grid.appendChild(silenceItem);
+
+            const lufsRunning = data.lufsIntegrated === true;
+            const lufsItem = document.createElement('div');
+            lufsItem.id = 'lufsStatus';
+            lufsItem.className = 'status-item' + (lufsRunning ? ' lufs-active active' : '');
+            lufsItem.style.gridColumn = 'span 2';
+            lufsItem.innerHTML = `
+                <h3>Loudness I+LRA</h3>
+                <div class="value">I ${formatLoudnessValue(data.lufsI, 'LUFS')}</div>
+                <div class="value lufs-lra">LRA ${formatLoudnessValue(data.lra, 'LU')}</div>
+                <div style="font-size: 12px; color: var(--text-tertiary);">${lufsRunning ? 'RUNNING' : 'STOPPED'}</div>
+            `;
+            grid.appendChild(lufsItem);
             
             // Row 3: Text fields status (NOW, NEXT) - compact layout
             if (data.texts) {
@@ -912,6 +1153,8 @@
                     <div class="value" style="word-break: break-word;">${texts.next || '(empty)'}</div>
                 `;
                 grid.appendChild(nextItem);
+
+                prefillTextInputs(texts);
                 
                 // WARN - Show all warnings sorted by priority (highest first)
                 // Warnings span full width and appear after the 3 main rows
@@ -977,6 +1220,7 @@
                 if (modal) {
                     modal.classList.add('show');
                     connectionErrorShown = true;
+                    setConnectionState('offline');
                     // Disable all interactive elements
                     disableControls(true);
                 }
@@ -988,6 +1232,11 @@
             if (modal) {
                 modal.classList.remove('show');
                 connectionErrorShown = false;
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    setConnectionState('live');
+                } else {
+                    setConnectionState('polling');
+                }
                 // Re-enable all interactive elements
                 disableControls(false);
             }
@@ -1172,7 +1421,12 @@
                 }
                 
                 // Update tooltip (always, since time changes every second)
-                elements.startStopBtn.title = `${a.text} - ${timeStr} - ${a.status ? 'Running' : 'Stopped'} - Click to ${a.status ? 'stop' : 'start'}`;
+                let tooltipStatus = a.status ? 'Running' : 'Stopped';
+                if (i === 3) {
+                    const modeLabel = a.countDown ? 'Countdown' : 'Count-up';
+                    tooltipStatus = a.status ? modeLabel : (modeLabel + ' · Stopped');
+                }
+                elements.startStopBtn.title = `${a.text} - ${timeStr} - ${tooltipStatus} - Click to ${a.status ? 'stop' : 'start'}`;
 
                 if (i === 3 && elements.topOfHourBtn) {
                     const topOfHourActive = !!a.topOfHour;
@@ -1188,6 +1442,18 @@
                         text: a.text,
                         topOfHour: i === 3 ? !!a.topOfHour : false
                     };
+            }
+        }
+        
+        function updateLoudnessControls(data) {
+            const running = data && data.lufsIntegrated === true;
+            const startBtn = document.getElementById('lufsStartBtn');
+            const stopBtn = document.getElementById('lufsStopBtn');
+            if (startBtn) {
+                startBtn.className = 'lufs-btn' + (running ? ' active' : '');
+            }
+            if (stopBtn) {
+                stopBtn.className = 'lufs-btn';
             }
         }
         
@@ -1219,6 +1485,86 @@
                 });
         }
         
+        const MAX_AIR3_SECONDS = 86400;
+        const textInputDirty = { now: false, next: false };
+
+        /**
+         * Parse AIR3 time from m:ss, desktop m,ss / m.ss, or raw seconds.
+         * Returns total seconds, or null if the input is invalid.
+         */
+        function parseAirTimeToSeconds(input) {
+            const trimmed = String(input || '').trim();
+            if (!trimmed) {
+                return null;
+            }
+
+            let match = /^(\d+):(\d{1,2})$/.exec(trimmed);
+            if (!match) {
+                match = /^(\d+)[,.](\d{1,2})$/.exec(trimmed);
+            }
+            if (match) {
+                const minutes = parseInt(match[1], 10);
+                const seconds = parseInt(match[2], 10);
+                if (seconds > 59) {
+                    return null;
+                }
+                const total = minutes * 60 + seconds;
+                if (total > MAX_AIR3_SECONDS) {
+                    return null;
+                }
+                return total;
+            }
+
+            if (/^\d+$/.test(trimmed)) {
+                const total = parseInt(trimmed, 10);
+                if (total > MAX_AIR3_SECONDS) {
+                    return null;
+                }
+                return total;
+            }
+
+            return null;
+        }
+
+        function sendAir3Time() {
+            const input = document.getElementById('air3TimeInput');
+            if (!input) {
+                return;
+            }
+            const seconds = parseAirTimeToSeconds(input.value);
+            if (seconds === null) {
+                alert('Invalid AIR3 time. Use m:ss (2:05), m,ss (2,05), or seconds (125). Maximum is 24 hours.');
+                return;
+            }
+            sendCommand('AIR3TIME:' + seconds);
+        }
+
+        function prefillTextInputs(texts) {
+            if (!texts) {
+                return;
+            }
+            const fields = [
+                { key: 'now', id: 'nowInput' },
+                { key: 'next', id: 'nextInput' }
+            ];
+            fields.forEach(function(field) {
+                const input = document.getElementById(field.id);
+                if (!input) {
+                    return;
+                }
+                if (document.activeElement === input) {
+                    return;
+                }
+                if (textInputDirty[field.key]) {
+                    return;
+                }
+                const serverValue = texts[field.key] || '';
+                if (input.value !== serverValue) {
+                    input.value = serverValue;
+                }
+            });
+        }
+
         function sendTextCommand(command, inputId, priorityId) {
             const input = document.getElementById(inputId);
             const value = input.value.trim();
@@ -1238,9 +1584,10 @@
                     }
                 }
                 sendCommand(command + ':' + cmdValue);
-                // Clear input after sending (except for WARN)
-                if (command !== 'WARN') {
-                    input.value = '';
+                if (command === 'NOW') {
+                    textInputDirty.now = false;
+                } else if (command === 'NEXT') {
+                    textInputDirty.next = false;
                 }
             }
         }
@@ -1273,6 +1620,11 @@
         function clearText(command, inputId) {
             sendCommand(command + ':');
             document.getElementById(inputId).value = '';
+            if (command === 'NOW') {
+                textInputDirty.now = false;
+            } else if (command === 'NEXT') {
+                textInputDirty.next = false;
+            }
         }
         
         // Allow Enter key to submit text inputs
@@ -1282,6 +1634,9 @@
             const warnInput = document.getElementById('warnInput');
             
             if (nowInput) {
+                nowInput.addEventListener('input', function() {
+                    textInputDirty.now = true;
+                });
                 nowInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         sendTextCommand('NOW', 'nowInput');
@@ -1289,6 +1644,9 @@
                 });
             }
             if (nextInput) {
+                nextInput.addEventListener('input', function() {
+                    textInputDirty.next = true;
+                });
                 nextInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         sendTextCommand('NEXT', 'nextInput');
@@ -1301,6 +1659,51 @@
                         sendTextCommand('WARN', 'warnInput', 'warnPriority');
                     }
                 });
+            }
+            const air3TimeInput = document.getElementById('air3TimeInput');
+            if (air3TimeInput) {
+                air3TimeInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendAir3Time();
+                    }
+                });
+            }
+        });
+
+        function isEditableTarget(target) {
+            if (!target || target === document.body || target === document.documentElement) {
+                return false;
+            }
+            const tag = (target.tagName || '').toUpperCase();
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+                return true;
+            }
+            return !!target.isContentEditable;
+        }
+
+        function toggleLedFromKey(ledNum) {
+            if (connectionErrorShown) {
+                return;
+            }
+            const currentState = lastLEDState['led' + ledNum];
+            if (currentState) {
+                const isOn = currentState.status === 'on';
+                sendCommand('LED' + ledNum + ':' + (isOn ? 'OFF' : 'ON'));
+                return;
+            }
+            sendCommand('LED' + ledNum + ':TOGGLE');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) {
+                return;
+            }
+            if (isEditableTarget(e.target)) {
+                return;
+            }
+            if (e.key >= '1' && e.key <= '4') {
+                e.preventDefault();
+                toggleLedFromKey(parseInt(e.key, 10));
             }
         });
         
@@ -1336,14 +1739,14 @@
         
         // Cleanup on page unload
         window.addEventListener('beforeunload', function() {
-            if (ws) {
-                ws.close();
-            }
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-            }
+            pageUnloading = true;
             if (wsReconnectTimeout) {
                 clearTimeout(wsReconnectTimeout);
+                wsReconnectTimeout = null;
+            }
+            stopPolling();
+            if (ws) {
+                ws.close();
             }
         });
     </script>

@@ -9,7 +9,7 @@ import logging
 from unittest.mock import Mock, patch
 
 from exceptions import (
-    OnAirScreenError, NetworkError, UdpError, HttpError, WebSocketError, MqttError,
+    OnAirScreenError, NetworkError, UdpError, HttpError, WebSocketError, MqttError, OscError,
     PortInUseError, PermissionDeniedError, CommandError, CommandParseError,
     CommandValidationError, UnknownCommandError, InvalidCommandFormatError,
     ConfigurationError, SettingsError, InvalidConfigValueError, ValidationError,
@@ -63,6 +63,12 @@ class TestNetworkErrors:
         """Test MQTT error"""
         error = MqttError("MQTT connection failed")
         assert isinstance(error, NetworkError)
+
+    def test_osc_error(self):
+        """Test OSC error"""
+        error = OscError("OSC bind failed")
+        assert isinstance(error, NetworkError)
+        assert str(error) == "OSC bind failed"
     
     def test_port_in_use_error(self):
         """Test port in use error"""

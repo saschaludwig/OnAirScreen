@@ -6,8 +6,13 @@
 # Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
+#
 
-from PyQt6 import QtGui, QtDesigner
+from PySide6 import QtGui, QtDesigner
 
 from clockwidget import ClockWidget
 
@@ -35,7 +40,7 @@ class ClockPlugin(QtDesigner.QPyDesignerCustomWidgetPlugin):
     # Returns the name of the group in Qt Designer's widget box that this
     # widget belongs to.
     def group(self):
-        return "PyQt Widgets"
+        return "PySide Widgets"
 
     # Returns the icon used to represent the custom widget in Qt Designer's
     # widget box.

@@ -1,7 +1,12 @@
-PyQt6
+PySide6
 ntplib
+pyserial
 PyInstaller
 pytest
 pytest-asyncio
-websockets>=16.1.1
+websockets>=17.1
 paho-mqtt>=2.1.0
+python-osc>=1.8.3
+sounddevice
+numpy
+scipy

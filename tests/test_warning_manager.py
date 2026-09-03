@@ -6,7 +6,7 @@ Unit tests for warning_manager.py
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from PyQt6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel
 
 # Import after QApplication setup
 import sys

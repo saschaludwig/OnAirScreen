@@ -14,6 +14,8 @@ from defaults import (
     DEFAULT_REPLACE_NOW,
     DEFAULT_REPLACE_NOW_TEXT,
     DEFAULT_FULLSCREEN,
+    DEFAULT_INSTANCE_NAME,
+    MAX_INSTANCE_NAME_LENGTH,
     DEFAULT_LOG_LEVEL,
     DEFAULT_LED_TEXTS,
     DEFAULT_LED_USED,
@@ -35,6 +37,12 @@ from defaults import (
     DEFAULT_CLOCK_USE_TEXT_CLOCK,
     DEFAULT_TIMER_AIR_ENABLED,
     DEFAULT_TIMER_AIR_TEXTS,
+    DEFAULT_TOTH_TIMER_TEXT,
+    air_timer_caption,
+    air_timer_count_down,
+    air_timer_count_mark,
+    format_air_clock,
+    format_air_timer_label,
     DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR,
     DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR,
     DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR,
@@ -44,16 +52,62 @@ from defaults import (
     DEFAULT_UDP_PORT,
     DEFAULT_HTTP_PORT,
     DEFAULT_MULTICAST_ADDRESS,
+    DEFAULT_OSC_ENABLED,
+    DEFAULT_OSC_PORT,
+    DEFAULT_OSC_SEND_HOST,
+    DEFAULT_OSC_SEND_PORT,
     DEFAULT_DATE_FORMAT,
     DEFAULT_TEXT_CLOCK_LANGUAGE,
     DEFAULT_IS_AM_PM,
     DEFAULT_NTP_CHECK,
     DEFAULT_NTP_CHECK_SERVER,
+    DEFAULT_TIME_SOURCE,
+    DEFAULT_PTP_IFACE,
+    DEFAULT_PTP_DOMAIN,
+    DEFAULT_LTC_PORT,
+    DEFAULT_LTC_INPUT,
+    DEFAULT_LTC_AUDIO_DEVICE,
+    DEFAULT_LTC_AUDIO_CHANNEL,
+    DEFAULT_LTC_WARN,
+    LTC_INPUT_SERIAL,
+    LTC_INPUT_AUDIO,
+    LTC_INPUT_LABELS,
+    TIME_SOURCE_LABELS,
+    TIME_SOURCE_LOCAL,
+    TIME_SOURCE_NTP,
+    TIME_SOURCE_PTP,
+    TIME_SOURCE_LTC,
     DEFAULT_WEATHER_WIDGET_ENABLED,
     DEFAULT_WEATHER_API_KEY,
     DEFAULT_WEATHER_CITY_ID,
     DEFAULT_WEATHER_LANGUAGE,
     DEFAULT_WEATHER_UNIT,
+    DEFAULT_AUDIO_METERS_ENABLED,
+    DEFAULT_AUDIO_SOURCE,
+    DEFAULT_AUDIO_LIVEWIRE_CHANNEL,
+    DEFAULT_AUDIO_LIVEWIRE_IFACE,
+    DEFAULT_AUDIO_AES67_ID,
+    DEFAULT_AUDIO_AES67_ADDR,
+    DEFAULT_AUDIO_AES67_PORT,
+    DEFAULT_AUDIO_AES67_NAME,
+    DEFAULT_AUDIO_AES67_CODEC,
+    DEFAULT_AUDIO_AES67_RATE,
+    DEFAULT_AUDIO_AES67_CHANNELS,
+    DEFAULT_AUDIO_AES67_MANUAL,
+    DEFAULT_AUDIO_UNIT,
+    DEFAULT_AUDIO_LAYOUT,
+    DEFAULT_AUDIO_METER_WIDTH,
+    DEFAULT_AUDIO_SILENCE,
+    DEFAULT_AUDIO_SILENCE_WARN,
+    DEFAULT_AUDIO_SILENCE_ON_ABSENT,
+    DEFAULT_AUDIO_SILENCE_TEXT,
+    DEFAULT_AUDIO_SILENCE_THRESHOLD_DBFS,
+    DEFAULT_AUDIO_SILENCE_DURATION_S,
+    DEFAULT_AUDIO_SILENCE_RECOVERY_S,
+    DEFAULT_AUDIO_SILENCE_HTTP_URL,
+    AUDIO_SOURCE_LABELS,
+    AUDIO_UNIT_LABELS,
+    AUDIO_LAYOUT_LABELS,
     DEFAULT_FONT_NAME,
     DEFAULT_FONT_SIZE_LED,
     DEFAULT_FONT_SIZE_STATION,
@@ -76,6 +130,7 @@ class TestGetDefault:
         assert get_default("General", "replacenowtext") == DEFAULT_REPLACE_NOW_TEXT
         assert get_default("General", "fullscreen") == DEFAULT_FULLSCREEN
         assert get_default("General", "loglevel") == DEFAULT_LOG_LEVEL
+        assert get_default("General", "instancename") == DEFAULT_INSTANCE_NAME
 
     def test_general_unknown_key(self):
         """Test General group with unknown key"""
@@ -145,8 +200,34 @@ class TestGetDefault:
             assert get_default("Timers", f"AIR{air_num}inactivetextcolor") == DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR
             assert get_default("Timers", f"AIR{air_num}iconpath") == DEFAULT_TIMER_AIR_ICON_PATHS[air_num]
 
+        # Test TimerTOTHText
+        assert get_default("Timers", "TimerTOTHText") == DEFAULT_TOTH_TIMER_TEXT
+
         # Test TimerAIRMinWidth
         assert get_default("Timers", "TimerAIRMinWidth") == DEFAULT_TIMER_AIR_MIN_WIDTH
+
+    def test_air_timer_caption_toth_override(self):
+        """AIR3 uses TOTH text only while top-of-hour countdown is active."""
+        assert DEFAULT_TOTH_TIMER_TEXT == "TOTH Timer"
+        assert air_timer_caption(3, "Radio", top_of_hour_active=True) == "TOTH Timer"
+        assert air_timer_caption(3, "Radio", top_of_hour_active=True, toth_text="TOH") == "TOH"
+        assert air_timer_caption(3, "Radio", top_of_hour_active=False) == "Radio"
+        assert air_timer_caption(3, "Radio", top_of_hour_active=False, toth_text="TOH") == "Radio"
+        assert air_timer_caption(4, "Stream", top_of_hour_active=True) == "Stream"
+
+    def test_format_air_timer_label_count_direction(self):
+        """AIR3 count mark is separate; labels stay caption plus clock."""
+        assert format_air_clock(125) == "2:05"
+        assert format_air_timer_label("Timer", 125) == "Timer\n2:05"
+        assert format_air_timer_label("Mic", 60) == "Mic\n1:00"
+        assert air_timer_count_mark(True) == "▼"
+        assert air_timer_count_mark(False) == "▲"
+        assert air_timer_count_mark(None) == ""
+        assert air_timer_count_down(3, radio_timer_mode=1) is True
+        assert air_timer_count_down(3, radio_timer_mode=0) is False
+        assert air_timer_count_down(3, radio_timer_mode=0, top_of_hour_active=True) is True
+        assert air_timer_count_down(1, radio_timer_mode=1) is None
+        assert air_timer_count_down(4, radio_timer_mode=1) is None
 
     def test_timers_invalid_air_number(self):
         """Test Timers group with invalid AIR number"""
@@ -166,6 +247,13 @@ class TestGetDefault:
         assert get_default("Network", "httpport") == str(DEFAULT_HTTP_PORT)
         assert get_default("Network", "multicast_address") == DEFAULT_MULTICAST_ADDRESS
 
+    def test_osc_group(self):
+        """Test OSC group defaults"""
+        assert get_default("OSC", "enableosc") == DEFAULT_OSC_ENABLED
+        assert get_default("OSC", "oscport") == str(DEFAULT_OSC_PORT)
+        assert get_default("OSC", "oscsendhost") == DEFAULT_OSC_SEND_HOST
+        assert get_default("OSC", "oscsendport") == str(DEFAULT_OSC_SEND_PORT)
+
     def test_formatting_group(self):
         """Test Formatting group defaults"""
         assert get_default("Formatting", "dateFormat") == DEFAULT_DATE_FORMAT
@@ -177,6 +265,25 @@ class TestGetDefault:
         assert get_default("NTP", "ntpcheck") == DEFAULT_NTP_CHECK
         assert get_default("NTP", "ntpcheckserver") == DEFAULT_NTP_CHECK_SERVER
 
+    def test_timesource_group(self):
+        """Test TimeSource group defaults"""
+        assert get_default("TimeSource", "source") == DEFAULT_TIME_SOURCE
+        assert get_default("TimeSource", "ptp_iface") == DEFAULT_PTP_IFACE
+        assert get_default("TimeSource", "ptp_domain") == DEFAULT_PTP_DOMAIN
+        assert get_default("TimeSource", "ltc_port") == DEFAULT_LTC_PORT
+        assert get_default("TimeSource", "ltc_input") == DEFAULT_LTC_INPUT
+        assert get_default("TimeSource", "ltc_audio_device") == DEFAULT_LTC_AUDIO_DEVICE
+        assert get_default("TimeSource", "ltc_audio_channel") == DEFAULT_LTC_AUDIO_CHANNEL
+        assert get_default("TimeSource", "ltc_warn") == DEFAULT_LTC_WARN
+        assert DEFAULT_LTC_WARN is False
+        assert DEFAULT_TIME_SOURCE == TIME_SOURCE_LOCAL
+        assert TIME_SOURCE_LABELS[TIME_SOURCE_NTP] == "NTP Server"
+        assert TIME_SOURCE_LABELS[TIME_SOURCE_PTP] == "PTPv2 IEEE 1588-2008"
+        assert TIME_SOURCE_LABELS[TIME_SOURCE_LTC] == "LTC"
+        assert LTC_INPUT_LABELS[LTC_INPUT_SERIAL] == "LBE-1110 Serial"
+        assert LTC_INPUT_LABELS[LTC_INPUT_AUDIO] == "Audio Input"
+        assert DEFAULT_LTC_INPUT == LTC_INPUT_SERIAL
+
     def test_weatherwidget_group(self):
         """Test WeatherWidget group defaults"""
         assert get_default("WeatherWidget", "owmWidgetEnabled") == DEFAULT_WEATHER_WIDGET_ENABLED
@@ -185,9 +292,48 @@ class TestGetDefault:
         assert get_default("WeatherWidget", "owmLanguage") == DEFAULT_WEATHER_LANGUAGE
         assert get_default("WeatherWidget", "owmUnit") == DEFAULT_WEATHER_UNIT
 
+    def test_audio_group(self):
+        """Test Audio group defaults including AES67 keys."""
+        assert get_default("Audio", "enabled") == DEFAULT_AUDIO_METERS_ENABLED
+        assert DEFAULT_AUDIO_METERS_ENABLED is True
+        assert get_default("Audio", "source") == DEFAULT_AUDIO_SOURCE
+        assert DEFAULT_AUDIO_SOURCE == "device"
+        assert get_default("Audio", "livewire_channel") == DEFAULT_AUDIO_LIVEWIRE_CHANNEL
+        assert get_default("Audio", "livewire_iface") == DEFAULT_AUDIO_LIVEWIRE_IFACE
+        assert get_default("Audio", "aes67_id") == DEFAULT_AUDIO_AES67_ID
+        assert get_default("Audio", "aes67_addr") == DEFAULT_AUDIO_AES67_ADDR
+        assert get_default("Audio", "aes67_port") == DEFAULT_AUDIO_AES67_PORT
+        assert get_default("Audio", "aes67_name") == DEFAULT_AUDIO_AES67_NAME
+        assert get_default("Audio", "aes67_codec") == DEFAULT_AUDIO_AES67_CODEC
+        assert get_default("Audio", "aes67_rate") == DEFAULT_AUDIO_AES67_RATE
+        assert get_default("Audio", "aes67_channels") == DEFAULT_AUDIO_AES67_CHANNELS
+        assert get_default("Audio", "aes67_manual") == DEFAULT_AUDIO_AES67_MANUAL
+        assert get_default("Audio", "unit") == DEFAULT_AUDIO_UNIT
+        assert get_default("Audio", "layout") == DEFAULT_AUDIO_LAYOUT
+        assert get_default("Audio", "meter_width") == DEFAULT_AUDIO_METER_WIDTH
+        assert DEFAULT_AUDIO_UNIT == "dbtp"
+        assert DEFAULT_AUDIO_LAYOUT == "both"
+        assert "lufs" not in AUDIO_UNIT_LABELS
+        assert tuple(AUDIO_LAYOUT_LABELS) == ("lr", "lufs", "both")
+        assert get_default("Audio", "silence") == DEFAULT_AUDIO_SILENCE
+        assert get_default("Audio", "silence_warn") == DEFAULT_AUDIO_SILENCE_WARN
+        assert get_default("Audio", "silence_on_absent") == DEFAULT_AUDIO_SILENCE_ON_ABSENT
+        assert get_default("Audio", "silence_text") == DEFAULT_AUDIO_SILENCE_TEXT
+        assert get_default("Audio", "silence_threshold_dbfs") == DEFAULT_AUDIO_SILENCE_THRESHOLD_DBFS
+        assert get_default("Audio", "silence_duration_s") == DEFAULT_AUDIO_SILENCE_DURATION_S
+        assert get_default("Audio", "silence_recovery_s") == DEFAULT_AUDIO_SILENCE_RECOVERY_S
+        assert get_default("Audio", "silence_http_url") == DEFAULT_AUDIO_SILENCE_HTTP_URL
+        assert DEFAULT_AUDIO_SILENCE is False
+        assert DEFAULT_AUDIO_SILENCE_WARN is True
+        assert DEFAULT_AUDIO_SILENCE_ON_ABSENT is True
+        assert DEFAULT_AUDIO_SILENCE_DURATION_S == 10.0
+        assert "aes67" in AUDIO_SOURCE_LABELS
+        assert AUDIO_SOURCE_LABELS["aes67"] == "AES67"
+
     def test_fonts_group(self):
         """Test Fonts group defaults"""
         # Test FontName
+        assert DEFAULT_FONT_NAME == "Roboto"
         assert get_default("Fonts", "LED1FontName") == DEFAULT_FONT_NAME
         assert get_default("Fonts", "AIR1FontName") == DEFAULT_FONT_NAME
         assert get_default("Fonts", "StationNameFontName") == DEFAULT_FONT_NAME

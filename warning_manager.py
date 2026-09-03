@@ -9,29 +9,10 @@
 # warning_manager.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
@@ -43,7 +24,7 @@ them in the UI.
 """
 
 from typing import Callable, Optional
-from PyQt6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel
 
 
 class WarningManager:
@@ -65,7 +46,10 @@ class WarningManager:
                  label_current_song: QLabel,
                  label_news: QLabel,
                  event_logger,
-                 publish_mqtt_status_callback: Optional[Callable[[str], None]] = None):
+                 publish_mqtt_status_callback: Optional[Callable[[str], None]] = None,
+                 bottom_stack=None,
+                 page_normal=None,
+                 page_warning=None):
         """
         Initialize the warning manager
         
@@ -75,12 +59,18 @@ class WarningManager:
             label_news: QLabel widget for news (hidden when warning shown)
             event_logger: EventLogger instance for logging warning events
             publish_mqtt_status_callback: Optional callback for publishing MQTT status
+            bottom_stack: Optional QStackedWidget switching between normal/warning pages
+            page_normal: Optional normal page widget in bottom_stack
+            page_warning: Optional warning page widget in bottom_stack
         """
         self.label_warning = label_warning
         self.label_current_song = label_current_song
         self.label_news = label_news
         self.event_logger = event_logger
         self.publish_mqtt_status = publish_mqtt_status_callback
+        self.bottom_stack = bottom_stack
+        self.page_normal = page_normal
+        self.page_warning = page_warning
         
         # init warning prio array (-1=NTP, 0=normal/legacy, 1=medium, 2=high)
         # Index mapping: 0=-1, 1=0, 2=1, 3=2
@@ -188,18 +178,22 @@ class WarningManager:
         """
         Show warning message in the UI
         
-        Hides current song and news labels and displays warning text with large font.
+        Switches the bottom stack to the warning page (or hides NOW/NEXT as fallback)
+        and displays warning text with large font.
         
         Args:
             text: Warning message text to display
         """
-        self.label_current_song.hide()
-        self.label_news.hide()
         self.label_warning.setText(text)
         font = self.label_warning.font()
         font.setPointSize(45)
         self.label_warning.setFont(font)
-        self.label_warning.show()
+        if self.bottom_stack is not None and self.page_warning is not None:
+            self.bottom_stack.setCurrentWidget(self.page_warning)
+        else:
+            self.label_current_song.hide()
+            self.label_news.hide()
+            self.label_warning.show()
     
     def hide_warning(self, priority: int = 0) -> None:
         """
@@ -208,11 +202,14 @@ class WarningManager:
         Args:
             priority: Warning priority level (0-2, default: 0, currently unused)
         """
-        self.label_warning.hide()
-        self.label_current_song.show()
-        self.label_news.show()
         self.label_warning.setText("")
-        self.label_warning.hide()
+        if self.bottom_stack is not None and self.page_normal is not None:
+            self.bottom_stack.setCurrentWidget(self.page_normal)
+        else:
+            self.label_warning.hide()
+            self.label_current_song.show()
+            self.label_news.show()
+            self.label_warning.hide()
     
     def get_warnings(self) -> list:
         """

@@ -11,6 +11,11 @@
 #
 # MQTT Client with Home Assistant Autodiscovery support
 #
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
+#
 #############################################################################
 
 """
@@ -25,9 +30,10 @@ This module provides MQTT integration for OnAirScreen, allowing it to:
 import json
 import logging
 import socket
+import time
 from typing import Optional, TYPE_CHECKING, Dict, Any
 import sys
-from PyQt6.QtCore import QThread, QSettings
+from PySide6.QtCore import QThread, QSettings
 
 try:
     import paho.mqtt.client as mqtt
@@ -39,6 +45,7 @@ except ImportError:
 
 from utils import settings_group
 from exceptions import MqttError, log_exception
+from status_exporter import loudness_payload
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -78,6 +85,8 @@ class MqttClient(QThread):
         self.discovery_prefix = "homeassistant"
         self.device_name = "OnAirScreen"
         self.device_id = socket.gethostname().lower().replace(" ", "_").replace(".", "_")
+        # Last applied MQTT settings snapshot (used to skip unnecessary reconnects)
+        self._applied_settings: Optional[Dict[str, Any]] = None
     
     def _get_unique_id_from_mac(self) -> str:
         """
@@ -102,34 +111,65 @@ class MqttClient(QThread):
             logger.error(f"Error getting unique ID from MAC address: {e}")
             return "000000"
     
+    def _read_mqtt_settings(self) -> Dict[str, Any]:
+        """
+        Read current MQTT settings from QSettings as a comparable snapshot.
+
+        Returns:
+            Normalized dict of MQTT connection-relevant settings
+        """
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        with settings_group(settings, "MQTT"):
+            try:
+                port = int(settings.value('mqttport', 1883, type=int))
+            except (ValueError, TypeError):
+                port = 1883
+            username = settings.value('mqttuser', "", type=str) or ""
+            password = settings.value('mqttpassword', "", type=str) or ""
+            device_name = settings.value('mqttdevicename', "OnAirScreen", type=str) or "OnAirScreen"
+            return {
+                'enablemqtt': settings.value('enablemqtt', False, type=bool),
+                'mqttserver': settings.value('mqttserver', "localhost", type=str) or "localhost",
+                'mqttport': port,
+                'mqttuser': username,
+                'mqttpassword': password,
+                'mqttdevicename': device_name,
+                'discovery_prefix': settings.value('discovery_prefix', "homeassistant", type=str) or "homeassistant",
+            }
+
     def _load_config(self) -> None:
         """Load MQTT configuration from QSettings"""
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        with settings_group(settings, "MQTT"):
-            self.broker_host = settings.value('mqttserver', "localhost", type=str)
-            try:
-                self.broker_port = int(settings.value('mqttport', 1883, type=int))
-            except (ValueError, TypeError):
-                self.broker_port = 1883
-            self.username = settings.value('mqttuser', None, type=str)
-            if not self.username:
-                self.username = None
-            self.password = settings.value('mqttpassword', None, type=str)
-            if not self.password:
-                self.password = None
-            self.discovery_prefix = settings.value('discovery_prefix', "homeassistant", type=str)
-            self.device_name = settings.value('mqttdevicename', "OnAirScreen", type=str)
-            if not self.device_name:
-                self.device_name = "OnAirScreen"
-            # Generate base_topic automatically from "onairscreen" + unique ID from MAC
-            unique_id = self._get_unique_id_from_mac()
-            self.base_topic = f"onairscreen_{unique_id}"
-    
+        snapshot = self._read_mqtt_settings()
+        self.broker_host = snapshot['mqttserver']
+        self.broker_port = snapshot['mqttport']
+        self.username = snapshot['mqttuser'] or None
+        self.password = snapshot['mqttpassword'] or None
+        self.discovery_prefix = snapshot['discovery_prefix']
+        self.device_name = snapshot['mqttdevicename']
+        # Generate base_topic automatically from "onairscreen" + unique ID from MAC
+        unique_id = self._get_unique_id_from_mac()
+        self.base_topic = f"onairscreen_{unique_id}"
+        self._applied_settings = snapshot
+
+    def _sleep_interruptible(self, seconds: float, step: float = 0.1) -> bool:
+        """
+        Sleep up to ``seconds``, returning immediately when stop is requested.
+
+        Returns:
+            True if stop was requested during the wait, False if the full
+            duration elapsed.
+        """
+        deadline = time.monotonic() + seconds
+        while not self._stop_requested:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            time.sleep(min(step, remaining))
+        return True
+
     def _is_enabled(self) -> bool:
         """Check if MQTT is enabled in settings"""
-        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        with settings_group(settings, "MQTT"):
-            return settings.value('enablemqtt', False, type=bool)
+        return bool(self._read_mqtt_settings()['enablemqtt'])
     
     def run(self) -> None:
         """Start MQTT client in a separate thread"""
@@ -174,13 +214,21 @@ class MqttClient(QThread):
             self.client.loop_start()
             
             # Wait for connection
-            import time
             connection_wait_timeout = 10
             for _ in range(connection_wait_timeout):  # Wait up to 5 seconds
-                if self._connected:
+                if self._connected or self._stop_requested:
                     break
-                time.sleep(0.5)
+                if self._sleep_interruptible(0.5):
+                    break
             
+            if self._stop_requested:
+                try:
+                    self.client.loop_stop()
+                    self.client.disconnect()
+                except Exception as e:
+                    logger.debug("MQTT client cleanup during stop: %s", e)
+                return
+
             if not self._connected:
                 logger.error("Failed to establish MQTT connection within timeout")
                 self.client.loop_stop()
@@ -207,31 +255,42 @@ class MqttClient(QThread):
                 loop_iteration += 1
                 if loop_iteration % 60 == 0:  # Log every 60 seconds
                     logger.debug(f"MQTT client main loop running, connected={self._connected}, stop_requested={self._stop_requested}")
-                time.sleep(1)
+                if self._sleep_interruptible(1.0):
+                    break
                 # Check if still connected
                 if not self._connected:
+                    if self._stop_requested:
+                        break
                     logger.warning("MQTT connection lost, attempting to reconnect...")
                     # Try to reconnect
                     try:
                         self.client.reconnect()
                         # Wait for reconnection
                         for _ in range(10):
-                            if self._connected:
+                            if self._connected or self._stop_requested:
                                 break
-                            time.sleep(0.5)
+                            if self._sleep_interruptible(0.5):
+                                break
+                        if self._stop_requested:
+                            break
                         if self._connected:
                             logger.info("MQTT reconnected successfully")
                             # Re-publish autodiscovery after reconnection
                             self._publish_autodiscovery()
-                            time.sleep(0.5)
+                            if self._sleep_interruptible(0.5):
+                                break
                         else:
                             logger.error("Failed to reconnect to MQTT broker")
-                            time.sleep(5)  # Wait before next reconnect attempt
+                            if self._sleep_interruptible(5.0):
+                                break
                             continue
                     except Exception as reconnect_error:
+                        if self._stop_requested:
+                            break
                         error = MqttError(f"Error during MQTT reconnect: {reconnect_error}")
                         log_exception(logger, error)
-                        time.sleep(5)  # Wait before next reconnect attempt
+                        if self._sleep_interruptible(5.0):
+                            break
                         continue
                 
                 # Publish status every 5 seconds
@@ -296,6 +355,8 @@ class MqttClient(QThread):
             client.subscribe(set_topic)
             set_topic = f"{self.base_topic}/text/warn/set"
             client.subscribe(set_topic)
+            client.subscribe(f"{self.base_topic}/lufs/integrated/set")
+            client.subscribe(f"{self.base_topic}/lufs/integrated/reset")
         else:
             logger.error(f"MQTT connection failed with code {rc}")
             self._connected = False
@@ -372,6 +433,26 @@ class MqttClient(QThread):
                         command = f"WARN:{payload}"
                 else:
                     command = f"{text_type.upper()}:{payload}"
+
+            elif topic == f"{self.base_topic}/lufs/integrated/reset":
+                command = "LUFSI:RESET"
+
+            elif topic == f"{self.base_topic}/lufs/integrated/set":
+                payload_upper = payload.upper().strip()
+                if payload_upper in ("ON", "START", "1"):
+                    command = "LUFSI:START"
+                elif payload_upper in ("OFF", "STOP", "0"):
+                    command = "LUFSI:STOP"
+                elif payload_upper == "TOGGLE":
+                    command = "LUFSI:TOGGLE"
+                elif payload_upper == "RESET":
+                    command = "LUFSI:RESET"
+                else:
+                    logger.warning(
+                        "Invalid loudness MQTT payload '%s', expected ON/OFF/TOGGLE/RESET",
+                        payload,
+                    )
+                    return
             
             # Execute command in GUI thread using signal (thread-safe)
             if command and self.main_screen:
@@ -398,11 +479,26 @@ class MqttClient(QThread):
         """Callback when message is published (optional, for debugging)"""
         logger.debug(f"MQTT message published (mid={mid})")
     
+    def _get_instance_name(self) -> str:
+        """Return the configured instance name, or an empty string if unavailable."""
+        if not self.main_screen or not hasattr(self.main_screen, "get_status_json"):
+            return ""
+        try:
+            status = self.main_screen.get_status_json()
+        except Exception:
+            return ""
+        instance = status.get("instance") if isinstance(status, dict) else ""
+        return instance if isinstance(instance, str) else ""
+
     def _get_device_info(self) -> Dict[str, Any]:
         """Get device information for Home Assistant discovery"""
+        instance = self._get_instance_name()
+        name = self.device_name
+        if instance and instance not in name:
+            name = f"{self.device_name} ({instance})"
         return {
             "identifiers": [f"onairscreen_{self.device_id}"],
-            "name": self.device_name,
+            "name": name,
             "manufacturer": "astrastudio",
             "model": "OnAirScreen",
             "sw_version": self._get_version(),
@@ -524,10 +620,116 @@ class MqttClient(QThread):
         self.client.publish(topic, json.dumps(config), retain=True)
         logger.info("Published autodiscovery config for Warning Active")
 
+        silence_config = {
+            "name": f"{self.device_name} Silence",
+            "unique_id": f"onairscreen_silence_active_{self.device_id}",
+            "state_topic": f"{self.base_topic}/silence/active",
+            "payload_on": "true",
+            "payload_off": "false",
+            "device_class": "problem",
+            "device": device_info,
+        }
+        silence_topic = (
+            f"{self.discovery_prefix}/binary_sensor/onairscreen_silence_active_{self.device_id}/config"
+        )
+        self.client.publish(silence_topic, json.dumps(silence_config), retain=True)
+        logger.info("Published autodiscovery config for Silence")
+
+        lufs_config = {
+            "name": f"{self.device_name} Loudness I+LRA",
+            "unique_id": f"onairscreen_lufs_integrated_{self.device_id}",
+            "state_topic": f"{self.base_topic}/lufs/integrated/state",
+            "command_topic": f"{self.base_topic}/lufs/integrated/set",
+            "payload_on": "ON",
+            "payload_off": "OFF",
+            "icon": "mdi:waveform",
+            "device": device_info,
+        }
+        lufs_topic = (
+            f"{self.discovery_prefix}/switch/onairscreen_lufs_integrated_{self.device_id}/config"
+        )
+        self.client.publish(lufs_topic, json.dumps(lufs_config), retain=True)
+        logger.info("Published autodiscovery config for Loudness I+LRA")
+
+        lufs_reset_config = {
+            "name": f"{self.device_name} Loudness I+LRA Reset",
+            "unique_id": f"onairscreen_lufs_integrated_reset_{self.device_id}",
+            "command_topic": f"{self.base_topic}/lufs/integrated/reset",
+            "payload_press": "PRESS",
+            "icon": "mdi:restart",
+            "device": device_info,
+        }
+        lufs_reset_topic = (
+            f"{self.discovery_prefix}/button/onairscreen_lufs_integrated_reset_{self.device_id}/config"
+        )
+        self.client.publish(lufs_reset_topic, json.dumps(lufs_reset_config), retain=True)
+        logger.info("Published autodiscovery config for Loudness I+LRA Reset")
+
+        lufs_i_config = {
+            "name": f"{self.device_name} Loudness I",
+            "unique_id": f"onairscreen_lufs_i_{self.device_id}",
+            "state_topic": f"{self.base_topic}/lufs/i",
+            "unit_of_measurement": "LUFS",
+            "icon": "mdi:volume-equal",
+            "device": device_info,
+        }
+        lufs_i_topic = (
+            f"{self.discovery_prefix}/sensor/onairscreen_lufs_i_{self.device_id}/config"
+        )
+        self.client.publish(lufs_i_topic, json.dumps(lufs_i_config), retain=True)
+        logger.info("Published autodiscovery config for Loudness I")
+
+        lufs_lra_config = {
+            "name": f"{self.device_name} Loudness LRA",
+            "unique_id": f"onairscreen_lufs_lra_{self.device_id}",
+            "state_topic": f"{self.base_topic}/lufs/lra",
+            "unit_of_measurement": "LU",
+            "icon": "mdi:arrow-expand-vertical",
+            "device": device_info,
+        }
+        lufs_lra_topic = (
+            f"{self.discovery_prefix}/sensor/onairscreen_lufs_lra_{self.device_id}/config"
+        )
+        self.client.publish(lufs_lra_topic, json.dumps(lufs_lra_config), retain=True)
+        logger.info("Published autodiscovery config for Loudness LRA")
+
+        instance_config = {
+            "name": f"{self.device_name} Instance",
+            "unique_id": f"onairscreen_instance_{self.device_id}",
+            "state_topic": f"{self.base_topic}/instance/state",
+            "icon": "mdi:map-marker",
+            "device": device_info,
+        }
+        instance_topic = (
+            f"{self.discovery_prefix}/sensor/onairscreen_instance_{self.device_id}/config"
+        )
+        self.client.publish(instance_topic, json.dumps(instance_config), retain=True)
+        logger.info("Published autodiscovery config for Instance")
+
     def _publish_air3_toh_status(self, status: dict) -> None:
         """Publish AIR3 top-of-hour active state to MQTT."""
         toh_active = "true" if status['air'][3].get('topOfHour', False) else "false"
         self.client.publish(f"{self.base_topic}/air3/toh/state", toh_active, retain=True)
+
+    def _publish_silence_status(self, status: dict) -> None:
+        """Publish silence alarm boolean to MQTT."""
+        silence_active = "true" if status.get("silence") else "false"
+        self.client.publish(f"{self.base_topic}/silence/active", silence_active, retain=True)
+
+    def _publish_lufs_status(self, status: dict) -> None:
+        """Publish programme I+LRA session state and I/LRA values to MQTT."""
+        running = "ON" if status.get("lufsIntegrated") is True else "OFF"
+        self.client.publish(f"{self.base_topic}/lufs/integrated/state", running, retain=True)
+        self.client.publish(
+            f"{self.base_topic}/lufs/i",
+            loudness_payload(status.get("lufsI")),
+            retain=True,
+        )
+        self.client.publish(
+            f"{self.base_topic}/lufs/lra",
+            loudness_payload(status.get("lra")),
+            retain=True,
+        )
 
     def publish_status(self, specific_item: str | None = None) -> None:
         """
@@ -567,10 +769,17 @@ class MqttClient(QThread):
                 self.client.publish(f"{self.base_topic}/text/now/state", status['texts']['now'], retain=True)
                 self.client.publish(f"{self.base_topic}/text/next/state", status['texts']['next'], retain=True)
                 self.client.publish(f"{self.base_topic}/text/warn/state", status['texts']['warn'], retain=True)
+                self.client.publish(
+                    f"{self.base_topic}/instance/state",
+                    status.get('instance', ''),
+                    retain=True,
+                )
                 
                 # Publish warning active state
                 warning_active = "true" if status['texts']['warn'] else "false"
                 self.client.publish(f"{self.base_topic}/warning/active", warning_active, retain=True)
+                self._publish_silence_status(status)
+                self._publish_lufs_status(status)
                 
                 logger.debug("Published all status to MQTT")
             else:
@@ -609,6 +818,20 @@ class MqttClient(QThread):
                         warning_active = "true" if text_value else "false"
                         self.client.publish(f"{self.base_topic}/warning/active", warning_active, retain=True)
                     logger.debug(f"Published {specific_item.upper()} text to MQTT: {text_value}")
+
+                elif specific_item == "silence":
+                    self._publish_silence_status(status)
+                    logger.debug(
+                        "Published silence status to MQTT: %s",
+                        "true" if status.get("silence") else "false",
+                    )
+
+                elif specific_item in ("lufs", "lufsintegrated"):
+                    self._publish_lufs_status(status)
+                    logger.debug(
+                        "Published loudness I+LRA status to MQTT: %s",
+                        "ON" if status.get("lufsIntegrated") is True else "OFF",
+                    )
             
         except Exception as e:
             from exceptions import OnAirScreenError
@@ -619,7 +842,23 @@ class MqttClient(QThread):
                 log_exception(logger, error)
     
     def restart(self) -> None:
-        """Restart MQTT client (stop and start again)"""
+        """
+        Restart MQTT client only when MQTT settings changed or runtime state mismatches.
+
+        Opening/applying unrelated settings will not reconnect.
+        """
+        new_settings = self._read_mqtt_settings()
+        enabled = bool(new_settings['enablemqtt'])
+        running = self.isRunning()
+
+        if self._applied_settings == new_settings:
+            if enabled and running:
+                logger.debug("MQTT settings unchanged, skipping reconnect")
+                return
+            if not enabled and not running:
+                logger.debug("MQTT still disabled, skipping restart")
+                return
+
         logger.debug("Restarting MQTT client...")
         self.stop()
         # Wait for thread to fully stop before starting a new one
@@ -629,22 +868,23 @@ class MqttClient(QThread):
                 logger.warning("MQTT client thread did not stop within timeout, forcing termination")
                 self.terminate()
                 self.wait(1000)  # Wait additional second after termination
-        
+
         # Reset stop flag for new start
         self._stop_requested = False
         self._connected = False
-        
-        if self._is_enabled():
+
+        if enabled:
             logger.debug("Starting new MQTT client thread...")
             self.start()
         else:
+            self._applied_settings = new_settings
             logger.debug("MQTT is disabled, not restarting client")
     
     def stop(self) -> None:
         """Stop MQTT client gracefully"""
         logger.debug("Stopping MQTT client...")
         self._stop_requested = True
-        if self.client and self._connected:
+        if self.client:
             try:
                 self.client.loop_stop()
                 self.client.disconnect()

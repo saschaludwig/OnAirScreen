@@ -9,29 +9,10 @@
 # network.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
@@ -52,10 +33,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Optional, Callable, TYPE_CHECKING, Set
 from urllib.parse import unquote_plus, urlparse, parse_qs
 
-from PyQt6.QtCore import QThread, QSettings, pyqtSignal, QObject
-from PyQt6.QtNetwork import QUdpSocket, QHostAddress
+from PySide6.QtCore import QThread, QSettings, Signal, QObject
+from PySide6.QtNetwork import QUdpSocket, QHostAddress
 
-from utils import settings_group
+from utils import settings_group, host_address_is_ipv4
 from settings_functions import versionString
 from defaults import DEFAULT_UDP_PORT, DEFAULT_HTTP_PORT, DEFAULT_MULTICAST_ADDRESS
 from exceptions import (
@@ -150,7 +131,7 @@ class UdpServer:
         
         if QHostAddress(multicast_address).isMulticast():
             try:
-                from PyQt6.QtNetwork import QNetworkInterface
+                from PySide6.QtNetwork import QNetworkInterface
                 interfaces = QNetworkInterface.allInterfaces()
                 
                 # Strategy: Join multicast group on multiple interfaces
@@ -167,10 +148,8 @@ class UdpServer:
                             loopback_interface = iface
                         else:
                             # Only add interfaces that have at least one IPv4 address
-                            # Use toIPv4Address() to check if address is IPv4 (returns tuple: (address, is_valid))
                             for entry in iface.addressEntries():
-                                ipv4_result = entry.ip().toIPv4Address()
-                                if len(ipv4_result) == 2 and ipv4_result[1]:  # IPv4 and valid
+                                if host_address_is_ipv4(entry.ip()):
                                     active_interfaces.append(iface)
                                     break
                 
@@ -236,6 +215,7 @@ class UdpServer:
                         break
                     
                     data, host, port = self.udpsock.readDatagram(pending_size)
+                    data = bytes(data) if data else b""
                     logger.info(f"Received UDP datagram from {host.toString()}:{port}, size: {len(data)} bytes, content: {data!r}")
                     if not data:
                         logger.debug("Received empty UDP datagram, skipping")

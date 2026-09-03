@@ -5,10 +5,17 @@ Unit tests for utils.py
 """
 
 import pytest
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QTimer
 
-from utils import TimerUpdateMessageBox
+from utils import (
+    TimerUpdateMessageBox,
+    is_valid_instance_name,
+    normalize_instance_name,
+    host_address_is_ipv4,
+    host_address_is_ipv6,
+)
+from defaults import DEFAULT_INSTANCE_NAME, MAX_INSTANCE_NAME_LENGTH
 
 
 @pytest.fixture(scope="module")
@@ -110,7 +117,7 @@ class TestTimerUpdateMessageBox:
     
     def test_closeEvent_stops_timer(self, qapp):
         """Test that closeEvent stops the timer"""
-        from PyQt6.QtGui import QCloseEvent
+        from PySide6.QtGui import QCloseEvent
         
         json_reply = {
             'Message': 'Test',
@@ -129,4 +136,59 @@ class TestTimerUpdateMessageBox:
         # Timer should be stopped
         assert not msgbox.timer.isActive()
         assert event.isAccepted()
+
+
+class TestInstanceName:
+    """Tests for DNS hostname instance name validation."""
+
+    def test_valid_names(self):
+        """Typical location names and edge-length values are accepted."""
+        assert is_valid_instance_name("Studio-1")
+        assert is_valid_instance_name("Studio-1-Outside")
+        assert is_valid_instance_name("A")
+        assert is_valid_instance_name("a1")
+        assert is_valid_instance_name("X" * MAX_INSTANCE_NAME_LENGTH)
+        assert is_valid_instance_name("  Studio-1  ")
+
+    def test_invalid_names(self):
+        """Spaces, leading/trailing hyphens, dots, and empty values are rejected."""
+        assert not is_valid_instance_name("")
+        assert not is_valid_instance_name("   ")
+        assert not is_valid_instance_name("Studio 1")
+        assert not is_valid_instance_name("-Studio")
+        assert not is_valid_instance_name("Studio-")
+        assert not is_valid_instance_name("Studio.1")
+        assert not is_valid_instance_name("Studio_1")
+        assert not is_valid_instance_name("X" * (MAX_INSTANCE_NAME_LENGTH + 1))
+
+    def test_normalize_keeps_valid_name(self):
+        """Valid names are trimmed but otherwise unchanged."""
+        assert normalize_instance_name("  Studio-1-Outside  ") == "Studio-1-Outside"
+
+    def test_normalize_falls_back_to_default(self):
+        """Invalid or non-string values become the default instance name."""
+        assert normalize_instance_name("") == DEFAULT_INSTANCE_NAME
+        assert normalize_instance_name("Studio 1") == DEFAULT_INSTANCE_NAME
+        assert normalize_instance_name(None) == DEFAULT_INSTANCE_NAME
+        assert normalize_instance_name(123) == DEFAULT_INSTANCE_NAME
+
+
+class TestHostAddressFamily:
+    """PySide6 toIPv4Address() returns int; classify via protocol() instead."""
+
+    def test_ipv4_and_ipv6(self, qapp):
+        from PySide6.QtNetwork import QHostAddress
+
+        ipv4 = QHostAddress("192.168.1.10")
+        ipv6 = QHostAddress("2001:db8::1")
+        loopback = QHostAddress("127.0.0.1")
+
+        assert host_address_is_ipv4(ipv4) is True
+        assert host_address_is_ipv6(ipv4) is False
+        assert host_address_is_ipv4(ipv6) is False
+        assert host_address_is_ipv6(ipv6) is True
+        assert host_address_is_ipv4(loopback) is True
+        assert loopback.isLoopback() is True
+        # PySide6 returns an int here, not a (value, ok) tuple
+        assert isinstance(ipv4.toIPv4Address(), int)
 

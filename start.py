@@ -9,43 +9,35 @@
 # start.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
+
+import sys
+
+if sys.version_info < (3, 11):
+    sys.stderr.write(
+        f"OnAirScreen requires Python 3.11 or newer (found {sys.version.split()[0]})\n"
+    )
+    sys.exit(1)
 
 import argparse
 import logging
 import math
 import re
-import sys
-from datetime import datetime, timedelta
+import time
+from datetime import timedelta
 
-from PyQt6.QtCore import Qt, QSettings, QCoreApplication, QTimer, pyqtSignal, QObject
-from PyQt6.QtGui import QCursor, QPalette, QIcon, QPixmap, QFont, QColor
-from PyQt6.QtNetwork import QNetworkInterface
-from PyQt6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox
+from PySide6.QtCore import (
+    Qt, QByteArray, QEvent, QPoint, QSettings, QCoreApplication, QTimer,
+    Signal, QObject, QElapsedTimer, QUrl,
+)
+from PySide6.QtGui import QCursor, QPalette, QIcon, QPixmap, QFont, QColor, QMouseEvent, QContextMenuEvent
+from PySide6.QtNetwork import QNetworkInterface, QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide6.QtWidgets import QApplication, QWidget, QDialog, QLineEdit, QVBoxLayout, QLabel, QMessageBox, QMenu
 
 # Import resources FIRST to register them with Qt before UI files are loaded
 import resources_rc  # noqa: F401
@@ -59,6 +51,7 @@ from warning_manager import WarningManager
 from settings_functions import SettingsRestorer
 from timer_input import TimerInputDialog
 from ntp_manager import NTPManager
+from time_source import TimeSourceManager, wall_datetime
 from font_loader import load_fonts
 from signal_handlers import setup_signal_handlers
 from system_operations import SystemOperations
@@ -66,17 +59,24 @@ from status_exporter import StatusExporter
 from ui_updater import UIUpdater
 from hotkey_manager import HotkeyManager
 from logging_config import set_log_level, get_command_line_log_level, set_command_line_log_level
-from utils import settings_group
+from utils import settings_group, host_address_is_ipv4, host_address_is_ipv6
 from defaults import *  # noqa: F403, F405
 from exceptions import WidgetAccessError, log_exception
+from audio_capture import AudioCaptureController
+from meter_engine import MeterReadings, MeterUnit, migrate_audio_layout_and_unit
+from silence_detector import SILENCE_FLOOR_DBFS, SilenceDetector
 
 # Logging will be configured after QApplication initialization and settings loading
 logger = logging.getLogger(__name__)
 
+TOOLOUD_WARNING_PRIORITY = 1
+TOOLOUD_CLEAR_HOLD_MS = 750
+SILENCE_WARNING_PRIORITY = 2
+
 
 class CommandSignal(QObject):
     """Signal object for thread-safe command execution"""
-    command_received = pyqtSignal(bytes, str)
+    command_received = Signal(bytes, str)
 
 
 class MainScreen(QWidget, Ui_MainScreen):
@@ -84,7 +84,7 @@ class MainScreen(QWidget, Ui_MainScreen):
     Main application window for OnAirScreen
     
     This class handles the main UI, timer management, LED/AIR controls,
-    network communication (UDP/HTTP), and settings management.
+    network communication (UDP/HTTP/MQTT/OSC), and settings management.
     
     The class delegates specific responsibilities to specialized manager classes:
     - NTPManager: NTP time synchronization checking
@@ -107,9 +107,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         QWidget.__init__(self)
         Ui_MainScreen.__init__(self)
         self.setupUi(self)
+        self._install_main_screen_mouse_filter()
 
         self.settings = Settings()
         self.restore_settings_from_config()
+        self._is_quitting = False
         
         # Initialize event logger (needed for system operations)
         self.event_logger = EventLogger()
@@ -123,9 +125,6 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.settings.sigShutdownHost.connect(self.system_operations.shutdown_host)
         self.settings.sigConfigFinished.connect(self.config_finished)
         self.settings.sigConfigClosed.connect(self.config_closed)
-        
-        # Store MQTT settings when settings dialog opens to compare on apply
-        self._mqtt_settings_before_edit = {}
 
         # Initialize command handler
         self.command_handler = CommandHandler(self)
@@ -143,7 +142,10 @@ class MainScreen(QWidget, Ui_MainScreen):
                 app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
         logger.info(f"Loaded settings from: {settings.fileName()}")
 
-        self.labelWarning.hide()
+        # Keep NOW/NEXT and Warning at a stable shared height to avoid layout jumps
+        self._lock_bottom_stack_height()
+        if hasattr(self, "bottomStack") and hasattr(self, "pageBottomNormal"):
+            self.bottomStack.setCurrentWidget(self.pageBottomNormal)
 
         # Initialize warning manager
         self.warning_manager = WarningManager(
@@ -151,10 +153,49 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.labelCurrentSong,
             self.labelNews,
             self.event_logger,
-            self._publish_mqtt_status
+            self._publish_mqtt_status,
+            bottom_stack=getattr(self, "bottomStack", None),
+            page_normal=getattr(self, "pageBottomNormal", None),
+            page_warning=getattr(self, "pageBottomWarning", None),
         )
         # Keep warnings attribute for backward compatibility (used in get_status_json)
         self.warnings = self.warning_manager.warnings
+
+        # Audio meters / TooLoud
+        self._audio_meters_enabled = DEFAULT_AUDIO_METERS_ENABLED
+        self._audio_tooloud_enabled = False
+        self._audio_tooloud_text = DEFAULT_AUDIO_TOOLOUD_TEXT
+        self._audio_tooloud_threshold = DEFAULT_AUDIO_TOOLOUD_THRESHOLD_DBTP
+        self._audio_tooloud_action = DEFAULT_AUDIO_TOOLOUD_ACTION
+        self._audio_tooloud_led = DEFAULT_AUDIO_TOOLOUD_LED
+        self._audio_lufs_reference = DEFAULT_AUDIO_LUFS_REFERENCE
+        self._audio_peak_hold = DEFAULT_AUDIO_PEAK_HOLD
+        self._audio_peak_hold_seconds = DEFAULT_AUDIO_PEAK_HOLD_SECONDS
+        self._audio_display_style = DEFAULT_AUDIO_DISPLAY_STYLE
+        self._audio_meter_width = DEFAULT_AUDIO_METER_WIDTH
+        self._audio_layout = DEFAULT_AUDIO_LAYOUT
+        self._audio_tooloud_active = False
+        self._audio_tooloud_led_lit = False
+        self._audio_tooloud_clear_timer = QElapsedTimer()
+        self._audio_silence_enabled = False
+        self._audio_silence_warn = DEFAULT_AUDIO_SILENCE_WARN
+        self._audio_silence_on_absent = DEFAULT_AUDIO_SILENCE_ON_ABSENT
+        self._audio_silence_text = DEFAULT_AUDIO_SILENCE_TEXT
+        self._audio_silence_http_url = DEFAULT_AUDIO_SILENCE_HTTP_URL
+        self._audio_silence_active = False
+        self._audio_silence_warn_shown = False
+        self._silence_detector = SilenceDetector(
+            threshold_dbfs=DEFAULT_AUDIO_SILENCE_THRESHOLD_DBFS,
+            duration_s=DEFAULT_AUDIO_SILENCE_DURATION_S,
+            recovery_s=DEFAULT_AUDIO_SILENCE_RECOVERY_S,
+        )
+        self._silence_nam: QNetworkAccessManager | None = None
+        self.audio_capture = AudioCaptureController(self)
+        self.audio_capture.levels.connect(self._on_audio_levels)
+        self.audio_capture.error.connect(self._on_audio_capture_error)
+        if hasattr(self, "audioMeterWidget"):
+            self._set_audio_meter_visible(DEFAULT_AUDIO_METERS_ENABLED)
+        self.apply_audio_settings(QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen"))
 
         # Initialize hotkey manager
         self.hotkey_manager = HotkeyManager(self)
@@ -203,8 +244,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.timerAIR3 = self.timer_manager.timerAIR3
         self.timerAIR4 = self.timer_manager.timerAIR4
 
-        # Initialize NTP manager
+        # Initialize NTP and time-source managers
         self.ntp_manager = NTPManager(self)
+        self.time_source_manager = TimeSourceManager(self)
 
         self.replacenowTimer = QTimer()
         self.replacenowTimer.timeout.connect(self.replace_now_next)
@@ -235,6 +277,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         except Exception as e:
             logger.warning(f"Failed to initialize MQTT client: {e}")
             self.mqtt_client = None
+
+        # Setup OSC Server
+        try:
+            from osc_server import OscDaemon
+            self.osc_daemon = OscDaemon(self)
+            self.osc_daemon.start()
+        except Exception as e:
+            logger.warning(f"Failed to initialize OSC server: {e}")
+            self.osc_daemon = None
         
         # Log application start
         self.event_logger.log_system_event("Application started")
@@ -247,21 +298,100 @@ class MainScreen(QWidget, Ui_MainScreen):
         # do initial update check
         self.settings.sigCheckForUpdate.emit()
 
+        # Restore last windowed position/size after layout is ready
+        if not self.isFullScreen():
+            self._restore_window_geometry()
+
     def quit_oas(self) -> None:
         """
         Quit the application with cleanup
         
-        Stops NTP check thread, HTTP server, and quits the application.
+        Stops NTP check thread, HTTP/WebSocket servers, MQTT, OSC, audio capture,
+        and quits the application.
         """
+        if getattr(self, "_is_quitting", False):
+            QCoreApplication.instance().quit()
+            return
         logger.info("Quitting, cleaning up...")
         self.event_logger.log_system_event("Application quit")
-        self.ntp_manager.stop()
-        self.httpd.stop()
-        if hasattr(self, 'wsd') and self.wsd:
-            self.wsd.stop()
-        if hasattr(self, 'mqtt_client') and self.mqtt_client:
-            self.mqtt_client.stop()
+        self._is_quitting = True
+        self._save_window_geometry()
+        self._stop_background_services()
         QCoreApplication.instance().quit()
+
+    def _stop_background_services(self) -> None:
+        """Stop network, MQTT, OSC, NTP, and audio services. Safe to call more than once."""
+        try:
+            if hasattr(self, 'time_source_manager') and self.time_source_manager:
+                self.time_source_manager.stop()
+        except Exception as e:
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping time source: {e}")
+                log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'ntp_manager') and self.ntp_manager:
+                self.ntp_manager.stop()
+        except Exception as e:
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping NTP check: {e}")
+                log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'httpd') and self.httpd:
+                self.httpd.stop()
+        except Exception as e:
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping HTTP daemon: {e}")
+                log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'wsd') and self.wsd:
+                self.wsd.stop()
+        except Exception as e:
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping WebSocket daemon: {e}")
+                log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'mqtt_client') and self.mqtt_client:
+                self.mqtt_client.stop()
+        except Exception as e:
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping MQTT client: {e}")
+                log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'osc_daemon') and self.osc_daemon:
+                self.osc_daemon.stop()
+        except Exception as e:
+            from exceptions import OnAirScreenError, NetworkError
+            if isinstance(e, OnAirScreenError):
+                log_exception(logger, e)
+            else:
+                error = NetworkError(f"Error stopping OSC server: {e}")
+                log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'audio_capture') and self.audio_capture:
+                self.audio_capture.stop()
+        except Exception as e:
+            logger.warning("Error stopping audio capture: %s", e)
 
     def radio_timer_start_stop(self) -> None:
         """
@@ -307,20 +437,75 @@ class MainScreen(QWidget, Ui_MainScreen):
         else:
             self.radioTimerMode = 0  # count up mode
             mode = "count_up"
-        self.AirLabel_3.setText(f"Timer\n{int(self.Air3Seconds / 60)}:{int(self.Air3Seconds % 60):02d}")
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        with settings_group(settings, "Timers"):
+            configured = settings.value("TimerAIR3Text", DEFAULT_TIMER_AIR_TEXTS.get(3, "Timer"))
+            toth_text = settings.value("TimerTOTHText", DEFAULT_TOTH_TIMER_TEXT)
+        caption = air_timer_caption(
+            3, configured, getattr(self, "topOfHourActive", False), toth_text
+        )
+        self._apply_air_label_text(self.AirLabel_3, 3, caption, self.Air3Seconds)
         
         # Log timer set event
         self.event_logger.log_timer_set(3, seconds, mode)
 
+    def _air_count_down(self, air_num: int):
+        """Return True/False for AIR3 count direction, else None."""
+        if air_num != 3:
+            return None
+        try:
+            top_of_hour = bool(getattr(self, "topOfHourActive", False))
+        except RuntimeError:
+            top_of_hour = False
+        try:
+            radio_mode = int(getattr(self, "radioTimerMode", 0) or 0)
+        except (TypeError, ValueError, RuntimeError):
+            radio_mode = 0
+        return air_timer_count_down(air_num, radio_mode, top_of_hour)
+
+    def _format_air_label(self, air_num: int, caption: str, seconds: int) -> str:
+        """AIR label text: caption and m:ss, centered as plain text."""
+        return format_air_timer_label(caption, seconds)
+
+    def _air3_widget(self, name: str):
+        """Return an AIR3 extra widget, or None in tests without Qt init."""
+        try:
+            return getattr(self, name, None)
+        except RuntimeError:
+            return None
+
+    def _apply_air_count_mark(self) -> None:
+        """Show ▲/▼ under the AIR3 icon; no-op if the widget is missing (tests)."""
+        mark_widget = self._air3_widget("AirCountMark_3")
+        if mark_widget is None:
+            return
+        mark_widget.setText(air_timer_count_mark(self._air_count_down(3)))
+
+    def _apply_air_icon_style(self, air_num: int, icon_widget, stylesheet: str) -> None:
+        """Apply AIR icon colors; AIR3 also tints the count mark under the icon."""
+        icon_widget.setStyleSheet(stylesheet)
+        if air_num != 3:
+            return
+        for name in ("AirCountMark_3", "AirIconColumn_3"):
+            widget = self._air3_widget(name)
+            if widget is not None:
+                widget.setStyleSheet(stylesheet)
+
+    def _apply_air_label_text(self, label_widget, air_num: int, caption: str, seconds: int) -> None:
+        """Set AIR label text and refresh the AIR3 count-direction mark."""
+        label_widget.setText(self._format_air_label(air_num, caption, seconds))
+        if air_num == 3:
+            self._apply_air_count_mark()
+
     def _seconds_until_top_of_hour(self) -> int:
         """Return seconds until the next full hour (rounded up to whole seconds)."""
-        now = datetime.now()
+        now = wall_datetime()
         next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         return math.ceil((next_hour - now).total_seconds())
 
     def _milliseconds_until_next_wall_second(self) -> int:
         """Return milliseconds until the next wall-clock second boundary."""
-        ms_into_second = datetime.now().microsecond // 1000
+        ms_into_second = wall_datetime().microsecond // 1000
         remaining_ms = 1000 - ms_into_second
         return remaining_ms if remaining_ms > 0 else 1000
 
@@ -498,14 +683,23 @@ class MainScreen(QWidget, Ui_MainScreen):
                     icon_path = settings.value(config['icon_key'], config['icon_default'])
                     if icon_path:
                         pixmap = QPixmap(icon_path)
-                        icon_widget.setStyleSheet(f"color:{active_text_color};background-color:{active_bg_color}")
+                        self._apply_air_icon_style(
+                            air_num,
+                            icon_widget,
+                            f"color:{active_text_color};background-color:{active_bg_color}",
+                        )
                         icon_widget.setPixmap(pixmap)
                         icon_widget.update()
                 
                 # Set label text
-                label_text = settings.value(config['label'], config['label_default'])
+                label_text = air_timer_caption(
+                    air_num,
+                    settings.value(config['label'], config['label_default']),
+                    getattr(self, "topOfHourActive", False),
+                    settings.value("TimerTOTHText", DEFAULT_TOTH_TIMER_TEXT),
+                )
                 seconds = getattr(self, seconds_attr)
-                label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+                self._apply_air_label_text(label_widget, air_num, label_text, seconds)
                 
                 # Set status and start timer
                 setattr(self, status_attr, True)
@@ -541,7 +735,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                 
                 # Set inactive styles
                 label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-                icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
+                self._apply_air_icon_style(
+                    air_num,
+                    icon_widget,
+                    f"color:{inactive_text_color};background-color:{inactive_bg_color}",
+                )
             
             # Restore icon immediately after styleSheet change to prevent flickering
             if icon_pixmap and not icon_pixmap.isNull():
@@ -616,9 +814,14 @@ class MainScreen(QWidget, Ui_MainScreen):
         
         # Update label text
         with settings_group(settings, "Timers"):
-            label_text = settings.value(config['label'], config['label_default'])
+            label_text = air_timer_caption(
+                air_num,
+                settings.value(config['label'], config['label_default']),
+                getattr(self, "topOfHourActive", False),
+                settings.value("TimerTOTHText", DEFAULT_TOTH_TIMER_TEXT),
+            )
             seconds = getattr(self, seconds_attr)
-            label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+            self._apply_air_label_text(label_widget, air_num, label_text, seconds)
 
         if air_num == 3 and getattr(self, 'topOfHourActive', False) and self.statusAIR3:
             self._align_air3_timer_to_wall_clock()
@@ -658,18 +861,11 @@ class MainScreen(QWidget, Ui_MainScreen):
                 address = entry.ip()
                 addr_str = address.toString()
                 
-                # Check if it's IPv4 or IPv6 using toIPv4Address/toIPv6Address
-                # Both methods return a tuple: (address_value, is_valid) for IPv4, (16 bytes) for IPv6
-                ipv4_result = address.toIPv4Address()
-                ipv6_result = address.toIPv6Address()
-                
-                if len(ipv4_result) == 2 and ipv4_result[1]:  # IPv4 and valid
-                    # Skip localhost addresses
-                    if not addr_str.startswith('127.'):
+                if host_address_is_ipv4(address):
+                    if not address.isLoopback():
                         v4addrs.append(addr_str)
-                elif len(ipv6_result) == 16:  # IPv6 (returns 16-byte tuple)
-                    # Skip IPv6 localhost (::1) and link-local addresses (fe80::)
-                    if addr_str != '::1' and not addr_str.startswith('fe80::'):
+                elif host_address_is_ipv6(address):
+                    if not address.isLoopback() and not address.isLinkLocal():
                         v6addrs.append(addr_str)
 
         self.set_current_song_text(", ".join([str(addr) for addr in v4addrs]))
@@ -909,6 +1105,475 @@ class MainScreen(QWidget, Ui_MainScreen):
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         settings_restorer = SettingsRestorer(self, self.settings)
         settings_restorer.restore_all(settings)
+        # Font/size changes can affect NOW/NEXT metrics — keep warning area height locked
+        if hasattr(self, "_lock_bottom_stack_height"):
+            self._lock_bottom_stack_height()
+
+    def _lock_bottom_stack_height(self) -> None:
+        """
+        Fix the bottom NOW/NEXT/Warning area to a constant height.
+
+        Uses the larger of the normal two-line block and a 45pt warning line,
+        so switching to warnings does not shift the rest of the layout.
+        """
+        if not hasattr(self, "bottomStack"):
+            return
+        from PySide6.QtGui import QFontMetrics, QFont
+
+        normal_height = (
+            self.labelCurrentSong.sizeHint().height()
+            + self.labelNews.sizeHint().height()
+            + 2  # LayoutBottomNormal spacing
+        )
+        warning_font = QFont(self.labelWarning.font())
+        warning_font.setPointSize(45)
+        warning_height = QFontMetrics(warning_font).height() + 8
+        locked = max(normal_height, warning_height)
+        self.bottomStack.setMinimumHeight(locked)
+        self.bottomStack.setMaximumHeight(locked)
+
+    def apply_audio_settings(self, settings: QSettings) -> None:
+        """Apply Audio group settings to meters, capture, and TooLoud logic."""
+        if not hasattr(self, "audio_capture") or self.audio_capture is None:
+            return
+
+        with settings_group(settings, "Audio"):
+            enabled = settings.value('enabled', DEFAULT_AUDIO_METERS_ENABLED, type=bool)
+            source = settings.value('source', DEFAULT_AUDIO_SOURCE, type=str) or DEFAULT_AUDIO_SOURCE
+            device = settings.value('input_device', DEFAULT_AUDIO_INPUT_DEVICE, type=str) or ""
+            livewire_channel = settings.value(
+                'livewire_channel', DEFAULT_AUDIO_LIVEWIRE_CHANNEL, type=int
+            )
+            livewire_iface = settings.value(
+                'livewire_iface', DEFAULT_AUDIO_LIVEWIRE_IFACE, type=str
+            ) or ""
+            aes67_id = settings.value('aes67_id', DEFAULT_AUDIO_AES67_ID, type=str) or ""
+            aes67_addr = settings.value('aes67_addr', DEFAULT_AUDIO_AES67_ADDR, type=str) or ""
+            aes67_port = settings.value('aes67_port', DEFAULT_AUDIO_AES67_PORT, type=int)
+            aes67_name = settings.value('aes67_name', DEFAULT_AUDIO_AES67_NAME, type=str) or ""
+            aes67_codec = settings.value(
+                'aes67_codec', DEFAULT_AUDIO_AES67_CODEC, type=str
+            ) or DEFAULT_AUDIO_AES67_CODEC
+            aes67_rate = settings.value('aes67_rate', DEFAULT_AUDIO_AES67_RATE, type=int)
+            aes67_channels = settings.value(
+                'aes67_channels', DEFAULT_AUDIO_AES67_CHANNELS, type=int
+            )
+            unit = settings.value('unit', DEFAULT_AUDIO_UNIT, type=str) or DEFAULT_AUDIO_UNIT
+            layout_raw = settings.value('layout', None)
+            layout, unit = migrate_audio_layout_and_unit(unit, layout_raw)
+            tooloud = settings.value('tooloud', DEFAULT_AUDIO_TOOLOUD, type=bool)
+            tooloud_text = settings.value('tooloudtext', DEFAULT_AUDIO_TOOLOUD_TEXT, type=str) or DEFAULT_AUDIO_TOOLOUD_TEXT
+            threshold = settings.value(
+                'tooloud_threshold_dbtp', DEFAULT_AUDIO_TOOLOUD_THRESHOLD_DBTP, type=float
+            )
+            tooloud_action = settings.value(
+                'tooloud_action', DEFAULT_AUDIO_TOOLOUD_ACTION, type=str
+            ) or DEFAULT_AUDIO_TOOLOUD_ACTION
+            tooloud_led = settings.value('tooloud_led', DEFAULT_AUDIO_TOOLOUD_LED, type=int)
+            silence = settings.value('silence', DEFAULT_AUDIO_SILENCE, type=bool)
+            silence_warn = settings.value('silence_warn', DEFAULT_AUDIO_SILENCE_WARN, type=bool)
+            silence_on_absent = settings.value(
+                'silence_on_absent', DEFAULT_AUDIO_SILENCE_ON_ABSENT, type=bool
+            )
+            silence_text = settings.value(
+                'silence_text', DEFAULT_AUDIO_SILENCE_TEXT, type=str
+            ) or DEFAULT_AUDIO_SILENCE_TEXT
+            silence_threshold = settings.value(
+                'silence_threshold_dbfs', DEFAULT_AUDIO_SILENCE_THRESHOLD_DBFS, type=float
+            )
+            silence_duration = settings.value(
+                'silence_duration_s', DEFAULT_AUDIO_SILENCE_DURATION_S, type=float
+            )
+            silence_recovery = settings.value(
+                'silence_recovery_s', DEFAULT_AUDIO_SILENCE_RECOVERY_S, type=float
+            )
+            silence_http_url = settings.value(
+                'silence_http_url', DEFAULT_AUDIO_SILENCE_HTTP_URL, type=str
+            ) or ""
+            lufs_reference = settings.value(
+                'lufs_reference', DEFAULT_AUDIO_LUFS_REFERENCE, type=float
+            )
+            peak_hold = settings.value('peak_hold', DEFAULT_AUDIO_PEAK_HOLD, type=bool)
+            peak_hold_seconds = settings.value(
+                'peak_hold_seconds', DEFAULT_AUDIO_PEAK_HOLD_SECONDS, type=float
+            )
+            display_style = settings.value(
+                'display_style', DEFAULT_AUDIO_DISPLAY_STYLE, type=str
+            ) or DEFAULT_AUDIO_DISPLAY_STYLE
+            meter_width = settings.value(
+                'meter_width', DEFAULT_AUDIO_METER_WIDTH, type=int
+            )
+
+        from audio_capture import normalize_audio_source
+
+        source = normalize_audio_source(source)
+        try:
+            livewire_channel = int(livewire_channel)
+        except (TypeError, ValueError):
+            livewire_channel = DEFAULT_AUDIO_LIVEWIRE_CHANNEL
+        livewire_iface = livewire_iface or ""
+        aes67_id = aes67_id or ""
+        aes67_addr = aes67_addr or ""
+        aes67_name = aes67_name or ""
+        aes67_codec = aes67_codec or DEFAULT_AUDIO_AES67_CODEC
+        try:
+            aes67_port = int(aes67_port)
+        except (TypeError, ValueError):
+            aes67_port = DEFAULT_AUDIO_AES67_PORT
+        try:
+            aes67_rate = int(aes67_rate)
+        except (TypeError, ValueError):
+            aes67_rate = DEFAULT_AUDIO_AES67_RATE
+        try:
+            aes67_channels = int(aes67_channels)
+        except (TypeError, ValueError):
+            aes67_channels = DEFAULT_AUDIO_AES67_CHANNELS
+
+        self._audio_meters_enabled = bool(enabled)
+        self._audio_tooloud_enabled = bool(tooloud)
+        self._audio_tooloud_text = tooloud_text
+        self._audio_tooloud_threshold = float(threshold)
+        self._audio_tooloud_action = tooloud_action if tooloud_action in ("warning", "led") else DEFAULT_AUDIO_TOOLOUD_ACTION
+        try:
+            self._audio_tooloud_led = max(1, min(4, int(tooloud_led)))
+        except (TypeError, ValueError):
+            self._audio_tooloud_led = DEFAULT_AUDIO_TOOLOUD_LED
+        self._audio_silence_enabled = bool(silence)
+        self._audio_silence_warn = bool(silence_warn)
+        self._audio_silence_on_absent = bool(silence_on_absent)
+        self._audio_silence_text = silence_text
+        try:
+            silence_threshold_value = float(silence_threshold)
+        except (TypeError, ValueError):
+            silence_threshold_value = DEFAULT_AUDIO_SILENCE_THRESHOLD_DBFS
+        try:
+            silence_duration_value = float(silence_duration)
+        except (TypeError, ValueError):
+            silence_duration_value = DEFAULT_AUDIO_SILENCE_DURATION_S
+        try:
+            silence_recovery_value = float(silence_recovery)
+        except (TypeError, ValueError):
+            silence_recovery_value = DEFAULT_AUDIO_SILENCE_RECOVERY_S
+        self._audio_silence_http_url = (silence_http_url or "").strip()
+        self._silence_detector.configure(
+            threshold_dbfs=silence_threshold_value,
+            duration_s=silence_duration_value,
+            recovery_s=silence_recovery_value,
+        )
+        self._audio_lufs_reference = float(lufs_reference)
+        self._audio_peak_hold = bool(peak_hold)
+        try:
+            self._audio_peak_hold_seconds = max(0.1, float(peak_hold_seconds))
+        except (TypeError, ValueError):
+            self._audio_peak_hold_seconds = DEFAULT_AUDIO_PEAK_HOLD_SECONDS
+        if display_style in AUDIO_DISPLAY_STYLE_LABELS:
+            self._audio_display_style = display_style
+        else:
+            self._audio_display_style = DEFAULT_AUDIO_DISPLAY_STYLE
+        try:
+            self._audio_meter_width = int(meter_width)
+        except (TypeError, ValueError):
+            self._audio_meter_width = DEFAULT_AUDIO_METER_WIDTH
+
+        self._audio_layout = layout
+        try:
+            meter_unit = MeterUnit(unit)
+        except ValueError:
+            meter_unit = MeterUnit.DBTP
+        if layout == "both" and meter_unit == MeterUnit.BBC_PPM:
+            meter_unit = MeterUnit.DBTP
+
+        if hasattr(self, "audioMeterWidget"):
+            self.audioMeterWidget.set_layout(layout)
+            self.audioMeterWidget.set_unit(meter_unit)
+            self.audioMeterWidget.set_lufs_reference(self._audio_lufs_reference)
+            self.audioMeterWidget.set_dbtp_ceiling(
+                self._audio_tooloud_threshold if self._audio_tooloud_enabled else None
+            )
+            self.audioMeterWidget.set_peak_hold(
+                self._audio_peak_hold, self._audio_peak_hold_seconds
+            )
+            self.audioMeterWidget.set_display_style(self._audio_display_style)
+            self._apply_audio_meter_width(self._audio_meter_width)
+            if self._audio_meters_enabled:
+                self._set_audio_meter_visible(True)
+            else:
+                self._set_audio_meter_visible(False)
+                self.audioMeterWidget.clear_levels()
+
+        should_capture = (
+            self._audio_meters_enabled
+            or self._audio_tooloud_enabled
+            or self._audio_silence_enabled
+        )
+        aes67_without_stream = source == "aes67" and not (aes67_addr or "").strip()
+        source_changed = (
+            self.audio_capture.source != source
+            or self.audio_capture.device_name != device
+            or self.audio_capture.livewire_channel != livewire_channel
+            or self.audio_capture.livewire_iface != livewire_iface
+            or self.audio_capture.aes67_id != aes67_id
+            or self.audio_capture.aes67_addr != aes67_addr
+            or self.audio_capture.aes67_port != aes67_port
+            or self.audio_capture.aes67_codec != aes67_codec
+            or self.audio_capture.aes67_rate != aes67_rate
+            or self.audio_capture.aes67_channels != aes67_channels
+        )
+        capture_kwargs = dict(
+            device_name=device,
+            unit=meter_unit,
+            source=source,
+            livewire_channel=livewire_channel,
+            livewire_iface=livewire_iface,
+            aes67_id=aes67_id,
+            aes67_addr=aes67_addr,
+            aes67_port=aes67_port,
+            aes67_name=aes67_name,
+            aes67_codec=aes67_codec,
+            aes67_rate=aes67_rate,
+            aes67_channels=aes67_channels,
+        )
+        if should_capture and not aes67_without_stream:
+            self.audio_capture.configure(**capture_kwargs)
+            if (not self.audio_capture.is_running) or source_changed:
+                self.audio_capture.start()
+            else:
+                self.audio_capture.set_unit(meter_unit)
+            if not self.audio_capture.is_running:
+                self._reset_audio_meter_display()
+        else:
+            self.audio_capture.configure(**capture_kwargs)
+            self.audio_capture.stop()
+            self._reset_audio_meter_display()
+
+        self._sync_silence_after_settings()
+        self.poll_silence_absent()
+
+    def _set_audio_meter_visible(self, visible: bool) -> None:
+        """Show/hide the meter column (widget + gap before the left LEDs)."""
+        column = getattr(self, "audioMeterColumn", None)
+        if column is not None:
+            column.setVisible(visible)
+        elif hasattr(self, "audioMeterWidget"):
+            self.audioMeterWidget.setVisible(visible)
+
+    def _reset_audio_meter_display(self) -> None:
+        """Drop frozen levels when capture is not running."""
+        if hasattr(self, "audioMeterWidget"):
+            self.audioMeterWidget.clear_levels()
+        self._clear_tooloud_warning(force=True)
+        capture_running = bool(getattr(self, "audio_capture", None) and self.audio_capture.is_running)
+        if self._audio_silence_enabled and self._audio_silence_on_absent and not capture_running:
+            return
+        self._clear_silence_warning(force=True)
+
+    def _apply_audio_meter_width(self, width: int) -> None:
+        """Apply meter width so L/R bars grow and the column follows."""
+        if not hasattr(self, "audioMeterWidget"):
+            return
+        from audiometer_widget import METER_LED_GAP_PX
+
+        self.audioMeterWidget.set_meter_width(width)
+        self._audio_meter_width = self.audioMeterWidget.meter_width
+        column = getattr(self, "audioMeterColumn", None)
+        if column is not None:
+            column_width = self._audio_meter_width + METER_LED_GAP_PX
+            column.setFixedWidth(column_width)
+            column.setMinimumWidth(column_width)
+            column.setMaximumWidth(column_width)
+
+    def _on_audio_capture_error(self, message: str) -> None:
+        logger.error("Audio capture error: %s", message)
+
+    def _on_audio_levels(self, readings: MeterReadings) -> None:
+        """Handle meter levels from the capture worker."""
+        if self._audio_meters_enabled and hasattr(self, "audioMeterWidget"):
+            self.audioMeterWidget.set_levels(readings)
+
+        self._process_tooloud_level(readings.max_true_peak_dbtp)
+        self._process_silence_level(readings.max_sample_peak_dbfs)
+
+    def start_integrated_loudness(self) -> None:
+        """Reset and start gated I + LRA measurement."""
+        if getattr(self, "audio_capture", None) is not None:
+            self.audio_capture.start_integrated()
+        self._publish_mqtt_status("lufs")
+        self._broadcast_web_status()
+
+    def stop_integrated_loudness(self) -> None:
+        """Stop gated I + LRA; freeze the last values on the meter."""
+        if getattr(self, "audio_capture", None) is not None:
+            self.audio_capture.stop_integrated()
+        self._publish_mqtt_status("lufs")
+        self._broadcast_web_status()
+
+    def toggle_integrated_loudness(self) -> None:
+        """Start or stop the I/LRA session."""
+        if getattr(self, "audio_capture", None) is not None:
+            self.audio_capture.toggle_integrated()
+        self._publish_mqtt_status("lufs")
+        self._broadcast_web_status()
+
+    def reset_integrated_loudness(self) -> None:
+        """Restart a running I+LRA session, or hide frozen I/LRA when stopped."""
+        if getattr(self, "audio_capture", None) is not None:
+            self.audio_capture.reset_integrated()
+        if hasattr(self, "audioMeterWidget"):
+            self.audioMeterWidget.clear_integrated_markers()
+        self._publish_mqtt_status("lufs")
+        self._broadcast_web_status()
+
+    def _process_tooloud_level(self, true_peak_dbtp: float) -> None:
+        """Update TooLoud warning/LED from a true-peak reading."""
+        if not self._audio_tooloud_enabled:
+            self._clear_tooloud_warning(force=True)
+            return
+
+        if true_peak_dbtp >= self._audio_tooloud_threshold:
+            was_active = self._audio_tooloud_active
+            self._audio_tooloud_active = True
+            self._audio_tooloud_clear_timer.invalidate()
+            if not was_active:
+                self._apply_tooloud_active(True)
+        else:
+            if self._audio_tooloud_active:
+                if not self._audio_tooloud_clear_timer.isValid():
+                    self._audio_tooloud_clear_timer.start()
+                elif self._audio_tooloud_clear_timer.elapsed() >= TOOLOUD_CLEAR_HOLD_MS:
+                    self._clear_tooloud_warning(force=True)
+
+    def poll_silence_absent(self) -> None:
+        """Feed floor level when capture is absent, or clear if that option is off."""
+        if not self._audio_silence_enabled:
+            return
+        capture = getattr(self, "audio_capture", None)
+        if capture is not None and capture.is_running:
+            return
+        if self._audio_silence_on_absent:
+            self._process_silence_level(SILENCE_FLOOR_DBFS)
+        elif self._audio_silence_active:
+            self._clear_silence_warning(force=True)
+
+    def _process_silence_level(self, level_dbfs: float) -> None:
+        """Update silence alarm from a sample-peak dBFS reading."""
+        if not self._audio_silence_enabled:
+            if self._audio_silence_active:
+                self._clear_silence_warning(force=True)
+            return
+        changed, active = self._silence_detector.process(level_dbfs, time.monotonic())
+        if changed:
+            self._apply_silence_active(active)
+
+    def _sync_silence_after_settings(self) -> None:
+        """Apply enable/warn/absent changes without re-triggering HTTP GET."""
+        if not self._audio_silence_enabled:
+            self._clear_silence_warning(force=True)
+            return
+        capture_running = bool(getattr(self, "audio_capture", None) and self.audio_capture.is_running)
+        if not capture_running and not self._audio_silence_on_absent:
+            self._clear_silence_warning(force=True)
+            return
+        self._sync_silence_warning()
+
+    def _sync_silence_warning(self) -> None:
+        """Show or hide the OAS WARN text for the current silence alarm."""
+        try:
+            warning_manager = getattr(self, "warning_manager", None)
+        except (AttributeError, RuntimeError):
+            return
+        if not warning_manager:
+            return
+        should_show = (
+            self._audio_silence_enabled
+            and self._audio_silence_warn
+            and self._audio_silence_active
+        )
+        if should_show:
+            warning_manager.add_warning(self._audio_silence_text, SILENCE_WARNING_PRIORITY)
+            self._audio_silence_warn_shown = True
+        elif getattr(self, "_audio_silence_warn_shown", False):
+            warning_manager.remove_warning(SILENCE_WARNING_PRIORITY)
+            self._audio_silence_warn_shown = False
+
+    def _apply_silence_active(self, active: bool) -> None:
+        """Latch silence alarm, optional WARN, MQTT/WS, and HTTP GET on rising edge."""
+        rising = active and not self._audio_silence_active
+        self._audio_silence_active = active
+        self._sync_silence_warning()
+        self._publish_mqtt_status("silence")
+        self._broadcast_web_status()
+        if rising:
+            self._trigger_silence_http_get()
+
+    def _clear_silence_warning(self, force: bool = False) -> None:
+        """Clear the silence alarm if active."""
+        if not self._audio_silence_active and not force:
+            return
+        was_active = self._audio_silence_active
+        self._silence_detector.reset()
+        if was_active:
+            self._apply_silence_active(False)
+        else:
+            self._audio_silence_active = False
+            self._sync_silence_warning()
+
+    def _trigger_silence_http_get(self) -> None:
+        """Fire-and-forget HTTP GET when silence becomes active."""
+        url = (self._audio_silence_http_url or "").strip()
+        if not url:
+            return
+        parsed = QUrl(url)
+        if not parsed.isValid() or parsed.scheme() not in ("http", "https"):
+            logger.warning("Invalid silence HTTP GET URL: %s", url)
+            return
+        if self._silence_nam is None:
+            self._silence_nam = QNetworkAccessManager(self)
+            self._silence_nam.finished.connect(self._on_silence_http_finished)
+        request = QNetworkRequest(parsed)
+        self._silence_nam.get(request)
+
+    def _on_silence_http_finished(self, reply: QNetworkReply) -> None:
+        """Log HTTP GET failures without blocking the UI."""
+        try:
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                logger.warning("Silence HTTP GET failed: %s", reply.errorString())
+        finally:
+            reply.deleteLater()
+
+    def _apply_tooloud_active(self, active: bool) -> None:
+        """Apply TooLoud action (warning message or LED)."""
+        if self._audio_tooloud_action == "led":
+            # Clear any previous warning text when using LED mode
+            if hasattr(self, "warning_manager") and self.warning_manager:
+                self.warning_manager.remove_warning(TOOLOUD_WARNING_PRIORITY)
+            led_num = self._audio_tooloud_led
+            if active:
+                getattr(self, f"set_led{led_num}")(True)
+                self._audio_tooloud_led_lit = True
+                self._publish_mqtt_status(f"led{led_num}")
+            elif self._audio_tooloud_led_lit:
+                getattr(self, f"set_led{led_num}")(False)
+                self._audio_tooloud_led_lit = False
+                self._publish_mqtt_status(f"led{led_num}")
+            return
+
+        # Warning mode
+        if self._audio_tooloud_led_lit:
+            getattr(self, f"set_led{self._audio_tooloud_led}")(False)
+            self._audio_tooloud_led_lit = False
+        if hasattr(self, "warning_manager") and self.warning_manager:
+            if active:
+                self.warning_manager.add_warning(self._audio_tooloud_text, TOOLOUD_WARNING_PRIORITY)
+            else:
+                self.warning_manager.remove_warning(TOOLOUD_WARNING_PRIORITY)
+
+    def _clear_tooloud_warning(self, force: bool = False) -> None:
+        """Clear the TooLoud warning/LED if active."""
+        if not self._audio_tooloud_active and not force:
+            return
+        self._audio_tooloud_active = False
+        self._audio_tooloud_clear_timer.invalidate()
+        self._apply_tooloud_active(False)
 
     def constant_update(self):
         """Slot for constant timer timeout - delegates to UI updater"""
@@ -952,28 +1617,123 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.ui_updater.update_backtiming_seconds()
 
     def update_ntp_status(self):
-        """Update NTP status warning (priority -1)"""
+        """Update time-source / NTP warning (priority -1)."""
+        time_source = self.__dict__.get("time_source_manager")
+        if time_source is not None:
+            time_source.update_status()
+            return
         try:
             if self.ntp_manager:
                 self.ntp_manager.update_ntp_status()
         except (AttributeError, RuntimeError):
-            # Fallback if ntp_manager not yet initialized
             from ntp_manager import NTPManager
             self.ntp_manager = NTPManager(self)
             self.ntp_manager.update_ntp_status()
+
+    def _save_window_geometry(self) -> None:
+        """Persist windowed position and size. Skip while fullscreen."""
+        if self.isFullScreen():
+            return
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        with settings_group(settings, "Window"):
+            settings.setValue("geometry", self.saveGeometry())
+        settings.sync()
+
+    def _restore_window_geometry(self) -> None:
+        """Restore last windowed position and size, if one was saved."""
+        settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
+        with settings_group(settings, "Window"):
+            geometry = settings.value("geometry", QByteArray())
+        if isinstance(geometry, QByteArray):
+            if geometry.isEmpty():
+                return
+        elif not geometry:
+            return
+        else:
+            geometry = QByteArray(geometry)
+        self.restoreGeometry(geometry)
 
     def toggle_full_screen(self):
         global app
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "General"):
             if not settings.value('fullscreen', True, type=bool):
+                self._save_window_geometry()
                 self.showFullScreen()
                 app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
                 settings.setValue('fullscreen', True)
             else:
                 self.showNormal()
+                self._restore_window_geometry()
                 app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
                 settings.setValue('fullscreen', False)
+
+    def _install_main_screen_mouse_filter(self) -> None:
+        """Catch double-click and right-click on child widgets as well."""
+        self.installEventFilter(self)
+        for child in self.findChildren(QWidget):
+            if not isinstance(child, QMenu):
+                child.installEventFilter(self)
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        """Forward child double-clicks and context menus to the main window."""
+        if event.type() == QEvent.Type.ChildAdded:
+            child = event.child() if hasattr(event, "child") else None
+            if isinstance(child, QWidget) and not isinstance(child, QMenu):
+                child.installEventFilter(self)
+            return super().eventFilter(obj, event)
+
+        if (
+            obj is not self
+            and isinstance(obj, QWidget)
+            and not isinstance(obj, QMenu)
+            and obj.window() is self
+        ):
+            if event.type() == QEvent.Type.MouseButtonDblClick:
+                self.mouseDoubleClickEvent(event)
+                return True
+            if event.type() == QEvent.Type.ContextMenu:
+                self.contextMenuEvent(event)
+                return True
+        return super().eventFilter(obj, event)
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        """Toggle windowed/fullscreen mode on left double-click."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.toggle_full_screen()
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
+
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+        """Show the main screen context menu on right-click."""
+        self._show_main_context_menu(event.globalPos())
+        event.accept()
+
+    def _show_main_context_menu(self, global_pos: QPoint) -> None:
+        """Show context menu with fullscreen toggle and settings."""
+        global app
+        menu = QMenu(self)
+        toggle_action = menu.addAction("Toggle Fullscreen")
+        settings_action = menu.addAction("Settings")
+        reset_lufs_action = None
+        if getattr(self, "_audio_meters_enabled", False):
+            menu.addSeparator()
+            reset_lufs_action = menu.addAction("Reset I+LRA")
+
+        # Make the cursor visible while the menu is open (hidden in fullscreen).
+        app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        try:
+            chosen = menu.exec(global_pos)
+        finally:
+            app.restoreOverrideCursor()
+
+        if chosen == toggle_action:
+            self.toggle_full_screen()
+        elif chosen == settings_action:
+            self.show_settings()
+        elif reset_lufs_action is not None and chosen == reset_lufs_action:
+            self.reset_integrated_loudness()
 
     def set_air1(self, action: bool) -> None:
         """Set AIR1 state (active/inactive)"""
@@ -1013,17 +1773,24 @@ class MainScreen(QWidget, Ui_MainScreen):
             status_attr = f'statusAIR{air_num}'
             label_attr = f'AirLabel_{air_num}'
             
-            default_texts = {3: 'Timer', 4: 'Stream'}
             text_key = f'TimerAIR{air_num}Text'
             
             timer = getattr(self, timer_attr)
             timer.stop()
             setattr(self, seconds_attr, 0)
+            if air_num == 3:
+                self.radioTimerMode = 0
+            elif air_num == 4:
+                self.streamTimerMode = 0
             
-            label_text = settings.value(text_key, default_texts[air_num])
+            configured = settings.value(text_key, DEFAULT_TIMER_AIR_TEXTS.get(air_num, f'AIR{air_num}'))
+            toth_text = settings.value("TimerTOTHText", DEFAULT_TOTH_TIMER_TEXT)
+            label_text = air_timer_caption(
+                air_num, configured, getattr(self, "topOfHourActive", False), toth_text
+            )
             label_widget = getattr(self, label_attr)
             seconds = getattr(self, seconds_attr)
-            label_widget.setText(f"{label_text}\n{int(seconds/60)}:{seconds%60:02d}")
+            self._apply_air_label_text(label_widget, air_num, label_text, seconds)
             
             # Log AIR reset event
             self.event_logger.log_air_reset(air_num, "manual")
@@ -1220,8 +1987,8 @@ class MainScreen(QWidget, Ui_MainScreen):
 
     def _publish_mqtt_status(self, specific_item: str | None = None) -> None:
         """
-        Publish MQTT status immediately after status change
-        
+        Publish status immediately after a status change (MQTT and OSC).
+
         Args:
             specific_item: Optional specific item to publish (e.g., 'led1', 'air2', 'now', 'next', 'warn')
                           If None, publishes all status items
@@ -1243,6 +2010,21 @@ class MainScreen(QWidget, Ui_MainScreen):
             )
             log_exception(logger, error, use_exc_info=False)
             pass
+
+        try:
+            osc_daemon = getattr(self, 'osc_daemon', None)
+            if osc_daemon:
+                try:
+                    osc_daemon.publish_status(specific_item)
+                except Exception as e:
+                    logger.warning(f"Failed to publish OSC status: {e}")
+        except (RuntimeError, AttributeError) as e:
+            error = WidgetAccessError(
+                f"Error accessing OSC daemon (object may not be initialized): {e}",
+                widget_name="osc_daemon",
+                attribute="publish_status"
+            )
+            log_exception(logger, error, use_exc_info=False)
     
     def _broadcast_web_status(self) -> None:
         """
@@ -1367,6 +2149,8 @@ class MainScreen(QWidget, Ui_MainScreen):
         Restores settings from configuration, updates weather widget config,
         and triggers weather update.
         """
+        if getattr(self, "_is_quitting", False):
+            return
         # IMPORTANT: Check command-line log level FIRST, before restoring settings
         # Command-line log level ALWAYS overrides settings and must not be changed
         import sys as sys_module
@@ -1399,11 +2183,16 @@ class MainScreen(QWidget, Ui_MainScreen):
             # Always print log level change, regardless of current log level
             print(f"Log level updated to: {log_level}", file=sys_module.stderr)
         
-        # Always restart MQTT client when settings are applied (applySettings was called)
-        # The client will check if settings changed and only reconnect if needed
+        if hasattr(self, 'time_source_manager') and self.time_source_manager:
+            self.time_source_manager.apply_settings()
+        
+        # Restart MQTT only when MQTT-related settings changed (handled inside restart())
         if hasattr(self, 'mqtt_client') and self.mqtt_client:
-            logger.debug("Settings applied, restarting MQTT client to apply any changes...")
             self.mqtt_client.restart()
+
+        # Restart OSC only when OSC-related settings changed (handled inside restart())
+        if hasattr(self, 'osc_daemon') and self.osc_daemon:
+            self.osc_daemon.restart()
 
     def reboot_host(self):
         """Reboot the host system safely using subprocess"""
@@ -1432,38 +2221,14 @@ class MainScreen(QWidget, Ui_MainScreen):
     
     def closeEvent(self, event):
         """Handle window close event"""
-        try:
-            if hasattr(self, 'httpd') and self.httpd:
-                self.httpd.stop()
-        except Exception as e:
-            from exceptions import OnAirScreenError, NetworkError
-            if isinstance(e, OnAirScreenError):
-                log_exception(logger, e)
-            else:
-                error = NetworkError(f"Error stopping HTTP daemon: {e}")
-                log_exception(logger, error)
-        
-        try:
-            if hasattr(self, 'wsd') and self.wsd:
-                self.wsd.stop()
-        except Exception as e:
-            from exceptions import OnAirScreenError, NetworkError
-            if isinstance(e, OnAirScreenError):
-                log_exception(logger, e)
-            else:
-                error = NetworkError(f"Error stopping WebSocket daemon: {e}")
-                log_exception(logger, error)
-        
-        try:
-            if hasattr(self, 'ntp_manager') and self.ntp_manager:
-                self.ntp_manager.stop()
-        except Exception as e:
-            from exceptions import OnAirScreenError, NetworkError
-            if isinstance(e, OnAirScreenError):
-                log_exception(logger, e)
-            else:
-                error = NetworkError(f"Error stopping NTP check: {e}")
-                log_exception(logger, error)
+        self._save_window_geometry()
+        if not getattr(self, "_is_quitting", False):
+            logger.info("Quitting, cleaning up...")
+            if hasattr(self, "event_logger") and self.event_logger:
+                self.event_logger.log_system_event("Application quit")
+            self._is_quitting = True
+            self._stop_background_services()
+        event.accept()
 
 
 ###################################
@@ -1505,6 +2270,7 @@ if __name__ == "__main__":
     
     # Load fonts from fonts/ directory before creating UI
     load_fonts()
+    app.setFont(QFont(DEFAULT_FONT_NAME))
     
     icon = QIcon()
     icon.addPixmap(QPixmap(":/oas_icon/images/oas_icon.png"), QIcon.Mode.Normal, QIcon.State.Off)

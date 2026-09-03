@@ -16,6 +16,28 @@ If you need ready-to-run Linux/Win/Mac executables, please visit https://www.ast
 I also have a RaspberryPi version and a ready-to-run RaspberryPi SD-Card image in my shop. \
 And if you need extended support, please contact me.
 
+#### Source requirements
+
+ * Python 3.11 or newer (see `requirements.txt`)
+
+#### License
+
+OnAirScreen is provided under the **OnAirScreen Source-Available License (OASL 1.0)**. See [`LICENSE`](LICENSE). This is not an OSI open-source license.
+
+You **may**:
+
+ * read, copy, modify, and redistribute the source code (keep copyright and license notices)
+ * compile your own builds and use them privately or internally, including commercial internal use
+ * fork the project
+
+You **may not**, without prior written permission from the copyright holder:
+
+ * redistribute compiled or executable versions (installers, packages, container images, GitHub Releases, and similar)
+ * sell or give away binaries, including copies of official shop builds
+ * present a modified version as an official OnAirScreen release
+
+Official precompiled builds are sold by the copyright holder. Third-party libraries and assets stay under their own licenses; see [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+
 #### Documentation
 
 Complete user manuals covering all settings, hotkeys, and remote control:
@@ -54,6 +76,8 @@ Complete user manuals covering all settings, hotkeys, and remote control:
  * Web-UI: Improved compact layout for better space efficiency
  * REST-style API endpoints (/api/status, /api/command)
  * MQTT integration with Home Assistant Autodiscovery support
+ * Bitfocus Companion HTTP module (LEDs, AIR timers, live status); Generic OSC remains as an alternative
+ * OSC remote control (UDP)
  * Event logging system for tracking all actions
  * Configurable log level settings (DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE)
  * Command-line option to override log level (--loglevel)
@@ -62,10 +86,43 @@ Complete user manuals covering all settings, hotkeys, and remote control:
  * Unified error handling system with custom exceptions for better error tracking and debugging
  * Modular architecture with separated concerns (NTP, UI updates, system operations, etc.)
  * Weather Widget
- * static or blinking colon in digital clock mode
+ * Stereo audio meters (dBFS / dBTP / LUFS / BBC PPM) with selectable live input
+ * “TOO LOUD” warning based on true-peak threshold (dBTP)
+ * Silence Detection with optional WARN, MQTT/HTTP boolean, and HTTP GET trigger
  * static or blinking colon in digital clock mode
  * OnAir Timer, Stopwatch, Countdown and more
  * Top-of-Hour countdown in the Radio Timer (AIR3): wall-clock synchronized countdown to the next full hour
+ * Time source: local system clock, NTP server, software PTPv2 (IEEE 1588-2008), or SMPTE LTC (Leo Bodnar LBE-1110 serial or local audio decode); NTP/PTP/LTC do not change the OS clock
+
+#### Audio Meters
+
+OnAirScreen shows full-height stereo L/R meters on the left side of the screen (on by default, Local Input). Configure them under **Settings → Audio Meters**:
+
+ * Enable meters and choose the **audio source**:
+   * **Local Input** — PortAudio capture device (mic/line)
+   * **Livewire** — Axia Livewire AoIP multicast (pick an announced source or enter a channel 1–32767)
+   * **AES67** — multicast RTP stream discovered via SAP (or pasted SDP)
+ * Shared **AoIP Interface** for Livewire/AES67 IGMP join (Default = system route)
+ * Livewire source combo (announced names while Settings are open) plus channel number
+ * AES67 stream combo (**None**, live SAP when the set changes, or **pasted SDP**)
+ * Display units: **dBFS**, **dBTP** (true peak), **LUFS** (momentary), **BBC PPM** (Type IIa, marks 1–7)
+ * LUFS reference peg via presets (EBU R128 −23, ATSC A/85 −24, AES −16/−18, Custom)
+ * Optional peak hold marker (default 1.5 s, can be disabled)
+ * Display style: **Solid** or **Bargraph** (1px segments with 1px gaps)
+ * Adjustable meter width (extra width goes into thicker L/R bars)
+ * Optional **TOO LOUD** action: warning message **or** trigger a configurable LED (1–4) when true peak exceeds threshold
+ * dBTP ceiling peg uses the TooLoud threshold
+ * Optional **Silence Detection** on the same audio source: dBFS threshold, duration (default 10 s), recovery time, optional on-screen WARN, optional HTTP GET on trigger; missing device/stream can count as silence
+
+**Livewire notes:** The PC must be on the AoIP/Livewire VLAN with working IGMP/multicast. While Settings are open, advertised sources are listed from `239.192.255.3` UDP **4001** (standard stereo streams only). You can pick a name from the combo or type a channel number. Channel *N* maps to multicast `239.192.0.0 + N` on UDP port 5004 (48 kHz / 24‑bit stereo RTP). After Apply, capture uses the stored channel even if advertisements stop.
+
+**AES67 notes:** Discovery listens for SAP on `239.255.255.255` and RFC 2974 `224.2.127.254` UDP **9875** (only while the settings dialog is open). Supported encodings: L16/L24 at 44.1/48/96 kHz. Stereo meters use the first two channels (mono is duplicated). Dante AES67 streams that announce via SAP are listed like any other stream (`a=keywords:Dante` is label-only). No PTP clocking and no audio playout — metering only. Capture uses the stored multicast address/port even if SAP is silent after Apply.
+
+**Troubleshooting:** If no Livewire or AES67 sources appear, check AoIP interface, VLAN, and IGMP. Livewire ads are `239.192.255.3:4001`; SAP is `239.255.255.255:9875` and `224.2.127.254:9875`. If a stream is listed but the meter stays silent, check RTP port and codec (Livewire is L24/48 kHz; AES67 L16 vs L24).
+
+**System requirements for audio capture:**
+ * PortAudio system library: macOS `brew install portaudio`, Debian/Ubuntu `apt install libportaudio2`
+ * On macOS, grant **Microphone** permission to OnAirScreen (local input only)
 
 #### Top-of-Hour Countdown (AIR3)
 
@@ -156,18 +213,23 @@ OnAirScreen provides a complete web-based remote control interface accessible vi
 Simply open `http://127.0.0.1:8010/` (or the IP address of your OnAirScreen instance) in any modern web browser.
 
 The Web-UI provides:
- * Real-time status display for LEDs, AIR timers, and text fields (NOW/NEXT/WARN)
+ * Real-time status display for LEDs, AIR timers, text fields (NOW/NEXT/WARN), silence alarm, and loudness I+LRA
  * Real-time updates via WebSocket (with HTTP polling fallback)
  * Dark Mode support with automatic theme persistence
  * Warning priority system: Display NTP warnings and user warnings with priorities (Normal, Medium, High)
  * Delete warnings directly from status display with X button
  * LED control buttons with toggle functionality
  * AIR timer controls with start/stop and reset buttons
+ * Start / Stop / Reset for programme loudness I + LRA (`LUFSI:START` / `LUFSI:STOP` / `LUFSI:RESET`)
+ * Loudness I+LRA status tile shows live I (LUFS) and LRA (LU) plus RUNNING/STOPPED
  * Top-of-Hour button for AIR3 (countdown to next full hour)
- * Text input controls for NOW, NEXT, and WARN messages
+ * AIR3 time input to set the radio timer (`m:ss`, `m,ss`, or seconds)
+ * AIR3 count-up vs. countdown shown in the status tile
+ * Keys `1`–`4` toggle LEDs (ignored while typing in a text field)
+ * Text input controls for NOW, NEXT, and WARN messages (NOW/NEXT follow the live status unless you are editing)
  * Compact, organized layout for better space efficiency
  * Version and distribution information display
- * Connection error handling with modal dialog
+ * Persistent connection badge (Live / Polling / Offline) plus connection error modal
 
 ##### REST-style API
 
@@ -177,7 +239,7 @@ OnAirScreen also provides REST-style API endpoints:
 ```Shell
 curl http://127.0.0.1:8010/api/status
 ```
-Returns JSON with current LED status, AIR timer status, text field values, version, and distribution information. For AIR3, the `topOfHour` field indicates whether the Top-of-Hour countdown is active.
+Returns JSON with current LED status, AIR timer status, text field values, silence boolean, loudness I+LRA session (`lufsIntegrated`) plus I (`lufsI`) and LRA (`lra`), version, and distribution information. For AIR3, the `topOfHour` field indicates whether the Top-of-Hour countdown is active, and `countDown` is `true` while the radio timer is in countdown mode (after `AIR3TIME` or TOTH). The `silence` field is independent of the on-screen WARN. `lufsI` and `lra` are `null` until enough audio has been measured.
 
 **Command Endpoint:**
 ```Shell
@@ -201,6 +263,10 @@ OnAirScreen automatically publishes device configurations to Home Assistant, cre
  * **Reset Buttons** (AIR3/AIR4 Reset): Reset timers to 0:00
  * **Top-of-Hour Button** (AIR3): Start/stop countdown to next full hour
  * **Text Entities** (NOW, NEXT, WARN): Set and display text fields
+ * **Binary Sensors**: Warning Active, Silence
+ * **Loudness I+LRA Switch**: Start (resets) / stop the programme I + LRA session
+ * **Loudness I+LRA Reset Button**: Restart if running; hide I and LRA if stopped
+ * **Loudness I / LRA Sensors**: Current gated I (LUFS) and LRA (LU)
 
 **MQTT Topics:**
 All commands use the same format as UDP/HTTP API commands, published to:
@@ -209,6 +275,8 @@ All commands use the same format as UDP/HTTP API commands, published to:
 {base_topic}/air{1-4}/set          → ON/OFF
 {base_topic}/air{3-4}/reset        → PRESS (button)
 {base_topic}/air3/toh              → ON/OFF/TOGGLE
+{base_topic}/lufs/integrated/set   → ON/OFF/TOGGLE/RESET
+{base_topic}/lufs/integrated/reset → PRESS
 {base_topic}/text/now/set          → TEXT
 {base_topic}/text/next/set         → TEXT
 {base_topic}/text/warn/set         → TEXT
@@ -221,6 +289,11 @@ Status updates are automatically published to:
 {base_topic}/air{1-4}/time          → seconds (integer)
 {base_topic}/air3/toh/state         → true/false
 {base_topic}/text/{now|next|warn}/state → TEXT
+{base_topic}/warning/active         → true/false
+{base_topic}/silence/active         → true/false
+{base_topic}/lufs/integrated/state  → ON/OFF
+{base_topic}/lufs/i                 → I in LUFS (empty if unknown)
+{base_topic}/lufs/lra               → LRA in LU (empty if unknown)
 ```
 
 **Example using mosquitto_pub:**
@@ -230,6 +303,8 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/led1/set -m "ON"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/set -m "ON"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/reset -m "PRESS"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/air3/toh -m "TOGGLE"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/lufs/integrated/set -m "ON"
+mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/lufs/integrated/reset -m "PRESS"
 mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song"
 ```
 
@@ -251,6 +326,7 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song
 | `AIR3TIME:seconds`            | set Radio Timer to given value in seconds |
 | `AIR3TOH:[ON/OFF/TOGGLE]`     | start/stop/toggle Top-of-Hour countdown in Radio Timer |
 | `AIR4:[ON/OFF/RESET/TOGGLE]`        | start/stop/reset/toggle Stream Timer |
+| `LUFSI:[START/STOP/TOGGLE/RESET]`  | start/stop/toggle/reset programme I + LRA session |
 | `CMD:REBOOT`                  | OS restart |
 | `CMD:SHUTDOWN`                | OS shutdown |
 | `CMD:QUIT`                    | quit OnAirScreen instance |
@@ -274,6 +350,32 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song
 `CONF:Clock:logopath=PathToLogo`<br>
 `CONF:Network:udpport=PORT`<br>
 `CONF:Network:tcpport=PORT`<br>
+`CONF:Audio:enabled=[True|False]`<br>
+`CONF:Audio:source=[device|livewire]`<br>
+`CONF:Audio:input_device=DEVICE_NAME`<br>
+`CONF:Audio:livewire_channel=N`<br>
+`CONF:Audio:livewire_iface=IP_OR_EMPTY`<br>
+`CONF:Audio:unit=[dbfs|dbtp|bbc_ppm]` (`lufs` still sets layout to `lufs`)<br>
+`CONF:Audio:layout=[lr|lufs|both]`<br>
+`CONF:Audio:tooloud=[True|False]`<br>
+`CONF:Audio:tooloudtext=TEXT`<br>
+`CONF:Audio:tooloud_threshold_dbtp=-1.0`<br>
+`CONF:Audio:tooloud_action=[warning|led]`<br>
+`CONF:Audio:tooloud_led=[1|2|3|4]`<br>
+`CONF:Audio:silence=[True|False]`<br>
+`CONF:Audio:silence_warn=[True|False]`<br>
+`CONF:Audio:silence_on_absent=[True|False]`<br>
+`CONF:Audio:silence_text=TEXT`<br>
+`CONF:Audio:silence_threshold_dbfs=-50.0`<br>
+`CONF:Audio:silence_duration_s=10.0`<br>
+`CONF:Audio:silence_recovery_s=2.0`<br>
+`CONF:Audio:silence_http_url=URL`<br>
+`CONF:Audio:lufs_reference_preset=[ebu_r128|atsc_a85|aes_16|aes_18|custom]`<br>
+`CONF:Audio:lufs_reference=-23.0`<br>
+`CONF:Audio:peak_hold=[True|False]`<br>
+`CONF:Audio:peak_hold_seconds=1.5`<br>
+`CONF:Audio:display_style=[solid|bargraph]`<br>
+`CONF:Audio:meter_width=79`<br>
 
 ## Error Handling
 

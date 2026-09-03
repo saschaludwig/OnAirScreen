@@ -1,6 +1,6 @@
 # OnAirScreen – Bedienungsanleitung
 
-**Version:** 0.9.8  
+**Version:** 1.0.0beta4  
 **Autor:** Sascha Ludwig, [astrastudio.de](http://www.astrastudio.de)  
 **Projekt:** [OnAirScreen auf GitHub](http://saschaludwig.github.io/OnAirScreen/)  
 **English version:** [USER_MANUAL.md](USER_MANUAL.md)
@@ -30,11 +30,14 @@
 OnAirScreen ist eine vielseitige **On-Air-Lampe** für professionelle Broadcast-Umgebungen. Die Anwendung kombiniert:
 
 - **4 Status-LEDs** (ein-/ausschaltbar, blinkend, zeitgesteuert)
-- **4 AIR-Timer** (Mikrofon, Telefon, Radio-Timer, Stream-Timer)
-- **Digitale oder analoge Uhr** mit optionalem Textuhr-Modus
+- **4 AIR-Timer** (Mikrofon, Telefon, Radio-Timer, Stream-Timer); AIR3 mit ▲/▼ und Top-of-Hour
+- **Digitale oder analoge Uhr** mit optionalem Textuhr-Modus und Lock-LED (Local / NTP / PTP / LTC)
+- **Stereo-Audio-Meter** (lokaler Eingang, Axia Livewire oder AES67 AoIP): L/R, Programme-LUFS oder beides, optional I+LRA
+- **Silence Detection** mit optionalem WARN auf dem Bildschirm und Boolean in API/MQTT
+- **Instanzname** (DNS-sicher, z. B. `Studio-1`) zur Unterscheidung mehrerer OnAirScreens
 - **Textzeilen** NOW, NEXT und WARN (mit Prioritätssystem)
 - **Wetter-Widget** (OpenWeatherMap)
-- **Fernsteuerung** per Tastatur, UDP, HTTP, Web-UI, MQTT und REST-API
+- **Fernsteuerung** per Tastatur, Maus (Doppelklick/Rechtsklick), UDP, HTTP, Web-UI, MQTT, OSC, REST-API und Bitfocus Companion
 - **Home-Assistant-Integration** via MQTT Autodiscovery
 
 Die Anwendung startet standardmäßig im **Vollbildmodus** mit ausgeblendetem Mauszeiger und eignet sich für dedizierte Studio-Monitore, Raspberry-Pi-Setups und Touch-freie Bedienung.
@@ -51,9 +54,9 @@ OnAirScreen passt sich automatisch an verschiedene Monitor-Seitenverhältnisse a
 
 ### Voraussetzungen
 
-- **Python 3** mit PyQt6 (bei Installation aus dem Quellcode)
+- **Python 3.11+** mit PySide6 (bei Installation aus dem Quellcode)
 - Abhängigkeiten: siehe `requirements.txt`
-- Netzwerkzugriff für UDP/HTTP/MQTT-Fernsteuerung (optional)
+- Netzwerkzugriff für UDP/HTTP/MQTT/OSC-Fernsteuerung (optional)
 
 
 
@@ -81,24 +84,7 @@ Beim ersten Start werden Standardeinstellungen geladen. Der Einstellungsdialog �
 
 Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Stationsname                                           │
-│  Slogan                                                 │
-├─────────────────────────────────────────────────────────┤
-│  [LED1]  [LED2]  [LED3]  [LED4]     (Status-LEDs)     │
-├─────────────────────────────────────────────────────────┤
-│  Text links          │  Uhr / Logo  │  Text rechts      │
-│                      │  (ClockWidget)│                   │
-├─────────────────────────────────────────────────────────┤
-│  [AIR1 Mic]  [AIR3 Timer]  [AIR2 Phone]  [AIR4 Stream]  │
-├─────────────────────────────────────────────────────────┤
-│  NOW:  aktueller Titel / IP-Adressen                    │
-│  NEXT: nächster Titel / IPv6-Adressen                   │
-│  WARN: Warnmeldung (ersetzt NOW/NEXT bei aktiver Warnung) │
-└─────────────────────────────────────────────────────────┘
-```
-
+![OnAirScreen Hauptbildschirm](https://www.astrastudio.de/wp-content/uploads/2026/08/OAS_Screenshot_1.0.0.png)
 
 
 ### Bereiche im Detail
@@ -109,8 +95,10 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 | **Stationsname**    | `labelStation`            | Name des Senders, Farbe konfigurierbar                     |
 | **Slogan**          | `labelSlogan`             | Untertitel / Claim des Senders                             |
 | **Status-LEDs 1–4** | `buttonLED1`–`buttonLED4` | Große farbige Statusanzeigen (ON AIR, PHONE, …)            |
+| **Audio-Meter**      | `audioMeterWidget`       | L/R und/oder Programme-LUFS am linken Rand (optional)     |
 | **Uhr**             | `clockWidget`             | Digital oder analog, mit Logo und optionalem Wetter-Widget |
-| **AIR-Timer 1–4**   | `AirLED_1`–`AirLED_4`     | Stoppuhr-Timer mit Icon, Label und MM:SS-Anzeige           |
+| **Lock-LED**        | Clock lock                | Unten rechts: `PTP/NTP/LTC LOCK` oder `LOCAL`              |
+| **AIR-Timer 1–4**   | `AirLED_1`–`AirLED_4`     | Stoppuhr-Timer mit Icon, Label, MM:SS; AIR3 mit ▲/▼       |
 | **NOW**             | `labelCurrentSong`        | Erste Fußzeile (z. B. aktueller Songtitel)                 |
 | **NEXT**            | `labelNews`               | Zweite Fußzeile (z. B. nächster Titel)                     |
 | **WARN**            | `labelWarning`            | Warnmeldung; blendet NOW/NEXT aus, wenn aktiv              |
@@ -123,8 +111,10 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 ### Vollbildmodus
 
 - Standard: Vollbild mit verstecktem Mauszeiger
-- Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`)
+- Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf den Hauptbildschirm, oder Rechtsklick → **Toggle Fullscreen**
+- **Rechtsklick-Menü:** Toggle Fullscreen, Settings; bei aktiven Metern zusätzlich **Reset I+LRA**
 - Der Vollbild-Zustand wird in den Einstellungen (`General/fullscreen`) gespeichert
+- Im Fenstermodus werden Position und Größe gespeichert (`Window/geometry`) und beim nächsten Start wiederhergestellt
 
 ---
 
@@ -194,17 +184,20 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 
 ## 5. Einstellungsdialog
 
-Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,`. Er enthält **7 Registerkarten** (vertikal links angeordnet):
+Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,` (oder Rechtsklick → **Settings**). Ist er bereits offen, kommt das Fenster nach vorne, ohne die Werte neu zu laden. Laufende AIR-Timer (inkl. TOTH) bleiben dabei unverändert. Der Dialog enthält **mehrere Registerkarten** (vertikal links angeordnet):
 
 
 | Register              | Inhalt                                 |
 | --------------------- | -------------------------------------- |
-| **General Settings**  | Station, LEDs, Uhr, NTP, Logo, Updates |
-| **Advanced Settings** | Netzwerk, MQTT, Formatierung, Wetter   |
+| **General**           | Instanzname, Station, LEDs, Uhr, Logo, Updates |
+| **Network**           | UDP, HTTP, Multicast, MQTT, OSC       |
+| **Time Source**       | Local / NTP / PTPv2 / LTC, NTP-Prüfung |
+| **Advanced**          | Formatierung, Wetter                   |
 | **Timers**            | AIR-Timer 1–4                          |
 | **Fonts**             | Schriftarten für alle Elemente         |
+| **Audio Meters**      | Pegelanzeige, Quelle, TooLoud, Silence Detection |
 | **About**             | Version, Lizenzinfo, Log-Level, Reset  |
-| **License**           | BSD-Lizenztext                         |
+| **License**           | OASL 1.0 und Third-Party-Hinweise (PySide6/Qt, Fonts, Beispiele) |
 
 
 
@@ -226,9 +219,19 @@ Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,`. Er enthält **7 
 
 
 
-### 5.1 General Settings
+### 5.1 General
 
 
+
+#### Instanzname
+
+
+| Einstellung   | Schlüssel              | Standard    | Beschreibung |
+| ------------- | ---------------------- | ----------- | ------------ |
+| Instance Name | `General/instancename` | `Studio-1`  | DNS-sicheres Label (1–32 Zeichen, Buchstaben/Ziffern/Bindestrich, kein führendes oder nachgestelltes `-`) zur Identifikation dieses OnAirScreens |
+
+
+Der Instanzname erscheint in der Web-UI (Titel und Status), in `/api/status` (`instance`), auf MQTT `{base}/instance/state` und als Home-Assistant-Sensor. Der HA-Gerätename wird zu `OnAirScreen (Studio-1)`, sofern der Instanzname nicht schon im Device Name steht. Remote: `CONF:General:instancename=TEXT`.
 
 #### Stationsname und Slogan
 
@@ -280,21 +283,6 @@ Für jede LED (Gruppen `LED1`–`LED4`):
 
 
 
-#### NTP-Prüfung
-
-
-| Einstellung      | Schlüssel            | Standard       | Beschreibung                            |
-| ---------------- | -------------------- | -------------- | --------------------------------------- |
-| Enable NTP-Check | `NTP/ntpcheck`       | `true`         | Zeitsynchronisations-Prüfung aktivieren |
-| NTP-Check Server | `NTP/ntpcheckserver` | `pool.ntp.org` | NTP-Server-Adresse                      |
-
-
-Bei aktivierter NTP-Prüfung wird die Systemuhr regelmäßig mit dem NTP-Server verglichen. Abweichungen > 0,3 Sekunden oder Verbindungsfehler erzeugen eine **NTP-Warnung** (Priorität -1, niedrigste Priorität).
-
-> **Empfehlung:** Einen lokalen NTP-Server im Studio-Netzwerk verwenden, da `pool.ntp.org` zeitweise unzuverlässig sein kann.
-
-
-
 #### Logo
 
 
@@ -337,44 +325,96 @@ Schaltflächen: `...` (Dateiauswahl), `reset` (Standard-Logo wiederherstellen).
 
 > Die Update-Funktion ist für **vorkompilierte (kostenpflichtige) Versionen** gedacht.
 >
-> Für die Update-Prüfung in der kostenpflichtigen Version muss ein **Update Key** eingegeben werden. Diesen erhältst du nach der Bestellung im Kundenportal unter [customer.astrastudio.de](https://customer.astrastudio.de).
+> Für die Update-Prüfung in der kostenpflichtigen Version muss ein **Update Key** eingegeben werden. Diesen erhältst du nach der Bestellung im Kundenportal unter [customer.astrastudio.de](https://customer.astrastudio.de). Das Feld ist maskiert; mit dem durchgestrichenen Auge wird es sichtbar.
 
 ---
 
-
-
-### 5.2 Advanced Settings
+### 5.2 Network
 
 
 
-#### Netzwerk
+#### UDP / HTTP / Multicast
 
 
 | Einstellung       | Schlüssel                   | Standard      | Beschreibung              |
 | ----------------- | --------------------------- | ------------- | ------------------------- |
 | UDP Port          | `Network/udpport`           | `3310`        | Port für UDP-Befehle      |
 | HTTP Port         | `Network/httpport`          | `8010`        | Port für HTTP/Web-UI      |
-| Multicast Address | `Network/multicast_address` | `239.194.0.1` | Multicast-Adresse für UDP |
-
-
+| Multicast Address | `Network/multicast_address` | `239.194.0.1` | Multicast-Adresse für UDP  |
 
 
 #### MQTT
 
 
-| Einstellung         | Schlüssel             | Standard      | Beschreibung                 |
-| ------------------- | --------------------- | ------------- | ---------------------------- |
-| enable MQTT support | `MQTT/enablemqtt`     | `false`       | MQTT-Integration aktivieren  |
+| Einstellung         | Schlüssel             | Standard      | Beschreibung                  |
+| ------------------- | --------------------- | ------------- | ----------------------------- |
+| enable MQTT support | `MQTT/enablemqtt`     | `false`       | MQTT-Integration einschalten  |
 | MQTT Server         | `MQTT/mqttserver`     | `localhost`   | Broker-Hostname/IP           |
-| MQTT Server Port    | `MQTT/mqttport`       | `1883`        | Broker-Port                  |
+| MQTT Server Port    | `MQTT/mqttport`       | `1883`        | Broker-Port                   |
 | MQTT User           | `MQTT/mqttuser`       | *(leer)*      | Benutzername (optional)      |
-| MQTT Password       | `MQTT/mqttpassword`   | *(leer)*      | Passwort (optional)          |
-| MQTT Device Name    | `MQTT/mqttdevicename` | `OnAirScreen` | Gerätename in Home Assistant |
+| MQTT Password       | `MQTT/mqttpassword`   | *(leer)*      | Passwort (optional)           |
+| MQTT Device Name    | `MQTT/mqttdevicename` | `OnAirScreen` | Gerätename in Home Assistant  |
 
+
+MQTT-Passwort und API-Keys sind maskiert; mit dem durchgestrichenen Auge werden sie sichtbar.
 
 **MQTT Base Topic:** `onairscreen` + letzte 6 Hex-Zeichen der MAC-Adresse, z. B. `onairscreen_a1b2c3`.
 
-#### Datums- und Zeitformat
+#### OSC
+
+
+| Einstellung        | Schlüssel          | Standard  | Beschreibung                                                |
+| ------------------ | ------------------ | --------- | ----------------------------------------------------------- |
+| enable OSC support  | `OSC/enableosc`    | `false`   | OSC-Fernsteuerung einschalten                               |
+| OSC Listen Port    | `OSC/oscport`      | `8000`    | UDP-Port für eingehende OSC                                 |
+| OSC Send Host      | `OSC/oscsendhost`  | *(leer)*  | Ziel für Status-Push (Companion-IP); leer = kein Push       |
+| OSC Send Port      | `OSC/oscsendport`  | `9000`    | Ziel-UDP-Port (Companion-Feedback-Port)                    |
+
+
+Send Host wird nur für unaufgeforderten Status-Push gebraucht (Companion-Button-Feedback). Abfragen antworten immer an den UDP-Absender.
+
+---
+
+### 5.3 Time Source
+
+Die Anzeigeuhr kann der lokalen Systemuhr, einem NTP-Server, einem PTPv2-Master (IEEE 1588-2008) oder SMPTE-LTC folgen (Leo-Bodnar-LBE-1110-USB-Serial **oder** Dekodierung von einem lokalen Audioeingang). **OnAirScreen ändert die Betriebssystem-Uhr nie.** NTP und PTP steuern eine eigene Zeitbasis (`time.monotonic()`); ein Sprung der Systemuhr bewegt die Studio-Uhr nicht. LTC darf springen, stehenbleiben und enthält Frames (`HH:MM:SS:FF`).
+
+Datum, Textuhr und AIR3-Top-of-Hour folgen derselben Wandzeit wie die große Uhr, wenn die Quelle Local, NTP oder PTP ist. Bei LTC bleiben sie auf der Systemzeit, weil LTC kein Kalenderdatum hat.
+
+
+| Einstellung      | Schlüssel              | Standard       | Beschreibung |
+| ---------------- | ---------------------- | -------------- | ------------ |
+| Time Source      | `TimeSource/source`    | `local`        | `local`, `ntp`, `ptp` oder `ltc` |
+| Enable NTP-Check | `NTP/ntpcheck`         | `true`         | Warnung bei Abweichung vom NTP-Server oder wenn der Server nicht erreichbar ist |
+| NTP Server       | `NTP/ntpcheckserver`   | `pool.ntp.org` | NTP-Server für NTP als Zeitquelle **und** für die optionale NTP-Prüfung |
+| PTP Interface    | `TimeSource/ptp_iface` | *(leer)*       | IPv4-Adresse des PTP-Netzwerkinterfaces (unabhängig von AoIP) |
+| PTP Domain       | `TimeSource/ptp_domain`| `0`            | IEEE-1588-Domain (0–255) |
+| LTC Input        | `TimeSource/ltc_input` | `serial`       | `serial` (LBE-1110) oder `audio` (lokale PortAudio-Dekodierung) |
+| LTC Serial Port  | `TimeSource/ltc_port`  | *(leer)*       | USB-Serial-Gerät des LBE-1110; leer = Auto |
+| LTC Audio Device | `TimeSource/ltc_audio_device` | *(leer)* | Lokales Capture-Gerät; leer = System-Default |
+| LTC Channel      | `TimeSource/ltc_audio_channel` | `0`     | `0` = Links, `1` = Rechts |
+| LTC-Unlock-Warnung | `TimeSource/ltc_warn` | `false` | WARN-Text bei LTC-Verlust; die LED `LTC NOT LOCKED` bleibt immer aktiv |
+
+
+**Local System Clock:** Anzeige = Systemuhr. Mit NTP-Check wird die Systemuhr mit dem NTP-Server verglichen (Abweichung > 0,3 s oder Fehler → Warnung, Priorität -1).
+
+**NTP Server:** OnAirScreen fragt das Feld NTP Server ab und steuert eine eigene Uhr. Nach dem ersten gültigen Sample wird die OS-Zeit nicht mehr verwendet. Das Feld bleibt editierbar, auch wenn NTP-Check aus ist. Bei NTP-Verlust läuft die letzte Zeit weiter, plus Warnung.
+
+**PTPv2 IEEE 1588-2008:** Software-Slave auf Multicast `224.0.1.129` UDP 319/320, Delay-Mechanismus E2E. Typische Genauigkeit im Millisekundenbereich (kein Hardware-Timestamping). Das Interface unabhängig vom AoIP-Interface der Audio Meters wählen. Bei Sync-Verlust: letzte Zeit läuft weiter, plus Warnung.
+
+**LTC:** Eine Zeitquelle mit zwei Eingängen. Die Framerate wird aus den eingehenden Frames abgeleitet (24 / 25 / 30). Bei LTC-Verlust wird der letzte Timecode gehalten (`LTC NOT LOCKED`). Die großen WARN-Meldungen (`waiting for LTC lock`, `Clock not LTC synchronized`, `LTC reader not connected`) sind **standardmäßig aus**, damit Scrubben/Videoschnitt WARN nicht flutet; **Show LTC unlock warning** einschalten, wenn sie gewünscht sind. Die Lock-LED zeigt immer `LTC LOCK` / `LTC NOT LOCKED`. NTP-Check vergleicht weiterhin die OS-Uhr mit dem NTP-Server, nicht den Timecode.
+
+**LBE-1110 Serial:** USB-CDC-virtueller Seriellport eines [Leo-Bodnar-LBE-1110](https://www.leobodnar.com/shop/index.php?main_page=product_info&cPath=120&products_id=374); keine Treiber. Auto wählt ein Leo-Bodnar-Gerät (USB-VID `0x1DD2`) oder einen LBE-1110-/CDC-Port.
+
+**Audio Input:** Dekodiert SMPTE-LTC (Biphase-Mark) von einem **lokalen** PortAudio-Capture-Gerät, unabhängig von den Audio Meters (kein Livewire/AES67). Kanal Links oder Rechts (Standard Links). Auf manchen Hosts kann dasselbe Gerät nicht zweimal geöffnet werden — wenn die Meters diesen Eingang schon nutzen, für LTC ein anderes Gerät wählen.
+
+Die Lock-LED unten rechts ist grün, wenn die gewählte Quelle eingerastet ist, sonst rot. Daneben: `PTP LOCK` / `PTP NOT LOCKED`, `NTP LOCK` / `NTP NOT LOCKED`, `LTC LOCK` / `LTC NOT LOCKED` oder `LOCAL`.
+
+> **Empfehlung:** Einen lokalen NTP-Server im Studio-Netzwerk verwenden, da `pool.ntp.org` zeitweise unzuverlässig sein kann.
+
+---
+
+### 5.4 Advanced
 
 
 | Einstellung        | Schlüssel                      | Standard              | Beschreibung          |
@@ -412,6 +452,8 @@ Schaltflächen: `...` (Dateiauswahl), `reset` (Standard-Logo wiederherstellen).
 | Unit                | `WeatherWidget/owmUnit`          | `Celsius`          | Celsius, Fahrenheit oder Kelvin |
 
 
+Städtenamen neben **City ID** eingeben, **Find** (oder Return) drücken und einen Treffer in der Liste wählen. Die City-ID wird automatisch eingetragen; die ID kann weiterhin manuell gesetzt werden. Der API-Key ist maskiert; mit dem durchgestrichenen Auge wird er sichtbar.
+
 **Test API:** Schaltfläche zum Testen der API-Verbindung mit aktuellen Einstellungen.
 
 **Verfügbare Wetter-Sprachen:** Arabic, Bulgarian, Catalan, Czech, German, Greek, English, Persian (Farsi), Finnish, French, Galician, Croatian, Hungarian, Italian, Japanese, Korean, Latvian, Lithuanian, Macedonian, Dutch, Polish, Portuguese, Romanian, Russian, Swedish, Slovak, Slovenian, Spanish, Turkish, Ukrainian, Vietnamese, Chinese Simplified, Chinese Traditional
@@ -422,7 +464,7 @@ Weitere Informationen: [WeatherWidget Guide](https://www.astrastudio.de/wiki/ona
 
 
 
-### 5.3 Timers
+### 5.5 Timers
 
 Für jeden AIR-Timer (Gruppe `Timers`):
 
@@ -448,29 +490,30 @@ Für jeden AIR-Timer (Gruppe `Timers`):
 
 
 
-| Einstellung   | Schlüssel          | Standard | Beschreibung                           |
-| ------------- | ------------------ | -------- | -------------------------------------- |
-| AIR Min Width | `TimerAIRMinWidth` | `200`    | Mindestbreite der AIR-Anzeigen (Pixel) |
+| Einstellung     | Schlüssel          | Standard      | Beschreibung                                                   |
+| --------------- | ------------------ | ------------- | -------------------------------------------------------------- |
+| TOTH Timer Text | `TimerTOTHText`    | `TOTH Timer`  | AIR3-Beschriftung, solange der Top-of-Hour-Countdown aktiv ist |
+| AIR Min Width   | `TimerAIRMinWidth` | `200`         | Mindestbreite der AIR-Anzeigen (Pixel)                         |
 
 
 ---
 
 
 
-### 5.4 Fonts
+### 5.6 Fonts
 
 Für jedes UI-Element kann Schriftart, -größe und -stärke individuell gesetzt werden:
 
 
 | Element      | Gruppe `Fonts`                    | Standard             |
 | ------------ | --------------------------------- | -------------------- |
-| LED1–4       | `LED{n}FontName/Size/Weight`      | FreeSans, 24pt, Bold |
-| AIR1–4       | `AIR{n}FontName/Size/Weight`      | FreeSans, 24pt, Bold |
-| Station Name | `StationNameFontName/Size/Weight` | FreeSans, 24pt, Bold |
-| Slogan       | `SloganFontName/Size/Weight`      | FreeSans, 18pt, Bold |
+| LED1–4       | `LED{n}FontName/Size/Weight`      | Roboto, 32pt, Bold |
+| AIR1–4       | `AIR{n}FontName/Size/Weight`      | Roboto, 24pt, Bold |
+| Station Name | `StationNameFontName/Size/Weight` | Roboto, 24pt, Bold |
+| Slogan       | `SloganFontName/Size/Weight`      | Roboto, 18pt, Bold |
 
 
-Schaltfläche **Set Font...** öffnet einen Schriftart-Dialog. Die Vorschau zeigt den aktuellen Font an.
+Die Familien-Combo listet Application Fonts (inkl. mitgeliefertem Roboto und Noto Sans). Die Größe ist ein Punkt-SpinBox (8–96 pt), **Bold** schaltet die Stärke, **Reset** stellt Roboto mit Default-Größe und Bold für die Zeile wieder her. Die Vorschau zeigt Beispieltext in der gewählten Schrift.
 
 Zusätzlich werden Schriftarten aus dem `fonts/`-Verzeichnis beim Start geladen.
 
@@ -478,7 +521,7 @@ Zusätzlich werden Schriftarten aus dem `fonts/`-Verzeichnis beim Start geladen.
 
 
 
-### 5.5 About
+### 5.7 About
 
 
 | Element            | Beschreibung                                                           |
@@ -489,6 +532,69 @@ Zusätzlich werden Schriftarten aus dem `fonts/`-Verzeichnis beim Start geladen.
 | Loglevel           | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`, `NONE`                |
 | Enable Reset       | Checkbox zum Freischalten des Reset-Buttons                            |
 | Reset all settings | Setzt **alle** Einstellungen auf Standardwerte zurück (unwiderruflich) |
+
+
+---
+
+
+
+### 5.8 Audio Meters
+
+Stereo-Pegelanzeige am linken Bildschirmrand: L/R (Sample-Peak, True Peak oder BBC PPM), ein einzelner Programme-LUFS-Balken (EBU R128) oder beides. L/R füllen mit RMS und legen den aktuellen Peak darüber. Programme-LUFS ist ein Balken (Momentary M, Short-term-S-Tick). Integrated I und LRA sind standardmäßig aus und starten mit `LUFSI:START` (Web-UI, MQTT-Home-Assistant-Schalter, Companion, OSC, UDP/HTTP). `LUFSI:RESET` startet eine laufende Session neu; ist sie gestoppt, verschwinden I und LRA im Meter. Rechtsklick auf den Main Screen → **Reset I+LRA**. Konfiguration unter **Settings → Audio Meters**.
+
+Bestehende Configs mit `Audio/unit=lufs` (ohne `layout`) werden auf Layout `lufs` und L/R-Unit `dbtp` gemappt.
+
+
+| Einstellung           | Schlüssel                    | Standard     | Beschreibung                                      |
+| --------------------- | ---------------------------- | ------------ | ------------------------------------------------- |
+| Enable Audio Meters   | `Audio/enabled`              | `true`       | Meter-Spalte anzeigen                             |
+| Audio Source          | `Audio/source`               | `device`     | `device`, `livewire` oder `aes67`                 |
+| Audio Input           | `Audio/input_device`         | *(leer)*     | PortAudio-Gerätename (bei Source = Local Input)   |
+| Livewire Channel      | `Audio/livewire_channel`     | `1`          | Livewire-Kanal 1–32767 (auch über Livewire Source) |
+| AoIP Interface        | `Audio/livewire_iface`       | *(leer)*     | IPv4 für Livewire/AES67-IGMP-Join; leer = Default |
+| AES67 Stream ID       | `Audio/aes67_id`             | *(leer)*     | SDP-Origin-Hash des gewählten Streams             |
+| AES67 Address         | `Audio/aes67_addr`           | *(leer)*     | Multicast-Adresse für RTP-Capture                 |
+| AES67 Port            | `Audio/aes67_port`           | `5004`       | RTP-UDP-Port                                      |
+| AES67 Name            | `Audio/aes67_name`           | *(leer)*     | Anzeigename aus SDP `s=`                          |
+| AES67 Codec           | `Audio/aes67_codec`          | `L24`        | `L16` oder `L24`                                  |
+| AES67 Sample Rate     | `Audio/aes67_rate`           | `48000`      | `44100`, `48000` oder `96000`                     |
+| AES67 Channels        | `Audio/aes67_channels`       | `2`          | Kanalzahl im Stream (Meter nutzt die ersten zwei) |
+| AES67 Pasted SDP      | `Audio/aes67_manual`         | `false`      | `true`, wenn der Stream per Paste SDP kam         |
+| Meter Layout          | `Audio/layout`               | `lr`         | `lr`, `lufs` oder `both`                           |
+| Display Unit          | `Audio/unit`                 | `dbtp`       | L/R-Einheit: `dbfs`, `dbtp`, `bbc_ppm` (PPM nur bei `lr`) |
+| Display Style         | `Audio/display_style`        | `bargraph`   | `solid` oder `bargraph`                           |
+| Meter Width           | `Audio/meter_width`          | `79`         | Gesamtbreite in Pixel (53–117); extra Breite verdickt sichtbare Balken |
+| LUFS Reference Preset | `Audio/lufs_reference_preset`| `ebu_r128`   | `ebu_r128`, `atsc_a85`, `aes_16`, `aes_18`, `custom` |
+| LUFS Reference        | `Audio/lufs_reference`       | `-23.0`      | Zielpegel in LUFS (Peg auf der Skala)             |
+| Peak Hold             | `Audio/peak_hold`            | `true`       | Peak-Marke halten                                 |
+| Peak Hold Seconds     | `Audio/peak_hold_seconds`    | `1.5`        | Haltedauer der Peak-Marke                         |
+| TooLoud               | `Audio/tooloud`              | `true`       | Aktion bei True-Peak-Überschreitung               |
+| TooLoud Text          | `Audio/tooloudtext`          | `TOO LOUD`   | Warntext                                          |
+| TooLoud Threshold     | `Audio/tooloud_threshold_dbtp` | `-1.0`     | Schwellwert in dBTP                               |
+| TooLoud Action        | `Audio/tooloud_action`       | `warning`    | `warning` oder `led`                              |
+| TooLoud LED           | `Audio/tooloud_led`          | `1`          | LED 1–4 bei Action = LED                          |
+| Enable Silence Detection | `Audio/silence`          | `false`      | Aktuelle Audioquelle auf Stille überwachen      |
+| Show WARN in OAS      | `Audio/silence_warn`         | `true`       | Silence-Alarm als WARN auf dem Bildschirm       |
+| Trigger when Device/Stream is absent | `Audio/silence_on_absent` | `true` | Fehlendes Device/Stream als Stille zählen       |
+| Silence Message       | `Audio/silence_text`         | `SILENCE`    | WARN-Text (nur wenn Show WARN an ist)           |
+| Silence Threshold     | `Audio/silence_threshold_dbfs` | `-50.0`   | Sample-Peak-Schwellwert in dBFS (−90…0)        |
+| Max. Silence duration | `Audio/silence_duration_s`  | `10.0`       | Sekunden unter dem Schwellwert bis zum Alarm    |
+| Recovery time         | `Audio/silence_recovery_s`  | `2.0`        | Sekunden über dem Schwellwert bis zum Löschen   |
+| HTTP GET URL          | `Audio/silence_http_url`    | *(leer)*     | Optionale URL, einmalig beim Trigger aufgerufen |
+
+Silence Detection nutzt **dieselbe Audioquelle** wie die Meter (Local Input, Livewire oder AES67). Der Schwellwert ist immer **Sample-Peak dBFS**, unabhängig von der Meter-Anzeige. Capture läuft weiter, wenn Silence Detection an ist, auch wenn die Meter ausgeblendet sind.
+
+Der Alarm rastet, wenn der Pegel die Duration lang unter dem Schwellwert bleibt, und löst nach der Recovery-Zeit über dem Schwellwert wieder. **Show WARN in OAS** ist unabhängig vom API/MQTT-Boolean: der Boolean wird aktualisiert, solange die Detection aktiv ist. Ein optionales HTTP GET wird nur bei der steigenden Flanke (`false` → `true`) ausgelöst.
+
+**Device/Stream absent:** Wenn die Option an ist (Default), gilt eine Quelle, die nicht startet (kein Device, AES67 mit **None**, Startfehler), nach derselben Duration als Stille. Wenn die Option aus ist, zählen nur echte Pegel-Callbacks; Capture-Stop löscht einen hängenden Alarm. Paketverlust bei **laufendem** Stream (RTP-Timeout / Silence-Injection) zählt immer als Stille.
+
+Das Bildschirm-WARN nutzt Priorität **2** (hoch) und liegt damit über TooLoud (Priorität 1). Das Flag `silence` in API/MQTT ist unabhängig von `texts.warn` und von `warning/active`.
+
+**Livewire:** Der Rechner muss im AoIP-/Livewire-VLAN liegen (IGMP/Multicast). Solange die Settings offen sind, erscheinen announced Quellen in **Livewire Source** (`239.192.255.3` UDP **4001**, nur Standard-Stereo-Streams). Quelle wählen oder Kanalnummer eintippen. Kanal *N* entspricht Multicast `239.192.0.0 + N` auf UDP-Port **5004** (48 kHz / 24‑Bit Stereo RTP). Nach Apply läuft der Empfang mit gespeichertem Kanal weiter, auch wenn die Ads verstummen.
+
+**AES67:** SAP-Discovery lauscht auf `239.255.255.255` und RFC 2974 `224.2.127.254` UDP **9875**, solange der Einstellungsdialog offen ist. Die Stream-Liste aktualisiert sich live **nur wenn Streams dazukommen oder verschwinden** (kein Flackern bei unveränderter Liste). Die Combo hat immer **None** (kein Stream). SAP-Einträge verschwinden, wenn sie nicht mehr announced werden (Deletion oder Timeout). **Paste SDP**, falls ein Gerät nicht per SAP announced — diese Einträge bleiben in der Liste und sind mit **pasted SDP** gekennzeichnet. Unterstützt: L16/L24 bei 44,1/48/96 kHz, 1–64 Kanäle (Meter zeigt Kanal 1–2). Dante-AES67-SAP-Streams erscheinen wie andere (`a=keywords:Dante` nur als Label). Kein PTP und kein Playout — nur Metering. Nach Apply läuft der Empfang mit gespeicherter Adresse/Port weiter, auch wenn SAP gerade schweigt. Apply mit **None** beendet den AES67-Empfang und setzt das Meter zurück.
+
+**Lokaler Eingang:** unter macOS Mikrofon-Berechtigung für OnAirScreen.
 
 
 ---
@@ -512,7 +618,7 @@ Jede LED kann einzeln ein- und ausgeschaltet werden. Im aktiven Zustand werden k
 
 ### 6.2 AIR-Timer
 
-Alle AIR-Timer zählen die verstrichene Zeit im Format **MM:SS** (z. B. `3:45`).
+Alle AIR-Timer zählen die verstrichene Zeit im Format **M:SS** (z. B. `3:45`). AIR3 zeigt **▲** (Hochzählen) oder **▼** (Runterzählen) unter dem Timer-Icon.
 
 #### AIR1 (Mikrofon) und AIR2 (Telefon)
 
@@ -531,10 +637,10 @@ Der vielseitigste Timer mit drei Betriebsarten:
 
 **Top-of-Hour-Verhalten:**
 
-- Erster Aufruf: Berechnet verbleibende Zeit bis `:00`, startet Countdown
-- Zweiter Aufruf (oder `OFF`/`TOGGLE` während aktiv): Stoppt und setzt auf `0:00`
-- Synchronisiert mit der Systemuhr, stoppt automatisch bei Stundenwechsel
-- API-Status: `"topOfHour": true` in `air[3]` wenn aktiv
+- Erster Aufruf: Berechnet verbleibende Zeit bis `:00`, startet Countdown, Beschriftung ist der konfigurierte TOTH-Timer-Text (Standard `TOTH Timer`)
+- Zweiter Aufruf (oder `OFF`/`TOGGLE` während aktiv): Stoppt und stellt die konfigurierte AIR3-Beschriftung wieder her
+- Synchronisiert mit der Anzeigeuhr, stoppt automatisch bei Stundenwechsel und stellt die konfigurierte Beschriftung wieder her
+- API-Status: `"topOfHour": true` und `"text"` mit dem konfigurierten TOTH-Timer-Text in `air[3]` wenn aktiv
 
 **Timer-Eingabedialog** (`Enter`):
 
@@ -604,6 +710,8 @@ Wenn **Replace IPs after 10s** aktiviert ist, wird die NOW-Zeile danach durch de
 - **Digital:** LED-Style-Ziffernanzeige mit konfigurierbaren Farben
 - **Analog:** Klassisches Zifferblatt
 - **Textuhr:** Sprachliche Zeitanzeige (z. B. „it's a quarter past three")
+- **Zeitquelle:** Local, NTP, PTPv2 oder LTC — siehe [5.3 Time Source](#53-time-source); die OS-Uhr wird nie gesetzt
+- **Lock-LED** unten rechts: grün = eingerastet, rot = nicht eingerastet (`PTP LOCK` / `NTP LOCK` / `LTC LOCK` oder `LOCAL`)
 - **Wetter-Widget:** Optional rechts neben der Uhr (OpenWeatherMap)
 
 
@@ -626,7 +734,7 @@ Wenn **Replace IPs after 10s** aktiviert ist, wird die NOW-Zeile danach durch de
 
 ## 7. Fernsteuerung und API
 
-OnAirScreen unterstützt vier Fernsteuerungskanäle:
+OnAirScreen unterstützt Fernsteuerung über UDP, HTTP, Web-UI, MQTT, OSC, REST-API und Bitfocus Companion.
 
 ### 7.1 UDP (Port 3310)
 
@@ -659,14 +767,20 @@ Browser öffnen: `http://<IP-Adresse>:8010/`
 
 **Funktionen der Web-UI:**
 
-- Echtzeit-Status für LEDs, AIR-Timer und Textfelder
-- WebSocket-Updates (mit HTTP-Polling-Fallback)
+- Echtzeit-Status für LEDs, AIR-Timer, Textfelder, Silence-Alarm und Loudness I+LRA (I- und LRA-Werte plus Laufstatus)
+- Instanzname in Titel und Status (aus `/api/status` `instance`)
+- WebSocket-Updates (mit HTTP-Polling-Fallback; nach Polling wird wieder WebSocket versucht)
 - Dark Mode mit persistenter Theme-Einstellung
 - LED- und Timer-Steuerung mit Toggle-Buttons
+- Start / Stop / Reset für Programme-I + LRA (`LUFSI`)
 - Top-of-Hour-Button für AIR3
-- Texteingabe für NOW, NEXT, WARN
+- AIR3-Zeit setzen (`m:ss`, `m,ss` oder Sekunden)
+- AIR3 Count-up vs. Countdown in der Statuskachel
+- Tasten `1`–`4` schalten LEDs (nicht während der Texteingabe)
+- Texteingabe für NOW, NEXT, WARN (NOW/NEXT folgen dem Live-Status, solange nicht editiert wird)
 - Warnungen mit Priorität und Lösch-Button
 - Versions- und Distributionsinformationen
+- Dauerhaftes Connection-Badge (Live / Polling / Offline) plus Fehler-Modal
 
 
 
@@ -683,13 +797,20 @@ Antwort (vereinfacht):
 ```json
 {
   "leds": { "1": { "status": true, "text": "ON AIR", "autoflash": false } },
-  "air": { "3": { "status": false, "seconds": 0, "text": "Timer", "topOfHour": false } },
+  "air": { "3": { "status": false, "seconds": 0, "text": "Timer", "topOfHour": false, "countDown": false } },
   "texts": { "now": "Song", "next": "Next Song", "warn": "" },
   "warnings": [],
-  "version": "0.9.8",
+  "silence": false,
+  "lufsIntegrated": false,
+  "lufsI": null,
+  "lra": null,
+  "instance": "Studio-1",
+  "version": "1.0.0beta4",
   "distribution": "OpenSource"
 }
 ```
+
+Das Feld `silence` ist `true`, solange Silence Detection eingerastet ist, auch wenn das Bildschirm-WARN ausgeschaltet ist. `lufsIntegrated` ist `true`, solange eine I+LRA-Session läuft (`LUFSI:START`). `lufsI` ist die gated Integrated Loudness in LUFS (eine Nachkommastelle), `lra` die Loudness Range in LU; beide sind `null`, bis genug Audio gemessen wurde. `instance` ist der konfigurierte Instanzname. Bei AIR3 zeigt `topOfHour`, ob der Top-of-Hour-Countdown aktiv ist, und `countDown`, ob der Radio-Timer runterzählt.
 
 **Befehl senden:**
 
@@ -706,10 +827,12 @@ curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 
 | Topic            | Payload                 | Funktion              |
 | ---------------- | ----------------------- | --------------------- |
-| `led{1-4}/set`   | `ON` / `OFF`            | LED schalten          |
-| `air{1-4}/set`   | `ON` / `OFF`            | Timer starten/stoppen |
+| `led{1-4}/set`   | `ON` / `OFF` / `TOGGLE` | LED schalten          |
+| `air{1-4}/set`   | `ON` / `OFF` / `TOGGLE` | Timer starten/stoppen |
 | `air{3-4}/reset` | `PRESS`                 | Timer zurücksetzen    |
 | `air3/toh`       | `ON` / `OFF` / `TOGGLE` | Top-of-Hour           |
+| `lufs/integrated/set` | `ON` / `OFF` / `TOGGLE` / `RESET` | I+LRA starten/stoppen/reset |
+| `lufs/integrated/reset` | `PRESS` | I+LRA zurücksetzen |
 | `text/now/set`   | `TEXT`                  | NOW-Text setzen       |
 | `text/next/set`  | `TEXT`                  | NEXT-Text setzen      |
 | `text/warn/set`  | `TEXT`                  | WARN-Text setzen      |
@@ -718,13 +841,19 @@ curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 **Status-Topics** (automatisch publiziert):
 
 
-| Topic            | Payload            |
-| ---------------- | ------------------ |
-| `led{1-4}/state` | `ON` / `OFF`       |
-| `air{1-4}/state` | `ON` / `OFF`       |
-| `air{1-4}/time`  | Sekunden (Integer) |
-| `air3/toh/state` | `true` / `false`   |
-| `text/{now       | next               |
+| Topic              | Payload            |
+| ------------------ | ------------------ |
+| `led{1-4}/state`   | `ON` / `OFF`       |
+| `air{1-4}/state`   | `ON` / `OFF`       |
+| `air{1-4}/time`    | Sekunden (Integer) |
+| `air3/toh/state`   | `true` / `false`   |
+| `text/{now,next,warn}/state` | Text     |
+| `warning/active`  | `true` / `false`   |
+| `silence/active`   | `true` / `false`   |
+| `lufs/integrated/state` | `ON` / `OFF` |
+| `lufs/i`           | I in LUFS (`""` wenn unbekannt) |
+| `lufs/lra`         | LRA in LU (`""` wenn unbekannt) |
+| `instance/state`   | Instanzname        |
 
 
 **Home Assistant Autodiscovery** erstellt automatisch:
@@ -735,10 +864,89 @@ curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 - Reset-Buttons (AIR3/AIR4)
 - Top-of-Hour-Button (AIR3)
 - Text-Entitäten (NOW, NEXT, WARN)
+- Binary Sensoren: Warning Active, Silence
+- Sensor: Instance (Instanzname)
+- Loudness-I+LRA-Schalter (Start setzt zurück; Stop friert die letzten Werte)
+- Loudness-I+LRA-Reset-Taste (laufend neu starten; gestoppt I und LRA ausblenden)
+- Sensoren: Loudness I (LUFS), Loudness LRA (LU)
+
+Der Home-Assistant-Gerätename lautet `OnAirScreen (Studio-1)`, wenn der Instanzname noch nicht im MQTT Device Name steht.
 
 
 
-### 7.6 Befehlsreferenz
+### 7.6 Bitfocus Companion (empfohlen)
+
+Das eigene Companion-Modul **astrastudio-OnAirScreen** ist der empfohlene Weg für Stream Decks und ähnliche Oberflächen. Befehle gehen über HTTP (Port **8010**): `GET /api/command?cmd=LED1:ON`. Der Live-Status nutzt bevorzugt den OnAirScreen-**WebSocket** auf HTTP-Port **+ 1** (also **8011**, wenn HTTP 8010 ist) und fällt auf Polling von `GET /api/status` zurück (Standard alle 500 ms). **OSC ist nicht nötig.** Die AIR-Zeiten auf den Buttons bleiben nah am Studiobildschirm (MIC = AIR1). Beide Ports in der Firewall freigeben.
+
+**OnAirScreen:** HTTP muss erreichbar sein (Standard). OSC kann aus bleiben.
+
+**Companion** (lokales Modul, bis es im Companion Store liegt):
+
+1. Im Repo `OAS-Companion`: `yarn install && yarn build`
+2. Ordner als `companion-module-astrastudio-onairscreen` nach Companion `module-local-dev` verlinken (oder unter Companion **Developer** den Pfad eintragen)
+3. Companion neu starten und Connection **astrastudio / OnAirScreen** anlegen
+4. Host = OnAirScreen-IP, HTTP-Port `8010` (wie unter **Settings → Network**). WebSocket anlassen, außer du musst nur pollen.
+
+Presets: LED1–4 (Toggle + Farbe), AIR1–4 mit Live-Beschriftung und Zeit auf dem Button (MIC = AIR1), TOTH, Reset AIR3/4, NOW / NEXT / WARN, Silence, Loudness I+LRA, Reset I+LRA.
+
+Variablen wie `$(oas:air1_time)`, `$(oas:lufs_i)` und `$(oas:lra)` und Feedbacks (LED an, AIR läuft, TOTH, Silence, WARN, Loudness I+LRA) kommen aus WebSocket oder Status-Poll. Connection-Label auf `oas` setzen, damit die Beispiele passen. Der Connection-Status zeigt Instanzname und Version, z. B. `Studio-1 · 1.0.0beta4`. Die `HELP.md` des Moduls listet alle Aktionen, Feedbacks und Variablen.
+
+Wenn kein eigenes Modul geladen werden kann, bleibt **Generic OSC** als Alternative (nächster Abschnitt). OSC-Status-Push ist langsamer (alle 5 Sekunden) als HTTP-Poll / WebSocket.
+
+### 7.7 OSC (Port 8000)
+
+OSC unter **Settings → Network** einschalten. Prefix ist `/oas`. Integer `1`/`0` bedeutet AN/AUS; ohne Argument = TOGGLE. Texte als String.
+
+**Setzen (Befehle):**
+
+
+| Adresse               | Argument                         | Funktion              |
+| -------------------- | -------------------------------- | --------------------- |
+| `/oas/led{1-4}`      | `i` 0/1, oder leer für Toggle      | LED                   |
+| `/oas/air{1-4}`      | `i` 0/1, oder leer für Toggle      | AIR-Timer             |
+| `/oas/air{3-4}/reset` | keines                           | AIR3/AIR4 zurücksetzen |
+| `/oas/air3/toh`      | `i` 0/1                          | Top-of-Hour           |
+| `/oas/air3/time`     | `i` Sekunden (weglassen = Abfrage) | AIR3-Zeit setzen      |
+| `/oas/text/now`      | `s` Text                         | NOW                   |
+| `/oas/text/next`     | `s` Text                         | NEXT                  |
+| `/oas/text/warn`     | `s` Text                         | WARN                  |
+| `/oas/command`       | `s` `COMMAND:VALUE`              | Roh-API-Befehl        |
+| `/oas/lufs/integrated` | `i` 0/1, oder leer für Toggle    | I + LRA starten/stoppen |
+| `/oas/lufs/integrated/reset` | leer                        | I + LRA zurücksetzen    |
+
+
+**Abfrage (Antwort an den UDP-Absender, kein Send Host nötig):** `/state`-Adresse senden (oder `/oas/status` für alles). Antworten sind Integer `0/1` für Booleans und Strings für Texte. `/oas/lufs/integrated/state` zeigt, ob I + LRA läuft. `/oas/lufs/i` und `/oas/lufs/lra` liefern I (LUFS) und LRA (LU) als String mit einer Nachkommastelle, oder leer wenn unbekannt.
+
+**Push (Companion-Feedback):** OSC Send Host auf den Companion-Rechner, OSC Send Port auf den Generic-OSC-**Feedback**-Port. OnAirScreen sendet dann `/oas/led1/state` usw. nach Änderungen und alle 5 Sekunden.
+
+```bash
+# LED1 toggeln
+python3 utils/oas_osc_send.py /oas/led1
+
+# LED1 an
+python3 utils/oas_osc_send.py /oas/led1 1
+```
+
+#### Alternative: Generic OSC
+
+Wenn OSC bevorzugt wird oder das HTTP-Modul nicht geladen werden kann, eingebaute Connection **OSC Generic**.
+
+**Nur steuern:**
+
+1. OnAirScreen: OSC an, Listen-Port `8000`
+2. Companion: **OSC Generic**, Target = OnAirScreen-IP, Port `8000`
+3. Button-Action **Send integer**, Pfad `/oas/led1`, Wert `1` (an) oder `0` (aus). Ohne Argument = Toggle. **Send string** für `/oas/text/now`.
+
+**Button-Feedback (Stream-Deck-Farbe):**
+
+1. Companion: OSC-Generic-**Feedback-Listen-Port** setzen (z. B. `9000`)
+2. OnAirScreen: OSC Send Host = Companion-IP, OSC Send Port = dieser Feedback-Port
+3. Feedback **Listen for OSC messages (Integer)** auf `/oas/led1/state`, Vergleich `1`
+
+Query-Reply an den Command-Socket nutzt Companion **nicht** (anderer UDP-Port).
+
+
+### 7.8 Befehlsreferenz
 
 
 
@@ -762,6 +970,7 @@ curl "http://127.0.0.1:8010/api/command?cmd=LED1:ON"
 | `AIR3TIME:seconds`           | Radio-Timer auf Sekundenwert setzen |
 | `AIR3TOH:[ON/OFF/TOGGLE]`    | Top-of-Hour-Countdown               |
 | `AIR4:[ON/OFF/RESET/TOGGLE]` | Stream-Timer                        |
+| `LUFSI:[START/STOP/TOGGLE/RESET]` | Programme-I + LRA-Session (Reset: laufend neu, gestoppt ausblenden) |
 | `CMD:REBOOT`                 | OS-Neustart                         |
 | `CMD:SHUTDOWN`               | OS-Herunterfahren                   |
 | `CMD:QUIT`                   | OnAirScreen beenden                 |
@@ -779,6 +988,7 @@ Format: `CONF:GRUPPE:PARAMETER=WERT`
 | Befehl                                          | Beschreibung            |
 | ----------------------------------------------- | ----------------------- |
 | `CONF:General:stationname=TEXT`                 | Stationsname            |
+| `CONF:General:instancename=TEXT`              | Instanzname (DNS-Label) |
 | `CONF:General:slogan=TEXT`                      | Slogan                  |
 | `CONF:General:stationcolor=COLOR`               | Stationsfarbe           |
 | `CONF:General:slogancolor=COLOR`                | Sloganfarbe             |
@@ -801,14 +1011,50 @@ Format: `CONF:GRUPPE:PARAMETER=WERT`
 | `CONF:Clock:logoupper=[True/False]`             | Logo oben               |
 | `CONF:Network:udpport=PORT`                     | UDP-Port                |
 | `CONF:Network:tcpport=PORT`                     | HTTP-Port               |
+| `CONF:Audio:enabled=[True/False]`               | Audio-Meter ein/aus     |
+| `CONF:Audio:source=[device/livewire/aes67]`     | Audioquelle             |
+| `CONF:Audio:input_device=DEVICE_NAME`           | Lokales Eingabegerät    |
+| `CONF:Audio:livewire_channel=N`                 | Livewire-Kanal          |
+| `CONF:Audio:livewire_iface=IP_OR_EMPTY`         | AoIP-Interface-IP       |
+| `CONF:Audio:aes67_id=ORIGIN_HASH`               | AES67-Stream-ID         |
+| `CONF:Audio:aes67_addr=MULTICAST`               | AES67-Multicast         |
+| `CONF:Audio:aes67_port=PORT`                    | AES67-RTP-Port          |
+| `CONF:Audio:aes67_name=NAME`                    | AES67-Anzeigename       |
+| `CONF:Audio:aes67_codec=[L16/L24]`              | AES67-Codec             |
+| `CONF:Audio:aes67_rate=48000`                   | AES67-Samplerate        |
+| `CONF:Audio:aes67_channels=2`                   | AES67-Kanalzahl         |
+| `CONF:Audio:aes67_manual=[True/False]`          | AES67 Paste-SDP         |
+| `CONF:Audio:unit=[dbfs/dbtp/bbc_ppm]`         | L/R-Anzeigeeinheit       |
+| `CONF:Audio:layout=[lr/lufs/both]`            | Meter-Layout             |
+| `CONF:Audio:display_style=[solid/bargraph]`     | Meter-Stil              |
+| `CONF:Audio:meter_width=79`                     | Meter-Breite (Pixel)    |
+| `CONF:Audio:lufs_reference_preset=PRESET`       | LUFS-Preset             |
+| `CONF:Audio:lufs_reference=-23.0`               | LUFS-Zielpegel          |
+| `CONF:Audio:peak_hold=[True/False]`             | Peak-Hold ein/aus       |
+| `CONF:Audio:peak_hold_seconds=1.5`              | Peak-Hold-Dauer         |
+| `CONF:Audio:tooloud=[True/False]`               | TooLoud ein/aus         |
+| `CONF:Audio:tooloudtext=TEXT`                   | TooLoud-Text            |
+| `CONF:Audio:tooloud_threshold_dbtp=-1.0`        | TooLoud-Schwellwert     |
+| `CONF:Audio:tooloud_action=[warning/led]`       | TooLoud-Aktion          |
+| `CONF:Audio:tooloud_led=[1/2/3/4]`              | TooLoud-LED             |
+| `CONF:Audio:silence=[True/False]`                | Silence Detection      |
+| `CONF:Audio:silence_warn=[True/False]`          | Silence-WARN ein/aus |
+| `CONF:Audio:silence_on_absent=[True/False]`      | Absent als Stille     |
+| `CONF:Audio:silence_text=TEXT`                  | Silence-WARN-Text     |
+| `CONF:Audio:silence_threshold_dbfs=-50.0`      | Silence-Schwellwert   |
+| `CONF:Audio:silence_duration_s=10.0`            | Silence-Dauer (s)    |
+| `CONF:Audio:silence_recovery_s=2.0`             | Silence-Recovery (s) |
+| `CONF:Audio:silence_http_url=URL`                | Silence-HTTP-GET-URL |
 | `CONF:Timers:TimerAIR[1-4]Enabled=[True/False]` | AIR aktivieren          |
 | `CONF:Timers:TimerAIR[1-4]Text=TEXT`            | AIR-Label               |
+| `CONF:Timers:TimerTOTHText=TEXT`                | TOTH-Timer-Label        |
 | `CONF:Timers:AIR[1-4]activebgcolor=COLOR`       | AIR-Hintergrund aktiv   |
 | `CONF:Timers:AIR[1-4]activetextcolor=COLOR`     | AIR-Text aktiv          |
 | `CONF:Timers:AIR[1-4]iconpath=PFAD`             | AIR-Icon-Pfad           |
 | `CONF:Timers:TimerAIRMinWidth=PIXEL`            | AIR-Mindestbreite       |
 | `CONF:CONF:APPLY=TRUE`                          | Konfiguration anwenden  |
 
+`CONF:Audio:unit=lufs` wird weiterhin akzeptiert und setzt das Layout auf `lufs` (L/R-Einheit bleibt `dbtp`).
 
 **Farben:** Hex-Format (`#FF0000`) oder Farbnamen.
 
@@ -885,15 +1131,32 @@ Der genaue Pfad wird im Register **About** unter **Settings Path** angezeigt. Ty
 ### OnAirScreen startet nicht / Port belegt
 
 - Prüfen, ob UDP-Port 3310 oder HTTP-Port 8010 bereits belegt ist
-- Ports in **Advanced Settings → Network** ändern
+- Ports in **Network** ändern
 
 
 
 ### Fernsteuerung funktioniert nicht
 
-- Firewall-Regeln für UDP/HTTP-Ports prüfen
+- Firewall-Regeln für UDP/HTTP/OSC-Ports prüfen
 - Korrekte IP-Adresse und Ports verwenden
 - Mit `curl http://127.0.0.1:8010/api/status` lokal testen
+
+
+
+### Companion-Modul zeigt Disconnected
+
+- HTTP muss auf dem konfigurierten Port erreichbar sein (Standard 8010); OSC nutzt dieses Modul nicht
+- Mit `curl http://<OnAirScreen-IP>:8010/api/status` JSON prüfen
+- Nach `yarn build` Companion neu starten, damit das lokale Modul neu geladen wird
+
+
+
+### Silence Detection löst nicht aus
+
+- Ist **Enable Silence Detection** aktiviert und mit **Apply** gespeichert?
+- Audioquelle prüfen (Device gewählt, Livewire-Kanal, AES67-Stream nicht **None**)
+- dBFS-Schwellwert senken oder Duration verkürzen, wenn Restgeräusch über −50 dBFS liegt
+- Fehlt Device oder Stream, **Trigger silence warning when Device/Stream is absent** einschalten
 
 
 
@@ -908,7 +1171,7 @@ Der genaue Pfad wird im Register **About** unter **Settings Path** angezeigt. Ty
 ### NTP-Warnung erscheint dauerhaft
 
 - Lokalen NTP-Server konfigurieren (`NTP/ntpcheckserver`)
-- Systemzeit manuell synchronisieren
+- Bei Quelle Local die Systemzeit synchronisieren oder die Zeitquelle auf NTP/PTP umstellen
 - NTP-Prüfung deaktivieren, falls nicht benötigt
 
 
@@ -916,8 +1179,25 @@ Der genaue Pfad wird im Register **About** unter **Settings Path** angezeigt. Ty
 ### Wetter-Widget zeigt nichts
 
 - Gültigen OpenWeatherMap API-Key eingeben
-- Korrekte City-ID verwenden
+- Städtenamen mit **Find** neben City ID suchen oder die ID manuell eingeben
 - **Test API** in den Einstellungen ausführen
+
+
+
+### Livewire-Meter zeigt keine Pegel
+
+- Source auf **Livewire** gesetzt und Channel-Nummer korrekt (oder announced Quelle gewählt)?
+- Rechner im AoIP-/Livewire-VLAN? IGMP/Multicast nicht gefiltert?
+- Passendes Netzwerk-Interface gewählt (nicht „Default“, falls mehrere NICs)?
+- UDP-Port 5004 freigegeben?
+- **Keine Namen unter Livewire Source:** Ads laufen auf `239.192.255.3:4001` nur bei offenen Settings. Die Kanalnummer kann trotzdem manuell eingegeben werden.
+
+
+
+### AES67-Meter: keine Streams oder keine Pegel
+
+- **Keine Streams in der Liste:** AoIP-Interface, VLAN und IGMP prüfen; SAP ist `239.255.255.255:9875` und `224.2.127.254:9875` und läuft nur bei offenem Settings-Dialog. Wenn das Gerät nicht announced, **Paste SDP** verwenden.
+- **Stream da, Meter bleibt stumm:** RTP-Adresse/Port und Codec (L16 vs. L24). Dante muss im AES67-/SAP-Modus sein. PTP ist fürs Metering nicht nötig.
 
 
 
@@ -938,7 +1218,7 @@ OnAirScreen protokolliert intern folgende Ereignistypen:
 
 - LED-Änderungen (Quelle: manual, autoflash, timedflash, API)
 - AIR-Timer Start/Stopp/Reset
-- Empfangene Befehle (UDP/HTTP)
+- Empfangene Befehle (UDP/HTTP/OSC)
 - Warnungen hinzugefügt/entfernt
 - Einstellungsänderungen
 - Systemereignisse (Start, Beenden, Neustart)
@@ -947,4 +1227,4 @@ Das Log-Level steuert die Ausgabemenge. Bei Problemen empfiehlt sich temporär `
 
 ---
 
-*© 2012–2026 Sascha Ludwig · BSD-Lizenz · [astrastudio.de](http://www.astrastudio.de)*
+*© 2012–2026 Sascha Ludwig · [astrastudio.de](http://www.astrastudio.de)*

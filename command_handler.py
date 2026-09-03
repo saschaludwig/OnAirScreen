@@ -9,29 +9,10 @@
 # command_handler.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
@@ -50,6 +31,8 @@ from exceptions import (
     InvalidCommandFormatError, EncodingError, TextValidationError,
     log_exception
 )
+from defaults import AUDIO_DISPLAY_STYLE_LABELS
+from utils import is_valid_instance_name
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -334,6 +317,7 @@ class CommandHandler:
             "AIR3TOH": lambda v: self._handle_air3toh_command(v),
             "AIR4": lambda v: self._handle_air4_command(v),
             "CMD": lambda v: self._handle_cmd_command(v),
+            "LUFSI": lambda v: self._handle_lufsi_command(v),
         }
         return command_handlers.get(command)
     
@@ -532,6 +516,23 @@ class CommandHandler:
             self.main_screen.shutdown_host()
         elif value_upper == "QUIT":
             self.main_screen.quit_oas()
+
+    def _handle_lufsi_command(self, value: str) -> None:
+        """Start, stop, toggle, or reset the gated I + LRA session."""
+        value_upper = value.upper().strip()
+        if value_upper in ("START", "ON"):
+            self.main_screen.start_integrated_loudness()
+        elif value_upper in ("STOP", "OFF"):
+            self.main_screen.stop_integrated_loudness()
+        elif value_upper == "TOGGLE":
+            self.main_screen.toggle_integrated_loudness()
+        elif value_upper == "RESET":
+            self.main_screen.reset_integrated_loudness()
+        else:
+            logger.warning(
+                "Invalid LUFSI command value: '%s', expected START, STOP, TOGGLE, or RESET",
+                value,
+            )
     
     def _handle_color_setting(self, color_str: str, setter_func: Callable[[object], None], setting_name: str) -> None:
         """
@@ -609,6 +610,7 @@ class CommandHandler:
             "Timers": self._handle_conf_timers,
             "Clock": self._handle_conf_clock,
             "Network": self._handle_conf_network,
+            "Audio": self._handle_conf_audio,
             "CONF": self._handle_conf_apply,
         }
         
@@ -625,10 +627,12 @@ class CommandHandler:
         Handle CONF General group configuration
         
         Args:
-            param: Parameter name (stationname, slogan, stationcolor, slogancolor, replacenow, replacenowtext)
+            param: Parameter name (stationname, slogan, stationcolor, slogancolor,
+                   replacenow, replacenowtext, instancename)
             content: Parameter value
         """
         handlers = {
+            "instancename": self._handle_instance_name,
             "stationname": lambda c: self.main_screen.settings.StationName.setText(
                 validate_text_input(c, MAX_TEXT_LENGTH, "stationname")),
             "slogan": lambda c: self.main_screen.settings.Slogan.setText(
@@ -644,7 +648,15 @@ class CommandHandler:
         handler = handlers.get(param)
         if handler:
             handler(content)
-    
+
+    def _handle_instance_name(self, content: str) -> None:
+        """Apply CONF:General:instancename only when the value is a valid DNS label."""
+        trimmed = content.strip() if isinstance(content, str) else ""
+        if not is_valid_instance_name(trimmed):
+            logger.warning("Rejected invalid instance name %r", content)
+            return
+        self.main_screen.settings.InstanceName.setText(trimmed)
+
     def _handle_conf_led(self, led_num: int, param: str, content: str) -> None:
         """
         Handle CONF LED group (LED1-4) configuration
@@ -676,8 +688,9 @@ class CommandHandler:
         Handle CONF Timers group configuration
         
         Args:
-            param: Parameter name (TimerAIR[1-4]Enabled, TimerAIR[1-4]Text, 
-                   AIR[1-4]activebgcolor, AIR[1-4]activetextcolor, AIR[1-4]iconpath, TimerAIRMinWidth)
+            param: Parameter name (TimerAIR[1-4]Enabled, TimerAIR[1-4]Text,
+                   TimerTOTHText, AIR[1-4]activebgcolor, AIR[1-4]activetextcolor,
+                   AIR[1-4]iconpath, TimerAIRMinWidth)
             content: Parameter value
         """
         # Handle AIR enabled flags
@@ -692,6 +705,11 @@ class CommandHandler:
                 sanitized = validate_text_input(content, MAX_TEXT_LENGTH, f"AIR{air_num} text")
                 getattr(self.main_screen.settings, f"AIR{air_num}Text").setText(sanitized)
                 return
+
+        if param == "TimerTOTHText":
+            sanitized = validate_text_input(content, MAX_TEXT_LENGTH, "TOTH timer text")
+            self.main_screen.settings.TOTHTimerText.setText(sanitized)
+            return
         
         # Handle AIR colors
         for air_num in range(1, 5):
@@ -784,7 +802,139 @@ class CommandHandler:
         """
         if param == "udpport":
             self.main_screen.settings.udpport.setText(content)
-    
+
+    def _handle_conf_audio(self, param: str, content: str) -> None:
+        """
+        Handle CONF Audio group configuration.
+
+        Args:
+            param: Parameter name
+            content: Parameter value
+        """
+        settings = self.main_screen.settings
+        handlers = {
+            "enabled": lambda c: settings.checkBox_AudioMetersEnabled.setChecked(c == "True"),
+            "source": lambda c: self._set_audio_source(c),
+            "input_device": lambda c: self._set_audio_input_device(c),
+            "livewire_channel": lambda c: settings.spinBox_LivewireChannel.setValue(int(c)),
+            "livewire_iface": lambda c: self._set_livewire_iface(c),
+            "aes67_id": lambda c: settings.set_aes67_conf("id", c),
+            "aes67_addr": lambda c: settings.set_aes67_conf("addr", c),
+            "aes67_port": lambda c: settings.set_aes67_conf("port", c),
+            "aes67_name": lambda c: settings.set_aes67_conf("name", c),
+            "aes67_codec": lambda c: settings.set_aes67_conf("codec", c),
+            "aes67_rate": lambda c: settings.set_aes67_conf("rate", c),
+            "aes67_channels": lambda c: settings.set_aes67_conf("channels", c),
+            "aes67_manual": lambda c: settings.set_aes67_conf("manual", c),
+            "unit": lambda c: self._set_audio_unit(c),
+            "layout": lambda c: self._set_audio_layout(c),
+            "tooloud": lambda c: settings.checkBox_TooLoud.setChecked(c == "True"),
+            "tooloudtext": lambda c: settings.TooLoudText.setText(
+                validate_text_input(c, MAX_TEXT_LENGTH, "tooloudtext")),
+            "tooloud_threshold_dbtp": lambda c: settings.doubleSpinBox_TooLoudThreshold.setValue(float(c)),
+            "tooloud_action": lambda c: self._set_tooloud_action(c),
+            "tooloud_led": lambda c: self._set_tooloud_led(c),
+            "silence": lambda c: settings.checkBox_Silence.setChecked(c == "True"),
+            "silence_warn": lambda c: settings.checkBox_SilenceWarn.setChecked(c == "True"),
+            "silence_on_absent": lambda c: settings.checkBox_SilenceOnAbsent.setChecked(c == "True"),
+            "silence_text": lambda c: settings.SilenceText.setText(
+                validate_text_input(c, MAX_TEXT_LENGTH, "silence_text")),
+            "silence_threshold_dbfs": lambda c: settings.doubleSpinBox_SilenceThreshold.setValue(float(c)),
+            "silence_duration_s": lambda c: settings.doubleSpinBox_SilenceDuration.setValue(float(c)),
+            "silence_recovery_s": lambda c: settings.doubleSpinBox_SilenceRecovery.setValue(float(c)),
+            "silence_http_url": lambda c: settings.SilenceHttpUrl.setText(c.strip()),
+            "lufs_reference_preset": lambda c: self._set_lufs_reference_preset(c),
+            "lufs_reference": lambda c: settings.doubleSpinBox_LufsReference.setValue(float(c)),
+            "peak_hold": lambda c: settings.checkBox_PeakHold.setChecked(c == "True"),
+            "peak_hold_seconds": lambda c: settings.doubleSpinBox_PeakHoldSeconds.setValue(float(c)),
+            "display_style": lambda c: self._set_audio_display_style(c),
+            "meter_width": lambda c: settings.spinBox_MeterWidth.setValue(int(c)),
+        }
+        handler = handlers.get(param)
+        if handler:
+            try:
+                handler(content)
+            except Exception as exc:
+                logger.warning("Invalid Audio CONF %s=%s: %s", param, content, exc)
+
+    def _set_audio_source(self, source: str) -> None:
+        settings = self.main_screen.settings
+        settings.set_audio_source(source)
+
+    def _set_audio_input_device(self, device_name: str) -> None:
+        settings = self.main_screen.settings
+        settings.refresh_audio_input_devices(device_name)
+        index = settings.comboBox_AudioInput.findData(device_name)
+        if index >= 0:
+            settings.comboBox_AudioInput.setCurrentIndex(index)
+
+    def _set_livewire_iface(self, iface: str) -> None:
+        settings = self.main_screen.settings
+        settings.refresh_livewire_interfaces(iface)
+        index = settings.comboBox_LivewireIface.findData(iface)
+        if index >= 0:
+            settings.comboBox_LivewireIface.setCurrentIndex(index)
+
+    def _set_audio_unit(self, unit: str) -> None:
+        settings = self.main_screen.settings
+        raw = (unit or "").strip().lower()
+        if raw == "lufs":
+            self._set_audio_layout("lufs")
+            return
+        index = settings.comboBox_AudioUnit.findData(unit)
+        if index < 0:
+            # Accept display labels as well
+            index = settings.comboBox_AudioUnit.findText(unit)
+        if index >= 0:
+            settings.comboBox_AudioUnit.setCurrentIndex(index)
+
+    def _set_audio_layout(self, layout: str) -> None:
+        settings = self.main_screen.settings
+        index = settings.comboBox_MeterLayout.findData(layout)
+        if index < 0:
+            index = settings.comboBox_MeterLayout.findText(layout)
+        if index >= 0:
+            settings.comboBox_MeterLayout.setCurrentIndex(index)
+
+    def _set_audio_display_style(self, style: str) -> None:
+        settings = self.main_screen.settings
+        if settings.comboBox_DisplayStyle.count() == 0:
+            for key, label in AUDIO_DISPLAY_STYLE_LABELS.items():
+                settings.comboBox_DisplayStyle.addItem(label, key)
+        index = settings.comboBox_DisplayStyle.findData(style)
+        if index < 0:
+            index = settings.comboBox_DisplayStyle.findText(style)
+        if index >= 0:
+            settings.comboBox_DisplayStyle.setCurrentIndex(index)
+
+    def _set_lufs_reference_preset(self, preset: str) -> None:
+        settings = self.main_screen.settings
+        if settings.comboBox_LufsReferencePreset.count() == 0:
+            settings._populate_lufs_reference_presets()
+        index = settings.comboBox_LufsReferencePreset.findData(preset)
+        if index >= 0:
+            settings.comboBox_LufsReferencePreset.setCurrentIndex(index)
+
+    def _set_tooloud_action(self, action: str) -> None:
+        settings = self.main_screen.settings
+        if settings.comboBox_TooLoudAction.count() == 0:
+            settings._populate_tooloud_action_controls()
+        index = settings.comboBox_TooLoudAction.findData(action)
+        if index >= 0:
+            settings.comboBox_TooLoudAction.setCurrentIndex(index)
+
+    def _set_tooloud_led(self, led: str) -> None:
+        settings = self.main_screen.settings
+        if settings.comboBox_TooLoudLED.count() == 0:
+            settings._populate_tooloud_action_controls()
+        try:
+            led_num = int(led)
+        except ValueError:
+            return
+        index = settings.comboBox_TooLoudLED.findData(led_num)
+        if index >= 0:
+            settings.comboBox_TooLoudLED.setCurrentIndex(index)
+
     def _handle_conf_apply(self, param: str, content: str) -> None:
         """
         Handle CONF APPLY command to apply configuration changes

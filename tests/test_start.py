@@ -6,7 +6,8 @@ Unit tests for start.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import Qt, QByteArray, QEvent, QPoint
+from PySide6.QtWidgets import QApplication, QWidget, QMenu
 
 # Import after QApplication setup
 import sys
@@ -45,6 +46,7 @@ def mock_main_screen():
             # Mock settings object
             screen.settings = MagicMock()
             screen.settings.StationName = MagicMock()
+            screen.settings.InstanceName = MagicMock()
             screen.settings.Slogan = MagicMock()
             screen.settings.replaceNOW = MagicMock()
             screen.settings.replaceNOWText = MagicMock()
@@ -99,6 +101,7 @@ def mock_main_screen():
             screen.settings.AIR2Text = MagicMock()
             screen.settings.AIR3Text = MagicMock()
             screen.settings.AIR4Text = MagicMock()
+            screen.settings.TOTHTimerText = MagicMock()
             screen.settings.setAIR1BGColor = Mock()
             screen.settings.setAIR1FGColor = Mock()
             screen.settings.setAIR2BGColor = Mock()
@@ -221,6 +224,8 @@ def mock_main_screen():
                     if group == "General":
                         if param == "stationname":
                             screen.settings.StationName.setText(content)
+                        elif param == "instancename":
+                            screen.settings.InstanceName.setText(content)
                         elif param == "slogan":
                             screen.settings.Slogan.setText(content)
                         elif param == "stationcolor":
@@ -277,6 +282,8 @@ def mock_main_screen():
                                 return True
                         if param == "TimerAIRMinWidth":
                             screen.settings.AIRMinWidth.setValue(int(content))
+                        if param == "TimerTOTHText":
+                            screen.settings.TOTHTimerText.setText(content)
                     elif group == "Clock":
                         if param == "digital":
                             if content == "True":
@@ -496,6 +503,11 @@ class TestParseCmd:
         """Test CONF command for General.stationname"""
         mock_main_screen.parse_cmd(b"CONF:General:stationname=Test Station")
         mock_main_screen.settings.StationName.setText.assert_called_once_with("Test Station")
+
+    def test_parse_cmd_conf_general_instancename(self, mock_main_screen):
+        """Test CONF command for General.instancename"""
+        mock_main_screen.parse_cmd(b"CONF:General:instancename=Studio-1")
+        mock_main_screen.settings.InstanceName.setText.assert_called_once_with("Studio-1")
     
     def test_parse_cmd_conf_general_slogan(self, mock_main_screen):
         """Test CONF command for General.slogan"""
@@ -580,46 +592,90 @@ class TestParseCmd:
 class TestRadioTimerSet:
     """Tests for the radio_timer_set method"""
     
-    def test_radio_timer_set_count_down_mode(self, mock_main_screen):
+    @patch('start.QSettings')
+    def test_radio_timer_set_count_down_mode(self, mock_qsettings, mock_main_screen):
         """Test radio_timer_set sets count down mode for positive seconds"""
-        # Initialize attributes
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'Timer'
+        mock_qsettings.return_value = mock_settings
         mock_main_screen.Air3Seconds = 0
         mock_main_screen.radioTimerMode = 0
+        mock_main_screen.topOfHourActive = False
         mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.AirCountMark_3 = Mock()
         
-        # Call the actual method
         MainScreen.radio_timer_set(mock_main_screen, 120)
         
         assert mock_main_screen.Air3Seconds == 120
         assert mock_main_screen.radioTimerMode == 1  # count down mode
         mock_main_screen.AirLabel_3.setText.assert_called_once_with("Timer\n2:00")
+        mock_main_screen.AirCountMark_3.setText.assert_called_once_with("▼")
     
-    def test_radio_timer_set_count_up_mode(self, mock_main_screen):
+    @patch('start.QSettings')
+    def test_radio_timer_set_count_up_mode(self, mock_qsettings, mock_main_screen):
         """Test radio_timer_set sets count up mode for zero seconds"""
-        # Initialize attributes
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'Timer'
+        mock_qsettings.return_value = mock_settings
         mock_main_screen.Air3Seconds = 0
         mock_main_screen.radioTimerMode = 1
+        mock_main_screen.topOfHourActive = False
         mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.AirCountMark_3 = Mock()
         
-        # Call the actual method
         MainScreen.radio_timer_set(mock_main_screen, 0)
         
         assert mock_main_screen.Air3Seconds == 0
         assert mock_main_screen.radioTimerMode == 0  # count up mode
         mock_main_screen.AirLabel_3.setText.assert_called_once_with("Timer\n0:00")
+        mock_main_screen.AirCountMark_3.setText.assert_called_once_with("▲")
     
-    def test_radio_timer_set_formatting(self, mock_main_screen):
+    @patch('start.QSettings')
+    def test_radio_timer_set_formatting(self, mock_qsettings, mock_main_screen):
         """Test radio_timer_set formats time correctly"""
-        # Initialize attributes
+        mock_settings = Mock()
+        mock_settings.value.return_value = 'Timer'
+        mock_qsettings.return_value = mock_settings
         mock_main_screen.Air3Seconds = 0
         mock_main_screen.radioTimerMode = 0
+        mock_main_screen.topOfHourActive = False
         mock_main_screen.AirLabel_3 = Mock()
         
-        # Call the actual method
         MainScreen.radio_timer_set(mock_main_screen, 125)
         
-        # Should format as 2:05 (125 seconds = 2 minutes 5 seconds)
         mock_main_screen.AirLabel_3.setText.assert_called_once_with("Timer\n2:05")
+
+    @patch('start.QSettings')
+    def test_radio_timer_set_uses_toth_caption_when_active(self, mock_qsettings, mock_main_screen):
+        """Top-of-hour countdown shows TOTH text instead of the configured AIR3 label."""
+        mock_settings = Mock()
+        mock_settings.value.side_effect = lambda key, default=None, **kwargs: {
+            'TimerAIR3Text': 'Radio',
+            'TimerTOTHText': 'TOTH Timer',
+        }.get(key, default)
+        mock_qsettings.return_value = mock_settings
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.AirLabel_3 = Mock()
+
+        MainScreen.radio_timer_set(mock_main_screen, 90)
+
+        mock_main_screen.AirLabel_3.setText.assert_called_once_with("TOTH Timer\n1:30")
+
+    @patch('start.QSettings')
+    def test_radio_timer_set_uses_configured_toth_caption(self, mock_qsettings, mock_main_screen):
+        """Top-of-hour countdown uses the configured TOTH Timer text."""
+        mock_settings = Mock()
+        mock_settings.value.side_effect = lambda key, default=None, **kwargs: {
+            'TimerAIR3Text': 'Radio',
+            'TimerTOTHText': 'TOH',
+        }.get(key, default)
+        mock_qsettings.return_value = mock_settings
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.AirLabel_3 = Mock()
+
+        MainScreen.radio_timer_set(mock_main_screen, 90)
+
+        mock_main_screen.AirLabel_3.setText.assert_called_once_with("TOH\n1:30")
 
 
 class TestWarningSystem:
@@ -732,13 +788,13 @@ class TestWarningSystem:
 class TestUpdateBacktimingSeconds:
     """Tests for the update_backtiming_seconds method"""
     
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_seconds(self, mock_datetime, mock_main_screen):
         """Test update_backtiming_seconds calculates remaining seconds correctly"""
         # Mock datetime.now() to return a specific time
         mock_now = Mock()
         mock_now.second = 45
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_main_screen.set_backtiming_secs = Mock()
         
@@ -747,12 +803,12 @@ class TestUpdateBacktimingSeconds:
         # Should calculate 60 - 45 = 15 remaining seconds
         mock_main_screen.set_backtiming_secs.assert_called_once_with(15)
     
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_seconds_at_zero(self, mock_datetime, mock_main_screen):
         """Test update_backtiming_seconds at second 0"""
         mock_now = Mock()
         mock_now.second = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_main_screen.set_backtiming_secs = Mock()
         
@@ -761,12 +817,12 @@ class TestUpdateBacktimingSeconds:
         # Should calculate 60 - 0 = 60 remaining seconds
         mock_main_screen.set_backtiming_secs.assert_called_once_with(60)
     
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_seconds_at_59(self, mock_datetime, mock_main_screen):
         """Test update_backtiming_seconds at second 59"""
         mock_now = Mock()
         mock_now.second = 59
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_main_screen.set_backtiming_secs = Mock()
         
@@ -780,7 +836,7 @@ class TestUpdateBacktimingText:
     """Tests for the update_backtiming_text method"""
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_o_clock(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at o'clock"""
         # Setup mocks
@@ -794,7 +850,7 @@ class TestUpdateBacktimingText:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_main_screen.set_right_text = Mock()
         
@@ -806,7 +862,7 @@ class TestUpdateBacktimingText:
         assert "o'clock" in call_args
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_quarter_past(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at quarter past"""
         mock_settings = Mock()
@@ -819,7 +875,7 @@ class TestUpdateBacktimingText:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 15
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -830,7 +886,7 @@ class TestUpdateBacktimingText:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_half_past(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at half past"""
         mock_settings = Mock()
@@ -843,7 +899,7 @@ class TestUpdateBacktimingText:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 30
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -854,7 +910,7 @@ class TestUpdateBacktimingText:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_german(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format"""
         mock_settings = Mock()
@@ -867,7 +923,7 @@ class TestUpdateBacktimingText:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 30
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -878,7 +934,7 @@ class TestUpdateBacktimingText:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_dutch(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text Dutch format"""
         mock_settings = Mock()
@@ -891,7 +947,7 @@ class TestUpdateBacktimingText:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -902,7 +958,7 @@ class TestUpdateBacktimingText:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_french(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format"""
         mock_settings = Mock()
@@ -918,7 +974,7 @@ class TestUpdateBacktimingText:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -1104,8 +1160,8 @@ class TestTopOfHourCountdown:
         """Test seconds until next full hour during the hour"""
         from datetime import datetime
 
-        with patch('start.datetime') as mock_datetime:
-            mock_datetime.now.return_value = datetime(2026, 7, 3, 14, 37, 22)
+        with patch('start.wall_datetime') as mock_wall:
+            mock_wall.return_value = datetime(2026, 7, 3, 14, 37, 22)
             result = MainScreen._seconds_until_top_of_hour(mock_main_screen)
 
         assert result == 1358
@@ -1114,8 +1170,8 @@ class TestTopOfHourCountdown:
         """Test seconds until next full hour exactly on the hour"""
         from datetime import datetime
 
-        with patch('start.datetime') as mock_datetime:
-            mock_datetime.now.return_value = datetime(2026, 7, 3, 14, 0, 0)
+        with patch('start.wall_datetime') as mock_wall:
+            mock_wall.return_value = datetime(2026, 7, 3, 14, 0, 0)
             result = MainScreen._seconds_until_top_of_hour(mock_main_screen)
 
         assert result == 3600
@@ -1216,7 +1272,10 @@ class TestTopOfHourCountdown:
     def test_update_air3_seconds_top_of_hour_syncs_wall_clock(self, mock_qsettings, mock_main_screen):
         """Test top-of-hour countdown syncs from wall clock instead of decrementing"""
         mock_settings = Mock()
-        mock_settings.value.return_value = 'Timer'
+        mock_settings.value.side_effect = lambda key, default=None, **kwargs: {
+            'TimerAIR3Text': 'Timer',
+            'TimerTOTHText': 'TOTH Timer',
+        }.get(key, default)
         mock_qsettings.return_value = mock_settings
 
         mock_main_screen.Air3Seconds = 1358
@@ -1233,7 +1292,7 @@ class TestTopOfHourCountdown:
 
         assert mock_main_screen.Air3Seconds == 1355
         mock_main_screen.stop_air3.assert_not_called()
-        mock_main_screen.AirLabel_3.setText.assert_called_once_with("Timer\n22:35")
+        mock_main_screen.AirLabel_3.setText.assert_called_once_with("TOTH Timer\n22:35")
 
     @patch('start.QSettings')
     def test_update_air3_seconds_top_of_hour_stops_at_hour_boundary(self, mock_qsettings, mock_main_screen):
@@ -1957,6 +2016,11 @@ class TestParseCmdConfMore:
         """Test CONF command for Timers.TimerAIRMinWidth"""
         mock_main_screen.parse_cmd(b"CONF:Timers:TimerAIRMinWidth=250")
         mock_main_screen.settings.AIRMinWidth.setValue.assert_called_once_with(250)
+
+    def test_parse_cmd_conf_timers_toth_text(self, mock_main_screen):
+        """Test CONF command for Timers.TimerTOTHText"""
+        mock_main_screen.parse_cmd(b"CONF:Timers:TimerTOTHText=TOH")
+        mock_main_screen.settings.TOTHTimerText.setText.assert_called_once_with("TOH")
     
     def test_parse_cmd_conf_clock_secondsinoneline_true(self, mock_main_screen):
         """Test CONF command for Clock.secondsinoneline=True"""
@@ -2158,6 +2222,62 @@ class TestSetAir3:
         mock_main_screen.AirLabel_3.setText.assert_called_once_with("Timer\n0:00")
         mock_main_screen.timerAIR3.start.assert_called_once_with(1000)
         mock_main_screen.update_air3_seconds.assert_not_called()
+
+    @patch('start.QSettings')
+    def test_set_air3_on_uses_toth_caption(self, mock_qsettings, mock_main_screen):
+        """Starting AIR3 during TOTH keeps the TOTH Timer caption and red style."""
+        mock_settings = Mock()
+        mock_settings.value.side_effect = lambda key, default, **kwargs: {
+            'AIR3activetextcolor': '#FFFFFF',
+            'AIR3activebgcolor': '#FF0000',
+            'TimerAIR3Text': 'Radio',
+            'TimerTOTHText': 'TOTH Timer',
+        }.get(key, default)
+        mock_qsettings.return_value = mock_settings
+
+        mock_main_screen.Air3Seconds = 90
+        mock_main_screen.radioTimerMode = 1
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.AirIcon_3 = Mock()
+        mock_main_screen.timerAIR3 = Mock()
+        mock_main_screen.statusAIR3 = False
+        mock_main_screen.update_air3_seconds = Mock()
+        mock_main_screen._milliseconds_until_next_wall_second = Mock(return_value=400)
+
+        MainScreen.set_air3(mock_main_screen, True)
+
+        mock_main_screen.AirLabel_3.setText.assert_called_once_with("TOTH Timer\n1:30")
+        mock_main_screen.AirLabel_3.setStyleSheet.assert_called()
+        stylesheet = mock_main_screen.AirLabel_3.setStyleSheet.call_args[0][0]
+        assert "#FF0000" in stylesheet
+        mock_main_screen.timerAIR3.start.assert_called_once_with(400)
+
+    @patch('start.QSettings')
+    def test_set_air3_on_uses_configured_toth_caption(self, mock_qsettings, mock_main_screen):
+        """Starting AIR3 during TOTH uses the configured TOTH Timer text."""
+        mock_settings = Mock()
+        mock_settings.value.side_effect = lambda key, default, **kwargs: {
+            'AIR3activetextcolor': '#FFFFFF',
+            'AIR3activebgcolor': '#FF0000',
+            'TimerAIR3Text': 'Radio',
+            'TimerTOTHText': 'TOH',
+        }.get(key, default)
+        mock_qsettings.return_value = mock_settings
+
+        mock_main_screen.Air3Seconds = 90
+        mock_main_screen.radioTimerMode = 1
+        mock_main_screen.topOfHourActive = True
+        mock_main_screen.AirLabel_3 = Mock()
+        mock_main_screen.AirIcon_3 = Mock()
+        mock_main_screen.timerAIR3 = Mock()
+        mock_main_screen.statusAIR3 = False
+        mock_main_screen.update_air3_seconds = Mock()
+        mock_main_screen._milliseconds_until_next_wall_second = Mock(return_value=400)
+
+        MainScreen.set_air3(mock_main_screen, True)
+
+        mock_main_screen.AirLabel_3.setText.assert_called_once_with("TOH\n1:30")
     
     @patch('start.QSettings')
     def test_set_air3_on_countdown_mode(self, mock_qsettings, mock_main_screen):
@@ -2306,7 +2426,7 @@ class TestUpdateBacktimingTextEdgeCases:
     """Tests for edge cases in update_backtiming_text method"""
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_quarter_to(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format at quarter to"""
         mock_settings = Mock()
@@ -2319,7 +2439,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 45
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2330,7 +2450,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_minutes_past(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format for minutes past"""
         mock_settings = Mock()
@@ -2343,7 +2463,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 7
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2354,7 +2474,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_minutes_to(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format for minutes to"""
         mock_settings = Mock()
@@ -2367,7 +2487,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 50
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2378,7 +2498,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_english_am_pm(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text English format with AM/PM"""
         mock_settings = Mock()
@@ -2391,7 +2511,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 15  # 3 PM
         mock_now.minute = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2402,7 +2522,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_german_minutes_nach(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format for minutes nach"""
         mock_settings = Mock()
@@ -2415,7 +2535,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 10
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2426,7 +2546,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_german_minutes_vor(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format for minutes vor"""
         mock_settings = Mock()
@@ -2439,7 +2559,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 50
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2450,7 +2570,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_german_uhr(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text German format at o'clock"""
         mock_settings = Mock()
@@ -2463,7 +2583,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2474,7 +2594,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_dutch_kwart(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text Dutch format for kwart"""
         mock_settings = Mock()
@@ -2487,7 +2607,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 15
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2498,7 +2618,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_french_et_quart(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format for et quart"""
         mock_settings = Mock()
@@ -2511,7 +2631,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 15
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2522,7 +2642,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_french_et_demie(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format for et demie"""
         mock_settings = Mock()
@@ -2535,7 +2655,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 14
         mock_now.minute = 30
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2546,7 +2666,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_ui_updater.update_backtiming_text.assert_called_once()
     
     @patch('ui_updater.QSettings')
-    @patch('ui_updater.datetime')
+    @patch('ui_updater.wall_datetime')
     def test_update_backtiming_text_french_minuit(self, mock_datetime, mock_qsettings, mock_main_screen):
         """Test update_backtiming_text French format for minuit"""
         mock_settings = Mock()
@@ -2559,7 +2679,7 @@ class TestUpdateBacktimingTextEdgeCases:
         mock_now = Mock()
         mock_now.hour = 0
         mock_now.minute = 0
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.return_value = mock_now
         
         mock_ui_updater = Mock()
         mock_main_screen.ui_updater = mock_ui_updater
@@ -2810,4 +2930,324 @@ class TestSetLogLevel:
         handler_count_2 = len(root_logger.handlers)
         
         assert handler_count_1 == handler_count_2
+
+
+class TestQuitCleanup:
+    """Tests for shutdown so MQTT/AES67 are not restarted."""
+
+    def test_config_finished_skipped_while_quitting(self):
+        """Applying settings during quit must not restart capture or MQTT."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._is_quitting = True
+        screen.restore_settings_from_config = Mock()
+        screen.weatherWidget = Mock()
+        screen.mqtt_client = Mock()
+        screen.osc_daemon = Mock()
+
+        MainScreen.config_finished(screen)
+
+        screen.restore_settings_from_config.assert_not_called()
+        screen.weatherWidget.readConfig.assert_not_called()
+        screen.mqtt_client.restart.assert_not_called()
+        screen.osc_daemon.restart.assert_not_called()
+
+    def test_quit_oas_stops_audio_and_mqtt(self):
+        """quit_oas must stop audio capture so AES67 is not left running."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._is_quitting = False
+        screen.event_logger = Mock()
+        screen.ntp_manager = Mock()
+        screen.httpd = Mock()
+        screen.wsd = Mock()
+        screen.mqtt_client = Mock()
+        screen.osc_daemon = Mock()
+        screen.audio_capture = Mock()
+        screen._save_window_geometry = Mock()
+
+        with patch("start.QCoreApplication") as mock_qapp:
+            mock_qapp.instance.return_value.quit = Mock()
+            MainScreen.quit_oas(screen)
+
+        assert screen._is_quitting is True
+        screen._save_window_geometry.assert_called_once()
+        screen.audio_capture.stop.assert_called_once()
+        screen.mqtt_client.stop.assert_called_once()
+        screen.osc_daemon.stop.assert_called_once()
+        screen.wsd.stop.assert_called_once()
+        mock_qapp.instance.return_value.quit.assert_called_once()
+
+    def test_close_event_reuses_quit_cleanup(self):
+        """Closing the main window must stop MQTT as well as audio."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._is_quitting = False
+        screen.event_logger = Mock()
+        screen.ntp_manager = Mock()
+        screen.httpd = Mock()
+        screen.wsd = Mock()
+        screen.mqtt_client = Mock()
+        screen.osc_daemon = Mock()
+        screen.audio_capture = Mock()
+        screen._save_window_geometry = Mock()
+        event = Mock()
+
+        MainScreen.closeEvent(screen, event)
+
+        assert screen._is_quitting is True
+        screen._save_window_geometry.assert_called_once()
+        screen.mqtt_client.stop.assert_called_once()
+        screen.osc_daemon.stop.assert_called_once()
+        screen.audio_capture.stop.assert_called_once()
+        event.accept.assert_called_once()
+
+
+class TestWindowGeometry:
+    """Tests for saving and restoring windowed position and size."""
+
+    @patch("start.QSettings")
+    def test_save_window_geometry_when_windowed(self, mock_qsettings):
+        """Windowed geometry is written to the Window settings group."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.isFullScreen = Mock(return_value=False)
+        geometry = b"fake-geometry"
+        screen.saveGeometry = Mock(return_value=geometry)
+        mock_settings = MagicMock()
+        mock_qsettings.return_value = mock_settings
+
+        MainScreen._save_window_geometry(screen)
+
+        mock_settings.setValue.assert_called_once_with("geometry", geometry)
+        mock_settings.sync.assert_called_once()
+
+    @patch("start.QSettings")
+    def test_save_window_geometry_skipped_when_fullscreen(self, mock_qsettings):
+        """Fullscreen geometry must not overwrite the saved windowed size."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.isFullScreen = Mock(return_value=True)
+        screen.saveGeometry = Mock()
+
+        MainScreen._save_window_geometry(screen)
+
+        screen.saveGeometry.assert_not_called()
+        mock_qsettings.assert_not_called()
+
+    @patch("start.QSettings")
+    def test_restore_window_geometry(self, mock_qsettings):
+        """Saved geometry is applied when present."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.restoreGeometry = Mock()
+        geometry = QByteArray(b"fake-geometry")
+        mock_settings = MagicMock()
+        mock_settings.value.return_value = geometry
+        mock_qsettings.return_value = mock_settings
+
+        MainScreen._restore_window_geometry(screen)
+
+        screen.restoreGeometry.assert_called_once_with(geometry)
+
+    @patch("start.QSettings")
+    def test_restore_window_geometry_skipped_when_empty(self, mock_qsettings):
+        """Missing geometry leaves the default window size in place."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.restoreGeometry = Mock()
+        mock_settings = MagicMock()
+        mock_settings.value.return_value = QByteArray()
+        mock_qsettings.return_value = mock_settings
+
+        MainScreen._restore_window_geometry(screen)
+
+        screen.restoreGeometry.assert_not_called()
+
+    @patch("start.QSettings")
+    def test_toggle_full_screen_saves_geometry_before_fullscreen(self, mock_qsettings):
+        """Entering fullscreen stores the current windowed geometry first."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._save_window_geometry = Mock()
+        screen._restore_window_geometry = Mock()
+        screen.showFullScreen = Mock()
+        screen.showNormal = Mock()
+        mock_settings = MagicMock()
+        mock_settings.value.return_value = False
+        mock_qsettings.return_value = mock_settings
+
+        with patch("start.app", create=True):
+            MainScreen.toggle_full_screen(screen)
+
+        screen._save_window_geometry.assert_called_once()
+        screen.showFullScreen.assert_called_once()
+        screen._restore_window_geometry.assert_not_called()
+
+    @patch("start.QSettings")
+    def test_toggle_full_screen_restores_geometry_when_leaving(self, mock_qsettings):
+        """Leaving fullscreen restores the last windowed geometry."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._save_window_geometry = Mock()
+        screen._restore_window_geometry = Mock()
+        screen.showFullScreen = Mock()
+        screen.showNormal = Mock()
+        mock_settings = MagicMock()
+        mock_settings.value.return_value = True
+        mock_qsettings.return_value = mock_settings
+
+        with patch("start.app", create=True):
+            MainScreen.toggle_full_screen(screen)
+
+        screen.showNormal.assert_called_once()
+        screen._restore_window_geometry.assert_called_once()
+        screen._save_window_geometry.assert_not_called()
+
+
+class TestMainScreenMouseActions:
+    """Tests for double-click fullscreen toggle and right-click context menu."""
+
+    def test_left_double_click_toggles_fullscreen(self):
+        """Left double-click on the main screen toggles fullscreen."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        event = Mock()
+        event.button.return_value = Qt.MouseButton.LeftButton
+
+        MainScreen.mouseDoubleClickEvent(screen, event)
+
+        screen.toggle_full_screen.assert_called_once()
+        event.accept.assert_called_once()
+
+    def test_event_filter_forwards_child_double_click(self):
+        """Double-clicks on child widgets are handled by the main screen."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.mouseDoubleClickEvent = Mock()
+        child = MagicMock(spec=QWidget)
+        child.window.return_value = screen
+        event = Mock()
+        event.type.return_value = QEvent.Type.MouseButtonDblClick
+
+        handled = MainScreen.eventFilter(screen, child, event)
+
+        assert handled is True
+        screen.mouseDoubleClickEvent.assert_called_once_with(event)
+
+    def test_event_filter_forwards_child_context_menu(self):
+        """Right-clicks on child widgets open the main screen context menu."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.contextMenuEvent = Mock()
+        child = MagicMock(spec=QWidget)
+        child.window.return_value = screen
+        event = Mock()
+        event.type.return_value = QEvent.Type.ContextMenu
+
+        handled = MainScreen.eventFilter(screen, child, event)
+
+        assert handled is True
+        screen.contextMenuEvent.assert_called_once_with(event)
+
+    def test_event_filter_ignores_menu_widgets(self):
+        """Popup menus must not be intercepted by the main screen filter."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.mouseDoubleClickEvent = Mock()
+        menu = MagicMock(spec=QMenu)
+        menu.window.return_value = screen
+        event = Mock()
+        event.type.return_value = QEvent.Type.MouseButtonDblClick
+
+        with patch.object(QWidget, "eventFilter", return_value=False) as super_filter:
+            handled = MainScreen.eventFilter(screen, menu, event)
+
+        assert handled is False
+        screen.mouseDoubleClickEvent.assert_not_called()
+        super_filter.assert_called_once()
+
+    @patch("start.QMenu")
+    def test_context_menu_toggle_fullscreen(self, mock_qmenu_cls):
+        """Choosing Toggle Fullscreen from the context menu toggles fullscreen."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen._audio_meters_enabled = False
+        toggle_action = object()
+        settings_action = object()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [toggle_action, settings_action]
+        mock_menu.exec.return_value = toggle_action
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.toggle_full_screen.assert_called_once()
+        screen.show_settings.assert_not_called()
+        mock_menu.exec.assert_called_once()
+
+    @patch("start.QMenu")
+    def test_context_menu_opens_settings(self, mock_qmenu_cls):
+        """Choosing Settings from the context menu opens the settings window."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen._audio_meters_enabled = False
+        toggle_action = object()
+        settings_action = object()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [toggle_action, settings_action]
+        mock_menu.exec.return_value = settings_action
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.show_settings.assert_called_once()
+        screen.toggle_full_screen.assert_not_called()
+
+    @patch("start.QMenu")
+    def test_context_menu_dismissed_does_nothing(self, mock_qmenu_cls):
+        """Dismissing the context menu does not toggle fullscreen or open settings."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen.reset_integrated_loudness = Mock()
+        screen._audio_meters_enabled = False
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [object(), object()]
+        mock_menu.exec.return_value = None
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.toggle_full_screen.assert_not_called()
+        screen.show_settings.assert_not_called()
+        screen.reset_integrated_loudness.assert_not_called()
+
+    @patch("start.QMenu")
+    def test_context_menu_reset_lufs(self, mock_qmenu_cls):
+        """Choosing Reset I+LRA from the context menu resets the session."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen.reset_integrated_loudness = Mock()
+        screen._audio_meters_enabled = True
+        toggle_action = object()
+        settings_action = object()
+        reset_action = object()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [toggle_action, settings_action, reset_action]
+        mock_menu.exec.return_value = reset_action
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.reset_integrated_loudness.assert_called_once()
+        screen.toggle_full_screen.assert_not_called()
+        screen.show_settings.assert_not_called()
+
+    def test_context_menu_event_shows_menu(self):
+        """Right-click on the main screen opens the context menu."""
+        screen = MainScreen.__new__(MainScreen)
+        screen._show_main_context_menu = Mock()
+        event = Mock()
+        event.globalPos.return_value = QPoint(5, 5)
+
+        MainScreen.contextMenuEvent(screen, event)
+
+        screen._show_main_context_menu.assert_called_once_with(QPoint(5, 5))
+        event.accept.assert_called_once()
 

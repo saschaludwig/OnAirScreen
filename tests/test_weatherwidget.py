@@ -7,16 +7,21 @@ Unit tests for weatherwidget.py
 import pytest
 import json
 from unittest.mock import Mock, MagicMock, patch, PropertyMock
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QByteArray
-import PyQt6.QtNetwork as QtNetwork
+from PySide6.QtWidgets import QApplication, QGraphicsDropShadowEffect
+from PySide6.QtCore import QByteArray
+import PySide6.QtNetwork as QtNetwork
 
 # Import after QApplication setup
 import sys
 if not QApplication.instance():
     app = QApplication(sys.argv)
 
-from weatherwidget import WeatherWidget
+from weatherwidget import (
+    WeatherWidget,
+    extract_owm_city_id,
+    format_owm_city_label,
+    parse_owm_geocode_results,
+)
 
 
 @pytest.fixture
@@ -42,6 +47,25 @@ def weather_widget():
                 widget.widgetEnabled = False
                 widget.owmAPIKey = None
                 return widget
+
+
+class TestWeatherWidgetDropShadow:
+    """Test that drop-shadow effects stay attached after construction."""
+
+    def test_city_label_keeps_drop_shadow_effect(self):
+        """cityLabel must keep a parented QGraphicsDropShadowEffect under PySide6."""
+        with patch('weatherwidget.QtCore.QSettings'):
+            with patch('utils.settings_group'):
+                with patch.object(WeatherWidget, 'updateWeather'):
+                    widget = WeatherWidget()
+                    try:
+                        effect = widget.cityLabel.graphicsEffect()
+                        assert isinstance(effect, QGraphicsDropShadowEffect)
+                        assert effect.parent() is widget.cityLabel
+                        assert effect.blurRadius() > 0
+                    finally:
+                        widget.updateTimer.stop()
+                        widget.deleteLater()
 
 
 class TestWeatherWidgetSetData:
@@ -410,4 +434,56 @@ class TestWeatherWidgetHandleOWMResponse:
             
             call_args = mock_set_data.call_args
             assert "°F" in call_args[1]['temperature']
+
+
+class TestOwmGeocodeHelpers:
+    """Tests for OpenWeatherMap city-search helper functions"""
+
+    def test_format_label_with_country(self):
+        assert format_owm_city_label({"name": "Berlin", "country": "DE"}) == "Berlin, DE"
+
+    def test_format_label_with_state(self):
+        assert format_owm_city_label(
+            {"name": "London", "country": "US", "state": "Kentucky"}
+        ) == "London, US (Kentucky)"
+
+    def test_format_label_name_only(self):
+        assert format_owm_city_label({"name": "Berlin"}) == "Berlin"
+
+    def test_parse_geocode_results(self):
+        payload = json.dumps([
+            {"name": "Berlin", "country": "DE", "lat": 52.52, "lon": 13.41},
+            {"name": "London", "country": "US", "state": "Kentucky", "lat": 37.13, "lon": -84.08},
+        ])
+        results = parse_owm_geocode_results(payload)
+        assert results == [
+            ("Berlin, DE", {"lat": 52.52, "lon": 13.41}),
+            ("London, US (Kentucky)", {"lat": 37.13, "lon": -84.08}),
+        ]
+
+    def test_parse_geocode_empty_list(self):
+        assert parse_owm_geocode_results("[]") == []
+
+    def test_parse_geocode_invalid_json(self):
+        assert parse_owm_geocode_results("not json") == []
+
+    def test_parse_geocode_error_object(self):
+        assert parse_owm_geocode_results('{"cod":"400","message":"Nothing to geocode"}') == []
+
+    def test_parse_geocode_skips_missing_coords(self):
+        payload = json.dumps([
+            {"name": "Nowhere", "country": "XX"},
+            {"name": "Berlin", "country": "DE", "lat": 52.52, "lon": 13.41},
+        ])
+        results = parse_owm_geocode_results(payload)
+        assert results == [("Berlin, DE", {"lat": 52.52, "lon": 13.41})]
+
+    def test_extract_city_id(self):
+        assert extract_owm_city_id('{"id": 2950159, "name": "Berlin"}') == "2950159"
+
+    def test_extract_city_id_missing(self):
+        assert extract_owm_city_id('{"name": "Berlin"}') is None
+
+    def test_extract_city_id_invalid_json(self):
+        assert extract_owm_city_id("not json") is None
 

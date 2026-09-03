@@ -9,35 +9,16 @@
 # start.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
 
-from PyQt6 import QtCore, QtGui, QtWidgets
-import PyQt6.QtNetwork as QtNetwork
+from PySide6 import QtCore, QtGui, QtWidgets
+import PySide6.QtNetwork as QtNetwork
 import json
 import logging
 
@@ -45,6 +26,59 @@ from exceptions import JsonParseError, WeatherApiError, log_exception
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def format_owm_city_label(place: dict) -> str:
+    """Format a geocoding result as 'Berlin, DE' or 'London, US (Kentucky)'."""
+    name = str(place.get("name") or "").strip()
+    country = str(place.get("country") or "").strip()
+    state = str(place.get("state") or "").strip()
+    if name and country and state:
+        return f"{name}, {country} ({state})"
+    if name and country:
+        return f"{name}, {country}"
+    return name
+
+
+def parse_owm_geocode_results(payload: str) -> list[tuple[str, dict]]:
+    """Parse Geocoding API JSON into (label, {lat, lon}) pairs."""
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, list):
+        return []
+    results: list[tuple[str, dict]] = []
+    for place in data:
+        if not isinstance(place, dict):
+            continue
+        lat = place.get("lat")
+        lon = place.get("lon")
+        if lat is None or lon is None:
+            continue
+        try:
+            coords = {"lat": float(lat), "lon": float(lon)}
+        except (TypeError, ValueError):
+            continue
+        label = format_owm_city_label(place)
+        if not label:
+            continue
+        results.append((label, coords))
+    return results
+
+
+def extract_owm_city_id(payload: str) -> str | None:
+    """Extract city ID from a Current Weather API JSON body."""
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    city_id = data.get("id")
+    if city_id is None:
+        return None
+    return str(city_id)
 
 
 class WeatherWidget(QtWidgets.QWidget):
@@ -70,7 +104,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.readConfig()
 
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self)
-        self.verticalLayout_3.setContentsMargins(2, 2, 2, 2)
+        self.verticalLayout_3.setContentsMargins(6, 6, 6, 6)
         self.verticalLayout_3.setSpacing(0)
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSpacing(0)
@@ -83,15 +117,10 @@ class WeatherWidget(QtWidgets.QWidget):
         font = QtGui.QFont()
         font.setPointSize(22)
         font.setBold(True)
-        font.setWeight(75)
         self.cityLabel.setFont(font)
         self.cityLabel.setStyleSheet("color: #fff;")
         self.cityLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        cityfx = QtWidgets.QGraphicsDropShadowEffect()
-        cityfx.setBlurRadius(10)
-        cityfx.setColor(QtGui.QColor("#000"))
-        cityfx.setOffset(0, 0)
-        self.cityLabel.setGraphicsEffect(cityfx)
+        self._apply_drop_shadow(self.cityLabel, 10)
         self.verticalLayout.addWidget(self.cityLabel)
 
         # weather label
@@ -101,11 +130,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.weatherLabel.setFont(font)
         self.weatherLabel.setStyleSheet("color: #fff")
         self.weatherLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        weatherfx = QtWidgets.QGraphicsDropShadowEffect()
-        weatherfx.setBlurRadius(10)
-        weatherfx.setColor(QtGui.QColor("#000"))
-        weatherfx.setOffset(0, 0)
-        self.weatherLabel.setGraphicsEffect(weatherfx)
+        self._apply_drop_shadow(self.weatherLabel, 10)
         self.verticalLayout.addWidget(self.weatherLabel)
 
         # spacer
@@ -121,11 +146,7 @@ class WeatherWidget(QtWidgets.QWidget):
         icon_pixmap = QtGui.QPixmap()
         self.weatherIcon.setPixmap(icon_pixmap)
         self.weatherIcon.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        icon_fx = QtWidgets.QGraphicsDropShadowEffect()
-        icon_fx.setBlurRadius(20)
-        icon_fx.setColor(QtGui.QColor("#000"))
-        icon_fx.setOffset(0, 0)
-        self.weatherIcon.setGraphicsEffect(icon_fx)
+        self._apply_drop_shadow(self.weatherIcon, 20)
         self.horizontalLayout.addWidget(self.weatherIcon)
 
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
@@ -135,15 +156,11 @@ class WeatherWidget(QtWidgets.QWidget):
         self.temperatureLabel = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setPointSize(45)
-        font.setWeight(75)
+        font.setBold(True)
         self.temperatureLabel.setFont(font)
         self.temperatureLabel.setStyleSheet("color: #fff;")
         self.temperatureLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        tempfx = QtWidgets.QGraphicsDropShadowEffect()
-        tempfx.setBlurRadius(20)
-        tempfx.setColor(QtGui.QColor("#000"))
-        tempfx.setOffset(0, 0)
-        self.temperatureLabel.setGraphicsEffect(tempfx)
+        self._apply_drop_shadow(self.temperatureLabel, 20)
         self.verticalLayout_2.addWidget(self.temperatureLabel)
 
         # condition label
@@ -153,11 +170,7 @@ class WeatherWidget(QtWidgets.QWidget):
         self.conditionLabel.setFont(font)
         self.conditionLabel.setStyleSheet("color: #fff")
         self.conditionLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        condfx = QtWidgets.QGraphicsDropShadowEffect()
-        condfx.setBlurRadius(10)
-        condfx.setColor(QtGui.QColor("#000"))
-        condfx.setOffset(0, 0)
-        self.conditionLabel.setGraphicsEffect(condfx)
+        self._apply_drop_shadow(self.conditionLabel, 10)
         self.verticalLayout_2.addWidget(self.conditionLabel)
 
         self.horizontalLayout.addLayout(self.verticalLayout_2)
@@ -171,6 +184,15 @@ class WeatherWidget(QtWidgets.QWidget):
         self.updateTimer = QtCore.QTimer()
         self.updateTimer.timeout.connect(self.updateWeather)
         self.updateTimer.start(10 * 60 * 1000)
+
+    @staticmethod
+    def _apply_drop_shadow(widget: QtWidgets.QWidget, blur_radius: float) -> None:
+        """Attach a drop-shadow glow, parented so PySide6 keeps the effect alive."""
+        effect = QtWidgets.QGraphicsDropShadowEffect(widget)
+        effect.setBlurRadius(blur_radius)
+        effect.setColor(QtGui.QColor(0, 0, 0, 220))
+        effect.setOffset(0, 0)
+        widget.setGraphicsEffect(effect)
 
     def updateWeather(self) -> None:
         """Update weather data from OpenWeatherMap API"""

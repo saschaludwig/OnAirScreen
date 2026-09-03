@@ -9,29 +9,10 @@
 # status_exporter.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
@@ -44,11 +25,37 @@ This module handles exporting the current application status as JSON.
 import logging
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QSettings
+from PySide6.QtCore import QSettings
 
 from exceptions import WidgetAccessError, log_exception
 from settings_functions import versionString, distributionString
-from utils import settings_group
+from utils import settings_group, normalize_instance_name
+from defaults import DEFAULT_INSTANCE_NAME, DEFAULT_TOTH_TIMER_TEXT, air_timer_caption
+from meter_engine import LUFS_SILENCE
+
+# Same floor as the desktop meter ticks: values at silence are not displayable.
+_LOUDNESS_DISPLAY_FLOOR = LUFS_SILENCE + 1.0
+
+
+def json_loudness(value: float) -> float | None:
+    """Round a LUFS reading to one decimal, or None when still at the silence floor."""
+    if value <= _LOUDNESS_DISPLAY_FLOOR:
+        return None
+    return round(float(value), 1)
+
+
+def json_lra(low: float, high: float) -> float | None:
+    """EBU LRA in LU (P95−P10), or None when the span is not yet valid."""
+    if high <= _LOUDNESS_DISPLAY_FLOOR or low <= _LOUDNESS_DISPLAY_FLOOR:
+        return None
+    return round(float(high) - float(low), 1)
+
+
+def loudness_payload(value: float | None) -> str:
+    """MQTT/OSC string for a JSON loudness field (`""` when unknown)."""
+    if value is None:
+        return ""
+    return f"{float(value):.1f}"
 
 if TYPE_CHECKING:
     from start import MainScreen
@@ -127,20 +134,31 @@ class StatusExporter:
             seconds_attr = f'Air{air_num}Seconds'
             with settings_group(settings, "Timers"):
                 air_text = settings.value(f'TimerAIR{air_num}Text', f'AIR{air_num}')
+                toth_text = settings.value('TimerTOTHText', DEFAULT_TOTH_TIMER_TEXT)
+            top_of_hour = False
+            count_down = False
+            if air_num == 3:
+                try:
+                    top_of_hour = bool(getattr(self.main_screen, 'topOfHourActive', False))
+                except RuntimeError:
+                    # Uninitialized Qt object (e.g. in unit tests)
+                    top_of_hour = False
+                try:
+                    count_down = int(getattr(self.main_screen, 'radioTimerMode', 0) or 0) == 1
+                except (AttributeError, RuntimeError, TypeError, ValueError):
+                    count_down = False
+            elif air_num == 4:
+                try:
+                    count_down = int(getattr(self.main_screen, 'streamTimerMode', 0) or 0) == 1
+                except (AttributeError, RuntimeError, TypeError, ValueError):
+                    count_down = False
             air[air_num] = {
                 'status': getattr(self.main_screen, status_attr, False),
                 'seconds': getattr(self.main_screen, seconds_attr, 0),
-                'text': air_text,
-                'topOfHour': False,
+                'text': air_timer_caption(air_num, air_text, top_of_hour, toth_text),
+                'topOfHour': top_of_hour,
+                'countDown': count_down,
             }
-            if air_num == 3:
-                try:
-                    air[air_num]['topOfHour'] = bool(
-                        getattr(self.main_screen, 'topOfHourActive', False)
-                    )
-                except RuntimeError:
-                    # Uninitialized Qt object (e.g. in unit tests)
-                    air[air_num]['topOfHour'] = False
         
         # Get text field values
         now_text = ""
@@ -195,7 +213,37 @@ class StatusExporter:
             )
             log_exception(logger, error, use_exc_info=False)
             pass
-        
+
+        silence_active = False
+        try:
+            silence_active = bool(getattr(self.main_screen, '_audio_silence_active', False))
+        except (AttributeError, RuntimeError):
+            silence_active = False
+
+        lufs_integrated = False
+        lufs_i = None
+        lra = None
+        try:
+            capture = getattr(self.main_screen, 'audio_capture', None)
+            snapshot = getattr(capture, 'integrated_snapshot', None) if capture is not None else None
+            if callable(snapshot):
+                running, i_value, lra_low, lra_high = snapshot()
+                lufs_integrated = running is True
+                lufs_i = json_loudness(i_value)
+                lra = json_lra(lra_low, lra_high)
+            else:
+                running = getattr(capture, 'integrated_running', False) if capture is not None else False
+                lufs_integrated = running is True
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            lufs_integrated = False
+            lufs_i = None
+            lra = None
+
+        with settings_group(settings, "General"):
+            instance_name = normalize_instance_name(
+                settings.value('instancename', DEFAULT_INSTANCE_NAME)
+            )
+
         return {
             'leds': leds,
             'air': air,
@@ -205,7 +253,12 @@ class StatusExporter:
                 'warn': warn_text  # Keep for backward compatibility
             },
             'warnings': warnings,  # New: all warnings with priorities
+            'silence': silence_active,
+            'lufsIntegrated': lufs_integrated,
+            'lufsI': lufs_i,
+            'lra': lra,
             'version': versionString,
-            'distribution': distributionString
+            'distribution': distributionString,
+            'instance': instance_name,
         }
 

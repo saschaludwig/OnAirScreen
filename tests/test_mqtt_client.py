@@ -15,8 +15,8 @@ import pytest
 import json
 import time
 from unittest.mock import Mock, MagicMock, patch, call
-from PyQt6.QtCore import QSettings, QThread
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QSettings, QThread
+from PySide6.QtWidgets import QApplication
 
 import sys
 if not QApplication.instance():
@@ -60,6 +60,7 @@ def mock_main_screen():
     # Mock command signal
     main_screen.command_signal = Mock()
     main_screen.command_signal.command_received = Mock()
+    main_screen._audio_silence_active = False
     
     # Mock get_status_json method
     def get_status_json():
@@ -82,8 +83,13 @@ def mock_main_screen():
                 'next': main_screen.labelNews.text(),
                 'warn': main_screen.labelWarning.text(),
             },
+            'silence': bool(getattr(main_screen, '_audio_silence_active', False)),
+            'lufsIntegrated': bool(getattr(main_screen, '_lufs_integrated', False)),
+            'lufsI': getattr(main_screen, '_lufs_i', None),
+            'lra': getattr(main_screen, '_lra', None),
             'version': '0.9.7beta4',
-            'distribution': 'OpenSource'
+            'distribution': 'OpenSource',
+            'instance': 'Studio-1',
         }
     
     main_screen.get_status_json = get_status_json
@@ -346,7 +352,7 @@ class TestMqttClientAutodiscovery:
         # Check that reset button configs were published
         published_topics = [call[0][0] for call in client.client.publish.call_args_list]
         reset_button_configs = [topic for topic in published_topics if 'reset' in topic.lower() and 'config' in topic and 'button' in topic]
-        assert len(reset_button_configs) == 2  # AIR3 and AIR4 reset buttons
+        assert len(reset_button_configs) == 3  # AIR3, AIR4, and Loudness I+LRA reset
         
         # Check that button configs have correct structure
         published_calls = client.client.publish.call_args_list
@@ -388,6 +394,62 @@ class TestMqttClientAutodiscovery:
                 assert config['payload_press'] == "TOGGLE"
 
 
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_autodiscovery_instance_sensor(self, mock_main_screen):
+        """Test publishing autodiscovery config for the instance name sensor"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        client.discovery_prefix = "homeassistant"
+        client.device_id = "test_device"
+        client.device_name = "OnAirScreen"
+
+        client._publish_autodiscovery()
+
+        published_calls = client.client.publish.call_args_list
+        instance_configs = [
+            call_args for call_args in published_calls
+            if 'instance' in call_args[0][0] and 'config' in call_args[0][0]
+        ]
+        assert len(instance_configs) == 1
+        topic, payload = instance_configs[0][0][0], instance_configs[0][0][1]
+        assert topic == "homeassistant/sensor/onairscreen_instance_test_device/config"
+        config = json.loads(payload)
+        assert config['state_topic'] == "onairscreen/instance/state"
+        assert config['unique_id'] == "onairscreen_instance_test_device"
+        assert config['name'] == "OnAirScreen Instance"
+        assert config['device']['name'] == "OnAirScreen (Studio-1)"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_autodiscovery_silence_sensor(self, mock_main_screen):
+        """Test publishing autodiscovery config for the silence binary sensor"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        client.discovery_prefix = "homeassistant"
+        client.device_id = "test_device"
+        client.device_name = "OnAirScreen"
+
+        client._publish_autodiscovery()
+
+        published_calls = client.client.publish.call_args_list
+        silence_configs = [
+            call_args for call_args in published_calls
+            if 'silence' in call_args[0][0] and 'config' in call_args[0][0]
+        ]
+        assert len(silence_configs) == 1
+        topic, payload = silence_configs[0][0][0], silence_configs[0][0][1]
+        assert topic == "homeassistant/binary_sensor/onairscreen_silence_active_test_device/config"
+        config = json.loads(payload)
+        assert config['state_topic'] == "onairscreen/silence/active"
+        assert config['payload_on'] == "true"
+        assert config['payload_off'] == "false"
+        assert config['device_class'] == "problem"
+        assert config['name'] == "OnAirScreen Silence"
+
+
 class TestMqttClientStatusPublishing:
     """Tests for status publishing"""
     
@@ -416,6 +478,9 @@ class TestMqttClientStatusPublishing:
         published_calls = client.client.publish.call_args_list
         led_states = [call[0][0] for call in published_calls if 'led' in call[0][0] and 'state' in call[0][0]]
         assert len(led_states) == 4
+        instance_topics = [call[0] for call in published_calls if call[0][0] == "onairscreen/instance/state"]
+        assert len(instance_topics) == 1
+        assert instance_topics[0][1] == "Studio-1"
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     def test_publish_status_specific_led(self, mock_main_screen):
@@ -718,6 +783,9 @@ class TestMqttClientConnectionCallbacks:
         assert client._connected == True
         # Check that subscribe was called
         assert client.client.subscribe.call_count > 0
+        subscribed = [call[0][0] for call in client.client.subscribe.call_args_list]
+        assert "onairscreen/lufs/integrated/set" in subscribed
+        assert "onairscreen/lufs/integrated/reset" in subscribed
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     def test_on_connect_failure(self, mock_main_screen):
@@ -768,10 +836,21 @@ class TestMqttClientDeviceInfo:
         device_info = client._get_device_info()
         
         assert device_info['identifiers'] == ['onairscreen_test_device']
-        assert device_info['name'] == "OnAirScreen"
+        assert device_info['name'] == "OnAirScreen (Studio-1)"
         assert device_info['manufacturer'] == "astrastudio"
         assert device_info['model'] == "OnAirScreen"
         assert device_info['sw_version'] == "0.9.7beta4"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_get_device_info_skips_duplicate_instance_suffix(self, mock_main_screen):
+        """Do not append the instance name if it is already part of the device name."""
+        client = MqttClient(mock_main_screen)
+        client.device_id = "test_device"
+        client.device_name = "Studio-1"
+
+        device_info = client._get_device_info()
+
+        assert device_info['name'] == "Studio-1"
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     def test_get_version_fallback(self, mock_main_screen):
@@ -802,19 +881,99 @@ class TestMqttClientThreadManagement:
         assert client._stop_requested == True
         client.client.loop_stop.assert_called_once()
         client.client.disconnect.assert_called_once()
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_stop_disconnects_even_when_already_disconnected(self, mock_main_screen):
+        """stop() must still tear down the client after an unexpected disconnect."""
+        client = MqttClient(mock_main_screen)
+        client._connected = False
+        client._stop_requested = False
+        client.client = Mock()
+        client.client.loop_stop = Mock()
+        client.client.disconnect = Mock()
+
+        client.stop()
+
+        assert client._stop_requested is True
+        client.client.loop_stop.assert_called_once()
+        client.client.disconnect.assert_called_once()
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_sleep_interruptible_returns_immediately_when_stop_requested(self, mock_main_screen):
+        """Shutdown must not wait out reconnect sleeps."""
+        client = MqttClient(mock_main_screen)
+        client._stop_requested = True
+        started = time.monotonic()
+        stopped = client._sleep_interruptible(5.0)
+        elapsed = time.monotonic() - started
+        assert stopped is True
+        assert elapsed < 0.5
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_sleep_interruptible_waits_when_not_stopped(self, mock_main_screen):
+        """Full wait elapses when the client is still running."""
+        client = MqttClient(mock_main_screen)
+        client._stop_requested = False
+        started = time.monotonic()
+        stopped = client._sleep_interruptible(0.2, step=0.05)
+        elapsed = time.monotonic() - started
+        assert stopped is False
+        assert elapsed >= 0.2
     
     @patch('mqtt_client.MQTT_AVAILABLE', True)
     def test_restart_client(self, mock_main_screen):
-        """Test restarting MQTT client"""
+        """Test restarting MQTT client when settings changed"""
         client = MqttClient(mock_main_screen)
         client.stop = Mock()
         client.start = Mock()
-        client._is_enabled = Mock(return_value=True)
-        
+        client.isRunning = Mock(return_value=False)
+        client._applied_settings = {
+            'enablemqtt': True,
+            'mqttserver': 'old-broker',
+            'mqttport': 1883,
+            'mqttuser': '',
+            'mqttpassword': '',
+            'mqttdevicename': 'OnAirScreen',
+            'discovery_prefix': 'homeassistant',
+        }
+        client._read_mqtt_settings = Mock(return_value={
+            'enablemqtt': True,
+            'mqttserver': 'new-broker',
+            'mqttport': 1883,
+            'mqttuser': '',
+            'mqttpassword': '',
+            'mqttdevicename': 'OnAirScreen',
+            'discovery_prefix': 'homeassistant',
+        })
+
         client.restart()
-        
+
         client.stop.assert_called_once()
         client.start.assert_called_once()
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_restart_skips_when_settings_unchanged(self, mock_main_screen):
+        """Test restart does not reconnect when MQTT settings are unchanged"""
+        client = MqttClient(mock_main_screen)
+        client.stop = Mock()
+        client.start = Mock()
+        client.isRunning = Mock(return_value=True)
+        snapshot = {
+            'enablemqtt': True,
+            'mqttserver': 'localhost',
+            'mqttport': 1883,
+            'mqttuser': '',
+            'mqttpassword': '',
+            'mqttdevicename': 'OnAirScreen',
+            'discovery_prefix': 'homeassistant',
+        }
+        client._applied_settings = snapshot
+        client._read_mqtt_settings = Mock(return_value=snapshot.copy())
+
+        client.restart()
+
+        client.stop.assert_not_called()
+        client.start.assert_not_called()
 
 
 class TestMqttClientIntegration:
@@ -967,4 +1126,189 @@ class TestMqttClientIntegration:
         warning_active_call = [call for call in published_calls if 'warning/active' in call[0][0]]
         assert len(warning_active_call) == 1
         assert warning_active_call[0][0][1] == "false"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_status_with_silence_active(self, mock_main_screen):
+        """Test publishing silence active state"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        mock_main_screen._audio_silence_active = True
+
+        client.publish_status()
+
+        published_calls = client.client.publish.call_args_list
+        silence_calls = [call for call in published_calls if call[0][0].endswith('silence/active')]
+        assert len(silence_calls) == 1
+        assert silence_calls[0][0][1] == "true"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_status_with_silence_inactive(self, mock_main_screen):
+        """Test publishing silence inactive state"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        mock_main_screen._audio_silence_active = False
+
+        client.publish_status()
+
+        published_calls = client.client.publish.call_args_list
+        silence_calls = [call for call in published_calls if call[0][0].endswith('silence/active')]
+        assert len(silence_calls) == 1
+        assert silence_calls[0][0][1] == "false"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_status_specific_silence(self, mock_main_screen):
+        """Test publishing only the silence topic"""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        mock_main_screen._audio_silence_active = True
+
+        client.publish_status("silence")
+
+        assert client.client.publish.call_count == 1
+        call_args = client.client.publish.call_args[0]
+        assert call_args[0] == "onairscreen/silence/active"
+        assert call_args[1] == "true"
+
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_autodiscovery_lufs_switch(self, mock_main_screen):
+        """Home Assistant gets a switch for programme I+LRA."""
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        client.discovery_prefix = "homeassistant"
+        client.device_id = "test_device"
+        client.device_name = "OnAirScreen"
+
+        client._publish_autodiscovery()
+
+        lufs_configs = [
+            call
+            for call in client.client.publish.call_args_list
+            if 'lufs_integrated' in call[0][0]
+            and 'config' in call[0][0]
+            and 'reset' not in call[0][0]
+        ]
+        assert len(lufs_configs) == 1
+        topic, payload = lufs_configs[0][0][0], lufs_configs[0][0][1]
+        assert topic == "homeassistant/switch/onairscreen_lufs_integrated_test_device/config"
+        config = json.loads(payload)
+        assert config['command_topic'] == "onairscreen/lufs/integrated/set"
+        assert config['state_topic'] == "onairscreen/lufs/integrated/state"
+        assert config['payload_on'] == "ON"
+        assert config['payload_off'] == "OFF"
+
+        reset_configs = [
+            call
+            for call in client.client.publish.call_args_list
+            if 'lufs_integrated_reset' in call[0][0] and 'config' in call[0][0]
+        ]
+        assert len(reset_configs) == 1
+        reset_topic, reset_payload = reset_configs[0][0][0], reset_configs[0][0][1]
+        assert reset_topic == "homeassistant/button/onairscreen_lufs_integrated_reset_test_device/config"
+        reset_config = json.loads(reset_payload)
+        assert reset_config['command_topic'] == "onairscreen/lufs/integrated/reset"
+
+        i_configs = [
+            call
+            for call in client.client.publish.call_args_list
+            if 'onairscreen_lufs_i_' in call[0][0] and 'config' in call[0][0]
+        ]
+        assert len(i_configs) == 1
+        i_topic, i_payload = i_configs[0][0][0], i_configs[0][0][1]
+        assert i_topic == "homeassistant/sensor/onairscreen_lufs_i_test_device/config"
+        i_config = json.loads(i_payload)
+        assert i_config['state_topic'] == "onairscreen/lufs/i"
+        assert i_config['unit_of_measurement'] == "LUFS"
+
+        lra_configs = [
+            call
+            for call in client.client.publish.call_args_list
+            if 'lufs_lra' in call[0][0] and 'config' in call[0][0]
+        ]
+        assert len(lra_configs) == 1
+        lra_topic, lra_payload = lra_configs[0][0][0], lra_configs[0][0][1]
+        assert lra_topic == "homeassistant/sensor/onairscreen_lufs_lra_test_device/config"
+        lra_config = json.loads(lra_payload)
+        assert lra_config['state_topic'] == "onairscreen/lufs/lra"
+        assert lra_config['unit_of_measurement'] == "LU"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_receive_lufs_on_starts_session(self, mock_main_screen):
+        client = MqttClient(mock_main_screen)
+        client.base_topic = "onairscreen"
+        client.client = Mock()
+        mock_msg = Mock()
+        mock_msg.topic = "onairscreen/lufs/integrated/set"
+        mock_msg.payload = b"ON"
+        client._on_message(client.client, None, mock_msg)
+        call_args = mock_main_screen.command_signal.command_received.emit.call_args[0]
+        assert call_args[0] == b"LUFSI:START"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_receive_lufs_off_stops_session(self, mock_main_screen):
+        client = MqttClient(mock_main_screen)
+        client.base_topic = "onairscreen"
+        client.client = Mock()
+        mock_msg = Mock()
+        mock_msg.topic = "onairscreen/lufs/integrated/set"
+        mock_msg.payload = b"OFF"
+        client._on_message(client.client, None, mock_msg)
+        call_args = mock_main_screen.command_signal.command_received.emit.call_args[0]
+        assert call_args[0] == b"LUFSI:STOP"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_receive_lufs_toggle(self, mock_main_screen):
+        client = MqttClient(mock_main_screen)
+        client.base_topic = "onairscreen"
+        client.client = Mock()
+        mock_msg = Mock()
+        mock_msg.topic = "onairscreen/lufs/integrated/set"
+        mock_msg.payload = b"TOGGLE"
+        client._on_message(client.client, None, mock_msg)
+        call_args = mock_main_screen.command_signal.command_received.emit.call_args[0]
+        assert call_args[0] == b"LUFSI:TOGGLE"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_receive_lufs_reset_button(self, mock_main_screen):
+        client = MqttClient(mock_main_screen)
+        client.base_topic = "onairscreen"
+        client.client = Mock()
+        mock_msg = Mock()
+        mock_msg.topic = "onairscreen/lufs/integrated/reset"
+        mock_msg.payload = b"PRESS"
+        client._on_message(client.client, None, mock_msg)
+        call_args = mock_main_screen.command_signal.command_received.emit.call_args[0]
+        assert call_args[0] == b"LUFSI:RESET"
+
+    @patch('mqtt_client.MQTT_AVAILABLE', True)
+    def test_publish_status_lufs_on_and_off(self, mock_main_screen):
+        client = MqttClient(mock_main_screen)
+        client._connected = True
+        client.client = Mock()
+        client.base_topic = "onairscreen"
+        mock_main_screen._lufs_integrated = True
+        mock_main_screen._lufs_i = -23.1
+        mock_main_screen._lra = 5.2
+        client.publish_status("lufs")
+        published = {call[0][0]: call[0][1] for call in client.client.publish.call_args_list}
+        assert published["onairscreen/lufs/integrated/state"] == "ON"
+        assert published["onairscreen/lufs/i"] == "-23.1"
+        assert published["onairscreen/lufs/lra"] == "5.2"
+        client.client.publish.reset_mock()
+        mock_main_screen._lufs_integrated = False
+        mock_main_screen._lufs_i = None
+        mock_main_screen._lra = None
+        client.publish_status("lufs")
+        published = {call[0][0]: call[0][1] for call in client.client.publish.call_args_list}
+        assert published["onairscreen/lufs/integrated/state"] == "OFF"
+        assert published["onairscreen/lufs/i"] == ""
+        assert published["onairscreen/lufs/lra"] == ""
 

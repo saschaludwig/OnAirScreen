@@ -45,8 +45,12 @@
     <file>images/antenna2.png</file>
   </qresource>
   <qresource prefix="thirdparty">
-    <file>images/pyqt.png</file>
+    <file>images/pyside.png</file>
     <file>images/pyinstaller.png</file>
+  </qresource>
+  <qresource prefix="licenses">
+    <file>LICENSE</file>
+    <file>THIRD_PARTY_LICENSES.md</file>
   </qresource>
   <qresource prefix="astrastudio_logo">
     <file>images/astrastudio_transparent.png</file>

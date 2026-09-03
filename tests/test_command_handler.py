@@ -6,7 +6,7 @@ Unit tests for command_handler.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PyQt6.QtGui import QColor
+from PySide6.QtGui import QColor
 
 from command_handler import (
     CommandHandler,
@@ -59,6 +59,10 @@ def mock_main_screen():
     main_screen.reboot_host = Mock()
     main_screen.shutdown_host = Mock()
     main_screen.quit_oas = Mock()
+    main_screen.start_integrated_loudness = Mock()
+    main_screen.stop_integrated_loudness = Mock()
+    main_screen.toggle_integrated_loudness = Mock()
+    main_screen.reset_integrated_loudness = Mock()
     
     # Mock warning methods
     main_screen.add_warning = Mock()
@@ -67,6 +71,7 @@ def mock_main_screen():
     # Mock settings object
     main_screen.settings = MagicMock()
     main_screen.settings.StationName = MagicMock()
+    main_screen.settings.InstanceName = MagicMock()
     main_screen.settings.Slogan = MagicMock()
     main_screen.settings.replaceNOW = MagicMock()
     main_screen.settings.replaceNOWText = MagicMock()
@@ -104,6 +109,7 @@ def mock_main_screen():
         setattr(main_screen.settings, f"setAIR{air_num}BGColor", Mock())
         setattr(main_screen.settings, f"setAIR{air_num}FGColor", Mock())
         setattr(main_screen.settings, f"setAIR{air_num}IconPath", Mock())
+    main_screen.settings.TOTHTimerText = MagicMock()
     
     return main_screen
 
@@ -476,6 +482,16 @@ class TestConfGeneral:
         command_handler.parse_cmd(b"CONF:General:replacenowtext=Replacement Text")
         mock_main_screen.settings.replaceNOWText.setText.assert_called_once_with("Replacement Text")
 
+    def test_conf_general_instancename(self, command_handler, mock_main_screen):
+        """Test CONF General instancename with a valid DNS label."""
+        command_handler.parse_cmd(b"CONF:General:instancename=Studio-1-Outside")
+        mock_main_screen.settings.InstanceName.setText.assert_called_once_with("Studio-1-Outside")
+
+    def test_conf_general_instancename_rejected_when_invalid(self, command_handler, mock_main_screen):
+        """Invalid instance names must not be applied."""
+        command_handler.parse_cmd(b"CONF:General:instancename=Studio 1")
+        mock_main_screen.settings.InstanceName.setText.assert_not_called()
+
 
 class TestConfLed:
     """Test CONF LED group handler"""
@@ -543,6 +559,11 @@ class TestConfTimers:
         """Test CONF Timers TimerAIRMinWidth"""
         command_handler.parse_cmd(b"CONF:Timers:TimerAIRMinWidth=250")
         mock_main_screen.settings.AIRMinWidth.setValue.assert_called_once_with(250)
+
+    def test_conf_timers_toth_text(self, command_handler, mock_main_screen):
+        """Test CONF Timers TimerTOTHText"""
+        command_handler.parse_cmd(b"CONF:Timers:TimerTOTHText=TOH")
+        mock_main_screen.settings.TOTHTimerText.setText.assert_called_once_with("TOH")
 
 
 class TestConfClock:
@@ -874,4 +895,35 @@ class TestInputValidationIntegration:
         result = command_handler.parse_cmd(invalid_utf8)
         # Should return False and not crash
         assert result is False
+
+
+class TestLufsiCommands:
+    """Programme I + LRA session commands."""
+
+    def test_lufsi_start(self, command_handler, mock_main_screen):
+        command_handler.parse_cmd(b"LUFSI:START")
+        mock_main_screen.start_integrated_loudness.assert_called_once()
+
+    def test_lufsi_on_alias(self, command_handler, mock_main_screen):
+        command_handler.parse_cmd(b"LUFSI:ON")
+        mock_main_screen.start_integrated_loudness.assert_called_once()
+
+    def test_lufsi_stop(self, command_handler, mock_main_screen):
+        command_handler.parse_cmd(b"LUFSI:STOP")
+        mock_main_screen.stop_integrated_loudness.assert_called_once()
+
+    def test_lufsi_toggle(self, command_handler, mock_main_screen):
+        command_handler.parse_cmd(b"LUFSI:TOGGLE")
+        mock_main_screen.toggle_integrated_loudness.assert_called_once()
+
+    def test_lufsi_reset(self, command_handler, mock_main_screen):
+        command_handler.parse_cmd(b"LUFSI:RESET")
+        mock_main_screen.reset_integrated_loudness.assert_called_once()
+
+    def test_lufsi_invalid_is_ignored(self, command_handler, mock_main_screen):
+        command_handler.parse_cmd(b"LUFSI:NOPE")
+        mock_main_screen.start_integrated_loudness.assert_not_called()
+        mock_main_screen.stop_integrated_loudness.assert_not_called()
+        mock_main_screen.toggle_integrated_loudness.assert_not_called()
+        mock_main_screen.reset_integrated_loudness.assert_not_called()
 

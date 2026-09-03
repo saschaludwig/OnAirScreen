@@ -17,9 +17,9 @@ import sys
 import socket
 import time
 import logging
-from PyQt6.QtCore import QCoreApplication
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtNetwork import QUdpSocket, QHostAddress, QNetworkInterface
+from PySide6.QtCore import QCoreApplication
+from PySide6.QtWidgets import QApplication
+from PySide6.QtNetwork import QUdpSocket, QHostAddress, QNetworkInterface, QAbstractSocket
 
 # Configure logging
 logging.basicConfig(
@@ -82,8 +82,7 @@ def test_multicast_receive(multicast_address: str, port: int) -> bool:
                 loopback_interface = iface
             else:
                 for entry in iface.addressEntries():
-                    ipv4_result = entry.ip().toIPv4Address()
-                    if len(ipv4_result) == 2 and ipv4_result[1]:
+                    if entry.ip().protocol() == QAbstractSocket.NetworkLayerProtocol.IPv4Protocol:
                         active_interfaces.append(iface)
                         break
     
@@ -163,8 +162,7 @@ def check_network_interfaces():
             for entry in iface.addressEntries():
                 addr = entry.ip()
                 addr_str = addr.toString()
-                ipv4_result = addr.toIPv4Address()
-                if len(ipv4_result) == 2 and ipv4_result[1]:
+                if addr.protocol() == QAbstractSocket.NetworkLayerProtocol.IPv4Protocol:
                     addresses.append(addr_str)
             if addresses:
                 print(f"  IPv4 addresses: {', '.join(addresses)}")

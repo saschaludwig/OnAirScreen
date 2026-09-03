@@ -6,16 +6,17 @@ Unit tests for clockwidget.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QColor, QPainter
-from PyQt6.QtCore import QTime
+from PySide6.QtCore import Qt, QTime
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QColor, QFont, QImage, QPainter
 
 # Import after QApplication setup
 import sys
 if not QApplication.instance():
     app = QApplication(sys.argv)
 
-from clockwidget import ClockWidget
+from clockwidget import FRAME_DIGIT_SCALE, FRAME_LED_SCALE, ClockWidget
+from time_source import KIND_TIMECODE, TimeSample
 
 
 @pytest.fixture
@@ -68,6 +69,134 @@ class TestClockWidgetAmPm:
         clock_widget.set_am_pm(True)
         clock_widget.reset_am_pm()
         assert clock_widget.isAmPm is False
+
+
+class TestClockWidgetTwelveHour:
+    """Test 12-hour mapping used by the digital clock."""
+
+    @pytest.mark.parametrize(
+        "hour_24, expected",
+        [
+            (0, 12),
+            (1, 1),
+            (11, 11),
+            (12, 12),
+            (13, 1),
+            (23, 11),
+        ],
+    )
+    def test_twelve_hour_mapping(self, hour_24, expected):
+        assert ClockWidget._twelve_hour(hour_24) == expected
+
+    @pytest.mark.parametrize(
+        "hour_24, expected",
+        [
+            (0, 12),
+            (1, 1),
+            (11, 11),
+            (12, 12),
+            (13, 1),
+            (23, 11),
+        ],
+    )
+    def test_digital_hour_am_pm_wall_clock(self, clock_widget, hour_24, expected):
+        clock_widget.set_am_pm(True)
+        clock_widget.time = QTime(hour_24, 0, 0)
+        clock_widget._sample = TimeSample(
+            hours=hour_24, minutes=0, seconds=0, milliseconds=0
+        )
+        assert clock_widget._digital_hour() == expected
+
+    @pytest.mark.parametrize("hour_24", [0, 1, 11, 12, 13, 23])
+    def test_digital_hour_24h_wall_clock(self, clock_widget, hour_24):
+        clock_widget.set_am_pm(False)
+        clock_widget.time = QTime(hour_24, 0, 0)
+        clock_widget._sample = TimeSample(
+            hours=hour_24, minutes=0, seconds=0, milliseconds=0
+        )
+        assert clock_widget._digital_hour() == hour_24
+
+    @pytest.mark.parametrize("hour_24", [0, 1, 11, 12, 13, 23])
+    def test_digital_hour_ignores_am_pm_for_timecode(self, clock_widget, hour_24):
+        clock_widget.set_am_pm(True)
+        clock_widget.time = QTime(hour_24, 0, 0)
+        clock_widget._sample = TimeSample(
+            hours=hour_24,
+            minutes=0,
+            seconds=0,
+            milliseconds=0,
+            frames=0,
+            kind=KIND_TIMECODE,
+        )
+        assert clock_widget._digital_hour() == hour_24
+
+
+class TestClockWidgetSmpteFrames:
+    """SMPTE frame digits must not crash when the sample has no frame count."""
+
+    def test_smpte_frame_digits_none_sample(self, clock_widget):
+        clock_widget._sample = None
+        assert clock_widget._smpte_frame_digits() is None
+
+    def test_smpte_frame_digits_wall_clock(self, clock_widget):
+        clock_widget._sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=0)
+        assert clock_widget._smpte_frame_digits() is None
+
+    def test_smpte_frame_digits_zero_and_wrap(self, clock_widget):
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0, frames=0, kind=KIND_TIMECODE
+        )
+        assert clock_widget._smpte_frame_digits() == "00"
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0, frames=12, kind=KIND_TIMECODE
+        )
+        assert clock_widget._smpte_frame_digits() == "12"
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0, frames=100, kind=KIND_TIMECODE
+        )
+        assert clock_widget._smpte_frame_digits() == "00"
+
+    def test_smpte_frame_digits_timecode_hold_without_frames(self, clock_widget):
+        clock_widget._sample = TimeSample.hold(10, 11, 12, 0)
+        assert clock_widget._sample.frames is None
+        assert clock_widget._smpte_frame_digits() is None
+
+    def _paint_digital(self, clock_widget):
+        clock_widget.resize(200, 200)
+        clock_widget.time = QTime(12, 34, 56)
+        image = QImage(200, 200, QImage.Format.Format_ARGB32)
+        painter = QPainter(image)
+        try:
+            clock_widget.paint_digital(painter)
+        finally:
+            painter.end()
+
+    def test_paint_digital_wall_clock_with_seconds_and_no_frames(self, clock_widget):
+        clock_widget.showSeconds = True
+        clock_widget.one_line_time = False
+        clock_widget._sample = TimeSample(hours=12, minutes=34, seconds=56, milliseconds=0)
+        self._paint_digital(clock_widget)
+
+    def test_paint_digital_one_line_with_no_frames(self, clock_widget):
+        clock_widget.showSeconds = True
+        clock_widget.one_line_time = True
+        clock_widget._sample = TimeSample(hours=12, minutes=34, seconds=56, milliseconds=0)
+        self._paint_digital(clock_widget)
+
+    def test_paint_digital_timecode_hold_without_frames(self, clock_widget):
+        clock_widget.showSeconds = False
+        clock_widget.one_line_time = False
+        clock_widget._sample = TimeSample.hold(10, 11, 12, 0)
+        self._paint_digital(clock_widget)
+
+    def test_paint_digital_with_smpte_frames(self, clock_widget):
+        clock_widget.showSeconds = False
+        clock_widget.one_line_time = False
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0,
+            frames=7, kind=KIND_TIMECODE, source="ltc",
+        )
+        self._paint_digital(clock_widget)
 
 
 class TestClockWidgetShowSeconds:
@@ -264,18 +393,54 @@ class TestClockWidgetDrawDigit:
         )
         assert painter.drawEllipse.called
 
+    def test_draw_digit_three_leds_per_segment(self):
+        """Frame digits use 3 LEDs per bar; HH:MM:SS keep 4."""
+        painter_four = Mock()
+        ClockWidget.draw_digit(painter_four, 0, 0, 8, leds_per_segment=4)
+        painter_three = Mock()
+        ClockWidget.draw_digit(painter_three, 0, 0, 8, leds_per_segment=3)
+        assert painter_four.drawEllipse.call_count == 7 * 4
+        assert painter_three.drawEllipse.call_count == 7 * 3
+
+    def test_scaled_frame_digit_waist_stays_open(self):
+        """Inner vertical LEDs must not collapse onto the middle bar when scaled."""
+        painter = Mock()
+        ClockWidget.draw_digit(
+            painter, 0, 0, 8, dot_size=0.24, dot_offset=1.5, leds_per_segment=3
+        )
+        ys = [call.args[0].y() for call in painter.drawEllipse.call_args_list]
+        near_center = [y for y in ys if abs(y) < 0.4]
+        # Only the three middle-bar (g) LEDs sit on y=0.
+        assert len(near_center) == 3
+
+    def test_frame_digits_are_half_height_and_bottom_aligned(self):
+        """Frame digits sit on the seconds baseline at half the seconds size."""
+        seconds_y = 45.0
+        seconds_dot_size = 0.8
+        seconds_dot_offset = 3.0
+        frames_y, frame_dot_size, frame_dot_offset = ClockWidget._frame_digit_layout(
+            seconds_y, seconds_dot_size, seconds_dot_offset
+        )
+        assert frame_dot_size == pytest.approx(seconds_dot_size * FRAME_LED_SCALE)
+        assert frame_dot_offset == pytest.approx(seconds_dot_offset * FRAME_DIGIT_SCALE)
+        seconds_bottom = ClockWidget._digit_bottom_y(
+            seconds_y, seconds_dot_offset, seconds_dot_size
+        )
+        frames_bottom = ClockWidget._digit_bottom_y(
+            frames_y, frame_dot_offset, frame_dot_size
+        )
+        assert frames_bottom == pytest.approx(seconds_bottom)
+        assert frames_y > seconds_y
+
 
 class TestClockWidgetResyncTime:
     """Test resync_time() method"""
 
     def test_resync_time_schedules_half_second_boundary(self, clock_widget):
         """Test resync_time() schedules next update at 500ms when colon blinks"""
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=0, running=True)
         with patch.object(clock_widget, 'update') as mock_update:
-            with patch('clockwidget.QtCore.QTime') as mock_time:
-                mock_current_time = Mock()
-                mock_current_time.msec.return_value = 0
-                mock_time.currentTime.return_value = mock_current_time
-
+            with patch('clockwidget.get_current_sample', return_value=sample):
                 clock_widget.staticColon = False
                 clock_widget.resync_time()
 
@@ -284,17 +449,22 @@ class TestClockWidgetResyncTime:
 
     def test_resync_time_schedules_second_boundary_with_static_colon(self, clock_widget):
         """Test resync_time() schedules next update at second boundary when colon is static"""
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=250, running=True)
         with patch.object(clock_widget, 'update') as mock_update:
-            with patch('clockwidget.QtCore.QTime') as mock_time:
-                mock_current_time = Mock()
-                mock_current_time.msec.return_value = 250
-                mock_time.currentTime.return_value = mock_current_time
-
+            with patch('clockwidget.get_current_sample', return_value=sample):
                 clock_widget.staticColon = True
                 clock_widget.resync_time()
 
                 mock_update.assert_called_once()
                 clock_widget.timer.start.assert_called_once_with(750)
+
+    def test_resync_time_stops_timer_when_frozen(self, clock_widget):
+        """Frozen samples must not keep ticking from the wall clock."""
+        sample = TimeSample.hold(10, 11, 12, 0)
+        with patch.object(clock_widget, 'update'):
+            with patch('clockwidget.get_current_sample', return_value=sample):
+                clock_widget.resync_time()
+                clock_widget.timer.stop.assert_called()
 
     def test_on_timer_timeout_repaints_and_reschedules(self, clock_widget):
         """Test timer timeout repaints and schedules the next aligned update"""
@@ -307,11 +477,8 @@ class TestClockWidgetResyncTime:
 
     def test_milliseconds_until_next_clock_boundary_mid_second(self, clock_widget):
         """Test boundary calculation between colon blink points"""
-        with patch('clockwidget.QtCore.QTime') as mock_time:
-            mock_current_time = Mock()
-            mock_current_time.msec.return_value = 320
-            mock_time.currentTime.return_value = mock_current_time
-
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=320, running=True)
+        with patch('clockwidget.get_current_sample', return_value=sample):
             clock_widget.staticColon = False
             assert clock_widget._milliseconds_until_next_clock_boundary() == 180
 
@@ -363,12 +530,172 @@ class TestClockWidgetUpdateTime:
     def test_update_time(self, clock_widget):
         """Test update_time() emits signal"""
         clock_widget.timeChanged = Mock()
-        
-        with patch('clockwidget.QtCore.QTime') as mock_time:
-            mock_current_time = QTime(12, 30, 45)
-            mock_time.currentTime.return_value = mock_current_time
-            
+        sample = TimeSample(hours=12, minutes=30, seconds=45, milliseconds=0, running=True)
+        with patch('clockwidget.get_current_sample', return_value=sample):
             clock_widget.update_time()
-            
-            clock_widget.timeChanged.emit.assert_called_once_with(mock_current_time)
+            emitted = clock_widget.timeChanged.emit.call_args[0][0]
+            assert emitted.hour() == 12
+            assert emitted.minute() == 30
+            assert emitted.second() == 45
+
+
+class TestClockWidgetLockLed:
+    """Test time-source lock LED"""
+
+    def test_lock_led_green_when_locked(self, clock_widget):
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=True
+        )
+        assert clock_widget._lock_led_color() == clock_widget.lockLedLockedColor
+
+    def test_lock_led_red_when_unlocked(self, clock_widget):
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=False
+        )
+        assert clock_widget._lock_led_color() == clock_widget.lockLedUnlockedColor
+
+    def test_paint_lock_led_uses_seconds_led_size(self, clock_widget):
+        painter = Mock()
+        clock_widget.resize(200, 200)
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=True
+        )
+        clock_widget.paint_lock_led(painter)
+        painter.drawEllipse.assert_called_once()
+        center, radius_x, radius_y = painter.drawEllipse.call_args[0]
+        assert radius_x == 1.6
+        assert radius_y == 1.6
+        assert center.x() == pytest.approx(200 - 1.6)
+        assert center.y() == pytest.approx(200 - 1.6)
+
+    def test_lock_led_sits_in_widget_corner(self, clock_widget):
+        clock_widget.resize(400, 300)
+        radius = clock_widget._lock_led_radius()
+        center = clock_widget._lock_led_center()
+        assert radius == pytest.approx(1.6 * (300 / 200.0))
+        assert center.x() == pytest.approx(400 - radius)
+        assert center.y() == pytest.approx(300 - radius)
+
+    def test_lock_led_caption_ptp_and_ntp(self, clock_widget):
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=True, source="ptp"
+        )
+        assert clock_widget._lock_led_caption() == "PTP LOCK"
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=False, source="ptp"
+        )
+        assert clock_widget._lock_led_caption() == "PTP NOT LOCKED"
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=True, source="ntp"
+        )
+        assert clock_widget._lock_led_caption() == "NTP LOCK"
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=False, source="ntp"
+        )
+        assert clock_widget._lock_led_caption() == "NTP NOT LOCKED"
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=True, source="local"
+        )
+        assert clock_widget._lock_led_caption() == "LOCAL"
+
+    def test_lock_led_caption_ltc(self, clock_widget):
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0, locked=True,
+            frames=10, kind="timecode", source="ltc",
+        )
+        assert clock_widget._lock_led_caption() == "LTC LOCK"
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0, locked=False,
+            frames=10, kind="timecode", source="ltc", running=False,
+        )
+        assert clock_widget._lock_led_caption() == "LTC NOT LOCKED"
+
+    def test_shows_seconds_and_frames_for_timecode_without_show_seconds(self, clock_widget):
+        clock_widget.showSeconds = False
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0,
+            frames=10, kind="timecode", source="ltc",
+        )
+        assert clock_widget._is_timecode_sample() is True
+        assert clock_widget._shows_seconds_and_frames() is True
+
+    def test_resync_time_stops_timer_for_running_timecode(self, clock_widget):
+        clock_widget._sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0,
+            frames=4, kind="timecode", source="ltc", running=True, locked=True,
+        )
+        with patch("clockwidget.get_current_sample", return_value=clock_widget._sample):
+            clock_widget.resync_time()
+        clock_widget.timer.stop.assert_called()
+
+    def test_resync_time_marshals_when_called_from_other_thread(self, clock_widget):
+        """QTimer must not be started from a worker thread."""
+        other_thread = object()
+        with patch("clockwidget.QtCore.QThread.currentThread", return_value=other_thread):
+            with patch("clockwidget.QtCore.QMetaObject.invokeMethod") as mock_invoke:
+                clock_widget.resync_time()
+        mock_invoke.assert_called_once_with(
+            clock_widget, "resync_time", Qt.ConnectionType.QueuedConnection
+        )
+        clock_widget.timer.start.assert_not_called()
+
+
+class TestClockWidgetEnsureTimerRunning:
+    """Watchdog that restarts a dead wall-clock timer without touching LTC."""
+
+    def test_restarts_inactive_wallclock_timer(self, clock_widget):
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=0, running=True)
+        clock_widget.timer.isActive.return_value = False
+        with patch("clockwidget.get_current_sample", return_value=sample):
+            with patch.object(clock_widget, "resync_time") as mock_resync:
+                clock_widget.ensure_timer_running()
+        mock_resync.assert_called_once()
+
+    def test_skips_when_timer_already_active(self, clock_widget):
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=0, running=True)
+        clock_widget.timer.isActive.return_value = True
+        with patch("clockwidget.get_current_sample", return_value=sample):
+            with patch.object(clock_widget, "resync_time") as mock_resync:
+                clock_widget.ensure_timer_running()
+        mock_resync.assert_not_called()
+
+    def test_ignores_ltc_hold(self, clock_widget):
+        sample = TimeSample.hold(10, 11, 12, 0)
+        clock_widget.timer.isActive.return_value = False
+        with patch("clockwidget.get_current_sample", return_value=sample):
+            with patch.object(clock_widget, "resync_time") as mock_resync:
+                clock_widget.ensure_timer_running()
+        mock_resync.assert_not_called()
+
+    def test_ignores_running_timecode(self, clock_widget):
+        sample = TimeSample(
+            hours=1, minutes=2, seconds=3, milliseconds=0,
+            frames=4, kind=KIND_TIMECODE, source="ltc", running=True, locked=True,
+        )
+        clock_widget.timer.isActive.return_value = False
+        with patch("clockwidget.get_current_sample", return_value=sample):
+            with patch.object(clock_widget, "resync_time") as mock_resync:
+                clock_widget.ensure_timer_running()
+        mock_resync.assert_not_called()
+
+    def test_none_sample_does_not_crash(self, clock_widget):
+        """A missing time sample must not abort the constant-update loop."""
+        clock_widget._sample = None
+        clock_widget.timer.isActive.return_value = False
+        with patch("clockwidget.get_current_sample", return_value=None):
+            clock_widget.ensure_timer_running()
+
+    def test_paint_lock_led_draws_caption_for_ptp(self, clock_widget):
+        painter = Mock()
+        painter.font.return_value = QFont()
+        clock_widget.resize(200, 200)
+        clock_widget._sample = TimeSample(
+            hours=12, minutes=0, seconds=0, milliseconds=0, locked=True, source="ptp"
+        )
+        clock_widget.paint_lock_led(painter)
+        painter.drawText.assert_called_once()
+        args = painter.drawText.call_args[0]
+        assert args[2] == "PTP LOCK"
+        assert painter.setPen.call_args.args[0] == clock_widget.lockLedCaptionColor
+        assert clock_widget.lockLedCaptionColor == QColor(80, 80, 80, 255)
 

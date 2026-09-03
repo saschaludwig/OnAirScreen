@@ -9,29 +9,10 @@
 # ui_updater.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
@@ -42,13 +23,13 @@ This module handles periodic UI updates like date, time, and NTP status.
 """
 
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QDate, QLocale, QSettings
+from PySide6.QtCore import QDate, QLocale, QSettings
 
 from defaults import DEFAULT_DATE_FORMAT, DEFAULT_TEXT_CLOCK_LANGUAGE
 from time_formatter import TimeFormatter
+from time_source import wall_datetime
 from utils import settings_group
 
 if TYPE_CHECKING:
@@ -84,11 +65,18 @@ class UIUpdater:
         Called periodically by the constant update timer to update
         date, time, and other UI elements.
         """
+        clock = getattr(self.main_screen, "clockWidget", None)
+        ensure = getattr(clock, "ensure_timer_running", None) if clock is not None else None
+        if callable(ensure):
+            ensure()
         self.update_date()
         self.update_backtiming_text()
         self.update_backtiming_seconds()
         self.main_screen.update_ntp_status()
         self.main_screen.process_warnings()
+        poll_silence = getattr(self.main_screen, "poll_silence_absent", None)
+        if callable(poll_silence):
+            poll_silence()
     
     def update_date(self) -> None:
         """
@@ -100,8 +88,11 @@ class UIUpdater:
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
         with settings_group(settings, "Formatting"):
             set_language = settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)
+            date_format = settings.value('dateFormat', DEFAULT_DATE_FORMAT, type=str)
         lang = QLocale(self.languages[set_language] if set_language in self.languages else QLocale().name())
-        self.main_screen.set_left_text(lang.toString(QDate.currentDate(), settings.value('dateFormat', DEFAULT_DATE_FORMAT)))
+        now = wall_datetime()
+        qdate = QDate(now.year, now.month, now.day)
+        self.main_screen.set_left_text(lang.toString(qdate, date_format))
     
     def update_backtiming_text(self) -> None:
         """
@@ -115,7 +106,7 @@ class UIUpdater:
             text_clock_language = settings.value('textClockLanguage', DEFAULT_TEXT_CLOCK_LANGUAGE)
             is_am_pm = settings.value('isAmPm', False, type=bool)
 
-        now = datetime.now()
+        now = wall_datetime()
         hour = now.hour
         minute = now.minute
         
@@ -130,7 +121,7 @@ class UIUpdater:
         Calculates remaining seconds until the next minute and updates
         the backtiming display.
         """
-        now = datetime.now()
+        now = wall_datetime()
         second = now.second
         remain_seconds = 60 - second
         self.main_screen.set_backtiming_secs(remain_seconds)

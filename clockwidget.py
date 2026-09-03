@@ -6,32 +6,13 @@
 # Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
 # All rights reserved.
 #
-# start.py
+# clockwidget.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 # this file contains code from Riverbank Computing Limited
 # and Nokia Corporation for details: see copyright notice below
@@ -43,7 +24,8 @@
 # Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 # All rights reserved.
 #
-# This file is part of the examples of PyQt.
+# This analog clock widget is based on the BSD-licensed analog clock
+# example from Qt / PyQt.
 #
 # $QT_BEGIN_LICENSE:BSD$
 # You may use this file under the terms of the BSD license as follows:
@@ -77,14 +59,36 @@
 #
 #############################################################################
 
-from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import QRectF
-from PyQt6.QtGui import QColor
+import logging
+
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import QRectF, QTime, Signal
+from PySide6.QtGui import QColor
+
+from defaults import TIME_SOURCE_LTC, TIME_SOURCE_NTP, TIME_SOURCE_PTP
+from time_source import KIND_TIMECODE, TimeSample, get_current_sample
+
+logger = logging.getLogger(__name__)
+
+# Digital seconds LEDs use this radius in the scaled 200-unit clock space.
+SECONDS_LED_DOT_SIZE = 1.6
+# draw_digit top/bottom LED rows are ±9; y = center - (dot_offset / 2) * row
+DIGIT_EXTENT_ROWS = 9
+# SMPTE frame digits are half the seconds height, bottom-aligned.
+FRAME_DIGIT_SCALE = 0.5
+# LED radius a tick smaller than the height scale so the dots stay crisp.
+FRAME_LED_SCALE = 0.3
+# Center-to-center gap of the two FF digits, as a fraction of the seconds pair.
+# 1.0 = same spacing as SS; raise this if the frame digits overlap.
+FRAME_DIGIT_SPACING = 0.56
+# Frame 7-segment digits use fewer LEDs per bar than HH:MM:SS.
+FRAME_LEDS_PER_SEGMENT = 3
 
 
 class ClockWidget(QtWidgets.QWidget):
     digiDigitColor: QColor
-    __pyqtSignals__ = ("timeChanged(QTime)", "timeZoneChanged(int)")
+    timeChanged = Signal(QTime)
+    timeZoneChanged = Signal(int)
 
     # default color scheme
     # digiHourColor = QtGui.QColor(255, 0, 0, 255)
@@ -93,9 +97,6 @@ class ClockWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ClockWidget, self).__init__(parent)
 
-        self.timeChanged = None
-        self.timeZoneChanged = None
-        
         # astrastudio color scheme
         self.digiHourColor = QtGui.QColor(50, 50, 255, 255)
         self.digiSecondColor = QtGui.QColor(255, 153, 0, 255)
@@ -106,6 +107,11 @@ class ClockWidget(QtWidgets.QWidget):
         self.minuteColor = QtGui.QColor(220, 220, 220, 255)
         self.secondColor = QtGui.QColor(200, 200, 200, 255)
         self.circleColor = QtGui.QColor(220, 220, 220, 255)
+
+        # Time-source lock LED (same radius as digital seconds LEDs)
+        self.lockLedLockedColor = QtGui.QColor(0, 220, 0, 255)
+        self.lockLedUnlockedColor = QtGui.QColor(220, 0, 0, 255)
+        self.lockLedCaptionColor = QtGui.QColor(80, 80, 80, 255)
 
         self.image_path = ""
 
@@ -119,14 +125,87 @@ class ClockWidget(QtWidgets.QWidget):
         self.counter = 0
         self.one_line_time = False
         self.logo_upper = False
+        self._sample = get_current_sample()
+        self.time = QtCore.QTime(0, 0, 0)
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self._on_timer_timeout)
         self.resync_time()
 
+    def _current_sample(self) -> TimeSample:
+        """Latest TimeSample from the active time source."""
+        sample = get_current_sample()
+        if sample is not None:
+            return sample
+        if self._sample is not None:
+            return self._sample
+        return TimeSample.from_system()
+
+    def _apply_sample(self, sample) -> None:
+        """Store sample and a QTime view for existing paint helpers."""
+        if sample is None:
+            sample = TimeSample.from_system()
+        self._sample = sample
+        hour = int(sample.hours) % 24
+        minute = int(sample.minutes) % 60
+        second = int(sample.seconds) % 60
+        msec = max(0, min(999, int(sample.milliseconds)))
+        self.time = QtCore.QTime(hour, minute, second, msec)
+
+    def _is_timecode_sample(self) -> bool:
+        """True when the display shows SMPTE frames instead of a wall clock."""
+        sample = self._sample
+        if sample is None:
+            return False
+        return sample.kind == KIND_TIMECODE or sample.frames is not None
+
+    def _shows_seconds_and_frames(self) -> bool:
+        """Seconds (and frames, if present) are drawn in digital mode."""
+        return self.showSeconds or self._is_timecode_sample()
+
+    @staticmethod
+    def _twelve_hour(hour_24: int) -> int:
+        """Map 24-hour 0..23 to 12-hour 1..12."""
+        return ((hour_24 - 1) % 12) + 1
+
+    def _digital_hour(self) -> int:
+        """Hour digits for digital mode (12-hour wall clock or 24-hour timecode)."""
+        hour = self.time.hour()
+        if self.isAmPm and not self._is_timecode_sample():
+            return ClockWidget._twelve_hour(hour)
+        return hour
+
+    @staticmethod
+    def _digit_bottom_y(center_y: float, dot_offset: float, dot_size: float) -> float:
+        """Bottom edge of a 7-segment digit (LED center plus radius)."""
+        return center_y + (DIGIT_EXTENT_ROWS / 2.0) * dot_offset + dot_size
+
+    @staticmethod
+    def _frame_digit_layout(seconds_y: float, seconds_dot_size: float, seconds_dot_offset: float):
+        """Half-height frame digits whose bottom edge matches the seconds digits."""
+        frame_dot_size = seconds_dot_size * FRAME_LED_SCALE
+        frame_dot_offset = seconds_dot_offset * FRAME_DIGIT_SCALE
+        bottom_y = ClockWidget._digit_bottom_y(seconds_y, seconds_dot_offset, seconds_dot_size)
+        frames_y = bottom_y - (DIGIT_EXTENT_ROWS / 2.0) * frame_dot_offset - frame_dot_size
+        return frames_y, frame_dot_size, frame_dot_offset
+
+    def _smpte_frame_digits(self) -> str | None:
+        """Two SMPTE frame digits, or None when the sample has no frame count."""
+        sample = self._sample
+        if sample is None:
+            return None
+        # Snapshot once: _sample can be replaced between a None-check and int().
+        frames = sample.frames
+        if frames is None:
+            return None
+        try:
+            return "%02d" % (int(frames) % 100)
+        except (TypeError, ValueError):
+            return None
+
     def _milliseconds_until_next_clock_boundary(self) -> int:
         """Return milliseconds until the next required clock repaint boundary."""
-        msec = QtCore.QTime.currentTime().msec()
+        msec = self._current_sample().milliseconds
         if self.staticColon:
             delay = 1000 - msec
         elif msec < 500:
@@ -136,23 +215,54 @@ class ClockWidget(QtWidgets.QWidget):
         return delay if delay > 0 else 1
 
     def _schedule_next_clock_update(self) -> None:
-        """Schedule the next repaint aligned to wall-clock boundaries."""
+        """Schedule the next repaint aligned to the active time sample."""
+        sample = self._current_sample()
+        if sample is None or not sample.running or sample.kind == KIND_TIMECODE:
+            self.timer.stop()
+            return
         self.timer.start(self._milliseconds_until_next_clock_boundary())
 
     def _on_timer_timeout(self) -> None:
         """Repaint the clock and schedule the next aligned update."""
+        sample = self._current_sample()
         self.update()
-        self._schedule_next_clock_update()
+        if sample is not None and sample.running:
+            self._schedule_next_clock_update()
+        else:
+            self.timer.stop()
 
+    @QtCore.Slot()
     def resync_time(self):
-        """Sync clock repaints to wall-clock second and colon boundaries."""
+        """Sync clock repaints to the active time source."""
+        if QtCore.QThread.currentThread() is not self.thread():
+            QtCore.QMetaObject.invokeMethod(
+                self, "resync_time", QtCore.Qt.ConnectionType.QueuedConnection
+            )
+            return
+        sample = self._current_sample()
+        self._apply_sample(sample)
         self.update()
-        self._schedule_next_clock_update()
+        if sample is not None and sample.running and sample.kind != KIND_TIMECODE:
+            self._schedule_next_clock_update()
+        else:
+            self.timer.stop()
+
+    def ensure_timer_running(self) -> None:
+        """Restart the clock timer if a wall-clock sample should be ticking."""
+        sample = self._current_sample()
+        if sample is None or not sample.running or sample.kind == KIND_TIMECODE:
+            return
+        if self.timer.isActive():
+            return
+        logger.warning("Clock repaint timer was stopped; restarting")
+        self.resync_time()
 
     def update_time(self):
-        self.timeChanged.emit(QtCore.QTime.currentTime())
+        sample = self._current_sample()
+        self._apply_sample(sample)
+        self.timeChanged.emit(self.time)
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def get_time_zone(self):
         return self.timeZoneOffset
 
@@ -168,9 +278,9 @@ class ClockWidget(QtWidgets.QWidget):
             self.timeZoneChanged.emit(0)
             self.update()
 
-    timeZone = QtCore.pyqtProperty("int", get_time_zone, set_time_zone, reset_time_zone)
+    timeZone = QtCore.Property("int", get_time_zone, set_time_zone, reset_time_zone)
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def set_clock_mode(self, mode):
         if mode == 1:
             self.clockMode = 1
@@ -183,9 +293,9 @@ class ClockWidget(QtWidgets.QWidget):
     def get_clock_mode(self):
         return self.clockMode
 
-    clockType = QtCore.pyqtProperty("int", get_clock_mode, set_clock_mode, reset_clock_code)
+    clockType = QtCore.Property("int", get_clock_mode, set_clock_mode, reset_clock_code)
 
-    @QtCore.pyqtSlot(bool)
+    @QtCore.Slot(bool)
     def set_am_pm(self, mode):
         self.isAmPm = mode
 
@@ -195,9 +305,9 @@ class ClockWidget(QtWidgets.QWidget):
     def get_am_pm(self):
         return self.isAmPm
 
-    clockAmPm = QtCore.pyqtProperty("int", get_am_pm, set_am_pm, reset_am_pm)
+    clockAmPm = QtCore.Property("int", get_am_pm, set_am_pm, reset_am_pm)
 
-    @QtCore.pyqtSlot(bool)
+    @QtCore.Slot(bool)
     def set_show_seconds(self, value):
         self.showSeconds = value
 
@@ -207,9 +317,9 @@ class ClockWidget(QtWidgets.QWidget):
     def get_show_seconds(self):
         return self.showSeconds
 
-    clockShowSeconds = QtCore.pyqtProperty("int", get_show_seconds, set_show_seconds, reset_show_seconds)
+    clockShowSeconds = QtCore.Property("int", get_show_seconds, set_show_seconds, reset_show_seconds)
 
-    @QtCore.pyqtSlot(bool)
+    @QtCore.Slot(bool)
     def set_one_line_time(self, value):
         self.one_line_time = value
 
@@ -219,9 +329,9 @@ class ClockWidget(QtWidgets.QWidget):
     def get_one_line_time(self):
         return self.one_line_time
 
-    clockOneLineTime = QtCore.pyqtProperty("int", get_one_line_time, set_one_line_time, reset_one_line_time)
+    clockOneLineTime = QtCore.Property("int", get_one_line_time, set_one_line_time, reset_one_line_time)
 
-    @QtCore.pyqtSlot(bool)
+    @QtCore.Slot(bool)
     def set_static_colon(self, value):
         self.staticColon = value
         self.resync_time()
@@ -232,9 +342,9 @@ class ClockWidget(QtWidgets.QWidget):
     def get_static_colon(self):
         return self.staticColon
 
-    clockStaticColon = QtCore.pyqtProperty("int", get_static_colon, set_static_colon, reset_static_colon)
+    clockStaticColon = QtCore.Property("int", get_static_colon, set_static_colon, reset_static_colon)
 
-    @QtCore.pyqtSlot(QtGui.QColor)
+    @QtCore.Slot(QtGui.QColor)
     def set_digi_hour_color(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiHourColor = color
 
@@ -244,9 +354,9 @@ class ClockWidget(QtWidgets.QWidget):
     def get_digi_hour_color(self):
         return self.digiHourColor
 
-    colorDigiHour = QtCore.pyqtProperty(QtGui.QColor, get_digi_hour_color, set_digi_hour_color, reset_digi_hour_color)
+    colorDigiHour = QtCore.Property(QtGui.QColor, get_digi_hour_color, set_digi_hour_color, reset_digi_hour_color)
 
-    @QtCore.pyqtSlot(QtGui.QColor)
+    @QtCore.Slot(QtGui.QColor)
     def set_digi_second_color(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiSecondColor = color
 
@@ -256,10 +366,10 @@ class ClockWidget(QtWidgets.QWidget):
     def get_digi_second_color(self):
         return self.digiSecondColor
 
-    colorDigiSecond = QtCore.pyqtProperty(QtGui.QColor, get_digi_second_color, set_digi_second_color,
+    colorDigiSecond = QtCore.Property(QtGui.QColor, get_digi_second_color, set_digi_second_color,
                                           reset_digi_second_color)
 
-    @QtCore.pyqtSlot(QtGui.QColor)
+    @QtCore.Slot(QtGui.QColor)
     def set_digi_digit_color(self, color=QtGui.QColor(50, 50, 255, 255)):
         self.digiDigitColor = color
 
@@ -269,15 +379,16 @@ class ClockWidget(QtWidgets.QWidget):
     def get_digi_digit_color(self):
         return self.digiDigitColor
 
-    colorDigiDigit = QtCore.pyqtProperty(QtGui.QColor, get_digi_digit_color, set_digi_digit_color,
+    colorDigiDigit = QtCore.Property(QtGui.QColor, get_digi_digit_color, set_digi_digit_color,
                                          reset_digi_digit_color)
 
     def paintEvent(self, event):
         side = min(self.width(), self.height())
-        self.time = QtCore.QTime.currentTime()
+        self._apply_sample(self._current_sample())
 
         painter = QtGui.QPainter(self)
         painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        painter.save()
         painter.translate(self.width() / 2, self.height() / 2)
         painter.scale(side / 200.0, side / 200.0)
 
@@ -285,6 +396,8 @@ class ClockWidget(QtWidgets.QWidget):
             self.paint_analog(painter)
         else:
             self.paint_digital(painter)
+        painter.restore()
+        self.paint_lock_led(painter)
 
     def paint_analog(self, painter):
         time = self.time
@@ -371,7 +484,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.rotate(6.0)
         # end analog clock mode
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def set_logo(self, logo_file=""):
         self.image_path = logo_file
         self.image = QtGui.QImage(logo_file)
@@ -382,9 +495,9 @@ class ClockWidget(QtWidgets.QWidget):
     def reset_logo(self):
         self.set_logo()
 
-    logoFile = QtCore.pyqtProperty(str, get_logo, set_logo, reset_logo)
+    logoFile = QtCore.Property(str, get_logo, set_logo, reset_logo)
 
-    @QtCore.pyqtSlot(bool)
+    @QtCore.Slot(bool)
     def set_logo_upper(self, state=True):
         self.logo_upper = state
 
@@ -394,7 +507,7 @@ class ClockWidget(QtWidgets.QWidget):
     def reset_logo_upper(self):
         self.set_logo_upper(False)
 
-    logoUpper = QtCore.pyqtProperty(bool, get_logo_upper, set_logo_upper, reset_logo_upper)
+    logoUpper = QtCore.Property(bool, get_logo_upper, set_logo_upper, reset_logo_upper)
 
     def paint_digital(self, painter):
         # digital clock mode
@@ -405,13 +518,7 @@ class ClockWidget(QtWidgets.QWidget):
         painter.setBrush(self.digiDigitColor)
         painter.setPen(self.digiDigitColor)
 
-        if self.isAmPm and time.hour() > 12:
-            if time.hour() >= 12:
-                hour_str = "%02d" % (time.hour() - 12)
-            else:
-                hour_str = "%02d" % time.hour()
-        else:
-            hour_str = "%02d" % time.hour()
+        hour_str = f"{self._digital_hour():02d}"
 
         minute_str = "%02d" % time.minute()
         second_str = "%02d" % time.second()
@@ -433,6 +540,27 @@ class ClockWidget(QtWidgets.QWidget):
             self.draw_digit(painter, digit_spacing * 2, 0, int(second_str[0:1]), dot_size, dot_offset)
             self.draw_digit(painter, digit_spacing * 3, 0, int(second_str[1:2]), dot_size, dot_offset)
 
+            frame_str = self._smpte_frame_digits()
+            if frame_str is not None:
+                frames_y, frame_dot_size, frame_dot_offset = self._frame_digit_layout(
+                    0, dot_size, dot_offset
+                )
+                frame_x0 = digit_spacing * 4.5
+                frame_x1 = frame_x0 + digit_spacing * FRAME_DIGIT_SPACING
+                self.draw_colon(
+                    painter, digit_spacing * 3.75, frames_y, frame_dot_size, frame_dot_offset
+                )
+                self.draw_digit(
+                    painter, frame_x0, frames_y, int(frame_str[0:1]),
+                    frame_dot_size, frame_dot_offset,
+                    leds_per_segment=FRAME_LEDS_PER_SEGMENT,
+                )
+                self.draw_digit(
+                    painter, frame_x1, frames_y, int(frame_str[1:2]),
+                    frame_dot_size, frame_dot_offset,
+                    leds_per_segment=FRAME_LEDS_PER_SEGMENT,
+                )
+
         else:
             digit_spacing = 28
             digit_spacing_y = 45
@@ -447,14 +575,31 @@ class ClockWidget(QtWidgets.QWidget):
             self.draw_digit(painter, digit_spacing * 1, 0, int(minute_str[0:1]))
             self.draw_digit(painter, digit_spacing * 2, 0, int(minute_str[1:2]))
 
-            if self.showSeconds:
+            if self._shows_seconds_and_frames():
                 second_str = "%02d" % time.second()
                 self.draw_digit(painter, (digit_spacing * -0.3) + seconds_offset_x, digit_spacing_y,
                                 int(second_str[0:1]), 0.8, 3)
                 self.draw_digit(painter, (digit_spacing * 0.3) + seconds_offset_x, digit_spacing_y,
                                 int(second_str[1:2]), 0.8, 3)
+                frame_str = self._smpte_frame_digits()
+                if frame_str is not None:
+                    frames_y, frame_dot_size, frame_dot_offset = self._frame_digit_layout(
+                        digit_spacing_y, 0.8, 3
+                    )
+                    frame_x0 = (digit_spacing * 1.1) + seconds_offset_x
+                    frame_x1 = frame_x0 + digit_spacing * 0.6 * FRAME_DIGIT_SPACING
+                    self.draw_digit(
+                        painter, frame_x0, frames_y,
+                        int(frame_str[0:1]), frame_dot_size, frame_dot_offset,
+                        leds_per_segment=FRAME_LEDS_PER_SEGMENT,
+                    )
+                    self.draw_digit(
+                        painter, frame_x1, frames_y,
+                        int(frame_str[1:2]), frame_dot_size, frame_dot_offset,
+                        leds_per_segment=FRAME_LEDS_PER_SEGMENT,
+                    )
 
-        dot_size = 1.6
+        dot_size = SECONDS_LED_DOT_SIZE
         # set painter to 12 o'clock position
         painter.rotate(-90.0)
         painter.setPen(QtCore.Qt.PenStyle.NoPen)
@@ -496,7 +641,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.save()
             painter.rotate(90)
 
-            if (self.showSeconds and not self.one_line_time) or self.logo_upper:
+            if (self._shows_seconds_and_frames() and not self.one_line_time) or self.logo_upper:
                 # logo position and width when showing seconds
                 paint_x = 0
                 paint_y = -50
@@ -519,6 +664,70 @@ class ClockWidget(QtWidgets.QWidget):
 
         # end digital clock mode
 
+    def _lock_led_color(self) -> QtGui.QColor:
+        """Green when the active time source is locked, red otherwise."""
+        sample = self._sample
+        if sample is not None and sample.locked:
+            return self.lockLedLockedColor
+        return self.lockLedUnlockedColor
+
+    def _lock_led_radius(self) -> float:
+        """Pixel radius matching the digital seconds LEDs."""
+        side = min(self.width(), self.height())
+        if side <= 0:
+            return SECONDS_LED_DOT_SIZE
+        return SECONDS_LED_DOT_SIZE * (side / 200.0)
+
+    def _lock_led_center(self) -> QtCore.QPointF:
+        """Bottom-right widget corner, inset so the disc stays fully visible."""
+        radius = self._lock_led_radius()
+        return QtCore.QPointF(self.width() - radius, self.height() - radius)
+
+    def _lock_led_caption(self) -> str:
+        """Caption left of the LED."""
+        sample = self._sample
+        if sample is None:
+            return "LOCAL"
+        source = sample.source
+        if source == TIME_SOURCE_PTP:
+            return "PTP LOCK" if sample.locked else "PTP NOT LOCKED"
+        if source == TIME_SOURCE_NTP:
+            return "NTP LOCK" if sample.locked else "NTP NOT LOCKED"
+        if source == TIME_SOURCE_LTC:
+            return "LTC LOCK" if sample.locked else "LTC NOT LOCKED"
+        return "LOCAL"
+
+    def paint_lock_led(self, painter):
+        """Draw lock status LED at the widget's bottom-right corner."""
+        color = self._lock_led_color()
+        radius = self._lock_led_radius()
+        center = self._lock_led_center()
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        painter.drawEllipse(center, radius, radius)
+
+        caption = self._lock_led_caption()
+        if not caption:
+            return
+        diameter = radius * 2.0
+        font = painter.font()
+        font.setBold(True)
+        font.setPixelSize(max(1, int(round(diameter))))
+        painter.setFont(font)
+        painter.setPen(self.lockLedCaptionColor)
+        gap = max(1.0, radius * 0.75)
+        text_rect = QtCore.QRectF(
+            0.0,
+            center.y() - radius,
+            center.x() - radius - gap,
+            diameter,
+        )
+        painter.drawText(
+            text_rect,
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter,
+            caption,
+        )
+
     def draw_colon(self, painter, digit_start_pos_x=0.0, digit_start_pos_y=0.0, dot_size=1.6, dot_offset=4.5, slant=15):
         # paint colon only half a second
         if self.time.msec() < 500 or self.staticColon:
@@ -534,134 +743,63 @@ class ClockWidget(QtWidgets.QWidget):
 
     @staticmethod
     def draw_digit(painter, digit_start_pos_x=0.0, digit_start_pos_y=0.0, value=8, dot_size=1.6, dot_offset=5.0,
-                   slant=19.0):
+                   slant=19.0, leds_per_segment=4):
         value = int(value)
+        leds_per_segment = 3 if int(leds_per_segment) <= 3 else 4
         # draw dots from one 7segment digit
         dot_slant = dot_offset / slant  # horizontal slant of each row
 
         # decimal to segment conversion table
         segments = [0b0111111, 0b0000110, 0b1011011, 0b1001111, 0b1100110, 0b1101101, 0b1111101, 0b0000111, 0b1111111,
                     0b1101111]
+        mask = segments[value]
 
-        if segments[value] & 1 << 6:
-            # segment g
-            current_row = 0  # center row
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 1.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 0.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 0.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 1.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+        if leds_per_segment == 3:
+            h_xs = (-1.5, 0.0, 1.5)
+            v_rows = (1.0, 2.5, 4.0)
+        else:
+            h_xs = (-1.5, -0.5, 0.5, 1.5)
+            v_rows = (1, 2, 3, 4)
 
-        if segments[value] & 1 << 0:
-            # segment a
-            current_row = 9  # top row
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 1.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 0.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 0.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 1.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+        # Vertical waist nudges were authored for hour digits (dot_offset=5).
+        # Scale only Y so inner LEDs stay off the middle bar on small digits;
+        # leave X unscaled so the outer corners keep their original gap.
+        y_scale = (dot_offset / 5.0) if leds_per_segment == 3 else 1.0
 
-        if segments[value] & 1 << 3:
-            # segment d
-            current_row = -9  # bottom row
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 1.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x - (dot_offset * 0.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 0.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
-            painter.drawEllipse(QtCore.QPointF(digit_start_pos_x + (dot_offset * 1.5) + (dot_slant * current_row),
-                                               digit_start_pos_y - (dot_offset / 2 * current_row)), dot_size, dot_size)
+        def draw_led(x, y):
+            painter.drawEllipse(QtCore.QPointF(x, y), dot_size, dot_size)
 
-        if segments[value] & 1 << 5:
-            # segment f
-            yOffset = -0.75
-            xOffset = +0.75
-            current_row = 1
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = 2
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = 3
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = 4
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+        def draw_horizontal(row):
+            for x_mul in h_xs:
+                draw_led(
+                    digit_start_pos_x + (dot_offset * x_mul) + (dot_slant * row),
+                    digit_start_pos_y - (dot_offset / 2 * row),
+                )
 
-        if segments[value] & 1 << 1:
-            # segment b
-            yOffset = -1.2
-            xOffset = -0.5
-            current_row = 1
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = 2
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = 3
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = 4
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+        def draw_vertical(sign, y_offset, x_offset, x_side):
+            y_offset *= y_scale
+            for row in v_rows:
+                current_row = sign * row
+                draw_led(
+                    digit_start_pos_x - x_offset + (dot_offset * x_side)
+                    + (dot_slant * 2 * current_row),
+                    digit_start_pos_y - y_offset - (dot_offset * current_row),
+                )
 
-        if segments[value] & 1 << 4:
-            # segment e
-            yOffset = +1.2
-            xOffset = +0.5
-            current_row = -1
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = -2
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = -3
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = -4
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset - (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-
-        if segments[value] & 1 << 2:
-            # segment c
-            yOffset = +0.75
-            xOffset = -0.75
-            current_row = -1
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = -2
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = -3
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
-            current_row = -4
-            painter.drawEllipse(
-                QtCore.QPointF(digit_start_pos_x - xOffset + (dot_offset * 2.0) + (dot_slant * 2 * current_row),
-                               digit_start_pos_y - yOffset - (dot_offset * current_row)), dot_size, dot_size)
+        if mask & 1 << 6:
+            draw_horizontal(0)  # g, center
+        if mask & 1 << 0:
+            draw_horizontal(9)  # a, top
+        if mask & 1 << 3:
+            draw_horizontal(-9)  # d, bottom
+        if mask & 1 << 5:
+            draw_vertical(+1, -0.75, +0.75, -2.0)  # f
+        if mask & 1 << 1:
+            draw_vertical(+1, -1.2, -0.5, +2.0)  # b
+        if mask & 1 << 4:
+            draw_vertical(-1, +1.2, +0.5, -2.0)  # e
+        if mask & 1 << 2:
+            draw_vertical(-1, +0.75, -0.75, +2.0)  # c
 
 
 if __name__ == '__main__':
@@ -679,4 +817,4 @@ if __name__ == '__main__':
     widget.set_logo("images/astrastudio_transparent.png")
     widget.set_logo_upper(True)
     widget.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

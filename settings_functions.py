@@ -9,29 +9,10 @@
 # settings_functions.py
 # This file is part of OnAirScreen
 #
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+# Licensed under the OnAirScreen Source-Available License (OASL 1.0).
+# You may use, modify, and redistribute the source code.
+# Redistribution of compiled or executable versions requires prior
+# written permission from the copyright holder. See LICENSE.
 #
 #############################################################################
 
@@ -43,19 +24,104 @@ from collections import defaultdict
 from pathlib import Path
 from uuid import getnode
 
-import PyQt6.QtNetwork as QtNetwork
-from PyQt6.QtCore import QSettings, QVariant, pyqtSignal, QUrl, QUrlQuery
-from PyQt6.QtGui import QPalette, QColor, QFont, QIcon
-from PyQt6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
-                              QFontDialog, QInputDialog)
+import PySide6.QtNetwork as QtNetwork
+from PySide6.QtCore import (
+    QSettings, QTimer, Qt, Signal, QUrl, QUrlQuery, QCoreApplication,
+    QRectF, QPointF, QRegularExpression, QSize, QFile, QIODevice,
+)
+from PySide6.QtGui import (
+    QPalette, QColor, QFont, QIcon, QPixmap, QPainter, QPen, QAction, QRegularExpressionValidator,
+)
+from PySide6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
+                              QInputDialog, QLineEdit, QScrollArea, QFrame, QVBoxLayout,
+                              QSizePolicy)
 
 from settings import Ui_Settings
-from utils import TimerUpdateMessageBox, settings_group
+from utils import TimerUpdateMessageBox, settings_group, INSTANCE_NAME_REGEX, normalize_instance_name
 from version import versionString
-from weatherwidget import WeatherWidget as ww
+from weatherwidget import WeatherWidget as ww, extract_owm_city_id, parse_owm_geocode_results
 from defaults import *  # noqa: F403, F405
 from exceptions import SettingsError, InvalidConfigValueError, log_exception
-from PyQt6.QtGui import QPixmap
+from font_loader import resolve_font_name
+from meter_engine import migrate_audio_layout_and_unit, normalize_meter_layout
+
+SETTINGS_WINDOW_INITIAL_WIDTH = 700
+SETTINGS_WINDOW_MAX_HEIGHT = 800
+
+LICENSE_RESOURCE_OASL = ":/licenses/LICENSE"
+LICENSE_RESOURCE_THIRD_PARTY = ":/licenses/THIRD_PARTY_LICENSES.md"
+
+
+def read_qt_resource_text(resource_path: str) -> str:
+    """Read a UTF-8 text file from the Qt resource system."""
+    resource_file = QFile(resource_path)
+    if not resource_file.open(
+        QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text
+    ):
+        logging.warning("Could not open license resource %s", resource_path)
+        return ""
+    try:
+        return bytes(resource_file.readAll()).decode("utf-8")
+    finally:
+        resource_file.close()
+
+
+def composed_license_dialog_text() -> str:
+    """OASL plus third-party notices for the Settings License tab."""
+    oasl = read_qt_resource_text(LICENSE_RESOURCE_OASL).rstrip()
+    third_party = read_qt_resource_text(LICENSE_RESOURCE_THIRD_PARTY).rstrip()
+    parts = [part for part in (oasl, third_party) if part]
+    return "\n\n".join(parts) + "\n"
+
+
+FONT_ROW_PREFIXES: tuple[str, ...] = (
+    "AIR1", "AIR2", "AIR3", "AIR4",
+    "LED1", "LED2", "LED3", "LED4",
+    "StationName", "Slogan",
+)
+# Qt5 stored QFont.Bold as 75; older OnAirScreen defaults used 1.
+QT5_BOLD_WEIGHT = 75
+
+
+def default_font_size_for_prefix(prefix: str) -> int:
+    """Return the default point size for a Fonts-tab row prefix."""
+    if prefix.startswith("LED"):
+        return DEFAULT_FONT_SIZE_LED
+    if prefix.startswith("AIR"):
+        return DEFAULT_FONT_SIZE_TIMER
+    if prefix == "StationName":
+        return DEFAULT_FONT_SIZE_STATION
+    if prefix == "Slogan":
+        return DEFAULT_FONT_SIZE_SLOGAN
+    return DEFAULT_FONT_SIZE_LED
+
+
+def is_bold_font_weight(weight) -> bool:
+    """True if a stored QFont weight should be treated as bold."""
+    if hasattr(weight, "value") and not isinstance(weight, (int, str)):
+        weight = weight.value()
+    try:
+        weight_value = int(weight)
+    except (TypeError, ValueError):
+        return True
+    if weight_value in (DEFAULT_FONT_WEIGHT_BOLD, QT5_BOLD_WEIGHT, int(QFont.Weight.Bold)):
+        return True
+    return weight_value >= int(QFont.Weight.Bold)
+
+
+def font_weight_from_bold(bold: bool) -> int:
+    """Settings weight value for a Bold checkbox."""
+    return int(QFont.Weight.Bold if bold else QFont.Weight.Normal)
+
+
+def qfont_weight_from_stored(weight) -> QFont.Weight:
+    """Map a stored settings weight to QFont.Weight (PySide6 requires the enum)."""
+    if isinstance(weight, QFont.Weight):
+        return weight
+    if is_bold_font_weight(weight):
+        return QFont.Weight.Bold
+    return QFont.Weight.Normal
+
 
 try:
     from distribution import distributionString, update_url # type: ignore
@@ -65,6 +131,85 @@ except ModuleNotFoundError:
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+AES67_NONE_LABEL = "None"
+AES67_SAP_POLL_MS = 2000
+AES67_SAP_FIRST_POLL_MS = 250
+LIVEWIRE_ADV_POLL_MS = 2000
+LIVEWIRE_ADV_FIRST_POLL_MS = 250
+
+
+def _eye_icon(slashed: bool, color: QColor) -> QIcon:
+    """Draw a simple open or slashed eye icon for secret-field toggles."""
+    size = 32
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    pen = QPen(color)
+    pen.setWidthF(2.2)
+    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    painter.setPen(pen)
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawEllipse(QRectF(4, 10, 24, 12))
+    painter.setBrush(color)
+    painter.drawEllipse(QRectF(13, 13, 6, 6))
+    if slashed:
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawLine(QPointF(7, 25), QPointF(25, 7))
+    painter.end()
+    return QIcon(pixmap)
+
+
+def setup_secret_line_edit(line_edit: QLineEdit) -> QAction:
+    """Mask a line edit and add a trailing slashed-eye toggle to reveal it."""
+    color = line_edit.palette().color(QPalette.ColorRole.Text)
+    icon_hidden = _eye_icon(slashed=True, color=color)
+    icon_visible = _eye_icon(slashed=False, color=color)
+    line_edit.setEchoMode(QLineEdit.EchoMode.Password)
+    action = line_edit.addAction(icon_hidden, QLineEdit.ActionPosition.TrailingPosition)
+    action.setCheckable(True)
+    action.setToolTip("Show")
+
+    def _toggle(visible: bool) -> None:
+        if visible:
+            line_edit.setEchoMode(QLineEdit.EchoMode.Normal)
+            action.setIcon(icon_visible)
+            action.setToolTip("Hide")
+        else:
+            line_edit.setEchoMode(QLineEdit.EchoMode.Password)
+            action.setIcon(icon_hidden)
+            action.setToolTip("Show")
+
+    action.toggled.connect(_toggle)
+    return action
+
+
+def aes67_sap_wanted(source, meters_enabled: bool, dialog_hidden: bool) -> bool:
+    """SAP discovery runs while AES67 is selected, meters are on, and settings are shown."""
+    return bool(meters_enabled) and source == "aes67" and not dialog_hidden
+
+
+def livewire_adv_wanted(source, meters_enabled: bool, dialog_hidden: bool) -> bool:
+    """Livewire ads run while Livewire is selected, meters are on, and settings are shown."""
+    return bool(meters_enabled) and source == "livewire" and not dialog_hidden
+
+
+def aes67_list_signature(items: list[tuple[str, str, dict]]) -> tuple:
+    """Stable fingerprint of AES67 combo entries (skip rebuild when unchanged)."""
+    return tuple(
+        (
+            stream_id,
+            label,
+            data.get("addr"),
+            int(data.get("port") or 0),
+            str(data.get("codec") or ""),
+            int(data.get("rate") or 0),
+            int(data.get("channels") or 0),
+            bool(data.get("manual")),
+        )
+        for stream_id, label, data in items
+    )
 
 
 def validate_color_value(color_str: str) -> tuple[bool, str]:
@@ -118,6 +263,14 @@ def validate_color_value(color_str: str) -> tuple[bool, str]:
     return False, ""
 
 
+class _ShrinkableScrollArea(QScrollArea):
+    """Scroll area that does not force the parent window to grow with its content."""
+
+    def minimumSizeHint(self) -> QSize:
+        hint = super().minimumSizeHint()
+        return QSize(hint.width(), 0)
+
+
 # class OASSettings for use from OAC
 class OASSettings:
     """
@@ -144,12 +297,12 @@ class OASSettings:
         if self.currentgroup:
             self.config[self.currentgroup][name] = value
 
-    def value(self, name: str, default=None) -> QVariant:
+    def value(self, name: str, default=None):
         """Get a value from the current group"""
         try:
-            return QVariant(self.config[self.currentgroup][name])
+            return self.config[self.currentgroup][name]
         except KeyError:
-            return QVariant(default)
+            return default
 
     def fileName(self) -> str:
         """Return the settings file name (for compatibility)"""
@@ -163,16 +316,18 @@ class Settings(QWidget, Ui_Settings):
     Provides a comprehensive settings interface for configuring
     all aspects of the OnAirScreen application.
     """
-    sigConfigChanged = pyqtSignal(int, str)
-    sigExitOAS = pyqtSignal()
-    sigRebootHost = pyqtSignal()
-    sigShutdownHost = pyqtSignal()
-    sigConfigFinished = pyqtSignal()
-    sigConfigClosed = pyqtSignal()
-    sigExitRemoteOAS = pyqtSignal(int)
-    sigRebootRemoteHost = pyqtSignal(int)
-    sigShutdownRemoteHost = pyqtSignal(int)
-    sigCheckForUpdate = pyqtSignal()
+    sigConfigChanged = Signal(int, str)
+    sigExitOAS = Signal()
+    sigRebootHost = Signal()
+    sigShutdownHost = Signal()
+    sigConfigFinished = Signal()
+    sigConfigClosed = Signal()
+    sigExitRemoteOAS = Signal(int)
+    sigRebootRemoteHost = Signal(int)
+    sigShutdownRemoteHost = Signal(int)
+    sigCheckForUpdate = Signal()
+    sigAes67StreamsChanged = Signal()
+    sigLivewireStreamsChanged = Signal()
 
     def __init__(self, oacmode: bool = False) -> None:
         """
@@ -200,6 +355,40 @@ class Settings(QWidget, Ui_Settings):
         # self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
+        self.plainTextEdit.setPlainText(composed_license_dialog_text())
+        self._station_name_color = QColor(DEFAULT_STATION_COLOR)
+        self._slogan_color = QColor(DEFAULT_SLOGAN_COLOR)
+        self.resize(SETTINGS_WINDOW_INITIAL_WIDTH, SETTINGS_WINDOW_MAX_HEIGHT)
+        self.setMaximumHeight(SETTINGS_WINDOW_MAX_HEIGHT)
+        self._wrap_tabs_in_scroll_areas()
+        self.InstanceName.setValidator(
+            QRegularExpressionValidator(QRegularExpression(INSTANCE_NAME_REGEX), self)
+        )
+        setup_secret_line_edit(self.updateKey)
+        setup_secret_line_edit(self.mqttpassword)
+        setup_secret_line_edit(self.owmAPIKey)
+        self.owm_search_nam = QtNetwork.QNetworkAccessManager(self)
+        self.owm_search_nam.finished.connect(self._handleOWMCitySearchResponse)
+        self._sap_discovery = None
+        self._aes67_saved = self._empty_aes67_snapshot()
+        self._aes67_seen_sap_ids: set[str] = set()
+        self._aes67_list_signature: tuple | None = None
+        self._aes67_ui_active = False
+        self._sap_poll_timer = QTimer(self)
+        self._sap_poll_timer.setInterval(AES67_SAP_POLL_MS)
+        self._sap_poll_timer.timeout.connect(self._on_sap_poll)
+        self.sigAes67StreamsChanged.connect(
+            self._on_sap_poll, Qt.ConnectionType.QueuedConnection
+        )
+        self._lw_discovery = None
+        self._lw_list_signature: tuple | None = None
+        self._lw_ui_active = False
+        self._lw_poll_timer = QTimer(self)
+        self._lw_poll_timer.setInterval(LIVEWIRE_ADV_POLL_MS)
+        self._lw_poll_timer.timeout.connect(self._on_lw_poll)
+        self.sigLivewireStreamsChanged.connect(
+            self._on_lw_poll, Qt.ConnectionType.QueuedConnection
+        )
         self._connectSlots()
         self.hide()
         # create settings object for use with OAC
@@ -227,11 +416,62 @@ class Settings(QWidget, Ui_Settings):
         self._setup_tooltips()
 
     def show_settings(self):
+        if self.isVisible():
+            self._bring_to_front()
+            return
         self.restoreSettingsFromConfig()
         self.sigConfigFinished.emit()
         self.show()
+        self._bring_to_front()
+
+    def _bring_to_front(self) -> None:
+        """Raise the settings window above other windows and give it focus."""
+        if self.isMinimized():
+            self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def _wrap_tabs_in_scroll_areas(self) -> None:
+        """Wrap each tab page so QTabWidget can shrink below the tallest page."""
+        for index in range(self.tabWidget.count()):
+            page = self.tabWidget.widget(index)
+            if page is self.tab_general:
+                continue
+            old_layout = page.layout()
+            if old_layout is None:
+                continue
+            container = QWidget()
+            container.setLayout(old_layout)
+            scroll = _ShrinkableScrollArea()
+            scroll.setWidget(container)
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QFrame.Shape.NoFrame)
+            scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+            new_layout = QVBoxLayout(page)
+            new_layout.setContentsMargins(0, 0, 0, 0)
+            new_layout.setSpacing(0)
+            new_layout.addWidget(scroll)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._sync_sap_discovery()
+        self._sync_livewire_discovery()
+
+    def hideEvent(self, event):
+        self._stop_sap_discovery()
+        self._stop_livewire_discovery()
+        super().hideEvent(event)
 
     def closeEvent(self, event):
+        self._stop_sap_discovery()
+        self._stop_livewire_discovery()
+        app = QCoreApplication.instance()
+        # QApplication.quit() closes this hidden top-level widget too.
+        # Re-applying settings here would restart MQTT/AES67 during shutdown.
+        if app is not None and app.closingDown():
+            return
         # emit config finished signal
         self.sigConfigFinished.emit()
         self.sigConfigClosed.emit()
@@ -298,19 +538,37 @@ class Settings(QWidget, Ui_Settings):
         self.SloganColor.clicked.connect(self.setSloganColor)
 
         self.owmTestAPI.clicked.connect(self.makeOWMTestCall)
+        self.owmCityFind.clicked.connect(self.searchOWMCity)
+        self.owmCitySearch.returnPressed.connect(self.searchOWMCity)
+        self.owmCityResults.currentIndexChanged.connect(self._onOWMCityResultChanged)
         self.updateCheckNowButton.clicked.connect(self.trigger_manual_check_for_updates)
 
         # MQTT checkbox connection
         self.enablemqtt.toggled.connect(self._on_mqtt_enabled_changed)
+        self.enableosc.toggled.connect(self._on_osc_enabled_changed)
 
-        self.SetFont_LED1.clicked.connect(self.setOASFontLED1)
-        self.SetFont_LED2.clicked.connect(self.setOASFontLED2)
-        self.SetFont_LED3.clicked.connect(self.setOASFontLED3)
-        self.SetFont_LED4.clicked.connect(self.setOASFontLED4)
-        self.SetFont_AIR1.clicked.connect(self.setOASFontAIR1)
-        self.SetFont_AIR2.clicked.connect(self.setOASFontAIR2)
-        self.SetFont_AIR3.clicked.connect(self.setOASFontAIR3)
-        self.SetFont_AIR4.clicked.connect(self.setOASFontAIR4)
+        # Audio meters
+        self.pushButton_AudioRefresh.clicked.connect(self.refresh_audio_input_devices)
+        self.pushButton_Aes67PasteSdp.clicked.connect(self._paste_aes67_sdp)
+        self.comboBox_Aes67Stream.currentIndexChanged.connect(self._on_aes67_stream_changed)
+        self.comboBox_LivewireStream.currentIndexChanged.connect(self._on_livewire_stream_changed)
+        self.spinBox_LivewireChannel.valueChanged.connect(self._on_livewire_channel_changed)
+        self.comboBox_LivewireIface.currentIndexChanged.connect(self._on_aoip_iface_changed)
+        self.checkBox_TooLoud.toggled.connect(self._on_tooloud_enabled_changed)
+        self.checkBox_Silence.toggled.connect(self._on_silence_enabled_changed)
+        self.checkBox_SilenceWarn.toggled.connect(self._on_silence_warn_changed)
+        self.checkBox_AudioMetersEnabled.toggled.connect(self._on_audio_meters_enabled_changed)
+        self.comboBox_AudioSource.currentIndexChanged.connect(self._on_audio_source_changed)
+        self.comboBox_TimeSource.currentIndexChanged.connect(self._on_time_source_changed)
+        self.comboBox_LtcInput.currentIndexChanged.connect(self._on_time_source_changed)
+        self.checkBox_NTPCheck.toggled.connect(self._on_time_source_changed)
+        self.checkBox_PeakHold.toggled.connect(self._on_peak_hold_changed)
+        self.comboBox_MeterLayout.currentIndexChanged.connect(self._on_meter_layout_changed)
+        self.comboBox_LufsReferencePreset.currentIndexChanged.connect(self._on_lufs_reference_preset_changed)
+        self.doubleSpinBox_LufsReference.valueChanged.connect(self._on_lufs_reference_value_changed)
+        self.comboBox_TooLoudAction.currentIndexChanged.connect(self._on_tooloud_action_changed)
+
+        self._connect_font_controls()
 
         self.AIR1IconSelectButton.clicked.connect(self.openAIR1IconPathSelector)
         self.AIR1IconResetButton.clicked.connect(self.resetAIR1Icon)
@@ -320,9 +578,6 @@ class Settings(QWidget, Ui_Settings):
         self.AIR3IconResetButton.clicked.connect(self.resetAIR3Icon)
         self.AIR4IconSelectButton.clicked.connect(self.openAIR4IconPathSelector)
         self.AIR4IconResetButton.clicked.connect(self.resetAIR4Icon)
-
-        self.SetFont_StationName.clicked.connect(self.setOASFontStationName)
-        self.SetFont_Slogan.clicked.connect(self.setOASFontSlogan)
 
     #        self.triggered.connect(self.closeEvent)
 
@@ -379,8 +634,8 @@ class Settings(QWidget, Ui_Settings):
         
         # List of all configuration groups
         groups = [
-            "General", "NTP", "LEDS", "LED1", "LED2", "LED3", "LED4",
-            "Clock", "Network", "Formatting", "WeatherWidget", "Timers", "Fonts"
+            "General", "NTP", "TimeSource", "LEDS", "LED1", "LED2", "LED3", "LED4",
+            "Clock", "Network", "OSC", "Formatting", "WeatherWidget", "Timers", "Fonts", "Audio"
         ]
         
         for group in groups:
@@ -394,9 +649,12 @@ class Settings(QWidget, Ui_Settings):
                 # Read each key's value
                 for key in keys:
                     value = settings.value(key)
-                    # Convert QVariant to Python type if needed
-                    if isinstance(value, QVariant):
-                        value = value.value()
+                    # Unwrap Qt value objects if QSettings still returns them
+                    if hasattr(value, "value") and not isinstance(value, (int, str, float, bool)):
+                        try:
+                            value = value.value()
+                        except TypeError:
+                            pass
                     group_dict[key] = value
             
             if group_dict:
@@ -634,6 +892,9 @@ class Settings(QWidget, Ui_Settings):
         self.owmUnit.addItems(ww.owm_units.keys())
 
         with settings_group(settings, "General"):
+            self.InstanceName.setText(
+                normalize_instance_name(settings.value('instancename', DEFAULT_INSTANCE_NAME))
+            )
             self.StationName.setText(settings.value('stationname', DEFAULT_STATION_NAME))
             self.Slogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
             self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
@@ -670,6 +931,8 @@ class Settings(QWidget, Ui_Settings):
         with settings_group(settings, "NTP"):
             self.checkBox_NTPCheck.setChecked(settings.value('ntpcheck', DEFAULT_NTP_CHECK, type=bool))
             self.NTPCheckServer.setText(settings.value('ntpcheckserver', DEFAULT_NTP_CHECK_SERVER))
+
+        self._restore_time_source_settings(settings)
 
         with settings_group(settings, "LEDS"):
             self.setLEDInactiveBGColor(self.getColorFromName(settings.value('inactivebgcolor', DEFAULT_LED_INACTIVE_BG_COLOR)))
@@ -736,6 +999,19 @@ class Settings(QWidget, Ui_Settings):
             self.mqttpassword.setEnabled(self.enablemqtt.isChecked())
             self.mqttdevicename.setEnabled(self.enablemqtt.isChecked())
 
+        with settings_group(settings, "OSC"):
+            self.enableosc.setChecked(settings.value('enableosc', DEFAULT_OSC_ENABLED, type=bool))
+            self.oscport.setText(str(settings.value('oscport', str(DEFAULT_OSC_PORT))))
+            self.oscsendhost.setText(settings.value('oscsendhost', DEFAULT_OSC_SEND_HOST, type=str) or "")
+            self.oscsendport.setText(str(settings.value('oscsendport', str(DEFAULT_OSC_SEND_PORT))))
+            osc_enabled = self.enableosc.isChecked()
+            self.oscport.setEnabled(osc_enabled)
+            self.oscsendhost.setEnabled(osc_enabled)
+            self.oscsendport.setEnabled(osc_enabled)
+            self.label_oscport.setEnabled(osc_enabled)
+            self.label_oscsendhost.setEnabled(osc_enabled)
+            self.label_oscsendport.setEnabled(osc_enabled)
+
         with settings_group(settings, "Formatting"):
             self.dateFormat.setText(settings.value('dateFormat', DEFAULT_DATE_FORMAT))
             self.textClockLanguage.setCurrentIndex(
@@ -749,12 +1025,16 @@ class Settings(QWidget, Ui_Settings):
             self.owmCityID.setText(settings.value('owmCityID', DEFAULT_WEATHER_CITY_ID))
             self.owmLanguage.setCurrentIndex(self.owmLanguage.findText(settings.value('owmLanguage', DEFAULT_WEATHER_LANGUAGE)))
             self.owmUnit.setCurrentIndex(self.owmUnit.findText(settings.value('owmUnit', DEFAULT_WEATHER_UNIT)))
-            self.owmAPIKey.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-            self.owmCityID.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-            self.owmLanguage.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-            self.owmUnit.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-            self.owmTestAPI.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
-            self.owmTestOutput.setEnabled(settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool))
+            owm_enabled = settings.value('owmWidgetEnabled', DEFAULT_WEATHER_WIDGET_ENABLED, type=bool)
+            self.owmAPIKey.setEnabled(owm_enabled)
+            self.owmCityID.setEnabled(owm_enabled)
+            self.owmCitySearch.setEnabled(owm_enabled)
+            self.owmCityFind.setEnabled(owm_enabled)
+            self.owmCityResults.setEnabled(owm_enabled)
+            self.owmLanguage.setEnabled(owm_enabled)
+            self.owmUnit.setEnabled(owm_enabled)
+            self.owmTestAPI.setEnabled(owm_enabled)
+            self.owmTestOutput.setEnabled(owm_enabled)
 
         with settings_group(settings, "Timers"):
             self.enableAIR1.setChecked(settings.value('TimerAIR1Enabled', True, type=bool))
@@ -765,6 +1045,7 @@ class Settings(QWidget, Ui_Settings):
             self.AIR2Text.setText(settings.value('TimerAIR2Text', DEFAULT_TIMER_AIR_TEXTS.get(2, 'Phone')))
             self.AIR3Text.setText(settings.value('TimerAIR3Text', DEFAULT_TIMER_AIR_TEXTS.get(3, 'Timer')))
             self.AIR4Text.setText(settings.value('TimerAIR4Text', DEFAULT_TIMER_AIR_TEXTS.get(4, 'Stream')))
+            self.TOTHTimerText.setText(settings.value('TimerTOTHText', DEFAULT_TOTH_TIMER_TEXT))
             self.setAIR1BGColor(self.getColorFromName(settings.value('AIR1activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
             self.setAIR1FGColor(self.getColorFromName(settings.value('AIR1activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR)))
             self.setAIR2BGColor(self.getColorFromName(settings.value('AIR2activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR)))
@@ -781,57 +1062,21 @@ class Settings(QWidget, Ui_Settings):
 
             self.AIRMinWidth.setValue(settings.value('TimerAIRMinWidth', DEFAULT_TIMER_AIR_MIN_WIDTH, type=int))
 
+        self._restore_audio_settings(settings)
+
         with settings_group(settings, "Fonts"):
-            self.ExampleFont_LED1.setFont(QFont(settings.value('LED1FontName', DEFAULT_FONT_NAME),
-                                                settings.value('LED1FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                                settings.value('LED1FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_LED2.setFont(QFont(settings.value('LED2FontName', DEFAULT_FONT_NAME),
-                                                settings.value('LED2FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                                settings.value('LED2FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_LED3.setFont(QFont(settings.value('LED3FontName', DEFAULT_FONT_NAME),
-                                                settings.value('LED3FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                                settings.value('LED3FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_LED4.setFont(QFont(settings.value('LED4FontName', DEFAULT_FONT_NAME),
-                                                settings.value('LED4FontSize', DEFAULT_FONT_SIZE_LED, type=int),
-                                                settings.value('LED4FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_AIR1.setFont(QFont(settings.value('AIR1FontName', DEFAULT_FONT_NAME),
-                                                settings.value('AIR1FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                                settings.value('AIR1FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_AIR2.setFont(QFont(settings.value('AIR2FontName', DEFAULT_FONT_NAME),
-                                                settings.value('AIR2FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                                settings.value('AIR2FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_AIR3.setFont(QFont(settings.value('AIR3FontName', DEFAULT_FONT_NAME),
-                                                settings.value('AIR3FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                                settings.value('AIR3FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_AIR4.setFont(QFont(settings.value('AIR4FontName', DEFAULT_FONT_NAME),
-                                                settings.value('AIR4FontSize', DEFAULT_FONT_SIZE_TIMER, type=int),
-                                                settings.value('AIR4FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_StationName.setFont(QFont(settings.value('StationNameFontName', DEFAULT_FONT_NAME),
-                                                       settings.value('StationNameFontSize', DEFAULT_FONT_SIZE_STATION, type=int),
-                                                       settings.value('StationNameFontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_Slogan.setFont(QFont(settings.value('SloganFontName', DEFAULT_FONT_NAME),
-                                                  settings.value('SloganFontSize', DEFAULT_FONT_SIZE_SLOGAN, type=int),
-                                                  settings.value('SloganFontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)))
-            self.ExampleFont_LED1.setText(f"{settings.value('LED1FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('LED1FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-            self.ExampleFont_LED2.setText(f"{settings.value('LED2FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('LED2FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-            self.ExampleFont_LED3.setText(f"{settings.value('LED3FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('LED3FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-            self.ExampleFont_LED4.setText(f"{settings.value('LED4FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('LED4FontSize', DEFAULT_FONT_SIZE_LED, type=int)}pt")
-            self.ExampleFont_AIR1.setText(f"{settings.value('AIR1FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('AIR1FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-            self.ExampleFont_AIR2.setText(f"{settings.value('AIR2FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('AIR2FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-            self.ExampleFont_AIR3.setText(f"{settings.value('AIR3FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('AIR3FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-            self.ExampleFont_AIR4.setText(f"{settings.value('AIR4FontName', DEFAULT_FONT_NAME)}, "
-                                          f"{settings.value('AIR4FontSize', DEFAULT_FONT_SIZE_TIMER, type=int)}pt")
-            self.ExampleFont_StationName.setText(f"{settings.value('StationNameFontName', DEFAULT_FONT_NAME)}, "
-                                                 f"{settings.value('StationNameFontSize', DEFAULT_FONT_SIZE_STATION, type=int)}pt")
-            self.ExampleFont_Slogan.setText(f"{settings.value('SloganFontName', DEFAULT_FONT_NAME)}, "
-                                            f"{settings.value('SloganFontSize', DEFAULT_FONT_SIZE_SLOGAN, type=int)}pt")
+            for prefix in FONT_ROW_PREFIXES:
+                family = resolve_font_name(settings.value(f"{prefix}FontName", DEFAULT_FONT_NAME))
+                size = settings.value(
+                    f"{prefix}FontSize", default_font_size_for_prefix(prefix), type=int
+                )
+                weight = settings.value(
+                    f"{prefix}FontWeight", DEFAULT_FONT_WEIGHT_BOLD, type=int
+                )
+                self._set_font_family_combo(prefix, family)
+                getattr(self, f"FontSize_{prefix}").setValue(int(size))
+                getattr(self, f"FontBold_{prefix}").setChecked(is_bold_font_weight(weight))
+                self._apply_font_preview(prefix)
 
     def getSettingsFromDialog(self):
         if self.oacmode:
@@ -840,12 +1085,15 @@ class Settings(QWidget, Ui_Settings):
             settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
 
         with settings_group(settings, "General"):
+            instance_name = normalize_instance_name(self.InstanceName.displayText())
+            self.InstanceName.setText(instance_name)
+            settings.setValue('instancename', instance_name)
             settings.setValue('stationname', self.StationName.displayText())
             settings.setValue('slogan', self.Slogan.displayText())
             settings.setValue('stationcolor', self.getStationNameColor().name())
             settings.setValue('slogancolor', self.getSloganColor().name())
             settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
-            settings.setValue('updatekey', self.updateKey.displayText())
+            settings.setValue('updatekey', self.updateKey.text())
             settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
             settings.setValue('replacenow', self.replaceNOW.isChecked())
             settings.setValue('replacenowtext', self.replaceNOWText.displayText())
@@ -854,6 +1102,34 @@ class Settings(QWidget, Ui_Settings):
         with settings_group(settings, "NTP"):
             settings.setValue('ntpcheck', self.checkBox_NTPCheck.isChecked())
             settings.setValue('ntpcheckserver', self.NTPCheckServer.displayText())
+
+        with settings_group(settings, "TimeSource"):
+            source = self.comboBox_TimeSource.currentData()
+            if source is None:
+                source = DEFAULT_TIME_SOURCE
+            settings.setValue('source', source)
+            iface = self.comboBox_PtpIface.currentData()
+            if iface is None:
+                iface = ""
+            settings.setValue('ptp_iface', iface)
+            settings.setValue('ptp_domain', int(self.spinBox_PtpDomain.value()))
+            port = self.comboBox_LtcPort.currentData()
+            if port is None:
+                port = ""
+            settings.setValue('ltc_port', port)
+            ltc_input = self.comboBox_LtcInput.currentData()
+            if ltc_input is None:
+                ltc_input = DEFAULT_LTC_INPUT
+            settings.setValue('ltc_input', ltc_input)
+            audio_device = self.comboBox_LtcAudioDevice.currentData()
+            if audio_device is None:
+                audio_device = ""
+            settings.setValue('ltc_audio_device', audio_device)
+            channel = self.comboBox_LtcChannel.currentData()
+            if channel is None:
+                channel = DEFAULT_LTC_AUDIO_CHANNEL
+            settings.setValue('ltc_audio_channel', int(channel))
+            settings.setValue('ltc_warn', self.checkBox_LtcWarn.isChecked())
 
         with settings_group(settings, "LEDS"):
             settings.setValue('inactivebgcolor', self.getLEDInactiveBGColor().name())
@@ -913,8 +1189,14 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('mqttserver', self.mqttserver.displayText())
             settings.setValue('mqttport', self.mqttport.displayText())
             settings.setValue('mqttuser', self.mqttuser.displayText())
-            settings.setValue('mqttpassword', self.mqttpassword.displayText())
+            settings.setValue('mqttpassword', self.mqttpassword.text())
             settings.setValue('mqttdevicename', self.mqttdevicename.displayText())
+
+        with settings_group(settings, "OSC"):
+            settings.setValue('enableosc', self.enableosc.isChecked())
+            settings.setValue('oscport', self.oscport.displayText())
+            settings.setValue('oscsendhost', self.oscsendhost.displayText())
+            settings.setValue('oscsendport', self.oscsendport.displayText())
 
         with settings_group(settings, "Formatting"):
             settings.setValue('dateFormat', self.dateFormat.displayText())
@@ -923,7 +1205,7 @@ class Settings(QWidget, Ui_Settings):
 
         with settings_group(settings, "WeatherWidget"):
             settings.setValue('owmWidgetEnabled', self.owmWidgetEnabled.isChecked())
-            settings.setValue('owmAPIKey', self.owmAPIKey.displayText())
+            settings.setValue('owmAPIKey', self.owmAPIKey.text())
             settings.setValue('owmCityID', self.owmCityID.displayText())
             settings.setValue('owmLanguage', self.owmLanguage.currentText())
             settings.setValue('owmUnit', self.owmUnit.currentText())
@@ -937,6 +1219,7 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('TimerAIR2Text', self.AIR2Text.text())
             settings.setValue('TimerAIR3Text', self.AIR3Text.text())
             settings.setValue('TimerAIR4Text', self.AIR4Text.text())
+            settings.setValue('TimerTOTHText', self.TOTHTimerText.text())
             settings.setValue('AIR1activebgcolor', self.getAIR1BGColor().name())
             settings.setValue('AIR1activetextcolor', self.getAIR1FGColor().name())
             settings.setValue('AIR2activebgcolor', self.getAIR2BGColor().name())
@@ -953,37 +1236,90 @@ class Settings(QWidget, Ui_Settings):
 
             settings.setValue('TimerAIRMinWidth', self.AIRMinWidth.value())
 
+        with settings_group(settings, "Audio"):
+            settings.setValue('enabled', self.checkBox_AudioMetersEnabled.isChecked())
+            source = self.comboBox_AudioSource.currentData()
+            if source is None:
+                source = DEFAULT_AUDIO_SOURCE
+            settings.setValue('source', source)
+            device_data = self.comboBox_AudioInput.currentData()
+            if device_data is None:
+                device_data = self.comboBox_AudioInput.currentText()
+            settings.setValue('input_device', device_data if device_data is not None else "")
+            settings.setValue('livewire_channel', int(self.spinBox_LivewireChannel.value()))
+            iface = self.comboBox_LivewireIface.currentData()
+            if iface is None:
+                iface = ""
+            settings.setValue('livewire_iface', iface)
+            snapshot = self._current_aes67_snapshot()
+            settings.setValue('aes67_id', snapshot.get("id") or "")
+            settings.setValue('aes67_addr', snapshot.get("addr") or "")
+            settings.setValue('aes67_port', int(snapshot.get("port") or DEFAULT_AUDIO_AES67_PORT))
+            settings.setValue('aes67_name', snapshot.get("name") or "")
+            settings.setValue('aes67_codec', snapshot.get("codec") or DEFAULT_AUDIO_AES67_CODEC)
+            settings.setValue('aes67_rate', int(snapshot.get("rate") or DEFAULT_AUDIO_AES67_RATE))
+            settings.setValue('aes67_channels', int(snapshot.get("channels") or DEFAULT_AUDIO_AES67_CHANNELS))
+            settings.setValue('aes67_manual', bool(snapshot.get("manual")))
+            unit_data = self.comboBox_AudioUnit.currentData()
+            if unit_data is None:
+                # Fallback from label
+                label = self.comboBox_AudioUnit.currentText()
+                unit_data = next((k for k, v in AUDIO_UNIT_LABELS.items() if v == label), DEFAULT_AUDIO_UNIT)
+            settings.setValue('unit', unit_data)
+            layout_data = self.comboBox_MeterLayout.currentData()
+            if layout_data is None:
+                layout_label = self.comboBox_MeterLayout.currentText()
+                layout_data = next(
+                    (k for k, v in AUDIO_LAYOUT_LABELS.items() if v == layout_label),
+                    DEFAULT_AUDIO_LAYOUT,
+                )
+            settings.setValue('layout', layout_data)
+            settings.setValue('tooloud', self.checkBox_TooLoud.isChecked())
+            settings.setValue('tooloudtext', self.TooLoudText.displayText())
+            settings.setValue('tooloud_threshold_dbtp', float(self.doubleSpinBox_TooLoudThreshold.value()))
+            action = self.comboBox_TooLoudAction.currentData()
+            if action is None:
+                action = DEFAULT_AUDIO_TOOLOUD_ACTION
+            settings.setValue('tooloud_action', action)
+            led_data = self.comboBox_TooLoudLED.currentData()
+            if led_data is None:
+                led_data = self.comboBox_TooLoudLED.currentIndex() + 1
+            settings.setValue('tooloud_led', int(led_data))
+            settings.setValue('silence', self.checkBox_Silence.isChecked())
+            settings.setValue('silence_warn', self.checkBox_SilenceWarn.isChecked())
+            settings.setValue('silence_on_absent', self.checkBox_SilenceOnAbsent.isChecked())
+            settings.setValue('silence_text', self.SilenceText.displayText())
+            settings.setValue(
+                'silence_threshold_dbfs', float(self.doubleSpinBox_SilenceThreshold.value())
+            )
+            settings.setValue(
+                'silence_duration_s', float(self.doubleSpinBox_SilenceDuration.value())
+            )
+            settings.setValue(
+                'silence_recovery_s', float(self.doubleSpinBox_SilenceRecovery.value())
+            )
+            settings.setValue('silence_http_url', self.SilenceHttpUrl.displayText().strip())
+            preset = self.comboBox_LufsReferencePreset.currentData()
+            if preset is None:
+                preset = DEFAULT_AUDIO_LUFS_REFERENCE_PRESET
+            settings.setValue('lufs_reference_preset', preset)
+            settings.setValue('lufs_reference', float(self.doubleSpinBox_LufsReference.value()))
+            settings.setValue('peak_hold', self.checkBox_PeakHold.isChecked())
+            settings.setValue('peak_hold_seconds', float(self.doubleSpinBox_PeakHoldSeconds.value()))
+            style = self.comboBox_DisplayStyle.currentData()
+            if style is None:
+                style = DEFAULT_AUDIO_DISPLAY_STYLE
+            settings.setValue('display_style', style)
+            settings.setValue('meter_width', int(self.spinBox_MeterWidth.value()))
+
         with settings_group(settings, "Fonts"):
-            settings.setValue("LED1FontName", self.ExampleFont_LED1.font().family())
-            settings.setValue("LED1FontSize", self.ExampleFont_LED1.font().pointSize())
-            settings.setValue("LED1FontWeight", self.ExampleFont_LED1.font().weight())
-            settings.setValue("LED2FontName", self.ExampleFont_LED2.font().family())
-            settings.setValue("LED2FontSize", self.ExampleFont_LED2.font().pointSize())
-            settings.setValue("LED2FontWeight", self.ExampleFont_LED2.font().weight())
-            settings.setValue("LED3FontName", self.ExampleFont_LED3.font().family())
-            settings.setValue("LED3FontSize", self.ExampleFont_LED3.font().pointSize())
-            settings.setValue("LED3FontWeight", self.ExampleFont_LED3.font().weight())
-            settings.setValue("LED4FontName", self.ExampleFont_LED4.font().family())
-            settings.setValue("LED4FontSize", self.ExampleFont_LED4.font().pointSize())
-            settings.setValue("LED4FontWeight", self.ExampleFont_LED4.font().weight())
-            settings.setValue("AIR1FontName", self.ExampleFont_AIR1.font().family())
-            settings.setValue("AIR1FontSize", self.ExampleFont_AIR1.font().pointSize())
-            settings.setValue("AIR1FontWeight", self.ExampleFont_AIR1.font().weight())
-            settings.setValue("AIR2FontName", self.ExampleFont_AIR2.font().family())
-            settings.setValue("AIR2FontSize", self.ExampleFont_AIR2.font().pointSize())
-            settings.setValue("AIR2FontWeight", self.ExampleFont_AIR2.font().weight())
-            settings.setValue("AIR3FontName", self.ExampleFont_AIR3.font().family())
-            settings.setValue("AIR3FontSize", self.ExampleFont_AIR3.font().pointSize())
-            settings.setValue("AIR3FontWeight", self.ExampleFont_AIR3.font().weight())
-            settings.setValue("AIR4FontName", self.ExampleFont_AIR4.font().family())
-            settings.setValue("AIR4FontSize", self.ExampleFont_AIR4.font().pointSize())
-            settings.setValue("AIR4FontWeight", self.ExampleFont_AIR4.font().weight())
-            settings.setValue("StationNameFontName", self.ExampleFont_StationName.font().family())
-            settings.setValue("StationNameFontSize", self.ExampleFont_StationName.font().pointSize())
-            settings.setValue("StationNameFontWeight", self.ExampleFont_StationName.font().weight())
-            settings.setValue("SloganFontName", self.ExampleFont_Slogan.font().family())
-            settings.setValue("SloganFontSize", self.ExampleFont_Slogan.font().pointSize())
-            settings.setValue("SloganFontWeight", self.ExampleFont_Slogan.font().weight())
+            for prefix in FONT_ROW_PREFIXES:
+                family = getattr(self, f"FontFamily_{prefix}").currentFont().family()
+                size = getattr(self, f"FontSize_{prefix}").value()
+                weight = font_weight_from_bold(getattr(self, f"FontBold_{prefix}").isChecked())
+                settings.setValue(f"{prefix}FontName", family)
+                settings.setValue(f"{prefix}FontSize", size)
+                settings.setValue(f"{prefix}FontWeight", weight)
 
         if self.oacmode:
             # send oac a signal the the config has changed
@@ -1017,7 +1353,7 @@ class Settings(QWidget, Ui_Settings):
     def check_for_updates(self):
         if self.checkBox_UpdateCheck.isChecked():
             logger.info("Starting update check")
-            update_key = self.updateKey.displayText()
+            update_key = self.updateKey.text()
             if len(update_key) == 50:
                 logger.debug(f"Update check parameters: version={versionString}, distribution={distributionString}, include_beta={self.checkBox_IncludeBetaVersions.isChecked()}")
                 data = QUrlQuery()
@@ -1123,8 +1459,117 @@ class Settings(QWidget, Ui_Settings):
                 self.error_dialog.setWindowTitle("Update Check Error")
                 self.error_dialog.showMessage(error_string, 'UpdateCheckError')
 
+    def searchOWMCity(self):
+        """Search OpenWeatherMap geocoding for the typed city name."""
+        query = self.owmCitySearch.displayText().strip()
+        appid = self.owmAPIKey.text().strip()
+        if not appid:
+            self.owmTestOutput.setPlainText("Enter an OpenWeatherMap API key first.")
+            return
+        if not query:
+            self.owmTestOutput.setPlainText("Enter a city name to search.")
+            return
+
+        url = QUrl("https://api.openweathermap.org/geo/1.0/direct")
+        url_query = QUrlQuery()
+        url_query.addQueryItem("q", query)
+        url_query.addQueryItem("limit", "5")
+        url_query.addQueryItem("appid", appid)
+        url.setQuery(url_query)
+
+        req = QtNetwork.QNetworkRequest(url)
+        req.setAttribute(QtNetwork.QNetworkRequest.Attribute.User, {"kind": "geocode"})
+        self.owm_search_nam.get(req)
+
+    def _onOWMCityResultChanged(self, index: int) -> None:
+        """Resolve the selected geocoding result to an OpenWeatherMap city ID."""
+        data = self.owmCityResults.itemData(index)
+        if not isinstance(data, dict):
+            return
+        city_id = data.get("id")
+        if city_id:
+            self.owmCityID.setText(str(city_id))
+            return
+        lat = data.get("lat")
+        lon = data.get("lon")
+        if lat is None or lon is None:
+            return
+        appid = self.owmAPIKey.text().strip()
+        if not appid:
+            self.owmTestOutput.setPlainText("Enter an OpenWeatherMap API key first.")
+            return
+
+        url = QUrl("https://api.openweathermap.org/data/2.5/weather")
+        url_query = QUrlQuery()
+        url_query.addQueryItem("lat", str(lat))
+        url_query.addQueryItem("lon", str(lon))
+        url_query.addQueryItem("appid", appid)
+        url.setQuery(url_query)
+
+        req = QtNetwork.QNetworkRequest(url)
+        req.setAttribute(
+            QtNetwork.QNetworkRequest.Attribute.User,
+            {"kind": "cityid", "index": index},
+        )
+        self.owm_search_nam.get(req)
+
+    def _handleOWMCitySearchResponse(self, reply) -> None:
+        """Handle geocoding and city-ID lookup replies for the settings search."""
+        meta = reply.request().attribute(QtNetwork.QNetworkRequest.Attribute.User)
+        kind = meta.get("kind") if isinstance(meta, dict) else None
+        if kind is None:
+            path = reply.url().path()
+            if "geo/1.0/direct" in path:
+                kind = "geocode"
+            elif "data/2.5/weather" in path:
+                kind = "cityid"
+        er = reply.error()
+        if er != QtNetwork.QNetworkReply.NetworkError.NoError:
+            error_string = f"Error occurred: {er}, {reply.errorString()}"
+            logger.error(f"OWM city search network error: {error_string}")
+            self.owmTestOutput.setPlainText(error_string)
+            return
+
+        bytes_string = reply.readAll()
+        payload = str(bytes_string, "utf-8")
+        if kind == "geocode":
+            self._applyOWMGeocodeResults(payload)
+        elif kind == "cityid":
+            index = meta.get("index") if isinstance(meta, dict) else None
+            self._applyOWMCityIdResult(payload, index)
+
+    def _applyOWMGeocodeResults(self, payload: str) -> None:
+        """Fill the city results combo from a geocoding JSON payload."""
+        results = parse_owm_geocode_results(payload)
+        self.owmCityResults.blockSignals(True)
+        self.owmCityResults.clear()
+        if not results:
+            self.owmCityResults.addItem("No cities found", None)
+            self.owmCityResults.blockSignals(False)
+            self.owmTestOutput.setPlainText("No cities found.")
+            return
+        for label, coords in results:
+            self.owmCityResults.addItem(label, coords)
+        self.owmCityResults.setCurrentIndex(0)
+        self.owmCityResults.blockSignals(False)
+        self._onOWMCityResultChanged(0)
+
+    def _applyOWMCityIdResult(self, payload: str, index) -> None:
+        """Write the resolved city ID into the City ID field."""
+        city_id = extract_owm_city_id(payload)
+        if not city_id:
+            self.owmTestOutput.setPlainText("Could not resolve city ID for the selected location.")
+            return
+        if isinstance(index, int) and 0 <= index < self.owmCityResults.count():
+            data = self.owmCityResults.itemData(index)
+            if isinstance(data, dict):
+                data = dict(data)
+                data["id"] = city_id
+                self.owmCityResults.setItemData(index, data)
+        self.owmCityID.setText(city_id)
+
     def makeOWMTestCall(self):
-        appid = self.owmAPIKey.displayText()
+        appid = self.owmAPIKey.text()
         cityID = self.owmCityID.displayText()
         units = ww.owm_units.get(self.owmUnit.currentText())
         lang = ww.owm_languages.get(self.owmLanguage.currentText())
@@ -1291,30 +1736,22 @@ class Settings(QWidget, Ui_Settings):
         self.AIR4Demo.setPalette(palette)
 
     def setStationNameColor(self, newcolor=False):
-        palette = self.StationNameDemo.palette()
-        oldcolor = palette.windowText().color()
+        oldcolor = QColor(self._station_name_color)
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
-        self.StationNameDemo.setPalette(palette)
+        self._station_name_color = QColor(newcolor)
 
     def setSloganColor(self, newcolor=False):
-        palette = self.SloganDemo.palette()
-        oldcolor = palette.windowText().color()
+        oldcolor = QColor(self._slogan_color)
         if not newcolor:
             newcolor = self.openColorDialog(oldcolor)
-        palette.setColor(QPalette.ColorRole.WindowText, newcolor)
-        self.SloganDemo.setPalette(palette)
+        self._slogan_color = QColor(newcolor)
 
     def getStationNameColor(self):
-        palette = self.StationNameDemo.palette()
-        color = palette.windowText().color()
-        return color
+        return QColor(self._station_name_color)
 
     def getSloganColor(self):
-        palette = self.SloganDemo.palette()
-        color = palette.windowText().color()
-        return color
+        return QColor(self._slogan_color)
 
     def getLEDInactiveBGColor(self):
         palette = self.LEDInactive.palette()
@@ -1499,59 +1936,43 @@ class Settings(QWidget, Ui_Settings):
         self.radioButton_logo_upper.setChecked(state)
         self.radioButton_logo_lower.setChecked(not state)
 
-    def _set_font_for_widget(self, widget_name: str) -> None:
-        """
-        Generic method to set font for a widget
-        
-        Args:
-            widget_name: Name of the widget (e.g., 'ExampleFont_LED1')
-        """
-        widget = getattr(self, widget_name)
-        current_font = widget.font()
-        new_font, ok = QFontDialog.getFont(current_font)
-        if ok:
-            widget.setFont(new_font)
-            widget.setText(f"{new_font.family()}, {new_font.pointSize()}pt")
+    def _connect_font_controls(self) -> None:
+        """Connect Fonts-tab combo, size, bold, and reset widgets."""
+        for prefix in FONT_ROW_PREFIXES:
+            getattr(self, f"FontFamily_{prefix}").currentFontChanged.connect(
+                lambda _font, p=prefix: self._apply_font_preview(p)
+            )
+            getattr(self, f"FontSize_{prefix}").valueChanged.connect(
+                lambda _value, p=prefix: self._apply_font_preview(p)
+            )
+            getattr(self, f"FontBold_{prefix}").toggled.connect(
+                lambda _checked, p=prefix: self._apply_font_preview(p)
+            )
+            getattr(self, f"ResetFont_{prefix}").clicked.connect(
+                lambda _checked=False, p=prefix: self._reset_font_row(p)
+            )
 
-    def setOASFontLED1(self):
-        """Set font for LED1"""
-        self._set_font_for_widget('ExampleFont_LED1')
+    def _set_font_family_combo(self, prefix: str, family: str) -> None:
+        """Select a family in the row combo, adding it if Qt does not list it yet."""
+        combo = getattr(self, f"FontFamily_{prefix}")
+        if combo.findText(family) < 0:
+            combo.addItem(family)
+        combo.setCurrentFont(QFont(family))
 
-    def setOASFontLED2(self):
-        """Set font for LED2"""
-        self._set_font_for_widget('ExampleFont_LED2')
+    def _apply_font_preview(self, prefix: str) -> None:
+        """Apply the current family, size, and bold to the preview label."""
+        family = getattr(self, f"FontFamily_{prefix}").currentFont().family()
+        size = getattr(self, f"FontSize_{prefix}").value()
+        bold = getattr(self, f"FontBold_{prefix}").isChecked()
+        preview = getattr(self, f"ExampleFont_{prefix}")
+        preview.setFont(QFont(family, size, qfont_weight_from_stored(font_weight_from_bold(bold))))
 
-    def setOASFontLED3(self):
-        """Set font for LED3"""
-        self._set_font_for_widget('ExampleFont_LED3')
-
-    def setOASFontLED4(self):
-        """Set font for LED4"""
-        self._set_font_for_widget('ExampleFont_LED4')
-
-    def setOASFontAIR1(self):
-        """Set font for AIR1"""
-        self._set_font_for_widget('ExampleFont_AIR1')
-
-    def setOASFontAIR2(self):
-        """Set font for AIR2"""
-        self._set_font_for_widget('ExampleFont_AIR2')
-
-    def setOASFontAIR3(self):
-        """Set font for AIR3"""
-        self._set_font_for_widget('ExampleFont_AIR3')
-
-    def setOASFontAIR4(self):
-        """Set font for AIR4"""
-        self._set_font_for_widget('ExampleFont_AIR4')
-
-    def setOASFontStationName(self):
-        """Set font for Station Name"""
-        self._set_font_for_widget('ExampleFont_StationName')
-
-    def setOASFontSlogan(self):
-        """Set font for Slogan"""
-        self._set_font_for_widget('ExampleFont_Slogan')
+    def _reset_font_row(self, prefix: str) -> None:
+        """Reset one Fonts-tab row to Roboto, default size, and bold."""
+        self._set_font_family_combo(prefix, DEFAULT_FONT_NAME)
+        getattr(self, f"FontSize_{prefix}").setValue(default_font_size_for_prefix(prefix))
+        getattr(self, f"FontBold_{prefix}").setChecked(True)
+        self._apply_font_preview(prefix)
 
     def openAIR1IconPathSelector(self):
         filename = QFileDialog.getOpenFileName(self, "Open File", "", "Image Files (*.png)")[0]
@@ -1605,20 +2026,57 @@ class Settings(QWidget, Ui_Settings):
         in the settings dialog to improve user experience.
         """
         # General settings
+        self.InstanceName.setToolTip(
+            "Location of this OnAirScreen, e.g. Studio-1 or Studio-1-Outside. "
+            "1-32 characters: letters, digits, and hyphens; must start and end with a letter or digit."
+        )
         self.StationName.setToolTip("Enter the name of your radio station")
         self.Slogan.setToolTip("Enter your station's slogan or tagline")
         self.StationNameColor.setToolTip("Click to select the color for the station name")
         self.SloganColor.setToolTip("Click to select the color for the slogan")
         self.checkBox_UpdateCheck.setToolTip("Enable automatic update checking on startup")
-        self.updateKey.setToolTip("Enter your update key for automatic updates (if applicable)")
+        self.updateKey.setToolTip(
+            "Enter your update key for automatic updates (if applicable). "
+            "Masked; use the slashed-eye icon to show it."
+        )
         self.checkBox_IncludeBetaVersions.setToolTip("Include beta versions when checking for updates")
         self.updateCheckNowButton.setToolTip("Manually check for updates now")
         self.replaceNOW.setToolTip("Replace the 'NOW' text with custom text after 10 seconds")
         self.replaceNOWText.setToolTip("Custom text to display after IP addresses are shown")
         
-        # NTP settings
-        self.checkBox_NTPCheck.setToolTip("Enable NTP (Network Time Protocol) synchronization check")
-        self.NTPCheckServer.setToolTip("NTP server address to check time synchronization against")
+        # NTP / Time Source settings
+        self.checkBox_NTPCheck.setToolTip(
+            "Warn if the display clock diverges from the NTP server (also used when Local or PTP is selected)"
+        )
+        self.NTPCheckServer.setToolTip(
+            "NTP server for the time source 'NTP Server' and for the NTP check. "
+            "pool.ntp.org can be unreliable; a local studio NTP server is recommended."
+        )
+        self.comboBox_TimeSource.setToolTip(
+            "Clock time source. Local uses the system clock. NTP and PTP steer an independent clock "
+            "and do not change the operating-system time. LTC follows a serial LBE-1110 reader or "
+            "SMPTE LTC decoded from a local audio input."
+        )
+        self.comboBox_PtpIface.setToolTip(
+            "Network interface for PTPv2 multicast (independent of the AoIP interface)"
+        )
+        self.spinBox_PtpDomain.setToolTip("IEEE 1588 PTP domain number (0–255, default 0)")
+        self.comboBox_LtcPort.setToolTip(
+            "USB serial port of the LBE-1110 LTC reader. Auto picks a Leo Bodnar / CDC device."
+        )
+        self.comboBox_LtcInput.setToolTip(
+            "LTC input: Leo Bodnar LBE-1110 USB serial, or SMPTE LTC decoded from a local audio device"
+        )
+        self.comboBox_LtcAudioDevice.setToolTip(
+            "Local PortAudio capture device for LTC (independent of Audio Meters). "
+            "Using the same device for both may fail on some hosts."
+        )
+        self.comboBox_LtcChannel.setToolTip("Audio channel that carries LTC (Left or Right)")
+        self.checkBox_LtcWarn.setToolTip(
+            "Show a WARN message when LTC drops (waiting for lock, not connected, or not synchronized). "
+            "Off by default so scrubbing or editing does not flood WARN. "
+            "The LTC NOT LOCKED LED always stays active."
+        )
         
         # LED settings (inactive)
         self.LEDInactiveBGColor.setToolTip("Background color for inactive LEDs")
@@ -1660,8 +2118,22 @@ class Settings(QWidget, Ui_Settings):
         self.mqttserver.setToolTip("MQTT broker hostname or IP address")
         self.mqttport.setToolTip("MQTT broker port (default: 1883)")
         self.mqttuser.setToolTip("MQTT username (optional)")
-        self.mqttpassword.setToolTip("MQTT password (optional)")
+        self.mqttpassword.setToolTip(
+            "MQTT password (optional). Masked; use the slashed-eye icon to show it."
+        )
         self.mqttdevicename.setToolTip("MQTT device name (default: OnAirScreen)")
+
+        # OSC settings
+        self.enableosc.setToolTip(
+            "Enable OSC remote control (listen port plus optional status push to Companion)"
+        )
+        self.oscport.setToolTip("UDP port for receiving OSC commands (default: 8000)")
+        self.oscsendhost.setToolTip(
+            "Destination host for OSC status push (Companion IP). Leave empty for receive/query only"
+        )
+        self.oscsendport.setToolTip(
+            "Destination UDP port for OSC status push (Companion feedback port, default: 9000)"
+        )
         
         # Formatting settings
         self.dateFormat.setToolTip("Date format string (e.g., 'dddd, dd. MMMM yyyy' for 'Monday, 01. January 2024')")
@@ -1671,20 +2143,68 @@ class Settings(QWidget, Ui_Settings):
         
         # Weather Widget settings
         self.owmWidgetEnabled.setToolTip("Enable the weather widget display")
-        self.owmAPIKey.setToolTip("OpenWeatherMap API key (get one at openweathermap.org)")
-        self.owmCityID.setToolTip("OpenWeatherMap City ID (find your city ID on openweathermap.org)")
+        self.owmAPIKey.setToolTip(
+            "OpenWeatherMap API key (get one at openweathermap.org). "
+            "Masked; use the slashed-eye icon to show it."
+        )
+        self.owmCityID.setToolTip("OpenWeatherMap City ID; use Find to look it up by city name")
+        self.owmCitySearch.setToolTip("Type a city name and press Find or Return to search OpenWeatherMap")
+        self.owmCityFind.setToolTip("Search OpenWeatherMap for matching cities")
+        self.owmCityResults.setToolTip("Select a search result to fill the City ID")
         self.owmLanguage.setToolTip("Language for weather descriptions")
         self.owmUnit.setToolTip("Temperature unit (Celsius, Fahrenheit, or Kelvin)")
         self.owmTestAPI.setToolTip("Test the OpenWeatherMap API connection with current settings")
-        
-    def _on_mqtt_enabled_changed(self, enabled: bool) -> None:
-        """Handle MQTT enabled checkbox state change"""
-        self.mqttserver.setEnabled(enabled)
-        self.mqttport.setEnabled(enabled)
-        self.mqttuser.setEnabled(enabled)
-        self.mqttpassword.setEnabled(enabled)
-        self.mqttdevicename.setEnabled(enabled)
-        
+
+        # Audio meter settings
+        self.checkBox_AudioMetersEnabled.setToolTip("Show stereo audio meters on the left side of the main screen")
+        self.comboBox_AudioSource.setToolTip(
+            "Meter audio source: local PortAudio input, Axia Livewire, or AES67 (SAP)"
+        )
+        self.comboBox_AudioInput.setToolTip("Select the live audio input device used for metering")
+        self.pushButton_AudioRefresh.setToolTip("Refresh the list of available audio input devices")
+        self.spinBox_LivewireChannel.setToolTip(
+            "Livewire channel number (1–32767). Multicast = 239.192.0.0 + channel"
+        )
+        self.comboBox_LivewireStream.setToolTip(
+            "Announced Livewire sources (live while Settings are open). "
+            "Pick a source or type a channel number below"
+        )
+        self.label_LivewireStream.setToolTip(
+            "Announced Livewire sources on the selected AoIP interface"
+        )
+        self.comboBox_LivewireIface.setToolTip(
+            "Network interface for Livewire/AES67 IGMP join (Default uses the system route)"
+        )
+        self.label_LivewireIface.setToolTip(
+            "Network interface for Livewire/AES67 IGMP join (Default uses the system route)"
+        )
+        self.comboBox_Aes67Stream.setToolTip(
+            "AES67 stream: None, live SAP on 239.255.255.255 and 224.2.127.254 (updates when streams change), or pasted SDP"
+        )
+        self.pushButton_Aes67PasteSdp.setToolTip(
+            "Paste an SDP announcement if the device does not advertise via SAP"
+        )
+        self.comboBox_AudioUnit.setToolTip(
+            "L/R display unit: dBFS, dBTP, or BBC PPM (PPM is only available in the L/R layout)"
+        )
+        self.comboBox_MeterLayout.setToolTip(
+            "Show stereo L/R bars, a programme LUFS bar, or both"
+        )
+        self.comboBox_DisplayStyle.setToolTip("Meter fill style: solid continuous or bargraph (1px segments)")
+        self.spinBox_MeterWidth.setToolTip("Overall meter width in pixels; wider values make both L/R bars thicker")
+        self.label_MeterWidth.setToolTip("Overall meter width in pixels; wider values make both L/R bars thicker")
+        self.checkBox_TooLoud.setToolTip("Show a warning when true peak exceeds the configured dBTP threshold")
+        self.TooLoudText.setToolTip("Warning message shown when TooLoud is triggered")
+        self.doubleSpinBox_TooLoudThreshold.setToolTip("True-peak threshold in dBTP (typical broadcast headroom: -1.0)")
+        self.comboBox_LufsReferencePreset.setToolTip("Loudness target preset (EBU R128, ATSC A/85, AES, or Custom)")
+        self.doubleSpinBox_LufsReference.setToolTip("LUFS/LKFS reference target shown as a peg on the meter")
+        self.label_LufsReference.setToolTip("Loudness reference target for the LUFS meter scale")
+        self.checkBox_PeakHold.setToolTip("Show a white peak marker that holds the highest meter reading")
+        self.doubleSpinBox_PeakHoldSeconds.setToolTip("How long the peak marker holds before falling back to the current level")
+        self.label_PeakHoldSeconds.setToolTip("Peak hold duration in seconds")
+        self.comboBox_TooLoudAction.setToolTip("TooLoud action: show warning text or trigger an LED")
+        self.comboBox_TooLoudLED.setToolTip("Which LED (1-4) to activate when TooLoud triggers in LED mode")
+
         # Timer/AIR settings
         for air_num in range(1, 5):
             getattr(self, f'enableAIR{air_num}').setToolTip(f"Enable or disable AIR{air_num} timer display")
@@ -1694,31 +2214,977 @@ class Settings(QWidget, Ui_Settings):
             getattr(self, f'AIR{air_num}IconPath').setToolTip(f"Path to icon image for AIR{air_num}")
             getattr(self, f'AIR{air_num}IconSelectButton').setToolTip(f"Browse for an icon image for AIR{air_num}")
             getattr(self, f'AIR{air_num}IconResetButton').setToolTip(f"Reset AIR{air_num} icon to default")
-        
+
         self.AIRMinWidth.setToolTip("Minimum width for AIR timer displays (in pixels)")
-        
+        self.TOTHTimerText.setToolTip(
+            "Label shown on AIR3 while the top-of-hour countdown is active"
+        )
+        self.label_TOTHTimerText.setToolTip(
+            "Label shown on AIR3 while the top-of-hour countdown is active"
+        )
+
         # Font settings
-        self.SetFont_LED1.setToolTip("Set font for LED1 text")
-        self.SetFont_LED2.setToolTip("Set font for LED2 text")
-        self.SetFont_LED3.setToolTip("Set font for LED3 text")
-        self.SetFont_LED4.setToolTip("Set font for LED4 text")
-        self.SetFont_AIR1.setToolTip("Set font for AIR1 timer text")
-        self.SetFont_AIR2.setToolTip("Set font for AIR2 timer text")
-        self.SetFont_AIR3.setToolTip("Set font for AIR3 timer text")
-        self.SetFont_AIR4.setToolTip("Set font for AIR4 timer text")
-        self.SetFont_StationName.setToolTip("Set font for station name")
-        self.SetFont_Slogan.setToolTip("Set font for slogan")
-        
+        for prefix in FONT_ROW_PREFIXES:
+            getattr(self, f"FontFamily_{prefix}").setToolTip(f"Font family for {prefix}")
+            getattr(self, f"FontSize_{prefix}").setToolTip(f"Font size for {prefix} in points")
+            getattr(self, f"FontBold_{prefix}").setToolTip(f"Use bold weight for {prefix}")
+            getattr(self, f"ResetFont_{prefix}").setToolTip(
+                f"Reset {prefix} to {DEFAULT_FONT_NAME}, default size, bold"
+            )
+
         # Action buttons
         self.ApplyButton.setToolTip("Apply all settings and close the dialog")
         self.CloseButton.setToolTip("Close the settings dialog without applying changes")
         self.ExitButton.setToolTip("Exit OnAirScreen application")
         self.ResetSettingsButton.setToolTip("Reset all settings to default values (this cannot be undone)")
-        
+
         # Preset management tooltips
         self.SaveSettingsButton.setToolTip("Save current configuration as a preset")
         self.LoadSettingsButton.setToolTip("Load a saved preset configuration")
         self.DeleteSettingsButton.setToolTip("Delete a saved preset")
+        
+    def _on_mqtt_enabled_changed(self, enabled: bool) -> None:
+        """Handle MQTT enabled checkbox state change"""
+        self.mqttserver.setEnabled(enabled)
+        self.mqttport.setEnabled(enabled)
+        self.mqttuser.setEnabled(enabled)
+        self.mqttpassword.setEnabled(enabled)
+        self.mqttdevicename.setEnabled(enabled)
+
+    def _on_osc_enabled_changed(self, enabled: bool) -> None:
+        """Handle OSC enabled checkbox state change"""
+        self.oscport.setEnabled(enabled)
+        self.oscsendhost.setEnabled(enabled)
+        self.oscsendport.setEnabled(enabled)
+        self.label_oscport.setEnabled(enabled)
+        self.label_oscsendhost.setEnabled(enabled)
+        self.label_oscsendport.setEnabled(enabled)
+
+    def _on_audio_meters_enabled_changed(self, enabled: bool) -> None:
+        """Enable/disable meter-related controls."""
+        self.comboBox_AudioSource.setEnabled(enabled)
+        self.label_AudioSource.setEnabled(enabled)
+        self.comboBox_MeterLayout.setEnabled(enabled)
+        self.label_MeterLayout.setEnabled(enabled)
+        self.comboBox_DisplayStyle.setEnabled(enabled)
+        self.label_DisplayStyle.setEnabled(enabled)
+        self.spinBox_MeterWidth.setEnabled(enabled)
+        self.label_MeterWidth.setEnabled(enabled)
+        self._update_meter_layout_controls(enabled)
+        self._update_audio_source_controls(enabled)
+
+    def _on_meter_layout_changed(self, _index: int = 0) -> None:
+        """Refresh unit / LUFS / peak-hold enablement when layout changes."""
+        enabled = self.checkBox_AudioMetersEnabled.isChecked()
+        self._update_meter_layout_controls(enabled)
+
+    def _current_meter_layout(self) -> str:
+        layout = self.comboBox_MeterLayout.currentData()
+        if layout is None:
+            return DEFAULT_AUDIO_LAYOUT
+        return normalize_meter_layout(str(layout))
+
+    def _update_meter_layout_controls(self, meters_enabled: bool) -> None:
+        """Enable Display Unit, LUFS reference, and Peak Hold based on layout."""
+        layout = self._current_meter_layout()
+        show_lr = layout in ("lr", "both")
+        show_lufs = layout in ("lufs", "both")
+        self.comboBox_AudioUnit.setEnabled(meters_enabled and show_lr)
+        self.label_AudioUnit.setEnabled(meters_enabled and show_lr)
+        self.comboBox_LufsReferencePreset.setEnabled(meters_enabled and show_lufs)
+        self.doubleSpinBox_LufsReference.setEnabled(meters_enabled and show_lufs)
+        self.label_LufsReference.setEnabled(meters_enabled and show_lufs)
+        self.checkBox_PeakHold.setEnabled(meters_enabled and show_lr)
+        self._on_peak_hold_changed(self.checkBox_PeakHold.isChecked() and meters_enabled and show_lr)
+
+        unit = self.comboBox_AudioUnit.currentData()
+        if layout == "both" and unit == "bbc_ppm":
+            index = self.comboBox_AudioUnit.findData(DEFAULT_AUDIO_UNIT)
+            if index >= 0:
+                self.comboBox_AudioUnit.setCurrentIndex(index)
+
+        for i in range(self.comboBox_AudioUnit.count()):
+            key = self.comboBox_AudioUnit.itemData(i)
+            model = self.comboBox_AudioUnit.model()
+            index = model.index(i, 0)
+            if not index.isValid():
+                continue
+            enabled_flag = not (layout == "both" and key == "bbc_ppm")
+            item = getattr(model, "item", lambda _i: None)(i)
+            if item is not None:
+                item.setEnabled(enabled_flag)
+
+    def _on_audio_source_changed(self, _index: int = 0) -> None:
+        """Show local / Livewire / AES67 controls based on selected source."""
+        enabled = self.checkBox_AudioMetersEnabled.isChecked()
+        self._update_audio_source_controls(enabled)
+
+    def _update_audio_source_controls(self, meters_enabled: bool) -> None:
+        """Enable local device, Livewire, or AES67 fields depending on source."""
+        source = self.comboBox_AudioSource.currentData()
+        if source is None:
+            source = DEFAULT_AUDIO_SOURCE
+        use_livewire = source == "livewire"
+        use_aes67 = source == "aes67"
+        use_aoip = use_livewire or use_aes67
+        self.comboBox_AudioInput.setEnabled(meters_enabled and not use_aoip)
+        self.pushButton_AudioRefresh.setEnabled(meters_enabled and not use_aoip)
+        self.label_AudioInput.setEnabled(meters_enabled and not use_aoip)
+        self.spinBox_LivewireChannel.setEnabled(meters_enabled and use_livewire)
+        self.label_LivewireChannel.setEnabled(meters_enabled and use_livewire)
+        self.comboBox_LivewireStream.setEnabled(meters_enabled and use_livewire)
+        self.label_LivewireStream.setEnabled(meters_enabled and use_livewire)
+        self.comboBox_LivewireIface.blockSignals(True)
+        self.comboBox_LivewireIface.setEnabled(meters_enabled and use_aoip)
+        self.comboBox_LivewireIface.blockSignals(False)
+        self.label_LivewireIface.setEnabled(meters_enabled and use_aoip)
+        self.comboBox_Aes67Stream.setEnabled(meters_enabled and use_aes67)
+        self.label_Aes67Stream.setEnabled(meters_enabled and use_aes67)
+        self.pushButton_Aes67PasteSdp.setEnabled(meters_enabled and use_aes67)
+        self._sync_sap_discovery()
+        self._sync_livewire_discovery()
+
+    def _on_peak_hold_changed(self, _checked: bool = True) -> None:
+        """Enable duration spin box only when peak hold and meters are on."""
+        use_hold = self.checkBox_AudioMetersEnabled.isChecked() and self.checkBox_PeakHold.isChecked()
+        self.doubleSpinBox_PeakHoldSeconds.setEnabled(use_hold)
+        self.label_PeakHoldSeconds.setEnabled(use_hold)
+
+    def _on_tooloud_enabled_changed(self, enabled: bool) -> None:
+        """Enable/disable TooLoud-related controls."""
+        self.TooLoudText.setEnabled(enabled)
+        self.label_TooLoudText.setEnabled(enabled)
+        self.doubleSpinBox_TooLoudThreshold.setEnabled(enabled)
+        self.label_TooLoudThreshold.setEnabled(enabled)
+        self.comboBox_TooLoudAction.setEnabled(enabled)
+        self.label_TooLoudAction.setEnabled(enabled)
+        self._on_tooloud_action_changed()
+
+    def _populate_tooloud_action_controls(self) -> None:
+        """Fill TooLoud action and LED combos."""
+        self.comboBox_TooLoudAction.blockSignals(True)
+        self.comboBox_TooLoudAction.clear()
+        for key, label in AUDIO_TOOLOUD_ACTION_LABELS.items():
+            self.comboBox_TooLoudAction.addItem(label, key)
+        self.comboBox_TooLoudAction.blockSignals(False)
+
+        self.comboBox_TooLoudLED.blockSignals(True)
+        self.comboBox_TooLoudLED.clear()
+        for led_num in range(1, 5):
+            self.comboBox_TooLoudLED.addItem(f"LED {led_num}", led_num)
+        self.comboBox_TooLoudLED.blockSignals(False)
+
+    def _on_tooloud_action_changed(self, _index: int = 0) -> None:
+        """Enable LED selector only when action is LED and TooLoud is enabled."""
+        enabled = self.checkBox_TooLoud.isChecked()
+        action = self.comboBox_TooLoudAction.currentData()
+        use_led = enabled and action == "led"
+        self.comboBox_TooLoudLED.setEnabled(use_led)
+        self.label_TooLoudLED.setEnabled(use_led)
+        # Message field only relevant for warning action
+        show_message = enabled and action != "led"
+        self.TooLoudText.setEnabled(show_message)
+        self.label_TooLoudText.setEnabled(show_message)
+
+    def _on_silence_enabled_changed(self, enabled: bool) -> None:
+        """Enable/disable Silence Detection related controls."""
+        self.checkBox_SilenceWarn.setEnabled(enabled)
+        self.checkBox_SilenceOnAbsent.setEnabled(enabled)
+        self.doubleSpinBox_SilenceThreshold.setEnabled(enabled)
+        self.label_SilenceThreshold.setEnabled(enabled)
+        self.doubleSpinBox_SilenceDuration.setEnabled(enabled)
+        self.label_SilenceDuration.setEnabled(enabled)
+        self.doubleSpinBox_SilenceRecovery.setEnabled(enabled)
+        self.label_SilenceRecovery.setEnabled(enabled)
+        self.SilenceHttpUrl.setEnabled(enabled)
+        self.label_SilenceHttpUrl.setEnabled(enabled)
+        self._on_silence_warn_changed()
+
+    def _on_silence_warn_changed(self, _checked: bool = True) -> None:
+        """Enable the WARN message field only when Silence Detection and WARN are on."""
+        show_message = self.checkBox_Silence.isChecked() and self.checkBox_SilenceWarn.isChecked()
+        self.SilenceText.setEnabled(show_message)
+        self.label_SilenceText.setEnabled(show_message)
+
+    def _populate_lufs_reference_presets(self) -> None:
+        """Fill LUFS reference preset combo once."""
+        self.comboBox_LufsReferencePreset.blockSignals(True)
+        self.comboBox_LufsReferencePreset.clear()
+        for key, meta in AUDIO_LUFS_REFERENCE_PRESETS.items():
+            self.comboBox_LufsReferencePreset.addItem(meta["label"], key)
+        self.comboBox_LufsReferencePreset.blockSignals(False)
+
+    def _on_lufs_reference_preset_changed(self, _index: int = 0) -> None:
+        """Apply preset value to the spin box; enable spin box only for Custom."""
+        preset = self.comboBox_LufsReferencePreset.currentData()
+        meta = AUDIO_LUFS_REFERENCE_PRESETS.get(preset or "", {})
+        is_custom = preset == "custom" or meta.get("value") is None
+        self.doubleSpinBox_LufsReference.setEnabled(is_custom)
+        if not is_custom and meta.get("value") is not None:
+            self.doubleSpinBox_LufsReference.blockSignals(True)
+            self.doubleSpinBox_LufsReference.setValue(float(meta["value"]))
+            self.doubleSpinBox_LufsReference.blockSignals(False)
+
+    def _on_lufs_reference_value_changed(self, value: float) -> None:
+        """Switch preset to Custom when the user edits the value freely."""
+        preset = self.comboBox_LufsReferencePreset.currentData()
+        meta = AUDIO_LUFS_REFERENCE_PRESETS.get(preset or "", {})
+        expected = meta.get("value")
+        if expected is not None and abs(float(value) - float(expected)) > 0.05:
+            custom_index = self.comboBox_LufsReferencePreset.findData("custom")
+            if custom_index >= 0:
+                self.comboBox_LufsReferencePreset.blockSignals(True)
+                self.comboBox_LufsReferencePreset.setCurrentIndex(custom_index)
+                self.comboBox_LufsReferencePreset.blockSignals(False)
+                self.doubleSpinBox_LufsReference.setEnabled(True)
+
+    def refresh_audio_input_devices(self, selected_name: str | None = None) -> None:
+        """Populate the audio input device combo box."""
+        from audio_capture import list_input_devices
+
+        if selected_name is None:
+            selected_name = self.comboBox_AudioInput.currentData()
+            if selected_name is None:
+                selected_name = ""
+
+        self.comboBox_AudioInput.blockSignals(True)
+        self.comboBox_AudioInput.clear()
+        self.comboBox_AudioInput.addItem("System Default", "")
+        devices = list_input_devices()
+        for device in devices:
+            self.comboBox_AudioInput.addItem(str(device), device.name)
+
+        index = self.comboBox_AudioInput.findData(selected_name or "")
+        if index < 0 and selected_name:
+            # Keep previously configured device even if currently missing
+            self.comboBox_AudioInput.addItem(f"{selected_name} (unavailable)", selected_name)
+            index = self.comboBox_AudioInput.findData(selected_name)
+        self.comboBox_AudioInput.setCurrentIndex(max(0, index))
+        self.comboBox_AudioInput.blockSignals(False)
+
+    def _on_time_source_changed(self, _value=None) -> None:
+        """Enable PTP, LTC, and NTP fields based on the selected time source."""
+        self._update_time_source_ui()
+
+    def _update_time_source_ui(self) -> None:
+        """Enable NTP server, PTP, and LTC controls depending on source and NTP-check."""
+        source = self.comboBox_TimeSource.currentData()
+        if source is None:
+            source = DEFAULT_TIME_SOURCE
+        ntp_check = self.checkBox_NTPCheck.isChecked()
+        ntp_server_enabled = ntp_check or source == TIME_SOURCE_NTP
+        self.NTPCheckServer.setEnabled(ntp_server_enabled)
+        self.label_16.setEnabled(ntp_server_enabled)
+        use_ptp = source == TIME_SOURCE_PTP
+        self.comboBox_PtpIface.setEnabled(use_ptp)
+        self.label_PtpIface.setEnabled(use_ptp)
+        self.spinBox_PtpDomain.setEnabled(use_ptp)
+        self.label_PtpDomain.setEnabled(use_ptp)
+        use_ltc = source == TIME_SOURCE_LTC
+        ltc_input = self.comboBox_LtcInput.currentData()
+        if ltc_input is None:
+            ltc_input = DEFAULT_LTC_INPUT
+        use_serial = use_ltc and ltc_input == LTC_INPUT_SERIAL
+        use_audio = use_ltc and ltc_input == LTC_INPUT_AUDIO
+        self.comboBox_LtcInput.setEnabled(use_ltc)
+        self.label_LtcInput.setEnabled(use_ltc)
+        self.comboBox_LtcPort.setEnabled(use_serial)
+        self.label_LtcPort.setEnabled(use_serial)
+        self.comboBox_LtcAudioDevice.setEnabled(use_audio)
+        self.label_LtcAudioDevice.setEnabled(use_audio)
+        self.comboBox_LtcChannel.setEnabled(use_audio)
+        self.label_LtcChannel.setEnabled(use_audio)
+        self.checkBox_LtcWarn.setEnabled(use_ltc)
+
+    def _restore_time_source_settings(self, settings: QSettings) -> None:
+        """Restore TimeSource group widgets from configuration."""
+        with settings_group(settings, "TimeSource"):
+            source = settings.value('source', DEFAULT_TIME_SOURCE, type=str) or DEFAULT_TIME_SOURCE
+            ptp_iface = settings.value('ptp_iface', DEFAULT_PTP_IFACE, type=str) or ""
+            try:
+                ptp_domain = int(settings.value('ptp_domain', DEFAULT_PTP_DOMAIN, type=int))
+            except (TypeError, ValueError):
+                ptp_domain = DEFAULT_PTP_DOMAIN
+            ltc_port = settings.value('ltc_port', DEFAULT_LTC_PORT, type=str) or ""
+            ltc_input = settings.value('ltc_input', DEFAULT_LTC_INPUT, type=str) or DEFAULT_LTC_INPUT
+            if ltc_input not in LTC_INPUT_LABELS:
+                ltc_input = DEFAULT_LTC_INPUT
+            ltc_audio_device = (
+                settings.value('ltc_audio_device', DEFAULT_LTC_AUDIO_DEVICE, type=str) or ""
+            )
+            try:
+                ltc_audio_channel = int(
+                    settings.value('ltc_audio_channel', DEFAULT_LTC_AUDIO_CHANNEL, type=int)
+                )
+            except (TypeError, ValueError):
+                ltc_audio_channel = DEFAULT_LTC_AUDIO_CHANNEL
+            ltc_audio_channel = 0 if ltc_audio_channel <= 0 else 1
+            ltc_warn = settings.value('ltc_warn', DEFAULT_LTC_WARN, type=bool)
+
+        self.comboBox_TimeSource.blockSignals(True)
+        self.comboBox_TimeSource.clear()
+        for key, label in TIME_SOURCE_LABELS.items():
+            self.comboBox_TimeSource.addItem(label, key)
+        source_index = self.comboBox_TimeSource.findData(source)
+        if source_index < 0:
+            source_index = self.comboBox_TimeSource.findData(DEFAULT_TIME_SOURCE)
+        self.comboBox_TimeSource.setCurrentIndex(max(0, source_index))
+        self.comboBox_TimeSource.blockSignals(False)
+
+        self.refresh_ptp_interfaces(ptp_iface)
+        self.spinBox_PtpDomain.blockSignals(True)
+        self.spinBox_PtpDomain.setValue(max(0, min(255, ptp_domain)))
+        self.spinBox_PtpDomain.blockSignals(False)
+        self.refresh_ltc_ports(ltc_port)
+        self.comboBox_LtcInput.blockSignals(True)
+        self.comboBox_LtcInput.clear()
+        for key, label in LTC_INPUT_LABELS.items():
+            self.comboBox_LtcInput.addItem(label, key)
+        input_index = self.comboBox_LtcInput.findData(ltc_input)
+        if input_index < 0:
+            input_index = self.comboBox_LtcInput.findData(DEFAULT_LTC_INPUT)
+        self.comboBox_LtcInput.setCurrentIndex(max(0, input_index))
+        self.comboBox_LtcInput.blockSignals(False)
+        self.refresh_ltc_audio_devices(ltc_audio_device)
+        self.comboBox_LtcChannel.blockSignals(True)
+        self.comboBox_LtcChannel.clear()
+        self.comboBox_LtcChannel.addItem("Left", 0)
+        self.comboBox_LtcChannel.addItem("Right", 1)
+        channel_index = self.comboBox_LtcChannel.findData(ltc_audio_channel)
+        self.comboBox_LtcChannel.setCurrentIndex(max(0, channel_index))
+        self.comboBox_LtcChannel.blockSignals(False)
+        self.checkBox_LtcWarn.setChecked(bool(ltc_warn))
+        self._update_time_source_ui()
+
+    def refresh_ptp_interfaces(self, selected_iface: str | None = None) -> None:
+        """Populate the PTP network interface combo box (independent of AoIP)."""
+        from livewire_capture import list_ipv4_interfaces
+
+        if selected_iface is None:
+            selected_iface = self.comboBox_PtpIface.currentData()
+            if selected_iface is None:
+                selected_iface = ""
+
+        self.comboBox_PtpIface.blockSignals(True)
+        self.comboBox_PtpIface.clear()
+        self.comboBox_PtpIface.addItem("Default", "")
+        for label, ip_str in list_ipv4_interfaces():
+            self.comboBox_PtpIface.addItem(label, ip_str)
+
+        index = self.comboBox_PtpIface.findData(selected_iface or "")
+        if index < 0 and selected_iface:
+            self.comboBox_PtpIface.addItem(f"{selected_iface} (unavailable)", selected_iface)
+            index = self.comboBox_PtpIface.findData(selected_iface)
+        self.comboBox_PtpIface.setCurrentIndex(max(0, index))
+        self.comboBox_PtpIface.blockSignals(False)
+
+    def refresh_ltc_ports(self, selected_port: str | None = None) -> None:
+        """Populate the LTC USB serial-port combo box."""
+        from ltc_reader import list_serial_ports
+
+        if selected_port is None:
+            selected_port = self.comboBox_LtcPort.currentData()
+            if selected_port is None:
+                selected_port = ""
+
+        self.comboBox_LtcPort.blockSignals(True)
+        self.comboBox_LtcPort.clear()
+        self.comboBox_LtcPort.addItem("Auto", "")
+        for label, device in list_serial_ports():
+            self.comboBox_LtcPort.addItem(label, device)
+
+        index = self.comboBox_LtcPort.findData(selected_port or "")
+        if index < 0 and selected_port:
+            self.comboBox_LtcPort.addItem(f"{selected_port} (unavailable)", selected_port)
+            index = self.comboBox_LtcPort.findData(selected_port)
+        self.comboBox_LtcPort.setCurrentIndex(max(0, index))
+        self.comboBox_LtcPort.blockSignals(False)
+
+    def refresh_ltc_audio_devices(self, selected_name: str | None = None) -> None:
+        """Populate the LTC audio input device combo box."""
+        from audio_capture import list_input_devices
+
+        if selected_name is None:
+            selected_name = self.comboBox_LtcAudioDevice.currentData()
+            if selected_name is None:
+                selected_name = ""
+
+        self.comboBox_LtcAudioDevice.blockSignals(True)
+        self.comboBox_LtcAudioDevice.clear()
+        self.comboBox_LtcAudioDevice.addItem("System Default", "")
+        for device in list_input_devices():
+            self.comboBox_LtcAudioDevice.addItem(str(device), device.name)
+
+        index = self.comboBox_LtcAudioDevice.findData(selected_name or "")
+        if index < 0 and selected_name:
+            self.comboBox_LtcAudioDevice.addItem(f"{selected_name} (unavailable)", selected_name)
+            index = self.comboBox_LtcAudioDevice.findData(selected_name)
+        self.comboBox_LtcAudioDevice.setCurrentIndex(max(0, index))
+        self.comboBox_LtcAudioDevice.blockSignals(False)
+
+    def refresh_livewire_interfaces(self, selected_iface: str | None = None) -> None:
+        """Populate the Livewire network interface combo box."""
+        from livewire_capture import list_ipv4_interfaces
+
+        if selected_iface is None:
+            selected_iface = self.comboBox_LivewireIface.currentData()
+            if selected_iface is None:
+                selected_iface = ""
+
+        self.comboBox_LivewireIface.blockSignals(True)
+        self.comboBox_LivewireIface.clear()
+        self.comboBox_LivewireIface.addItem("Default", "")
+        for label, ip_str in list_ipv4_interfaces():
+            self.comboBox_LivewireIface.addItem(label, ip_str)
+
+        index = self.comboBox_LivewireIface.findData(selected_iface or "")
+        if index < 0 and selected_iface:
+            self.comboBox_LivewireIface.addItem(f"{selected_iface} (unavailable)", selected_iface)
+            index = self.comboBox_LivewireIface.findData(selected_iface)
+        self.comboBox_LivewireIface.setCurrentIndex(max(0, index))
+        self.comboBox_LivewireIface.blockSignals(False)
+
+    def _empty_aes67_snapshot(self) -> dict:
+        """Empty AES67 selection (None in the combo)."""
+        return {
+            "id": DEFAULT_AUDIO_AES67_ID,
+            "name": DEFAULT_AUDIO_AES67_NAME,
+            "addr": DEFAULT_AUDIO_AES67_ADDR,
+            "port": DEFAULT_AUDIO_AES67_PORT,
+            "codec": DEFAULT_AUDIO_AES67_CODEC,
+            "rate": DEFAULT_AUDIO_AES67_RATE,
+            "channels": DEFAULT_AUDIO_AES67_CHANNELS,
+            "dante": False,
+            "manual": False,
+        }
+
+    def _current_aes67_snapshot(self) -> dict:
+        """Return the combo selection; None clears the persisted stream."""
+        data = self.comboBox_Aes67Stream.currentData()
+        if isinstance(data, dict) and data.get("addr"):
+            return dict(data)
+        return self._empty_aes67_snapshot()
+
+    def _sync_aes67_saved_from_combo(self) -> None:
+        self._aes67_saved = self._current_aes67_snapshot()
+
+    def _aes67_iface(self) -> str:
+        iface = self.comboBox_LivewireIface.currentData()
+        return iface if isinstance(iface, str) else ""
+
+    def _on_aoip_iface_changed(self, _index: int = 0) -> None:
+        """Restart SAP / Livewire ads on the newly selected AoIP interface."""
+        if self.isHidden():
+            return
+        source = self.comboBox_AudioSource.currentData()
+        meters_on = self.checkBox_AudioMetersEnabled.isChecked()
+        if source == "aes67" and meters_on:
+            self._stop_sap_discovery()
+            self._sync_sap_discovery()
+        elif source == "livewire" and meters_on:
+            self._stop_livewire_discovery()
+            self._sync_livewire_discovery()
+
+    def _on_aes67_stream_changed(self, _index: int = 0) -> None:
+        self._sync_aes67_saved_from_combo()
+
+    def _on_sap_poll(self) -> None:
+        """Rebuild the AES67 combo from SAP; used by the poll timer and live callbacks."""
+        source = self.comboBox_AudioSource.currentData()
+        if not aes67_sap_wanted(
+            source, self.checkBox_AudioMetersEnabled.isChecked(), self.isHidden()
+        ):
+            return
+        self.refresh_aes67_streams()
+        if self._sap_poll_timer.isActive() and self._sap_poll_timer.interval() != AES67_SAP_POLL_MS:
+            self._sap_poll_timer.setInterval(AES67_SAP_POLL_MS)
+
+    def _sync_sap_discovery(self) -> None:
+        """Listen for SAP only while the dialog is shown and AES67 is selected."""
+        source = self.comboBox_AudioSource.currentData()
+        want_sap = aes67_sap_wanted(
+            source, self.checkBox_AudioMetersEnabled.isChecked(), self.isHidden()
+        )
+        if not want_sap:
+            self._aes67_ui_active = False
+            self._stop_sap_discovery()
+            return
+
+        from sap_sdp import SapDiscovery
+
+        iface = self._aes67_iface()
+        entering_aes67 = not self._aes67_ui_active
+        already_running = (
+            self._sap_discovery is not None
+            and self._sap_discovery.is_running
+            and self._sap_discovery.iface == iface
+        )
+        if self._sap_discovery is None:
+            self._sap_discovery = SapDiscovery(iface=iface)
+        self._sap_discovery.set_on_change(self.sigAes67StreamsChanged.emit)
+        self._sap_discovery.start(iface=iface)
+        if entering_aes67 or not already_running:
+            self._aes67_seen_sap_ids = set()
+            self._aes67_list_signature = None
+        self._aes67_ui_active = True
+        if not self._sap_poll_timer.isActive():
+            self._sap_poll_timer.setInterval(AES67_SAP_FIRST_POLL_MS)
+            self._sap_poll_timer.start()
+        self.refresh_aes67_streams()
+        QTimer.singleShot(AES67_SAP_FIRST_POLL_MS, self._on_sap_poll)
+
+    def _stop_sap_discovery(self) -> None:
+        self._aes67_ui_active = False
+        self._sap_poll_timer.stop()
+        if self._sap_discovery is not None:
+            self._sap_discovery.set_on_change(None)
+            self._sap_discovery.stop()
+
+    def _on_livewire_stream_changed(self, _index: int = 0) -> None:
+        """Copy the selected advertised channel into the spin box."""
+        data = self.comboBox_LivewireStream.currentData()
+        if data is None:
+            return
+        try:
+            channel = int(data)
+        except (TypeError, ValueError):
+            return
+        if self.spinBox_LivewireChannel.value() == channel:
+            return
+        self.spinBox_LivewireChannel.blockSignals(True)
+        self.spinBox_LivewireChannel.setValue(channel)
+        self.spinBox_LivewireChannel.blockSignals(False)
+
+    def _on_livewire_channel_changed(self, _value: int = 0) -> None:
+        """Keep the source combo in sync with a manually typed channel."""
+        self.refresh_livewire_streams()
+
+    def _on_lw_poll(self) -> None:
+        """Rebuild the Livewire combo from advertisements."""
+        source = self.comboBox_AudioSource.currentData()
+        if not livewire_adv_wanted(
+            source, self.checkBox_AudioMetersEnabled.isChecked(), self.isHidden()
+        ):
+            return
+        self.refresh_livewire_streams()
+        if self._lw_poll_timer.isActive() and self._lw_poll_timer.interval() != LIVEWIRE_ADV_POLL_MS:
+            self._lw_poll_timer.setInterval(LIVEWIRE_ADV_POLL_MS)
+
+    def _sync_livewire_discovery(self) -> None:
+        """Listen for Livewire ads only while the dialog is shown and Livewire is selected."""
+        source = self.comboBox_AudioSource.currentData()
+        want = livewire_adv_wanted(
+            source, self.checkBox_AudioMetersEnabled.isChecked(), self.isHidden()
+        )
+        if not want:
+            self._lw_ui_active = False
+            self._stop_livewire_discovery()
+            return
+
+        from livewire_adv import LivewireDiscovery
+
+        iface = self._aes67_iface()
+        entering = not self._lw_ui_active
+        already_running = (
+            self._lw_discovery is not None
+            and self._lw_discovery.is_running
+            and self._lw_discovery.iface == iface
+        )
+        if self._lw_discovery is None:
+            self._lw_discovery = LivewireDiscovery(iface=iface)
+        self._lw_discovery.set_on_change(self.sigLivewireStreamsChanged.emit)
+        self._lw_discovery.start(iface=iface)
+        if entering or not already_running:
+            self._lw_list_signature = None
+        self._lw_ui_active = True
+        if not self._lw_poll_timer.isActive():
+            self._lw_poll_timer.setInterval(LIVEWIRE_ADV_FIRST_POLL_MS)
+            self._lw_poll_timer.start()
+        self.refresh_livewire_streams()
+        QTimer.singleShot(LIVEWIRE_ADV_FIRST_POLL_MS, self._on_lw_poll)
+
+    def _stop_livewire_discovery(self) -> None:
+        self._lw_ui_active = False
+        self._lw_poll_timer.stop()
+        if self._lw_discovery is not None:
+            self._lw_discovery.set_on_change(None)
+            self._lw_discovery.stop()
+
+    def refresh_livewire_streams(self) -> None:
+        """Update the Livewire source combo when advertised channels change."""
+        from livewire_adv import format_livewire_source_label, livewire_source_list_signature
+
+        channel = int(self.spinBox_LivewireChannel.value())
+        discovered = []
+        if self._lw_discovery is not None:
+            discovered = list(self._lw_discovery.streams())
+
+        name_counts: dict[str, int] = {}
+        for source in discovered:
+            key = (source.name or "").strip().lower()
+            if key:
+                name_counts[key] = name_counts.get(key, 0) + 1
+
+        items: list[tuple[int, str]] = []
+        seen: set[int] = set()
+        for source in discovered:
+            key = (source.name or "").strip().lower()
+            include_node = bool(key) and name_counts.get(key, 0) > 1
+            items.append((source.channel, source.label(include_node=include_node)))
+            seen.add(source.channel)
+        if channel not in seen:
+            items.insert(0, (channel, format_livewire_source_label("", channel)))
+
+        signature = livewire_source_list_signature(items)
+        if signature == self._lw_list_signature and self.comboBox_LivewireStream.count() > 0:
+            index = self.comboBox_LivewireStream.findData(channel)
+            if index >= 0 and self.comboBox_LivewireStream.currentIndex() != index:
+                self.comboBox_LivewireStream.blockSignals(True)
+                self.comboBox_LivewireStream.setCurrentIndex(index)
+                self.comboBox_LivewireStream.blockSignals(False)
+            return
+
+        self.comboBox_LivewireStream.blockSignals(True)
+        self.comboBox_LivewireStream.clear()
+        selected = 0
+        for i, (stream_channel, label) in enumerate(items):
+            self.comboBox_LivewireStream.addItem(label, stream_channel)
+            if stream_channel == channel:
+                selected = i
+        if items:
+            self.comboBox_LivewireStream.setCurrentIndex(selected)
+        self.comboBox_LivewireStream.blockSignals(False)
+        self._lw_list_signature = signature
+
+    def refresh_aes67_streams(self, selected_id: str | None = None) -> None:
+        """Update the AES67 combo only when discovered streams actually change."""
+        from sap_sdp import snapshot_label
+
+        if isinstance(selected_id, bool):
+            selected_id = None
+
+        current = self.comboBox_Aes67Stream.currentData()
+        chose_none = current is None and self.comboBox_Aes67Stream.count() > 0
+        if selected_id is None:
+            if isinstance(current, dict):
+                selected_id = current.get("id") or None
+            if not selected_id and not chose_none:
+                selected_id = self._aes67_saved.get("id") or None
+
+        by_id: dict[str, tuple[str, dict]] = {}
+        if self._sap_discovery is not None:
+            for stream in self._sap_discovery.streams():
+                data = stream.snapshot()
+                by_id[data["id"]] = (stream.label(), data)
+                self._aes67_seen_sap_ids.add(data["id"])
+
+        saved = dict(self._aes67_saved)
+        saved_id = saved.get("id") or ""
+        if saved.get("addr") and saved_id and saved_id not in by_id:
+            vanished = (not saved.get("manual")) and saved_id in self._aes67_seen_sap_ids
+            if saved.get("manual") or (not chose_none and not vanished):
+                by_id[saved_id] = (snapshot_label(saved), saved)
+
+        items = [(stream_id, label, data) for stream_id, (label, data) in by_id.items()]
+        signature = aes67_list_signature(items)
+        if signature == self._aes67_list_signature and self.comboBox_Aes67Stream.count() > 0:
+            return
+
+        self.comboBox_Aes67Stream.blockSignals(True)
+        self.comboBox_Aes67Stream.clear()
+        self.comboBox_Aes67Stream.addItem(AES67_NONE_LABEL, None)
+        index = 0
+        for i, (stream_id, label, data) in enumerate(items, start=1):
+            self.comboBox_Aes67Stream.addItem(label, data)
+            if selected_id and stream_id == selected_id:
+                index = i
+        if chose_none:
+            index = 0
+        self.comboBox_Aes67Stream.setCurrentIndex(index)
+        self.comboBox_Aes67Stream.blockSignals(False)
+        self._aes67_list_signature = signature
+        if index > 0:
+            self._sync_aes67_saved_from_combo()
+        elif chose_none or (selected_id and selected_id not in by_id):
+            self._aes67_saved = self._empty_aes67_snapshot()
+
+    def _paste_aes67_sdp(self) -> None:
+        """Let the user paste an SDP announcement when SAP is unavailable."""
+        from sap_sdp import SdpError, SapDiscovery
+
+        text, ok = QInputDialog.getMultiLineText(
+            self,
+            "Paste SDP",
+            "AES67 SDP announcement:",
+        )
+        if not ok or not (text or "").strip():
+            return
+        try:
+            if self._sap_discovery is None:
+                self._sap_discovery = SapDiscovery(iface=self._aes67_iface())
+            stream = self._sap_discovery.add_manual_sdp(text)
+        except SdpError as exc:
+            QMessageBox.warning(self, "Invalid SDP", str(exc))
+            return
+        self._aes67_saved = stream.snapshot()
+        self.refresh_aes67_streams(selected_id=stream.stream_id)
+
+    def set_aes67_conf(self, key: str, value: str) -> None:
+        """Update a persisted AES67 field from CONF:Audio:aes67_* commands."""
+        snapshot = dict(self._aes67_saved)
+        if key == "id":
+            snapshot["id"] = str(value).strip()
+        elif key == "addr":
+            snapshot["addr"] = str(value).strip()
+        elif key == "name":
+            snapshot["name"] = str(value).strip()
+        elif key == "codec":
+            snapshot["codec"] = str(value).strip().upper() or DEFAULT_AUDIO_AES67_CODEC
+        elif key == "manual":
+            snapshot["manual"] = str(value).strip().lower() in ("1", "true", "yes")
+        elif key == "port":
+            try:
+                port = int(value)
+            except (TypeError, ValueError):
+                port = DEFAULT_AUDIO_AES67_PORT
+            snapshot["port"] = port if 1 <= port <= 65535 else DEFAULT_AUDIO_AES67_PORT
+        elif key == "rate":
+            try:
+                snapshot["rate"] = int(value)
+            except (TypeError, ValueError):
+                snapshot["rate"] = DEFAULT_AUDIO_AES67_RATE
+        elif key == "channels":
+            try:
+                snapshot["channels"] = int(value)
+            except (TypeError, ValueError):
+                snapshot["channels"] = DEFAULT_AUDIO_AES67_CHANNELS
+        else:
+            return
+        if snapshot.get("addr") and not snapshot.get("id"):
+            snapshot["id"] = f"{snapshot.get('addr')}:{snapshot.get('port')}"
+        if snapshot.get("addr") and not snapshot.get("name"):
+            snapshot["name"] = f"{snapshot.get('addr')}:{snapshot.get('port')}"
+        snapshot.setdefault("manual", False)
+        snapshot.setdefault("dante", False)
+        self._aes67_saved = snapshot
+        self.refresh_aes67_streams(selected_id=snapshot.get("id") or None)
+
+    def set_audio_source(self, source: str) -> None:
+        """Select audio source by key (device|livewire|aes67)."""
+        index = self.comboBox_AudioSource.findData(source)
+        if index < 0:
+            index = self.comboBox_AudioSource.findData(DEFAULT_AUDIO_SOURCE)
+        if index >= 0:
+            self.comboBox_AudioSource.setCurrentIndex(index)
+
+    def _restore_audio_settings(self, settings: QSettings) -> None:
+        """Restore Audio group settings into the dialog widgets."""
+        with settings_group(settings, "Audio"):
+            enabled = settings.value('enabled', DEFAULT_AUDIO_METERS_ENABLED, type=bool)
+            tooloud = settings.value('tooloud', DEFAULT_AUDIO_TOOLOUD, type=bool)
+            unit = settings.value('unit', DEFAULT_AUDIO_UNIT, type=str) or DEFAULT_AUDIO_UNIT
+            layout_raw = settings.value('layout', None)
+            layout, unit = migrate_audio_layout_and_unit(unit, layout_raw)
+            source = settings.value('source', DEFAULT_AUDIO_SOURCE, type=str) or DEFAULT_AUDIO_SOURCE
+            device = settings.value('input_device', DEFAULT_AUDIO_INPUT_DEVICE, type=str) or ""
+            livewire_channel = settings.value(
+                'livewire_channel', DEFAULT_AUDIO_LIVEWIRE_CHANNEL, type=int
+            )
+            livewire_iface = settings.value(
+                'livewire_iface', DEFAULT_AUDIO_LIVEWIRE_IFACE, type=str
+            ) or ""
+            aes67_id = settings.value('aes67_id', DEFAULT_AUDIO_AES67_ID, type=str) or ""
+            aes67_addr = settings.value('aes67_addr', DEFAULT_AUDIO_AES67_ADDR, type=str) or ""
+            aes67_port = settings.value('aes67_port', DEFAULT_AUDIO_AES67_PORT, type=int)
+            aes67_name = settings.value('aes67_name', DEFAULT_AUDIO_AES67_NAME, type=str) or ""
+            aes67_codec = settings.value(
+                'aes67_codec', DEFAULT_AUDIO_AES67_CODEC, type=str
+            ) or DEFAULT_AUDIO_AES67_CODEC
+            aes67_rate = settings.value('aes67_rate', DEFAULT_AUDIO_AES67_RATE, type=int)
+            aes67_channels = settings.value(
+                'aes67_channels', DEFAULT_AUDIO_AES67_CHANNELS, type=int
+            )
+            aes67_manual = settings.value(
+                'aes67_manual', DEFAULT_AUDIO_AES67_MANUAL, type=bool
+            )
+            text = settings.value('tooloudtext', DEFAULT_AUDIO_TOOLOUD_TEXT, type=str) or DEFAULT_AUDIO_TOOLOUD_TEXT
+            threshold = settings.value(
+                'tooloud_threshold_dbtp', DEFAULT_AUDIO_TOOLOUD_THRESHOLD_DBTP, type=float
+            )
+            tooloud_action = settings.value(
+                'tooloud_action', DEFAULT_AUDIO_TOOLOUD_ACTION, type=str
+            ) or DEFAULT_AUDIO_TOOLOUD_ACTION
+            tooloud_led = settings.value('tooloud_led', DEFAULT_AUDIO_TOOLOUD_LED, type=int)
+            silence = settings.value('silence', DEFAULT_AUDIO_SILENCE, type=bool)
+            silence_warn = settings.value('silence_warn', DEFAULT_AUDIO_SILENCE_WARN, type=bool)
+            silence_on_absent = settings.value(
+                'silence_on_absent', DEFAULT_AUDIO_SILENCE_ON_ABSENT, type=bool
+            )
+            silence_text = settings.value(
+                'silence_text', DEFAULT_AUDIO_SILENCE_TEXT, type=str
+            ) or DEFAULT_AUDIO_SILENCE_TEXT
+            silence_threshold = settings.value(
+                'silence_threshold_dbfs', DEFAULT_AUDIO_SILENCE_THRESHOLD_DBFS, type=float
+            )
+            silence_duration = settings.value(
+                'silence_duration_s', DEFAULT_AUDIO_SILENCE_DURATION_S, type=float
+            )
+            silence_recovery = settings.value(
+                'silence_recovery_s', DEFAULT_AUDIO_SILENCE_RECOVERY_S, type=float
+            )
+            silence_http_url = settings.value(
+                'silence_http_url', DEFAULT_AUDIO_SILENCE_HTTP_URL, type=str
+            ) or ""
+            lufs_preset = settings.value(
+                'lufs_reference_preset', DEFAULT_AUDIO_LUFS_REFERENCE_PRESET, type=str
+            ) or DEFAULT_AUDIO_LUFS_REFERENCE_PRESET
+            lufs_reference = settings.value(
+                'lufs_reference', DEFAULT_AUDIO_LUFS_REFERENCE, type=float
+            )
+            peak_hold = settings.value('peak_hold', DEFAULT_AUDIO_PEAK_HOLD, type=bool)
+            peak_hold_seconds = settings.value(
+                'peak_hold_seconds', DEFAULT_AUDIO_PEAK_HOLD_SECONDS, type=float
+            )
+            display_style = settings.value(
+                'display_style', DEFAULT_AUDIO_DISPLAY_STYLE, type=str
+            ) or DEFAULT_AUDIO_DISPLAY_STYLE
+            meter_width = settings.value(
+                'meter_width', DEFAULT_AUDIO_METER_WIDTH, type=int
+            )
+
+            self.checkBox_AudioMetersEnabled.setChecked(enabled)
+            self.checkBox_TooLoud.setChecked(tooloud)
+            self.TooLoudText.setText(text)
+            self.doubleSpinBox_TooLoudThreshold.setValue(float(threshold))
+            self.checkBox_PeakHold.blockSignals(True)
+            self.checkBox_PeakHold.setChecked(bool(peak_hold))
+            self.checkBox_PeakHold.blockSignals(False)
+            self.doubleSpinBox_PeakHoldSeconds.setValue(float(peak_hold_seconds))
+
+            self._populate_tooloud_action_controls()
+            action_index = self.comboBox_TooLoudAction.findData(tooloud_action)
+            if action_index < 0:
+                action_index = self.comboBox_TooLoudAction.findData(DEFAULT_AUDIO_TOOLOUD_ACTION)
+            self.comboBox_TooLoudAction.blockSignals(True)
+            self.comboBox_TooLoudAction.setCurrentIndex(max(0, action_index))
+            self.comboBox_TooLoudAction.blockSignals(False)
+            led_index = self.comboBox_TooLoudLED.findData(int(tooloud_led))
+            if led_index < 0:
+                led_index = 0
+            self.comboBox_TooLoudLED.setCurrentIndex(led_index)
+
+            self.checkBox_Silence.setChecked(silence)
+            self.checkBox_SilenceWarn.setChecked(silence_warn)
+            self.checkBox_SilenceOnAbsent.setChecked(silence_on_absent)
+            self.SilenceText.setText(silence_text)
+            self.doubleSpinBox_SilenceThreshold.setValue(float(silence_threshold))
+            self.doubleSpinBox_SilenceDuration.setValue(float(silence_duration))
+            self.doubleSpinBox_SilenceRecovery.setValue(float(silence_recovery))
+            self.SilenceHttpUrl.setText(silence_http_url)
+
+            self._populate_lufs_reference_presets()
+            preset_index = self.comboBox_LufsReferencePreset.findData(lufs_preset)
+            if preset_index < 0:
+                preset_index = self.comboBox_LufsReferencePreset.findData(DEFAULT_AUDIO_LUFS_REFERENCE_PRESET)
+            self.comboBox_LufsReferencePreset.blockSignals(True)
+            self.comboBox_LufsReferencePreset.setCurrentIndex(max(0, preset_index))
+            self.comboBox_LufsReferencePreset.blockSignals(False)
+            self.doubleSpinBox_LufsReference.blockSignals(True)
+            self.doubleSpinBox_LufsReference.setValue(float(lufs_reference))
+            self.doubleSpinBox_LufsReference.blockSignals(False)
+            self._on_lufs_reference_preset_changed()
+
+            self.comboBox_AudioSource.blockSignals(True)
+            self.comboBox_AudioSource.clear()
+            for key, label in AUDIO_SOURCE_LABELS.items():
+                self.comboBox_AudioSource.addItem(label, key)
+            source_index = self.comboBox_AudioSource.findData(source)
+            if source_index < 0:
+                source_index = self.comboBox_AudioSource.findData(DEFAULT_AUDIO_SOURCE)
+            self.comboBox_AudioSource.setCurrentIndex(max(0, source_index))
+            self.comboBox_AudioSource.blockSignals(False)
+
+            try:
+                channel_value = int(livewire_channel)
+            except (TypeError, ValueError):
+                channel_value = DEFAULT_AUDIO_LIVEWIRE_CHANNEL
+            self.spinBox_LivewireChannel.blockSignals(True)
+            self.spinBox_LivewireChannel.setValue(
+                max(1, min(32767, channel_value))
+            )
+            self.spinBox_LivewireChannel.blockSignals(False)
+
+            self.comboBox_MeterLayout.blockSignals(True)
+            self.comboBox_MeterLayout.clear()
+            for key, label in AUDIO_LAYOUT_LABELS.items():
+                self.comboBox_MeterLayout.addItem(label, key)
+            layout_index = self.comboBox_MeterLayout.findData(layout)
+            if layout_index < 0:
+                layout_index = self.comboBox_MeterLayout.findData(DEFAULT_AUDIO_LAYOUT)
+            self.comboBox_MeterLayout.setCurrentIndex(max(0, layout_index))
+            self.comboBox_MeterLayout.blockSignals(False)
+
+            self.comboBox_AudioUnit.blockSignals(True)
+            self.comboBox_AudioUnit.clear()
+            for key, label in AUDIO_UNIT_LABELS.items():
+                self.comboBox_AudioUnit.addItem(label, key)
+            unit_index = self.comboBox_AudioUnit.findData(unit)
+            if unit_index < 0:
+                unit_index = self.comboBox_AudioUnit.findData(DEFAULT_AUDIO_UNIT)
+            self.comboBox_AudioUnit.setCurrentIndex(max(0, unit_index))
+            self.comboBox_AudioUnit.blockSignals(False)
+
+            self.comboBox_DisplayStyle.blockSignals(True)
+            self.comboBox_DisplayStyle.clear()
+            for key, label in AUDIO_DISPLAY_STYLE_LABELS.items():
+                self.comboBox_DisplayStyle.addItem(label, key)
+            style_index = self.comboBox_DisplayStyle.findData(display_style)
+            if style_index < 0:
+                style_index = self.comboBox_DisplayStyle.findData(DEFAULT_AUDIO_DISPLAY_STYLE)
+            self.comboBox_DisplayStyle.setCurrentIndex(max(0, style_index))
+            self.comboBox_DisplayStyle.blockSignals(False)
+
+            try:
+                meter_width_value = int(meter_width)
+            except (TypeError, ValueError):
+                meter_width_value = DEFAULT_AUDIO_METER_WIDTH
+            self.spinBox_MeterWidth.setMinimum(AUDIO_METER_WIDTH_MIN)
+            self.spinBox_MeterWidth.setMaximum(AUDIO_METER_WIDTH_MAX)
+            self.spinBox_MeterWidth.setValue(
+                max(AUDIO_METER_WIDTH_MIN, min(AUDIO_METER_WIDTH_MAX, meter_width_value))
+            )
+
+            self.refresh_audio_input_devices(device)
+            self.refresh_livewire_interfaces(livewire_iface)
+            self._lw_list_signature = None
+            self.refresh_livewire_streams()
+            try:
+                aes67_port_value = int(aes67_port)
+            except (TypeError, ValueError):
+                aes67_port_value = DEFAULT_AUDIO_AES67_PORT
+            try:
+                aes67_rate_value = int(aes67_rate)
+            except (TypeError, ValueError):
+                aes67_rate_value = DEFAULT_AUDIO_AES67_RATE
+            try:
+                aes67_channels_value = int(aes67_channels)
+            except (TypeError, ValueError):
+                aes67_channels_value = DEFAULT_AUDIO_AES67_CHANNELS
+            self._aes67_saved = {
+                "id": aes67_id or "",
+                "name": aes67_name or "",
+                "addr": aes67_addr or "",
+                "port": aes67_port_value,
+                "codec": aes67_codec or DEFAULT_AUDIO_AES67_CODEC,
+                "rate": aes67_rate_value,
+                "channels": aes67_channels_value,
+                "dante": False,
+                "manual": bool(aes67_manual),
+            }
+            self.refresh_aes67_streams(selected_id=aes67_id or None)
+            self._on_audio_meters_enabled_changed(enabled)
+            self._on_tooloud_enabled_changed(tooloud)
+            self._on_silence_enabled_changed(silence)
 
     def _connect_preset_buttons(self) -> None:
         """
@@ -1959,19 +3425,25 @@ class SettingsRestorer:
         self.restore_weather(settings)
         self.restore_timer(settings)
         self.restore_font(settings)
+        self.restore_audio(settings)
     
     def restore_general(self, settings: QSettings) -> None:
         """
-        Restore general settings (station name, slogan, colors)
+        Restore general settings (instance name, station name, slogan, colors)
         
         Args:
             settings: QSettings object to read from
         """
         with settings_group(settings, "General"):
+            instance_name = normalize_instance_name(
+                settings.value('instancename', DEFAULT_INSTANCE_NAME)
+            )
             self.main_screen.labelStation.setText(settings.value('stationname', DEFAULT_STATION_NAME))
             self.main_screen.labelSlogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
             self.main_screen.set_station_color(self.settings.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
             self.main_screen.set_slogan_color(self.settings.getColorFromName(settings.value('slogancolor', DEFAULT_SLOGAN_COLOR)))
+        if hasattr(self.main_screen, "setWindowTitle"):
+            self.main_screen.setWindowTitle(f"OnAirScreen – {instance_name}")
     
     def restore_led(self, settings: QSettings) -> None:
         """
@@ -2057,29 +3529,66 @@ class SettingsRestorer:
                     led_widget = getattr(self.main_screen, f'AirLED_{air_num}')
                     led_widget.hide()
                 else:
-                    label_text = settings.value(text_key, text_default)
+                    configured_text = settings.value(text_key, text_default)
                     label_widget = getattr(self.main_screen, f'AirLabel_{air_num}')
                     icon_widget = getattr(self.main_screen, f'AirIcon_{air_num}')
                     led_widget = getattr(self.main_screen, f'AirLED_{air_num}')
-                    
-                    label_widget.setText(f"{label_text}\n0:00")
-                    inactive_text_color = settings.value('inactivetextcolor', DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR)
-                    inactive_bg_color = settings.value('inactivebgcolor', DEFAULT_TIMER_AIR_INACTIVE_BG_COLOR)
-                    
+                    status_attr = f'statusAIR{air_num}'
+                    seconds_attr = f'Air{air_num}Seconds'
+                    is_active = bool(getattr(self.main_screen, status_attr, False))
+                    seconds = int(getattr(self.main_screen, seconds_attr, 0) or 0)
+                    top_of_hour = (
+                        air_num == 3 and bool(getattr(self.main_screen, "topOfHourActive", False))
+                    )
+                    toth_text = settings.value('TimerTOTHText', DEFAULT_TOTH_TIMER_TEXT)
+                    label_text = air_timer_caption(
+                        air_num, configured_text, top_of_hour, toth_text
+                    )
+                    try:
+                        radio_mode = int(getattr(self.main_screen, "radioTimerMode", 0) or 0)
+                    except (TypeError, ValueError):
+                        radio_mode = 0
+                    count_down = air_timer_count_down(air_num, radio_mode, top_of_hour)
+                    label_widget.setText(format_air_timer_label(label_text, seconds))
+                    if air_num == 3:
+                        mark_widget = getattr(self.main_screen, "AirCountMark_3", None)
+                        if mark_widget is not None:
+                            mark_widget.setText(air_timer_count_mark(count_down))
+
+                    if is_active:
+                        text_color = settings.value(
+                            f'AIR{air_num}activetextcolor', DEFAULT_TIMER_AIR_ACTIVE_TEXT_COLOR
+                        )
+                        bg_color = settings.value(
+                            f'AIR{air_num}activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR
+                        )
+                    else:
+                        text_color = settings.value(
+                            'inactivetextcolor', DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR
+                        )
+                        bg_color = settings.value(
+                            'inactivebgcolor', DEFAULT_TIMER_AIR_INACTIVE_BG_COLOR
+                        )
+
                     # Save icon before setStyleSheet to prevent flickering
                     with settings_group(settings, "AIR"):
                         icon_path = settings.value(icon_key, icon_default)
                         icon_pixmap = QPixmap(icon_path) if icon_path else None
-                    
-                    # Set inactive styles
-                    label_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-                    icon_widget.setStyleSheet(f"color:{inactive_text_color};background-color:{inactive_bg_color}")
-                    
+
+                    label_widget.setStyleSheet(f"color:{text_color};background-color:{bg_color}")
+                    icon_widget.setStyleSheet(f"color:{text_color};background-color:{bg_color}")
+                    if air_num == 3:
+                        chrome_style = f"color:{text_color};background-color:{bg_color}"
+                        for chrome_name in ("AirCountMark_3", "AirIconColumn_3"):
+                            chrome_widget = getattr(self.main_screen, chrome_name, None)
+                            if chrome_widget is not None:
+                                chrome_widget.setStyleSheet(chrome_style)
+
                     # Restore icon immediately after styleSheet change to prevent flickering
                     if icon_pixmap and not icon_pixmap.isNull():
                         icon_widget.setPixmap(icon_pixmap)
                         icon_widget.update()
-                    
+
                     led_widget.show()
             
             # Set minimum left LED width
@@ -2112,8 +3621,25 @@ class SettingsRestorer:
             
             for font_prefix, widget_name in font_configs:
                 widget = getattr(self.main_screen, widget_name)
-                font_name = settings.value(f'{font_prefix}FontName', DEFAULT_FONT_NAME)
-                font_size = settings.value(f'{font_prefix}FontSize', 24, type=int)
+                font_name = resolve_font_name(settings.value(f'{font_prefix}FontName', DEFAULT_FONT_NAME))
+                font_size = settings.value(
+                    f'{font_prefix}FontSize', default_font_size_for_prefix(font_prefix), type=int
+                )
                 font_weight = settings.value(f'{font_prefix}FontWeight', DEFAULT_FONT_WEIGHT_BOLD, type=int)
-                widget.setFont(QFont(font_name, font_size, font_weight))
+                widget.setFont(QFont(font_name, font_size, qfont_weight_from_stored(font_weight)))
+                if font_prefix == "AIR3":
+                    mark_widget = getattr(self.main_screen, "AirCountMark_3", None)
+                    if mark_widget is not None:
+                        mark_widget.setFont(QFont(font_name, max(10, font_size - 8), qfont_weight_from_stored(font_weight)))
 
+
+    def restore_audio(self, settings: QSettings) -> None:
+        """
+        Restore audio meter settings onto the main screen.
+
+        Args:
+            settings: QSettings object to read from
+        """
+        apply_fn = getattr(self.main_screen, "apply_audio_settings", None)
+        if callable(apply_fn):
+            apply_fn(settings)

@@ -14,9 +14,9 @@ import time
 import threading
 import asyncio
 from unittest.mock import Mock, patch, MagicMock
-from PyQt6.QtCore import QCoreApplication, QTimer, QThread
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtNetwork import QHostAddress, QUdpSocket
+from PySide6.QtCore import QCoreApplication, QTimer, QThread
+from PySide6.QtWidgets import QApplication
+from PySide6.QtNetwork import QHostAddress, QUdpSocket
 
 import sys
 if not QApplication.instance():
@@ -26,7 +26,7 @@ from network import UdpServer, HttpDaemon, OASHTTPRequestHandler, WebSocketDaemo
 from command_handler import CommandHandler
 from start import MainScreen
 from defaults import DEFAULT_UDP_PORT, DEFAULT_HTTP_PORT, DEFAULT_MULTICAST_ADDRESS
-from PyQt6.QtCore import QSettings
+from PySide6.QtCore import QSettings
 from utils import settings_group
 
 
@@ -468,6 +468,7 @@ class TestHTTPIntegration:
                 assert 'air' in data
                 assert 'texts' in data
                 assert 'version' in data
+                assert 'instance' in data
                 
                 # Verify LED structure (keys are strings in JSON)
                 assert isinstance(data['leds'], dict)

@@ -1,31 +1,297 @@
-#############################################################################
-#
-# OnAirScreen
-# Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
-# All rights reserved.
-#
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-#
-#############################################################################
+# OnAirScreen Source-Available License
+
+Version 1.0 — September 2026
+
+Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
+
+All rights reserved.
+
+## 1. Definitions
+
+For the purposes of this License:
+
+**"Software"** means the OnAirScreen software and the portions of the
+OnAirScreen source code to which this License is explicitly applied.
+
+**"Source Code"** means the human-readable source code of the Software,
+including source files, scripts, configuration files, build files,
+documentation, and other files intended to be used to modify or build
+the Software.
+
+**"Binary Version"** means any version of the Software, whether modified
+or unmodified, that has been compiled, packaged, bundled, or otherwise
+transformed into a form intended for execution by a computer without
+requiring the recipient to compile the Software from Source Code.
+
+Binary Versions include, without limitation, executable files,
+installers, application packages, operating-system packages, container
+images, virtual machine images, firmware images, and other precompiled
+or executable distributions.
+
+**"Internal Use"** means use of the Software by an individual, or by an
+organization for its own internal purposes, including commercial internal
+purposes, without providing a Binary Version to a third party.
+
+**"Copyright Holder"** means Sascha Ludwig, astrastudio.de, or any other
+person or entity expressly identified as a copyright holder for
+particular portions of the Software.
+
+## 2. Copyright
+
+The Software is protected by copyright and other applicable intellectual
+property laws.
+
+Except for contributions and third-party components that are subject to
+separate license terms, the Copyright Holder retains all rights, title,
+and interest in the Software.
+
+## 3. License Grant
+
+Subject to the terms and conditions of this License, the Copyright
+Holder grants you a worldwide, non-exclusive, royalty-free license to:
+
+1. access and use the Source Code;
+2. copy the Source Code;
+3. modify the Source Code;
+4. create derivative works based on the Source Code;
+5. distribute the Source Code, whether modified or unmodified; and
+6. compile, build, install, execute, and use the Software and modified
+   versions of the Software for Internal Use.
+
+The permissions above apply to private, educational, research, and
+commercial Internal Use.
+
+No fee is required for the rights granted under this section.
+
+## 4. Source Code Redistribution
+
+You may redistribute the Source Code, whether modified or unmodified,
+provided that:
+
+1. each redistribution retains this License;
+2. each redistribution retains all applicable copyright notices and
+   attribution notices;
+3. you clearly identify substantial modifications where reasonably
+   practicable; and
+4. you do not remove or alter notices identifying the Copyright Holder
+   or other applicable copyright holders.
+
+Modified Source Code may be distributed under this License.
+
+You may publish modified versions of the Source Code, including forks
+and repositories containing modified versions of the Software.
+
+## 5. Compilation and Internal Use
+
+You are expressly permitted to compile or otherwise build the
+Software, including modified versions, for your own use.
+
+You may:
+
+- compile the Software yourself;
+- create your own builds;
+- create customized builds;
+- install your own builds on computers and systems under your control;
+- use your own builds for commercial purposes;
+- deploy your own builds within your organization; and
+- allow employees and contractors acting solely on your behalf to use
+  such builds for your Internal Use.
+
+The creation, installation, execution, or use of a Binary Version for
+Internal Use does not constitute redistribution and is expressly
+permitted by this License.
+
+## 6. Restriction on Binary Redistribution
+
+You may NOT redistribute, publish, sell, rent, lease, sublicense,
+transfer, or otherwise make available to any third party any Binary
+Version of the Software without prior written permission from the
+Copyright Holder.
+
+This restriction applies regardless of whether the Binary Version is:
+
+1. modified or unmodified;
+2. provided free of charge or for payment;
+3. distributed publicly or privately;
+4. distributed individually or as part of another product or package; or
+5. distributed by download, physical media, network transfer, container
+   registry, package repository, application store, or any other means.
+
+For the avoidance of doubt, the following activities require prior written
+permission from the Copyright Holder:
+
+- publishing a compiled version on a website;
+- publishing a release containing compiled versions on GitHub or
+  another code-hosting platform;
+- distributing an installer;
+- distributing an operating-system package;
+- publishing a Docker or other container image containing the Software;
+- including a compiled version in another software product;
+- providing a compiled version to customers, clients, partners, or
+  other third parties; and
+- selling or giving away a compiled version of the Software.
+
+For the avoidance of doubt, merely compiling, building, installing,
+executing, or using the Software does not constitute redistribution.
+
+## 7. Official Binary Versions
+
+The Copyright Holder may create, publish, license, sell, and otherwise
+distribute official Binary Versions of the Software.
+
+The Copyright Holder may charge fees for official Binary Versions and may
+determine the terms under which such Binary Versions are provided.
+
+Nothing in this License grants any third party the right to redistribute
+an official Binary Version.
+
+## 8. Written Permission for Binary Distribution
+
+The Copyright Holder may, at its sole discretion, grant written
+permission to distribute Binary Versions.
+
+Such permission may be:
+
+- limited to a particular person or organization;
+- limited to a particular version;
+- limited to a particular number of copies;
+- limited to a particular distribution channel;
+- limited in time; or
+- subject to additional terms or fees.
+
+Unless explicitly stated otherwise in writing, permission to distribute
+one Binary Version does not constitute permission to distribute other
+versions.
+
+## 9. No Trademark License
+
+This License does not grant any rights to use the names "OnAirScreen",
+"Sascha Ludwig", "astrastudio.de", or any associated trademarks, logos,
+product names, or branding, except as necessary to accurately identify
+the Software and comply with this License.
+
+Modified versions should not be presented as official releases of
+OnAirScreen.
+
+## 10. Third-Party Software and Contributions
+
+This License applies only to portions of the Software for which the
+Copyright Holder has the necessary rights to grant the permissions
+contained herein.
+
+Third-party software, libraries, assets, and contributions may be subject
+to separate copyright and license terms.
+
+Nothing in this License is intended to replace, restrict, or supersede
+a separate license applicable to a third-party component.
+
+Where required, the applicable third-party license terms must be retained
+and complied with.
+
+Third-party components shipped with OnAirScreen are documented in
+THIRD_PARTY_LICENSES.md.
+
+## 11. No Additional Restrictions on Source Code
+
+The Copyright Holder does not require payment, royalties, or
+registration for the rights granted to the Source Code under this
+License.
+
+You may fork the project and maintain your own modified version of the
+Source Code.
+
+However, the restriction in Section 6 continues to apply to Binary
+Versions derived from the Source Code.
+
+## 12. Contributions
+
+Unless otherwise agreed in writing, any contribution submitted specifically
+for inclusion in the Software is provided to the Copyright Holder under
+terms that permit the Copyright Holder to use, modify, reproduce,
+distribute, and sublicense the contribution as part of the Software
+under this License.
+
+Contributors retain ownership of their original copyright in their
+contributions unless they expressly transfer that ownership.
+
+The Copyright Holder may request separate written confirmation of these
+rights from individual contributors.
+
+## 13. Compliance with Applicable Law
+
+Nothing in this License is intended to prohibit or restrict any use that
+cannot legally be prohibited or restricted under applicable law.
+
+In particular, mandatory statutory rights and exceptions applicable to
+computer programs remain unaffected.
+
+## 14. Termination
+
+This License and the rights granted under it terminate automatically if you
+materially violate its terms.
+
+Rights that have already been validly exercised before termination remain
+subject to this License to the extent permitted by applicable law.
+
+The Copyright Holder may, at its discretion, reinstate the rights granted
+by this License if the violation is remedied.
+
+## 15. Disclaimer of Warranty
+
+THE SOFTWARE AND SOURCE CODE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE COPYRIGHT HOLDER
+DISCLAIMS ALL WARRANTIES, INCLUDING, WITHOUT LIMITATION, WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND
+NON-INFRINGEMENT.
+
+THE COPYRIGHT HOLDER DOES NOT WARRANT THAT THE SOFTWARE WILL BE
+ERROR-FREE, SECURE, OR SUITABLE FOR ANY PARTICULAR PURPOSE.
+
+## 16. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE COPYRIGHT HOLDER
+SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
+EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF DATA, PROFITS,
+REVENUE, BUSINESS, OR BUSINESS INTERRUPTION ARISING OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THIS LICENSE.
+
+NOTHING IN THIS LICENSE EXCLUDES OR LIMITS LIABILITY TO THE EXTENT
+THAT SUCH LIABILITY CANNOT LAWFULLY BE EXCLUDED OR LIMITED.
+
+## 17. No Obligation to Provide Support
+
+Nothing in this License creates an obligation for the Copyright Holder
+to provide support, maintenance, updates, bug fixes, security fixes, or
+future versions of the Software.
+
+## 18. No Obligation to Continue Distribution
+
+The Copyright Holder may discontinue, suspend, or change the
+distribution of official Binary Versions of the Software at any time.
+
+## 19. Entire License
+
+This License constitutes the complete terms governing the rights
+granted by the Copyright Holder with respect to the Software, except
+where separate license terms expressly apply to particular components.
+
+If any provision of this License is held to be invalid or unenforceable,
+the remaining provisions shall remain in effect to the extent permitted
+by applicable law.
+
+## 20. Contact
+
+For questions regarding this License or requests for permission to
+distribute Binary Versions, please contact:
+
+Sascha Ludwig
+astrastudio.de
+
+---
+
+Copyright (c) 2012-2026 Sascha Ludwig, astrastudio.de
+
+OnAirScreen is provided under the terms of the OnAirScreen
+Source-Available License.
