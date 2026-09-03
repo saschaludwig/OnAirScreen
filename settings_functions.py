@@ -48,7 +48,7 @@ from font_loader import resolve_font_name
 from meter_engine import migrate_audio_layout_and_unit, normalize_meter_layout
 
 SETTINGS_WINDOW_INITIAL_WIDTH = 700
-SETTINGS_WINDOW_MAX_HEIGHT = 800
+SETTINGS_WINDOW_INITIAL_HEIGHT = 800
 
 LICENSE_RESOURCE_OASL = ":/licenses/LICENSE"
 LICENSE_RESOURCE_THIRD_PARTY = ":/licenses/THIRD_PARTY_LICENSES.md"
@@ -359,8 +359,7 @@ class Settings(QWidget, Ui_Settings):
         self.plainTextEdit.setPlainText(composed_license_dialog_text())
         self._station_name_color = QColor(DEFAULT_STATION_COLOR)
         self._slogan_color = QColor(DEFAULT_SLOGAN_COLOR)
-        self.resize(SETTINGS_WINDOW_INITIAL_WIDTH, SETTINGS_WINDOW_MAX_HEIGHT)
-        self.setMaximumHeight(SETTINGS_WINDOW_MAX_HEIGHT)
+        self.resize(self._initial_settings_window_size())
         self._wrap_tabs_in_scroll_areas()
         self.InstanceName.setValidator(
             QRegularExpressionValidator(QRegularExpression(INSTANCE_NAME_REGEX), self)
@@ -435,6 +434,17 @@ class Settings(QWidget, Ui_Settings):
             self.showNormal()
         self.raise_()
         self.activateWindow()
+
+    def _initial_settings_window_size(self) -> QSize:
+        """Preferred 700×800, clamped to the available screen so small displays still fit."""
+        width = SETTINGS_WINDOW_INITIAL_WIDTH
+        height = SETTINGS_WINDOW_INITIAL_HEIGHT
+        screen = self.screen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            width = min(width, available.width())
+            height = min(height, available.height())
+        return QSize(width, height)
 
     def _wrap_tabs_in_scroll_areas(self) -> None:
         """Wrap each tab page so QTabWidget can shrink below the tallest page."""

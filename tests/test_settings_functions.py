@@ -12,13 +12,15 @@ from unittest.mock import Mock, patch
 import pytest
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QColor, QCloseEvent, QFont
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from crash_handler import set_log_directory_override
 from settings_functions import (
     OASSettings,
     Settings,
     FONT_ROW_PREFIXES,
+    SETTINGS_WINDOW_INITIAL_HEIGHT,
+    SETTINGS_WINDOW_INITIAL_WIDTH,
     composed_license_dialog_text,
     default_font_size_for_prefix,
     font_weight_from_bold,
@@ -433,6 +435,29 @@ class TestPresetManagement:
 
         assert finished == [True]
         assert closed == [True]
+
+
+class TestSettingsWindowSize:
+    """Settings window preferred size and unconstrained maximum height."""
+
+    @pytest.fixture
+    def qapp(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        return app
+
+    @pytest.fixture
+    def settings_oac(self, qapp):
+        return Settings(oacmode=True)
+
+    def test_opens_at_preferred_size_without_height_cap(self, settings_oac):
+        expected = settings_oac._initial_settings_window_size()
+        assert expected.width() <= SETTINGS_WINDOW_INITIAL_WIDTH
+        assert expected.height() <= SETTINGS_WINDOW_INITIAL_HEIGHT
+        assert settings_oac.width() == expected.width()
+        assert settings_oac.height() == expected.height()
+        assert settings_oac.maximumHeight() == QWidget().maximumHeight()
 
 
 class TestAes67SapWanted:

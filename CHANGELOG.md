@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Settings window opens at 700×800 and can be resized freely (height is no longer capped at 800px)
 
 ### Fixed
 

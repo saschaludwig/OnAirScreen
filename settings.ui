@@ -16,12 +16,6 @@
     <height>0</height>
    </size>
   </property>
-  <property name="maximumSize">
-   <size>
-    <width>16777215</width>
-    <height>800</height>
-   </size>
-  </property>
   <property name="windowTitle">
    <string>OnAirScreen Settings</string>
   </property>
