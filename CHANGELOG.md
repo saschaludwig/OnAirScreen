@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Added
+
+- Right-click **Quit OnAirScreen** on the main screen
+- On-screen WARN `QUITTING ONAIRSCREEN` while the app is shutting down
+
+### Fixed
+
+- Ctrl+C / SIGINT shows the same `QUITTING ONAIRSCREEN` WARN as Q and the context menu
+
 ## [1.0.0beta7]
 
 ### Changed

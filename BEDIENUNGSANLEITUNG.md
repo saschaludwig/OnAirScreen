@@ -112,7 +112,7 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 
 - Standard: Vollbild mit verstecktem Mauszeiger
 - Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf den Hauptbildschirm, oder Rechtsklick → **Toggle Fullscreen**
-- **Rechtsklick-Menü:** Toggle Fullscreen, Settings; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
+- **Rechtsklick-Menü:** Toggle Fullscreen, Settings, Quit OnAirScreen; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
 - Der Vollbild-Zustand wird in den Einstellungen (`General/fullscreen`) gespeichert
 - Im Fenstermodus werden Position und Größe gespeichert (`Window/geometry`) und beim nächsten Start wiederhergestellt
 
@@ -135,6 +135,8 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 | `Ctrl+S` / `Ctrl+,`               | Einstellungsdialog öffnen                        |
 | `Q` / `Ctrl+Q` / `Ctrl+C` / `ESC` | OnAirScreen beenden                              |
 | `I`                               | IP-Adressen für 10 Sekunden in NOW/NEXT anzeigen |
+
+Beim Beenden erscheint die WARN-Meldung `QUITTING ONAIRSCREEN` auf dem Hauptbildschirm, bis das Fenster schließt.
 
 
 

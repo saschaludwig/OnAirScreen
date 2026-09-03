@@ -2978,18 +2978,38 @@ class TestQuitCleanup:
         screen.osc_daemon = Mock()
         screen.audio_capture = Mock()
         screen._save_window_geometry = Mock()
+        screen.repaint = Mock()
+        call_order = []
+        screen.add_warning = Mock(side_effect=lambda *args, **kwargs: call_order.append("warn"))
+        screen.process_warnings = Mock(side_effect=lambda: call_order.append("process"))
+        screen.audio_capture.stop.side_effect = lambda: call_order.append("audio")
+        screen.mqtt_client.stop.side_effect = lambda: call_order.append("mqtt")
+        finish = []
 
-        with patch("start.QCoreApplication") as mock_qapp:
+        with patch("start.QTimer") as mock_timer, patch("start.QCoreApplication") as mock_qapp:
             mock_qapp.instance.return_value.quit = Mock()
+            mock_timer.singleShot.side_effect = lambda ms, fn: finish.append(fn)
             MainScreen.quit_oas(screen)
 
-        assert screen._is_quitting is True
+            assert screen._is_quitting is True
+            screen.add_warning.assert_called_once_with("QUITTING ONAIRSCREEN", 2)
+            screen.process_warnings.assert_called_once()
+            screen.repaint.assert_called_once()
+            mock_timer.singleShot.assert_called_once()
+            screen.audio_capture.stop.assert_not_called()
+            mock_qapp.instance.return_value.quit.assert_not_called()
+
+            finish[0]()
+
         screen._save_window_geometry.assert_called_once()
         screen.audio_capture.stop.assert_called_once()
         screen.mqtt_client.stop.assert_called_once()
         screen.osc_daemon.stop.assert_called_once()
         screen.wsd.stop.assert_called_once()
         mock_qapp.instance.return_value.quit.assert_called_once()
+        assert call_order.index("warn") < call_order.index("audio")
+        assert call_order.index("process") < call_order.index("audio")
+        assert call_order.index("process") < call_order.index("mqtt")
 
     def test_close_event_reuses_quit_cleanup(self):
         """Closing the main window must stop MQTT as well as audio."""
@@ -3269,11 +3289,13 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.quit_oas = Mock()
         screen._audio_meters_enabled = False
         toggle_action = object()
         settings_action = object()
+        quit_action = object()
         mock_menu = MagicMock()
-        mock_menu.addAction.side_effect = [toggle_action, settings_action]
+        mock_menu.addAction.side_effect = [toggle_action, settings_action, quit_action]
         mock_menu.exec.return_value = toggle_action
         mock_qmenu_cls.return_value = mock_menu
 
@@ -3282,6 +3304,7 @@ class TestMainScreenMouseActions:
 
         screen.toggle_full_screen.assert_called_once()
         screen.show_settings.assert_not_called()
+        screen.quit_oas.assert_not_called()
         mock_menu.exec.assert_called_once()
 
     @patch("start.QMenu")
@@ -3290,11 +3313,13 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.quit_oas = Mock()
         screen._audio_meters_enabled = False
         toggle_action = object()
         settings_action = object()
+        quit_action = object()
         mock_menu = MagicMock()
-        mock_menu.addAction.side_effect = [toggle_action, settings_action]
+        mock_menu.addAction.side_effect = [toggle_action, settings_action, quit_action]
         mock_menu.exec.return_value = settings_action
         mock_qmenu_cls.return_value = mock_menu
 
@@ -3303,6 +3328,30 @@ class TestMainScreenMouseActions:
 
         screen.show_settings.assert_called_once()
         screen.toggle_full_screen.assert_not_called()
+        screen.quit_oas.assert_not_called()
+
+    @patch("start.QMenu")
+    def test_context_menu_quit(self, mock_qmenu_cls):
+        """Choosing Quit OnAirScreen from the context menu quits the app."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen.quit_oas = Mock()
+        screen._audio_meters_enabled = False
+        toggle_action = object()
+        settings_action = object()
+        quit_action = object()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [toggle_action, settings_action, quit_action]
+        mock_menu.exec.return_value = quit_action
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        screen.quit_oas.assert_called_once()
+        screen.toggle_full_screen.assert_not_called()
+        screen.show_settings.assert_not_called()
 
     @patch("start.QMenu")
     def test_context_menu_dismissed_does_nothing(self, mock_qmenu_cls):
@@ -3310,10 +3359,11 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.quit_oas = Mock()
         screen.reset_integrated_loudness = Mock()
         screen._audio_meters_enabled = False
         mock_menu = MagicMock()
-        mock_menu.addAction.side_effect = [object(), object()]
+        mock_menu.addAction.side_effect = [object(), object(), object()]
         mock_menu.exec.return_value = None
         mock_qmenu_cls.return_value = mock_menu
 
@@ -3322,6 +3372,7 @@ class TestMainScreenMouseActions:
 
         screen.toggle_full_screen.assert_not_called()
         screen.show_settings.assert_not_called()
+        screen.quit_oas.assert_not_called()
         screen.reset_integrated_loudness.assert_not_called()
 
     @patch("start.QMenu")
@@ -3330,6 +3381,7 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.quit_oas = Mock()
         screen.start_integrated_loudness = Mock()
         screen.stop_integrated_loudness = Mock()
         screen.reset_integrated_loudness = Mock()
@@ -3339,6 +3391,7 @@ class TestMainScreenMouseActions:
         start_action = object()
         stop_action = object()
         reset_action = object()
+        quit_action = object()
         mock_menu = MagicMock()
         mock_menu.addAction.side_effect = [
             toggle_action,
@@ -3346,6 +3399,7 @@ class TestMainScreenMouseActions:
             start_action,
             stop_action,
             reset_action,
+            quit_action,
         ]
         mock_menu.exec.return_value = reset_action
         mock_qmenu_cls.return_value = mock_menu
@@ -3358,6 +3412,7 @@ class TestMainScreenMouseActions:
         screen.stop_integrated_loudness.assert_not_called()
         screen.toggle_full_screen.assert_not_called()
         screen.show_settings.assert_not_called()
+        screen.quit_oas.assert_not_called()
 
     @patch("start.QMenu")
     def test_context_menu_start_lufs(self, mock_qmenu_cls):
@@ -3365,6 +3420,7 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.quit_oas = Mock()
         screen.start_integrated_loudness = Mock()
         screen.stop_integrated_loudness = Mock()
         screen.reset_integrated_loudness = Mock()
@@ -3374,6 +3430,7 @@ class TestMainScreenMouseActions:
         start_action = object()
         stop_action = object()
         reset_action = object()
+        quit_action = object()
         mock_menu = MagicMock()
         mock_menu.addAction.side_effect = [
             toggle_action,
@@ -3381,6 +3438,7 @@ class TestMainScreenMouseActions:
             start_action,
             stop_action,
             reset_action,
+            quit_action,
         ]
         mock_menu.exec.return_value = start_action
         mock_qmenu_cls.return_value = mock_menu
@@ -3393,6 +3451,7 @@ class TestMainScreenMouseActions:
         screen.reset_integrated_loudness.assert_not_called()
         screen.toggle_full_screen.assert_not_called()
         screen.show_settings.assert_not_called()
+        screen.quit_oas.assert_not_called()
 
     @patch("start.QMenu")
     def test_context_menu_stop_lufs(self, mock_qmenu_cls):
@@ -3400,6 +3459,7 @@ class TestMainScreenMouseActions:
         screen = MainScreen.__new__(MainScreen)
         screen.toggle_full_screen = Mock()
         screen.show_settings = Mock()
+        screen.quit_oas = Mock()
         screen.start_integrated_loudness = Mock()
         screen.stop_integrated_loudness = Mock()
         screen.reset_integrated_loudness = Mock()
@@ -3409,6 +3469,7 @@ class TestMainScreenMouseActions:
         start_action = object()
         stop_action = object()
         reset_action = object()
+        quit_action = object()
         mock_menu = MagicMock()
         mock_menu.addAction.side_effect = [
             toggle_action,
@@ -3416,6 +3477,7 @@ class TestMainScreenMouseActions:
             start_action,
             stop_action,
             reset_action,
+            quit_action,
         ]
         mock_menu.exec.return_value = stop_action
         mock_qmenu_cls.return_value = mock_menu
@@ -3428,6 +3490,7 @@ class TestMainScreenMouseActions:
         screen.reset_integrated_loudness.assert_not_called()
         screen.toggle_full_screen.assert_not_called()
         screen.show_settings.assert_not_called()
+        screen.quit_oas.assert_not_called()
 
     def test_context_menu_event_shows_menu(self):
         """Right-click on the main screen opens the context menu."""

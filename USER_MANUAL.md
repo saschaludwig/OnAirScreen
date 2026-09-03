@@ -112,7 +112,7 @@ The main screen is divided into the following areas:
 
 - Default: fullscreen with hidden mouse cursor
 - Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** the main screen, or right-click → **Toggle Fullscreen**
-- **Right-click menu:** Toggle Fullscreen, Settings; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
+- **Right-click menu:** Toggle Fullscreen, Settings, Quit OnAirScreen; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
 - Fullscreen state is saved in settings (`General/fullscreen`)
 - In windowed mode, position and size are saved (`Window/geometry`) and restored on the next start
 
@@ -135,6 +135,8 @@ The main screen is divided into the following areas:
 | `Ctrl+S` / `Ctrl+,`               | Open settings dialog                            |
 | `Q` / `Ctrl+Q` / `Ctrl+C` / `ESC` | Quit OnAirScreen                                |
 | `I`                               | Display IP addresses in NOW/NEXT for 10 seconds |
+
+While quitting, the main screen shows WARN `QUITTING ONAIRSCREEN` until the window closes.
 
 
 

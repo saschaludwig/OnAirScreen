@@ -24,17 +24,31 @@ This module handles system signals for graceful application shutdown.
 
 import sys
 
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
+
+
+def _quit_on_air_screen() -> None:
+    """Quit via MainScreen so the QUITTING WARN is shown."""
+    app = QApplication.instance()
+    if app is None:
+        sys.exit(1)
+    for widget in app.topLevelWidgets():
+        quit_oas = getattr(widget, "quit_oas", None)
+        if callable(quit_oas):
+            quit_oas()
+            return
+    app.quit()
 
 
 def sigint_handler(*args) -> None:
     """
     Handler for SIGINT signal (Ctrl+C)
-    
-    Gracefully quits the application when interrupted.
+
+    Posts a MainScreen quit onto the event loop so the on-screen WARN can paint.
     """
     sys.stderr.write("\n")
-    QApplication.quit()
+    QTimer.singleShot(0, _quit_on_air_screen)
 
 
 def setup_signal_handlers() -> None:
@@ -45,4 +59,3 @@ def setup_signal_handlers() -> None:
     """
     import signal
     signal.signal(signal.SIGINT, sigint_handler)
-

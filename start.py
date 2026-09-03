@@ -315,16 +315,23 @@ class MainScreen(QWidget, Ui_MainScreen):
     def quit_oas(self) -> None:
         """
         Quit the application with cleanup
-        
-        Stops NTP check thread, HTTP/WebSocket servers, MQTT, OSC, audio capture,
-        and quits the application.
+
+        Shows a WARN, then stops NTP, HTTP/WebSocket, MQTT, OSC, audio capture,
+        and quits the application. Cleanup is deferred so the WARN can paint.
         """
         if getattr(self, "_is_quitting", False):
-            QCoreApplication.instance().quit()
             return
         logger.info("Quitting, cleaning up...")
         self.event_logger.log_system_event("Application quit")
         self._is_quitting = True
+        self.add_warning("QUITTING ONAIRSCREEN", 2)
+        self.process_warnings()
+        self.repaint()
+        # Return to the event loop so macOS can composite the WARN before we block.
+        QTimer.singleShot(100, self._finish_quit)
+
+    def _finish_quit(self) -> None:
+        """Stop background services and quit after the quit WARN is on screen."""
         self._save_window_geometry()
         self._stop_background_services()
         QCoreApplication.instance().quit()
@@ -1741,7 +1748,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         event.accept()
 
     def _show_main_context_menu(self, global_pos: QPoint) -> None:
-        """Show context menu with fullscreen toggle and settings."""
+        """Show context menu with fullscreen toggle, settings, and quit."""
         global app
         menu = QMenu(self)
         toggle_action = menu.addAction("Toggle Fullscreen")
@@ -1754,6 +1761,8 @@ class MainScreen(QWidget, Ui_MainScreen):
             start_lufs_action = menu.addAction("Start I+LRA")
             stop_lufs_action = menu.addAction("Stop I+LRA")
             reset_lufs_action = menu.addAction("Reset I+LRA")
+        menu.addSeparator()
+        quit_action = menu.addAction("Quit OnAirScreen")
 
         # Make the cursor visible while the menu is open (hidden in fullscreen).
         app.setOverrideCursor(QCursor(Qt.CursorShape.ArrowCursor))
@@ -1772,6 +1781,8 @@ class MainScreen(QWidget, Ui_MainScreen):
             self.stop_integrated_loudness()
         elif reset_lufs_action is not None and chosen == reset_lufs_action:
             self.reset_integrated_loudness()
+        elif chosen == quit_action:
+            self.quit_oas()
 
     def set_air1(self, action: bool) -> None:
         """Set AIR1 state (active/inactive)"""
