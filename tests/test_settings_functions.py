@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtCore import QCoreApplication, QSettings, Qt
 from PySide6.QtGui import QColor, QCloseEvent, QFont
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -1001,5 +1001,53 @@ class TestOpenLogFolder:
             assert tmp_path.as_posix() in opened.toLocalFile()
         finally:
             set_log_directory_override(None)
+
+
+class TestGpioSettings:
+    """GPIO tab mapping widgets save and restore."""
+
+    @pytest.fixture
+    def qapp(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        return app
+
+    @pytest.fixture
+    def settings_oac(self, qapp):
+        return Settings(oacmode=True)
+
+    def test_gpio_tab_has_eight_rows(self, settings_oac):
+        assert settings_oac.tabWidget.indexOf(settings_oac.tab_gpio) >= 0
+        assert len(settings_oac._gpio_rows) == 8
+        assert settings_oac._gpio_rows[0]["pin"].currentData() == 17
+        assert settings_oac._gpio_rows[0]["action"].currentData() == "LED1"
+        assert settings_oac._gpio_rows[1]["pin"].currentData() == 27
+        assert settings_oac._gpio_rows[1]["action"].currentData() == "AIR3"
+
+    def test_gpio_save_restore_roundtrip(self, settings_oac, tmp_path):
+        dialog = settings_oac
+        dialog.checkBox_GpioEnabled.setChecked(True)
+        dialog.spinBox_GpioDebounce.setValue(80)
+        row = dialog._gpio_rows[0]
+        row["enabled"].setChecked(True)
+        row["pin"].setCurrentIndex(row["pin"].findData(22))
+        row["invert"].setChecked(False)
+        row["mode"].setCurrentIndex(row["mode"].findData("rising"))
+        row["action"].setCurrentIndex(row["action"].findData("LED2"))
+        row["command"].setText("LED2:ON")
+        settings = QSettings(str(tmp_path / "oas.ini"), QSettings.Format.IniFormat)
+        dialog._save_gpio_settings(settings)
+        dialog.checkBox_GpioEnabled.setChecked(False)
+        dialog.spinBox_GpioDebounce.setValue(10)
+        row["pin"].setCurrentIndex(row["pin"].findData(17))
+        dialog._restore_gpio_settings(settings)
+        assert dialog.checkBox_GpioEnabled.isChecked() is True
+        assert dialog.spinBox_GpioDebounce.value() == 80
+        assert row["pin"].currentData() == 22
+        assert row["invert"].isChecked() is False
+        assert row["mode"].currentData() == "rising"
+        assert row["action"].currentData() == "LED2"
+        assert row["command"].text() == "LED2:ON"
 
 

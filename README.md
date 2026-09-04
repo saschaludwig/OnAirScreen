@@ -67,6 +67,7 @@ Complete user manuals covering all settings, hotkeys, and remote control:
  * 4:3 and 16:9/16:10 monitor aspect ratio support
  * Easy installation (Win/Linux/Mac binaries available)
  * Runs on RaspberryPi
+ * Raspberry Pi GPIO inputs (mixer GPI via optocoupler → LEDs and AIR timers)
  * Runs on Windows, Mac, Linux
  * Controlled via keyboard and network
  * Web-UI for remote control via browser

@@ -302,6 +302,15 @@ class MainScreen(QWidget, Ui_MainScreen):
         except Exception as e:
             logger.warning(f"Failed to initialize OSC server: {e}")
             self.osc_daemon = None
+
+        # Setup GPIO inputs (Raspberry Pi)
+        try:
+            from gpio_manager import GpioManager
+            self.gpio_manager = GpioManager(self)
+            self.gpio_manager.start()
+        except Exception as e:
+            logger.warning(f"Failed to initialize GPIO manager: {e}")
+            self.gpio_manager = None
         
         # Log application start
         self.event_logger.log_system_event("Application started")
@@ -322,7 +331,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         """
         Quit the application with cleanup
 
-        Shows a WARN, then stops NTP, HTTP/WebSocket, MQTT, OSC, audio capture,
+        Shows a WARN, then stops NTP, HTTP/WebSocket, MQTT, OSC, GPIO, audio capture,
         and quits the application. Cleanup is deferred so the WARN can paint.
         """
         if getattr(self, "_is_quitting", False):
@@ -343,7 +352,7 @@ class MainScreen(QWidget, Ui_MainScreen):
         QCoreApplication.instance().quit()
 
     def _stop_background_services(self) -> None:
-        """Stop network, MQTT, OSC, NTP, and audio services. Safe to call more than once."""
+        """Stop network, MQTT, OSC, GPIO, NTP, and audio services. Safe to call more than once."""
         try:
             if hasattr(self, 'time_source_manager') and self.time_source_manager:
                 self.time_source_manager.stop()
@@ -409,6 +418,12 @@ class MainScreen(QWidget, Ui_MainScreen):
             else:
                 error = NetworkError(f"Error stopping OSC server: {e}")
                 log_exception(logger, error)
+
+        try:
+            if hasattr(self, 'gpio_manager') and self.gpio_manager:
+                self.gpio_manager.stop()
+        except Exception as e:
+            logger.warning("Error stopping GPIO manager: %s", e)
 
         try:
             if hasattr(self, 'audio_capture') and self.audio_capture:
@@ -2258,6 +2273,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         # Restart OSC only when OSC-related settings changed (handled inside restart())
         if hasattr(self, 'osc_daemon') and self.osc_daemon:
             self.osc_daemon.restart()
+
+        if hasattr(self, 'gpio_manager') and self.gpio_manager:
+            self.gpio_manager.restart()
 
         # Re-apply after Apply: settings may recreate main-screen children.
         self._make_children_click_through()

@@ -198,7 +198,7 @@ class TestSchema:
         schema = schema_as_json()
         tab_ids = [tab["id"] for tab in schema["tabs"]]
         assert tab_ids == [
-            "general", "network", "advanced", "timers", "fonts", "timesource", "audio",
+            "general", "network", "advanced", "timers", "fonts", "timesource", "audio", "gpio",
         ]
         general_keys = {(field["group"], field["key"]) for field in schema["tabs"][0]["fields"]}
         assert ("General", "loglevel") in general_keys
@@ -305,6 +305,18 @@ class TestEnablement:
         assert field_is_enabled(led, off) is False
         assert field_is_enabled(text, warning) is True
         assert field_is_enabled(text, trigger) is False
+
+    def test_gpio_fields_follow_enabled_and_custom_action(self):
+        pin = _schema_field("GPIO", "gpi1_pin")
+        command = _schema_field("GPIO", "gpi1_command")
+        on = {"GPIO": {"enabled": True, "gpi1_action": "LED1"}}
+        custom = {"GPIO": {"enabled": True, "gpi1_action": "CUSTOM"}}
+        off = {"GPIO": {"enabled": False, "gpi1_action": "CUSTOM"}}
+        assert field_is_enabled(pin, on) is True
+        assert field_is_enabled(pin, off) is False
+        assert field_is_enabled(command, custom) is True
+        assert field_is_enabled(command, on) is False
+        assert field_is_enabled(command, off) is False
 
 
 class TestHttpRoutes:

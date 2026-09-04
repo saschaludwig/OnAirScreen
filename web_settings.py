@@ -93,6 +93,8 @@ from defaults import (
     DEFAULT_FONT_SIZE_SLOGAN,
     DEFAULT_FONT_SIZE_STATION,
     DEFAULT_FONT_SIZE_TIMER,
+    DEFAULT_GPIO_DEBOUNCE_MS,
+    DEFAULT_GPIO_ENABLED,
     DEFAULT_HTTP_PORT,
     DEFAULT_INSTANCE_NAME,
     DEFAULT_IS_AM_PM,
@@ -149,8 +151,13 @@ from defaults import (
     DEFAULT_WEATHER_UNIT,
     DEFAULT_WEATHER_WIDGET_ENABLED,
     DEFAULT_WEB_SETTINGS_PIN,
+    GPIO_ACTION_LABELS,
+    GPIO_CHANNEL_COUNT,
+    GPIO_MODE_LABELS,
+    GPIO_SAFE_BCM_PINS,
     LTC_INPUT_LABELS,
     TIME_SOURCE_LABELS,
+    default_gpio_channel,
 )
 from utils import INSTANCE_NAME_PATTERN, normalize_instance_name, settings_group
 
@@ -174,7 +181,7 @@ FONT_ROW_PREFIXES = (
 )
 CONFIG_GROUPS = [
     "General", "NTP", "TimeSource", "LEDS", "LED1", "LED2", "LED3", "LED4",
-    "Clock", "Network", "OSC", "Formatting", "WeatherWidget", "Timers", "Fonts", "Audio",
+    "Clock", "Network", "OSC", "Formatting", "WeatherWidget", "Timers", "Fonts", "Audio", "GPIO",
 ]
 MQTT_GROUP = "MQTT"
 
@@ -673,6 +680,52 @@ def build_settings_schema() -> list[SettingsTab]:
                       DEFAULT_AUDIO_SILENCE_HTTP_URL, enabled_when=silence_on),
     ]
 
+    gpio_on = [_eq("GPIO", "enabled", True)]
+    gpio_fields = [
+        SettingsField(
+            "GPIO", "enabled", "Enable GPIO Inputs", "bool", DEFAULT_GPIO_ENABLED,
+            hint="Raspberry Pi GPIO inputs mapped to LED and AIR commands. Use an optocoupler for mixer GPI.",
+        ),
+        SettingsField(
+            "GPIO", "debounce_ms", "Debounce", "int", str(DEFAULT_GPIO_DEBOUNCE_MS),
+            minimum=0, maximum=1000, step=10, enabled_when=gpio_on,
+            hint="Ignore contact bounce shorter than this interval (milliseconds)",
+        ),
+    ]
+    pin_options = [{"value": str(pin), "label": str(pin)} for pin in GPIO_SAFE_BCM_PINS]
+    for index in range(1, GPIO_CHANNEL_COUNT + 1):
+        channel = default_gpio_channel(index)
+        prefix = f"gpi{index}_"
+        gpio_fields.extend([
+            SettingsField(
+                "GPIO", f"{prefix}enabled", f"GPI{index} Enable", "bool", channel["enabled"],
+                enabled_when=gpio_on,
+            ),
+            SettingsField(
+                "GPIO", f"{prefix}pin", f"GPI{index} BCM Pin", "enum", str(channel["pin"]),
+                options=pin_options, enabled_when=gpio_on,
+            ),
+            SettingsField(
+                "GPIO", f"{prefix}invert", f"GPI{index} Invert", "bool", channel["invert"],
+                enabled_when=gpio_on,
+                hint="On: contact to GND is active (internal pull-up)",
+            ),
+            SettingsField(
+                "GPIO", f"{prefix}mode", f"GPI{index} Mode", "enum", channel["mode"],
+                options=_enum_options(GPIO_MODE_LABELS), enabled_when=gpio_on,
+            ),
+            SettingsField(
+                "GPIO", f"{prefix}action", f"GPI{index} Action", "enum", channel["action"],
+                options=_enum_options(GPIO_ACTION_LABELS), enabled_when=gpio_on,
+            ),
+            SettingsField(
+                "GPIO", f"{prefix}command", f"GPI{index} Custom Command", "string",
+                channel["command"],
+                enabled_when=[*gpio_on, _eq("GPIO", f"{prefix}action", "CUSTOM")],
+                hint="API command sent for Custom action, e.g. LED1:ON",
+            ),
+        ])
+
     return [
         SettingsTab("general", "General", general_fields),
         SettingsTab("network", "Network", network_fields),
@@ -681,6 +734,7 @@ def build_settings_schema() -> list[SettingsTab]:
         SettingsTab("fonts", "Fonts", font_fields),
         SettingsTab("timesource", "Time Source", time_source_fields),
         SettingsTab("audio", "Audio Meters", audio_fields),
+        SettingsTab("gpio", "GPIO", gpio_fields),
     ]
 
 

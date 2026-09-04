@@ -2958,6 +2958,7 @@ class TestQuitCleanup:
         screen.weatherWidget = Mock()
         screen.mqtt_client = Mock()
         screen.osc_daemon = Mock()
+        screen.gpio_manager = Mock()
 
         MainScreen.config_finished(screen)
 
@@ -2965,6 +2966,7 @@ class TestQuitCleanup:
         screen.weatherWidget.readConfig.assert_not_called()
         screen.mqtt_client.restart.assert_not_called()
         screen.osc_daemon.restart.assert_not_called()
+        screen.gpio_manager.restart.assert_not_called()
 
     def test_quit_oas_stops_audio_and_mqtt(self):
         """quit_oas must stop audio capture so AES67 is not left running."""

@@ -73,6 +73,67 @@ DEFAULT_TIMER_AIR_TEXTS: Dict[int, str] = {
 }
 DEFAULT_TOTH_TIMER_TEXT: str = "TOTH"
 
+# GPIO input settings (Raspberry Pi)
+GPIO_CHANNEL_COUNT: int = 8
+GPIO_SAFE_BCM_PINS: tuple[int, ...] = (5, 6, 12, 13, 16, 17, 22, 23, 24, 25, 26, 27)
+GPIO_MODES: tuple[str, ...] = ("level", "rising", "falling", "both")
+GPIO_MODE_LABELS: Dict[str, str] = {
+    "level": "Level",
+    "rising": "Rising edge",
+    "falling": "Falling edge",
+    "both": "Both edges",
+}
+GPIO_ACTIONS: tuple[str, ...] = (
+    "LED1", "LED2", "LED3", "LED4",
+    "AIR1", "AIR2", "AIR3", "AIR4",
+    "AIR3_RESET", "AIR4_RESET",
+    "CUSTOM",
+)
+GPIO_ACTION_LABELS: Dict[str, str] = {
+    "LED1": "LED1",
+    "LED2": "LED2",
+    "LED3": "LED3",
+    "LED4": "LED4",
+    "AIR1": "AIR1",
+    "AIR2": "AIR2",
+    "AIR3": "AIR3",
+    "AIR4": "AIR4",
+    "AIR3_RESET": "AIR3 Reset",
+    "AIR4_RESET": "AIR4 Reset",
+    "CUSTOM": "Custom command",
+}
+DEFAULT_GPIO_ENABLED: bool = False
+DEFAULT_GPIO_DEBOUNCE_MS: int = 50
+DEFAULT_GPIO_INVERT: bool = True
+DEFAULT_GPIO_MODE: str = "level"
+# Ticket-oriented mapping: GPI1 = ON AIR (LED1), GPI2 = radio timer (AIR3)
+DEFAULT_GPIO_CHANNEL_PINS: Dict[int, int] = {
+    1: 17, 2: 27, 3: 5, 4: 6, 5: 12, 6: 13, 7: 16, 8: 22,
+}
+DEFAULT_GPIO_CHANNEL_ACTIONS: Dict[int, str] = {
+    1: "LED1",
+    2: "AIR3",
+}
+
+
+def default_gpio_channel(index: int) -> Dict[str, Any]:
+    """Return default config for GPIO input channel 1–8."""
+    pin = DEFAULT_GPIO_CHANNEL_PINS.get(index, GPIO_SAFE_BCM_PINS[0])
+    action = DEFAULT_GPIO_CHANNEL_ACTIONS.get(index, "LED1")
+    return {
+        "enabled": index in (1, 2),
+        "pin": pin,
+        "invert": DEFAULT_GPIO_INVERT,
+        "mode": DEFAULT_GPIO_MODE,
+        "action": action,
+        "command": "",
+    }
+
+
+def gpio_setting_key(index: int, field: str) -> str:
+    """QSettings key for a GPIO channel field, e.g. gpi1_pin."""
+    return f"gpi{index}_{field}"
+
 
 def air_timer_caption(
     air_num: int,
@@ -458,6 +519,23 @@ def get_default(group: str, key: str, default: Any = None) -> Any:
             "owmUnit": DEFAULT_WEATHER_UNIT,
         }
         return defaults.get(key, default)
+
+    # GPIO group
+    if group == "GPIO":
+        if key == "enabled":
+            return DEFAULT_GPIO_ENABLED
+        if key == "debounce_ms":
+            return DEFAULT_GPIO_DEBOUNCE_MS
+        if key.startswith("gpi") and "_" in key:
+            try:
+                rest = key[3:]
+                index_text, field = rest.split("_", 1)
+                index = int(index_text)
+            except (ValueError, IndexError):
+                return default
+            channel = default_gpio_channel(index)
+            return channel.get(field, default)
+        return default
 
     # Audio group
     if group == "Audio":

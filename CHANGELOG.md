@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Added
+
+- Raspberry Pi GPIO inputs map mixer GPI contacts to LEDs and AIR timers (Settings → GPIO), with wiring diagrams and pinout links in the manuals
+
+### Changed
+
+- GPIO wiring diagrams in the manuals show a PC817 module with silkscreen terminals `IN1`–`IN8` / `GND` and `OUT1`–`OUT8` / `GND`
+
 ## [1.0.0beta8]
 
 ### Added

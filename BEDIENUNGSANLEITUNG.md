@@ -39,6 +39,7 @@ OnAirScreen ist eine vielseitige **On-Air-Lampe** für professionelle Broadcast-
 - **Wetter-Widget** (OpenWeatherMap)
 - **Fernsteuerung** per Tastatur, Maus (Doppelklick/Rechtsklick), UDP, HTTP, Web-UI, MQTT, OSC, REST-API und Bitfocus Companion
 - **Home-Assistant-Integration** via MQTT Autodiscovery
+- **GPIO-Eingänge** auf dem Raspberry Pi (Mixer-GPI über Optokoppler → LEDs und AIR-Timer)
 
 Die Anwendung startet standardmäßig im **Vollbildmodus** mit ausgeblendetem Mauszeiger und eignet sich für dedizierte Studio-Monitore, Raspberry-Pi-Setups und Touch-freie Bedienung.
 
@@ -202,6 +203,7 @@ Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,` (oder Rechtsklick
 | **Timers**            | AIR-Timer 1–4                          |
 | **Fonts**             | Schriftarten für alle Elemente         |
 | **Audio Meters**      | Pegelanzeige, Quelle, TooLoud, Silence Detection |
+| **GPIO**              | Raspberry-Pi-GPIO-Eingänge für Mixer-GPI         |
 | **About**             | Version, Lizenzinfo, Log-Level, Log-Ordner, Reset  |
 | **License**           | OASL 1.0 und Third-Party-Hinweise (PySide6/Qt, Fonts, Beispiele) |
 
@@ -610,6 +612,84 @@ Das Bildschirm-WARN nutzt Priorität **2** (hoch) und liegt damit über TooLoud 
 
 
 
+### 5.9 GPIO
+
+Raspberry-Pi-GPIO-Eingänge legen Mixer-GPI-Kontakte auf dieselben LED- und AIR-Kommandos wie die Netzwerk-API. Einstellen unter **Settings → GPIO**. Nur auf dem Raspberry Pi verfügbar.
+
+Pi-GPIO ist **3,3 V**. Mixer-GPI ist oft 5–24 V oder Open Collector — **immer ein PC817-Isolationsmodul verwenden**. Potenzialfreie Relaiskontakte nach GND dürfen direkt angeschlossen werden (interner Pull-up, Invert an).
+
+| Einstellung    | Schlüssel              | Standard | Beschreibung |
+| -------------- | ---------------------- | -------- | ------------ |
+| Enable GPIO    | `GPIO/enabled`         | `false`  | Konfigurierte BCM-Pins überwachen |
+| Debounce       | `GPIO/debounce_ms`     | `50`     | Prellen kürzer als dieses Intervall ignorieren (ms) |
+| GPI*n* Enable  | `GPIO/gpiN_enabled`    | GPI1–2 an, 3–8 aus | Diesen Eingang nutzen |
+| GPI*n* BCM pin | `GPIO/gpiN_pin`        | 17, 27, 5, 6, 12, 13, 16, 22 | Nur sichere BCM-Pins |
+| GPI*n* Invert  | `GPIO/gpiN_invert`     | `true`   | An: Kontakt nach GND ist aktiv (Pull-up) |
+| GPI*n* Mode    | `GPIO/gpiN_mode`       | `level`  | `level`, `rising`, `falling`, `both` |
+| GPI*n* Action  | `GPIO/gpiN_action`     | LED1 / AIR3 | LED1–4, AIR1–4, AIR3/AIR4 Reset, Custom |
+| GPI*n* Command | `GPIO/gpiN_command`    | *(leer)* | API-Kommando für Custom |
+
+**Level** (typisch Tally/Fader): geschlossen sendet `LED1:ON` / `AIR3:ON`, offen sendet `OFF`. **Rising / Falling / Both** senden `TOGGLE` (oder Reset / das Custom-Kommando) auf dieser Flanke.
+
+Werks-Mapping für zwei Mixer-GPI-Leitungen: GPI1 BCM 17 → LED1 (ON AIR), GPI2 BCM 27 → AIR3 (Radio-Timer). GPIO aktivieren und Kontakte über ein PC817-Modul (oder trockene Relais nach GND) anschließen.
+
+Sichere BCM-Pins: `5, 6, 12, 13, 16, 17, 22, 23, 24, 25, 26, 27` (nicht I2C 2/3 oder UART 14/15).
+
+#### Verdrahtung
+
+Der 40-polige GPIO-Header ist derselbe auf Raspberry Pi **3, 4, 400, 5, 500, Zero 2 W** und dem **CM4/CM5**-IO-Board-Header. In den Settings gelten **BCM**-Nummern, nicht die physischen Stiftnummern.
+
+**PC817-Modul (empfohlen bei Mixer-GPI 5–24 V oder Open Collector):**
+
+```mermaid
+flowchart LR
+  Mixer["Mixer-GPI"] -->|"IN1–8"| Pc817["PC817-Modul"]
+  Mixer -->|"GND"| Pc817
+  Pc817 -->|"OUT1–8"| BcmPin["Raspberry-Pi-BCM-Pin"]
+  Pc817 -->|"GND"| PiGnd["Raspberry-Pi-GND"]
+```
+
+Jeder Mixer-GPI besteht aus zwei Adern: `IN1`–`IN8` dieses Kanals und das `GND` der Eingangsseite. Auf der Pi-Seite denselben Kanal `OUT1`–`OUT8` an den BCM-Pin und das `GND` der Ausgangsseite an Pi-GND (GPI1 → IN1/OUT1, GPI2 → IN2/OUT2, …). **Invert** anlassen (aktiv = Pin nach GND gezogen). Beispiel: [Hailege 8-Kanal-PC817-Isolationsmodul](https://amzn.to/4xbrnd8) (Amazon-Affiliate-Link).
+
+**Nur trockener Relaiskontakt** (bereits isoliert, keine Spannung am Mixer-GPI):
+
+```mermaid
+flowchart LR
+  Relay["Mixer-Relais potenzialfrei"] --> BcmPin["Pi-BCM-Pin"]
+  Relay --> PiGnd["Pi GND"]
+```
+
+Keine 5 V oder 12/24 V direkt auf einen GPIO-Pin legen.
+
+**Werks-Defaults am Header** (Platine mit USB/Ethernet nach unten; Stift 1 ist bei den meisten Boards die 3,3-V-Ecke am SD-/Power-Ende):
+
+| OAS-Eingang | BCM | Header-Stift | Typische Nutzung |
+| ----------- | --- | ------------ | ---------------- |
+| GPI1        | 17  | 11           | ON AIR (LED1)    |
+| GPI2        | 27  | 13           | Radio-Timer (AIR3) |
+| Masse       | —   | 6, 9, 14, 20, 25, 30, 34, 39 | gemeinsames GND |
+
+Sichere BCM-Pins und zugehörige Header-Stifte (diese Werte unter **BCM pin**):
+
+| BCM | Header | BCM | Header | BCM | Header |
+| --- | ------ | --- | ------ | --- | ------ |
+| 5   | 29     | 12  | 32     | 22  | 15     |
+| 6   | 31     | 13  | 33     | 23  | 16     |
+| 16  | 36     | 17  | 11     | 24  | 18     |
+| 26  | 37     | 27  | 13     | 25  | 22     |
+
+**Pinout-Referenzen** (40-poliger Header, BCM-Nummerierung):
+
+- [Raspberry Pi GPIO and 40-pin header](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#gpio-and-the-40-pin-header) (offiziell)
+- [pinout.xyz](https://pinout.xyz/) (interaktiv; gleicher Header auf Pi 3 / 4 / 5 / Zero 2 W)
+- Pi 5 Überblick: [Raspberry Pi 5](https://www.raspberrypi.com/documentation/computers/raspberry-pi-5.html)
+- Compute-Module-IO-Boards: [Compute Module](https://www.raspberrypi.com/documentation/computers/compute-module.html)
+
+
+---
+
+
+
 ## 6. Funktionen im Detail
 
 
@@ -738,6 +818,10 @@ Wenn **Replace IPs after 10s** aktiviert ist, wird die NOW-Zeile danach durch de
 
 
 > Diese Befehle sind **nicht** über die Einstellungs-UI erreichbar, sondern nur per API/MQTT.
+
+### 6.7 GPIO-Eingänge (Raspberry Pi)
+
+Mixer-GPI (Kontakt) kann LEDs und AIR-Timer über die Raspberry-Pi-GPIO ansteuern. Schaltplan, PC817-Modul, Header-Stifte und Pinout-Links stehen unter [5.9 GPIO](#59-gpio). GPIO ist lokale Hardware, keine Netzwerk-API.
 
 ---
 
@@ -1182,6 +1266,15 @@ Crash-Dateien werden immer geschrieben, auch wenn das Log-Level `NONE` ist. Den 
 - Firewall-Regeln für UDP/HTTP/OSC-Ports prüfen
 - Korrekte IP-Adresse und Ports verwenden
 - Mit `curl http://127.0.0.1:8010/api/status` lokal testen
+
+
+
+### GPIO schaltet LEDs oder Timer nicht
+
+- GPIO funktioniert nur auf dem Raspberry Pi. Status unter **Settings → GPIO** prüfen
+- PC817-Modul verwenden; niemals 5–24 V vom Mixer direkt auf Pi-Pins
+- Invert (Standard an für Kontakt nach GND) sowie Level- vs. Flanken-Modus prüfen
+- GPIO und die jeweilige GPI-Zeile aktivieren, dann Apply
 
 
 

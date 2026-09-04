@@ -33,8 +33,10 @@ from PySide6.QtGui import (
     QPalette, QColor, QFont, QIcon, QPixmap, QPainter, QPen, QAction,
     QRegularExpressionValidator, QDesktopServices,
 )
-from PySide6.QtWidgets import (QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
-                              QInputDialog, QLineEdit)
+from PySide6.QtWidgets import (
+    QWidget, QColorDialog, QFileDialog, QErrorMessage, QMessageBox,
+    QInputDialog, QLineEdit, QCheckBox, QComboBox, QGridLayout, QLabel,
+)
 
 from settings import Ui_Settings
 from crash_handler import get_log_directory, ensure_log_directory
@@ -44,6 +46,7 @@ from weatherwidget import WeatherWidget as ww, extract_owm_city_id, parse_owm_ge
 from defaults import *  # noqa: F403, F405
 from exceptions import SettingsError, InvalidConfigValueError, log_exception
 from font_loader import resolve_font_name
+from gpio_manager import gpio_status_message
 from meter_engine import migrate_audio_layout_and_unit, normalize_meter_layout
 
 SETTINGS_WINDOW_INITIAL_WIDTH = 700
@@ -347,6 +350,7 @@ class Settings(QWidget, Ui_Settings):
         # self.owmUnits = {"Kelvin": "", "Celsius": "metric", "Fahrenheit": "imperial"}
 
         self.setupUi(self)
+        self._setup_gpio_inputs_ui()
         self.plainTextEdit.setPlainText(composed_license_dialog_text())
         self._station_name_color = QColor(DEFAULT_STATION_COLOR)
         self._slogan_color = QColor(DEFAULT_SLOGAN_COLOR)
@@ -543,6 +547,7 @@ class Settings(QWidget, Ui_Settings):
         # MQTT checkbox connection
         self.enablemqtt.toggled.connect(self._on_mqtt_enabled_changed)
         self.enableosc.toggled.connect(self._on_osc_enabled_changed)
+        self.checkBox_GpioEnabled.toggled.connect(self._on_gpio_enabled_changed)
 
         # Audio meters
         self.pushButton_AudioRefresh.clicked.connect(
@@ -638,7 +643,8 @@ class Settings(QWidget, Ui_Settings):
         # List of all configuration groups
         groups = [
             "General", "NTP", "TimeSource", "LEDS", "LED1", "LED2", "LED3", "LED4",
-            "Clock", "Network", "OSC", "Formatting", "WeatherWidget", "Timers", "Fonts", "Audio"
+            "Clock", "Network", "OSC", "Formatting", "WeatherWidget", "Timers", "Fonts", "Audio",
+            "GPIO",
         ]
         if include_mqtt:
             groups.append("MQTT")
@@ -1094,6 +1100,8 @@ class Settings(QWidget, Ui_Settings):
                 getattr(self, f"FontBold_{prefix}").setChecked(is_bold_font_weight(weight))
                 self._apply_font_preview(prefix)
 
+        self._restore_gpio_settings(settings)
+
     def getSettingsFromDialog(self):
         if self.oacmode:
             settings = self.settings
@@ -1335,6 +1343,8 @@ class Settings(QWidget, Ui_Settings):
                 style = DEFAULT_AUDIO_DISPLAY_STYLE
             settings.setValue('display_style', style)
             settings.setValue('meter_width', int(self.spinBox_MeterWidth.value()))
+
+        self._save_gpio_settings(settings)
 
         with settings_group(settings, "Fonts"):
             for prefix in FONT_ROW_PREFIXES:
@@ -2162,6 +2172,14 @@ class Settings(QWidget, Ui_Settings):
         self.oscsendport.setToolTip(
             "Destination UDP port for OSC status push (Companion feedback port, default: 9000)"
         )
+
+        self.checkBox_GpioEnabled.setToolTip(
+            "Read Raspberry Pi GPIO pins and map mixer GPI contacts to LED and AIR commands"
+        )
+        self.spinBox_GpioDebounce.setToolTip("Ignore contact bounce shorter than this interval")
+        self.label_GpioWarning.setToolTip(
+            "Use an optocoupler between mixer GPI and the Pi. Do not apply 5–24 V directly to GPIO pins."
+        )
         
         # Formatting settings
         self.dateFormat.setToolTip("Date format string (e.g., 'dddd, dd. MMMM yyyy' for 'Monday, 01. January 2024')")
@@ -2299,6 +2317,138 @@ class Settings(QWidget, Ui_Settings):
         self.label_oscport.setEnabled(enabled)
         self.label_oscsendhost.setEnabled(enabled)
         self.label_oscsendport.setEnabled(enabled)
+
+    def _on_gpio_enabled_changed(self, enabled: bool) -> None:
+        """Enable or disable GPIO mapping controls."""
+        self.spinBox_GpioDebounce.setEnabled(enabled)
+        self.label_GpioDebounce.setEnabled(enabled)
+        for row in getattr(self, "_gpio_rows", []):
+            for key, widget in row.items():
+                if key in ("index", "command"):
+                    continue
+                widget.setEnabled(enabled)
+            self._update_gpio_command_enabled(row, enabled)
+        self._refresh_gpio_status()
+
+    def _update_gpio_command_enabled(self, row: dict, gpio_enabled: bool) -> None:
+        action = row["action"].currentData()
+        row["command"].setEnabled(gpio_enabled and action == "CUSTOM")
+
+    def _setup_gpio_inputs_ui(self) -> None:
+        """Build the 8-channel GPIO mapping grid in the GPIO tab."""
+        container = self.gpioInputsContainer
+        layout = QGridLayout(container)
+        layout.setContentsMargins(0, 8, 0, 0)
+        layout.setHorizontalSpacing(8)
+        layout.setVerticalSpacing(4)
+        headers = ("", "On", "BCM pin", "Invert", "Mode", "Action", "Custom command")
+        for column, title in enumerate(headers):
+            header = QLabel(title)
+            layout.addWidget(header, 0, column)
+
+        self._gpio_rows = []
+        for index in range(1, GPIO_CHANNEL_COUNT + 1):
+            defaults = default_gpio_channel(index)
+            label = QLabel(f"GPI{index}")
+            enabled = QCheckBox()
+            pin = QComboBox()
+            for bcm in GPIO_SAFE_BCM_PINS:
+                pin.addItem(str(bcm), bcm)
+            invert = QCheckBox()
+            mode = QComboBox()
+            for value, text in GPIO_MODE_LABELS.items():
+                mode.addItem(text, value)
+            action = QComboBox()
+            for value, text in GPIO_ACTION_LABELS.items():
+                action.addItem(text, value)
+            command = QLineEdit()
+            command.setPlaceholderText("LED1:ON")
+            row = {
+                "index": index,
+                "label": label,
+                "enabled": enabled,
+                "pin": pin,
+                "invert": invert,
+                "mode": mode,
+                "action": action,
+                "command": command,
+            }
+            action.currentIndexChanged.connect(
+                lambda _i, current=row: self._update_gpio_command_enabled(
+                    current, self.checkBox_GpioEnabled.isChecked()
+                )
+            )
+            layout.addWidget(label, index, 0)
+            layout.addWidget(enabled, index, 1)
+            layout.addWidget(pin, index, 2)
+            layout.addWidget(invert, index, 3)
+            layout.addWidget(mode, index, 4)
+            layout.addWidget(action, index, 5)
+            layout.addWidget(command, index, 6)
+            self._gpio_rows.append(row)
+            pin.setCurrentIndex(pin.findData(defaults["pin"]))
+            action.setCurrentIndex(action.findData(defaults["action"]))
+            invert.setChecked(defaults["invert"])
+            enabled.setChecked(defaults["enabled"])
+
+    def _restore_gpio_settings(self, settings: QSettings) -> None:
+        """Load GPIO group values into the GPIO tab widgets."""
+        with settings_group(settings, "GPIO"):
+            enabled = settings.value("enabled", DEFAULT_GPIO_ENABLED, type=bool)
+            debounce = settings.value("debounce_ms", DEFAULT_GPIO_DEBOUNCE_MS, type=int)
+            self.checkBox_GpioEnabled.blockSignals(True)
+            self.checkBox_GpioEnabled.setChecked(bool(enabled))
+            self.checkBox_GpioEnabled.blockSignals(False)
+            self.spinBox_GpioDebounce.setValue(int(debounce if debounce is not None else DEFAULT_GPIO_DEBOUNCE_MS))
+            for row in getattr(self, "_gpio_rows", []):
+                index = row["index"]
+                defaults = default_gpio_channel(index)
+                row["enabled"].setChecked(
+                    settings.value(gpio_setting_key(index, "enabled"), defaults["enabled"], type=bool)
+                )
+                pin_value = settings.value(gpio_setting_key(index, "pin"), defaults["pin"], type=int)
+                pin_index = row["pin"].findData(int(pin_value if pin_value is not None else defaults["pin"]))
+                row["pin"].setCurrentIndex(pin_index if pin_index >= 0 else 0)
+                row["invert"].setChecked(
+                    settings.value(gpio_setting_key(index, "invert"), defaults["invert"], type=bool)
+                )
+                mode_value = str(settings.value(gpio_setting_key(index, "mode"), defaults["mode"]) or defaults["mode"])
+                mode_index = row["mode"].findData(mode_value)
+                row["mode"].setCurrentIndex(mode_index if mode_index >= 0 else 0)
+                action_value = str(
+                    settings.value(gpio_setting_key(index, "action"), defaults["action"]) or defaults["action"]
+                )
+                action_index = row["action"].findData(action_value)
+                row["action"].setCurrentIndex(action_index if action_index >= 0 else 0)
+                row["command"].setText(
+                    str(settings.value(gpio_setting_key(index, "command"), defaults["command"]) or "")
+                )
+        self._on_gpio_enabled_changed(self.checkBox_GpioEnabled.isChecked())
+
+    def _save_gpio_settings(self, settings: QSettings) -> None:
+        """Write GPIO tab widgets into the GPIO QSettings group."""
+        with settings_group(settings, "GPIO"):
+            settings.setValue("enabled", self.checkBox_GpioEnabled.isChecked())
+            settings.setValue("debounce_ms", int(self.spinBox_GpioDebounce.value()))
+            for row in getattr(self, "_gpio_rows", []):
+                index = row["index"]
+                pin = row["pin"].currentData()
+                if pin is None:
+                    pin = default_gpio_channel(index)["pin"]
+                mode = row["mode"].currentData() or DEFAULT_GPIO_MODE
+                action = row["action"].currentData() or "LED1"
+                settings.setValue(gpio_setting_key(index, "enabled"), row["enabled"].isChecked())
+                settings.setValue(gpio_setting_key(index, "pin"), int(pin))
+                settings.setValue(gpio_setting_key(index, "invert"), row["invert"].isChecked())
+                settings.setValue(gpio_setting_key(index, "mode"), str(mode))
+                settings.setValue(gpio_setting_key(index, "action"), str(action))
+                settings.setValue(gpio_setting_key(index, "command"), row["command"].text().strip())
+
+    def _refresh_gpio_status(self) -> None:
+        """Update the GPIO status label from platform and checkbox state."""
+        self.label_GpioStatus.setText(
+            gpio_status_message(enabled=self.checkBox_GpioEnabled.isChecked())
+        )
 
     def _on_audio_meters_enabled_changed(self, enabled: bool) -> None:
         """Enable/disable meter-related controls."""

@@ -366,6 +366,25 @@ class TestGetDefault:
         """Test Fonts group with unknown prefix"""
         assert get_default("Fonts", "UnknownFontSize") == DEFAULT_FONT_SIZE_LED  # Fallback to LED size
 
+    def test_gpio_group(self):
+        """Test GPIO group defaults."""
+        from defaults import (
+            DEFAULT_GPIO_DEBOUNCE_MS,
+            DEFAULT_GPIO_ENABLED,
+            default_gpio_channel,
+        )
+
+        assert get_default("GPIO", "enabled") == DEFAULT_GPIO_ENABLED
+        assert get_default("GPIO", "debounce_ms") == DEFAULT_GPIO_DEBOUNCE_MS
+        gpi1 = default_gpio_channel(1)
+        gpi2 = default_gpio_channel(2)
+        assert get_default("GPIO", "gpi1_pin") == gpi1["pin"]
+        assert get_default("GPIO", "gpi1_action") == "LED1"
+        assert get_default("GPIO", "gpi1_enabled") is True
+        assert get_default("GPIO", "gpi2_pin") == gpi2["pin"]
+        assert get_default("GPIO", "gpi2_action") == "AIR3"
+        assert get_default("GPIO", "gpi8_enabled") is False
+
     def test_unknown_group(self):
         """Test unknown group returns default"""
         assert get_default("UnknownGroup", "key") is None
