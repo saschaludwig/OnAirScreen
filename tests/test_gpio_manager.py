@@ -17,8 +17,10 @@ from gpio_manager import (
     FakeGpioBackend,
     GpioManager,
     command_for_event,
+    debian_gpio_site_paths,
     gpio_status_message,
     is_raspberry_pi,
+    load_gpiozero_button,
     logical_active,
     read_gpio_config,
 )
@@ -90,6 +92,28 @@ class TestHelpers:
 
     def test_is_raspberry_pi_false_here(self):
         assert is_raspberry_pi() is False
+
+    def test_debian_gpio_site_paths_only_existing(self):
+        from pathlib import Path
+
+        for path in debian_gpio_site_paths():
+            assert Path(path).is_dir()
+
+    def test_load_gpiozero_button_from_debian_path(self, tmp_path, monkeypatch):
+        pkg = tmp_path / "gpiozero"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text("class Button:\n    pass\n", encoding="utf-8")
+        sys.modules.pop("gpiozero", None)
+        monkeypatch.setattr(
+            "gpio_manager.debian_gpio_site_paths", lambda: [str(tmp_path)]
+        )
+        monkeypatch.setattr(sys, "path", list(sys.path))
+        try:
+            button = load_gpiozero_button()
+            assert button is not None
+            assert button.__name__ == "Button"
+        finally:
+            sys.modules.pop("gpiozero", None)
 
 
 class TestGpioManager:

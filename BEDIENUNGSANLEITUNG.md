@@ -1272,6 +1272,7 @@ Crash-Dateien werden immer geschrieben, auch wenn das Log-Level `NONE` ist. Den 
 ### GPIO schaltet LEDs oder Timer nicht
 
 - GPIO funktioniert nur auf dem Raspberry Pi. Status unter **Settings → GPIO** prüfen
+- Status „gpiozero library not available“: `sudo apt install python3-gpiozero python3-lgpio python3-rpi-lgpio` (auf dem OnAirScreen-Pi-Image bereits enthalten)
 - PC817-Modul verwenden; niemals 5–24 V vom Mixer direkt auf Pi-Pins
 - Invert (Standard an für Kontakt nach GND) sowie Level- vs. Flanken-Modus prüfen
 - GPIO und die jeweilige GPI-Zeile aktivieren, dann Apply

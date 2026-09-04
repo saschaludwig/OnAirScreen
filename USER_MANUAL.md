@@ -1275,6 +1275,7 @@ Crash files are always written, even if the log level is `NONE`. Send the log fo
 ### GPIO not switching LEDs or timers
 
 - GPIO works on Raspberry Pi only. Check **Settings → GPIO** status
+- Status "gpiozero library not available": `sudo apt install python3-gpiozero python3-lgpio python3-rpi-lgpio` (already on the OnAirScreen Pi image)
 - Use a PC817 module; never feed mixer 5–24 V into Pi pins
 - Confirm Invert (default on for contacts to GND) and Level vs edge mode
 - Enable GPIO and the individual GPI row, then Apply`

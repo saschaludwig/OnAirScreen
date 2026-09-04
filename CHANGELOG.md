@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Fixed
+
+- Raspberry Pi GPIO works in the packaged app by loading system `python3-gpiozero` / `python3-lgpio` (the freeze does not bundle them)
+
 ## [1.0.0beta9]
 
 ### Added

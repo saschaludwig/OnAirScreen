@@ -26,6 +26,7 @@ commands as the UDP/HTTP API.
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -50,12 +51,46 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-try:
-    from gpiozero import Button as GpioZeroButton
-    GPIOZERO_AVAILABLE = True
-except ImportError:
-    GPIOZERO_AVAILABLE = False
-    GpioZeroButton = None  # type: ignore
+
+def debian_gpio_site_paths() -> list[str]:
+    """Debian/Raspberry Pi OS dist-packages dirs that exist on this machine."""
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    candidates = (
+        Path("/usr/lib/python3/dist-packages"),
+        Path(f"/usr/lib/python{version}/dist-packages"),
+        Path(f"/usr/local/lib/python{version}/dist-packages"),
+    )
+    return [str(path) for path in candidates if path.is_dir()]
+
+
+def load_gpiozero_button() -> Optional[type]:
+    """
+    Return gpiozero.Button, or None.
+
+    Packaged Raspberry Pi builds are PyInstaller freezes and do not bundle
+    gpiozero. The Pi image and the .deb Depends install python3-gpiozero and
+    python3-lgpio into Debian dist-packages; append those paths and retry.
+    """
+    try:
+        from gpiozero import Button as GpioZeroButton
+        return GpioZeroButton
+    except ImportError:
+        pass
+    extra_paths = debian_gpio_site_paths()
+    for path in extra_paths:
+        if path not in sys.path:
+            sys.path.append(path)
+    if not extra_paths:
+        return None
+    try:
+        from gpiozero import Button as GpioZeroButton
+        return GpioZeroButton
+    except ImportError:
+        return None
+
+
+GpioZeroButton = load_gpiozero_button()
+GPIOZERO_AVAILABLE = GpioZeroButton is not None
 
 _PI_MODEL_PATHS = (
     Path("/proc/device-tree/model"),
