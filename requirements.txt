@@ -6,7 +6,7 @@ pytest
 pytest-asyncio
 websockets>=17.1
 paho-mqtt>=2.1.0
-python-osc>=1.8.3
+python-osc>=1.10.2
 sounddevice
 numpy
 scipy
