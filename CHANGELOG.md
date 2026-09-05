@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Added
+
+- Fedora Linux ships as an RPM (`sudo dnf install ./OnAirScreen_*_Fedora_x64.rpm`); PortAudio and other system libraries are pulled in as package dependencies
+
 ## [1.0.0beta11]
 
 ### Added

@@ -122,7 +122,7 @@ OnAirScreen shows full-height stereo L/R meters on the left side of the screen (
 **Troubleshooting:** If no Livewire or AES67 sources appear, check AoIP interface, VLAN, and IGMP. Livewire ads are `239.192.255.3:4001`; SAP is `239.255.255.255:9875` and `224.2.127.254:9875`. If a stream is listed but the meter stays silent, check RTP port and codec (Livewire is L24/48 kHz; AES67 L16 vs L24).
 
 **System requirements for audio capture:**
- * PortAudio system library: macOS `brew install portaudio`, Debian/Ubuntu `apt install libportaudio2`
+ * PortAudio system library: macOS `brew install portaudio`, Debian/Ubuntu `apt install libportaudio2`, Fedora/RHEL `dnf install portaudio`
  * On macOS, grant **Microphone** permission to OnAirScreen (local input only)
 
 #### Top-of-Hour Countdown (AIR3)

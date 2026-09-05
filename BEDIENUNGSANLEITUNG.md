@@ -73,6 +73,13 @@ python start.py
 
 Fertige Binaries für Windows, Linux, macOS und Raspberry Pi sind über [astrastudio.de/shop](https://www.astrastudio.de/shop/) erhältlich.
 
+Linux-Pakete ziehen Systembibliotheken (PortAudio, OpenGL, Xcb) über den Paketmanager nach:
+
+- Debian / Ubuntu: `sudo apt install ./OnAirScreen_*_Linux_x64.deb`
+- Fedora: `sudo dnf install ./OnAirScreen_*_Fedora_x64.rpm`
+
+Das Fedora-RPM wird auf Fedora 44 gebaut. Ältere RHEL-, Rocky- oder Alma-Versionen können wegen glibc nicht starten.
+
 ### Erster Start
 
 Beim ersten Start werden Standardeinstellungen geladen. Der Einstellungsdialog öffnet sich mit `Ctrl+S` (macOS: `Cmd+S`). Änderungen werden erst nach Klick auf **Apply** übernommen und gespeichert.
