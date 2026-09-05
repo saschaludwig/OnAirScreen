@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Added
+
+- Long-click / long-press on the main screen opens the same context menu as right-click
+
+### Fixed
+
+- Raspberry Pi GPIO import of system gpiozero no longer fails for missing freeze stdlib modules (`colorsys`, `fractions`)
+
 ## [1.0.0beta10]
 
 ### Fixed

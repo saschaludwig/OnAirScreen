@@ -25,6 +25,8 @@ commands as the UDP/HTTP API.
 
 from __future__ import annotations
 
+import colorsys  # noqa: F401  # colorzero (via gpiozero) needs this in the freeze
+import fractions  # noqa: F401  # colorzero.conversions uses Fraction
 import logging
 import sys
 import time
@@ -74,8 +76,8 @@ def load_gpiozero_button() -> Optional[type]:
     try:
         from gpiozero import Button as GpioZeroButton
         return GpioZeroButton
-    except ImportError:
-        pass
+    except ImportError as exc:
+        logger.debug("gpiozero not on default path: %s", exc)
     extra_paths = debian_gpio_site_paths()
     for path in extra_paths:
         if path not in sys.path:
@@ -85,7 +87,8 @@ def load_gpiozero_button() -> Optional[type]:
     try:
         from gpiozero import Button as GpioZeroButton
         return GpioZeroButton
-    except ImportError:
+    except ImportError as exc:
+        logger.warning("gpiozero import failed: %s", exc)
         return None
 
 

@@ -6,7 +6,7 @@ Unit tests for start.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PySide6.QtCore import Qt, QByteArray, QPoint
+from PySide6.QtCore import Qt, QByteArray, QPoint, QTimer
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QMenu
 
 # Import after QApplication setup
@@ -3136,10 +3136,22 @@ class TestWindowGeometry:
 class TestMainScreenMouseActions:
     """Tests for double-click fullscreen toggle and right-click context menu."""
 
+    def _screen_with_long_press(self):
+        """Build a bare MainScreen with a real long-press timer for mouse tests."""
+        screen = MainScreen.__new__(MainScreen)
+        timer = QTimer()
+        timer.setSingleShot(True)
+        screen._long_press_timer = timer
+        screen._long_press_global_pos = QPoint()
+        screen._long_press_local_pos = QPoint()
+        screen._show_main_context_menu = Mock()
+        screen.toggle_full_screen = Mock()
+        return screen
+
     def test_left_double_click_toggles_fullscreen(self):
         """Left double-click on the main screen toggles fullscreen."""
-        screen = MainScreen.__new__(MainScreen)
-        screen.toggle_full_screen = Mock()
+        screen = self._screen_with_long_press()
+        screen._long_press_timer.start(5000)
         event = Mock()
         event.button.return_value = Qt.MouseButton.LeftButton
 
@@ -3147,6 +3159,8 @@ class TestMainScreenMouseActions:
 
         screen.toggle_full_screen.assert_called_once()
         event.accept.assert_called_once()
+        assert not screen._long_press_timer.isActive()
+        screen._show_main_context_menu.assert_not_called()
 
     def test_children_are_click_through(self):
         """Child labels let mouse events fall through to the main window."""
@@ -3494,4 +3508,80 @@ class TestMainScreenMouseActions:
 
         screen._show_main_context_menu.assert_called_once_with(QPoint(5, 5))
         event.accept.assert_called_once()
+
+    def test_left_press_starts_long_press_timer(self):
+        """Left-press on the main screen starts the long-press timer."""
+        screen = self._screen_with_long_press()
+        event = Mock()
+        event.button.return_value = Qt.MouseButton.LeftButton
+        event.globalPos.return_value = QPoint(10, 20)
+        event.pos.return_value = QPoint(3, 4)
+
+        MainScreen.mousePressEvent(screen, event)
+
+        assert screen._long_press_timer.isActive()
+        assert screen._long_press_global_pos == QPoint(10, 20)
+        assert screen._long_press_local_pos == QPoint(3, 4)
+        event.accept.assert_called_once()
+        screen._show_main_context_menu.assert_not_called()
+
+    def test_left_release_before_timeout_does_not_show_menu(self):
+        """Releasing the left button before the hold interval cancels the menu."""
+        screen = self._screen_with_long_press()
+        press = Mock()
+        press.button.return_value = Qt.MouseButton.LeftButton
+        press.globalPos.return_value = QPoint(10, 20)
+        press.pos.return_value = QPoint(0, 0)
+        MainScreen.mousePressEvent(screen, press)
+        assert screen._long_press_timer.isActive()
+
+        release = Mock()
+        release.button.return_value = Qt.MouseButton.LeftButton
+        MainScreen.mouseReleaseEvent(screen, release)
+
+        assert not screen._long_press_timer.isActive()
+        screen._show_main_context_menu.assert_not_called()
+        release.accept.assert_called_once()
+
+    def test_mouse_move_beyond_drag_distance_cancels_long_press(self):
+        """Moving farther than startDragDistance cancels a pending long-press."""
+        screen = self._screen_with_long_press()
+        press = Mock()
+        press.button.return_value = Qt.MouseButton.LeftButton
+        press.globalPos.return_value = QPoint(10, 20)
+        press.pos.return_value = QPoint(0, 0)
+        MainScreen.mousePressEvent(screen, press)
+        assert screen._long_press_timer.isActive()
+
+        move = Mock()
+        move.pos.return_value = QPoint(QApplication.startDragDistance() + 1, 0)
+        MainScreen.mouseMoveEvent(screen, move)
+
+        assert not screen._long_press_timer.isActive()
+        screen._show_main_context_menu.assert_not_called()
+        move.accept.assert_called_once()
+
+    def test_long_press_timeout_shows_context_menu(self):
+        """When the hold interval elapses, the main context menu opens."""
+        screen = self._screen_with_long_press()
+        screen._long_press_global_pos = QPoint(10, 20)
+
+        MainScreen._on_long_press_timeout(screen)
+
+        screen._show_main_context_menu.assert_called_once_with(QPoint(10, 20))
+
+    def test_left_click_on_led_does_not_start_main_long_press(self):
+        """LED left-click toggles and does not open the main-screen long-press menu."""
+        screen = self._screen_with_long_press()
+        callback = Mock()
+        widget = QLabel()
+        MainScreen._bind_left_click_toggle(screen, widget, callback)
+
+        event = Mock()
+        event.button.return_value = Qt.MouseButton.LeftButton
+        widget.mousePressEvent(event)
+
+        callback.assert_called_once()
+        assert not screen._long_press_timer.isActive()
+        screen._show_main_context_menu.assert_not_called()
 

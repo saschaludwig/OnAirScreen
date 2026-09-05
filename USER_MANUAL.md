@@ -37,7 +37,7 @@ OnAirScreen is a versatile **on-air lamp** solution for professional broadcast e
 - **Instance name** (DNS-safe, e.g. `Studio-1`) to tell several OnAirScreens apart
 - **Text lines** NOW, NEXT, and WARN (with priority system)
 - **Weather widget** (OpenWeatherMap)
-- **Remote control** via keyboard, mouse (double-click/right-click), UDP, HTTP, Web UI, MQTT, OSC, REST API, and Bitfocus Companion
+- **Remote control** via keyboard, mouse (double-click/right-click/long-click), UDP, HTTP, Web UI, MQTT, OSC, REST API, and Bitfocus Companion
 - **Home Assistant integration** via MQTT Autodiscovery
 - **GPIO inputs** on Raspberry Pi (mixer GPI via optocoupler → LEDs and AIR timers)
 
@@ -112,8 +112,8 @@ The main screen is divided into the following areas:
 ### Fullscreen Mode
 
 - Default: fullscreen with hidden mouse cursor
-- Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** an empty area of the main screen, or right-click → **Toggle Fullscreen**
-- **Right-click menu:** Toggle Fullscreen, Settings, Quit OnAirScreen; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
+- Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** an empty area of the main screen, or right-click / long-click → **Toggle Fullscreen**
+- **Right-click / long-click menu:** Toggle Fullscreen, Settings, Quit OnAirScreen; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
 - Fullscreen state is saved in settings (`General/fullscreen`)
 - In windowed mode, position and size are saved (`Window/geometry`) and restored on the next start
 
@@ -191,7 +191,7 @@ Left-click on an AIR timer starts or stops it (same as `M` / `P` / Space / `S`).
 
 ## 5. Settings Dialog
 
-The settings dialog opens with `Ctrl+S` or `Ctrl+,` (or right-click → **Settings**). If it is already open, the existing window is brought to the front without reloading values. Running AIR timers (including TOTH) stay intact. It contains **several tabs** (arranged vertically on the left):
+The settings dialog opens with `Ctrl+S` or `Ctrl+,` (or right-click / long-click → **Settings**). If it is already open, the existing window is brought to the front without reloading values. Running AIR timers (including TOTH) stay intact. It contains **several tabs** (arranged vertically on the left):
 
 
 | Tab                   | Content                                  |
@@ -551,7 +551,7 @@ Fonts from the `fonts/` directory are also loaded at startup.
 
 ### 5.8 Audio Meters
 
-Stereo level meters on the left side of the screen: L/R (sample peak, true peak, or BBC PPM), a single programme LUFS bar (EBU R128), or both. L/R bars fill with RMS and overlay the current peak. Programme LUFS is one bar (momentary M, short-term S tick). Integrated I and loudness range (LRA) are off by default and start with `LUFSI:START` (Web UI, MQTT Home Assistant switch, Companion, OSC, UDP/HTTP, or right-click). `LUFSI:RESET` restarts a running session; if the session is stopped it hides I and LRA on the meter. Right-click the main screen → **Start I+LRA**, **Stop I+LRA**, or **Reset I+LRA**. Configure under **Settings → Audio Meters**.
+Stereo level meters on the left side of the screen: L/R (sample peak, true peak, or BBC PPM), a single programme LUFS bar (EBU R128), or both. L/R bars fill with RMS and overlay the current peak. Programme LUFS is one bar (momentary M, short-term S tick). Integrated I and loudness range (LRA) are off by default and start with `LUFSI:START` (Web UI, MQTT Home Assistant switch, Companion, OSC, UDP/HTTP, or right-click / long-click). `LUFSI:RESET` restarts a running session; if the session is stopped it hides I and LRA on the meter. Right-click or long-click the main screen → **Start I+LRA**, **Stop I+LRA**, or **Reset I+LRA**. Configure under **Settings → Audio Meters**.
 
 Existing configs with `Audio/unit=lufs` (no `layout` key) are migrated to layout `lufs` and L/R unit `dbtp`.
 

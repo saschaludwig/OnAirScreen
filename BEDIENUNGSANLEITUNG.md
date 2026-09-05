@@ -37,7 +37,7 @@ OnAirScreen ist eine vielseitige **On-Air-Lampe** für professionelle Broadcast-
 - **Instanzname** (DNS-sicher, z. B. `Studio-1`) zur Unterscheidung mehrerer OnAirScreens
 - **Textzeilen** NOW, NEXT und WARN (mit Prioritätssystem)
 - **Wetter-Widget** (OpenWeatherMap)
-- **Fernsteuerung** per Tastatur, Maus (Doppelklick/Rechtsklick), UDP, HTTP, Web-UI, MQTT, OSC, REST-API und Bitfocus Companion
+- **Fernsteuerung** per Tastatur, Maus (Doppelklick/Rechtsklick/Lang-Klick), UDP, HTTP, Web-UI, MQTT, OSC, REST-API und Bitfocus Companion
 - **Home-Assistant-Integration** via MQTT Autodiscovery
 - **GPIO-Eingänge** auf dem Raspberry Pi (Mixer-GPI über Optokoppler → LEDs und AIR-Timer)
 
@@ -112,8 +112,8 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 ### Vollbildmodus
 
 - Standard: Vollbild mit verstecktem Mauszeiger
-- Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf eine leere Fläche des Hauptbildschirms, oder Rechtsklick → **Toggle Fullscreen**
-- **Rechtsklick-Menü:** Toggle Fullscreen, Settings, Quit OnAirScreen; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
+- Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf eine leere Fläche des Hauptbildschirms, oder Rechtsklick / Lang-Klick → **Toggle Fullscreen**
+- **Rechtsklick-/Lang-Klick-Menü:** Toggle Fullscreen, Settings, Quit OnAirScreen; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
 - Der Vollbild-Zustand wird in den Einstellungen (`General/fullscreen`) gespeichert
 - Im Fenstermodus werden Position und Größe gespeichert (`Window/geometry`) und beim nächsten Start wiederhergestellt
 
@@ -191,7 +191,7 @@ Linksklick auf einen AIR-Timer startet oder stoppt ihn (wie `M` / `P` / Leertast
 
 ## 5. Einstellungsdialog
 
-Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,` (oder Rechtsklick → **Settings**). Ist er bereits offen, kommt das Fenster nach vorne, ohne die Werte neu zu laden. Laufende AIR-Timer (inkl. TOTH) bleiben dabei unverändert. Der Dialog enthält **mehrere Registerkarten** (vertikal links angeordnet):
+Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,` (oder Rechtsklick / Lang-Klick → **Settings**). Ist er bereits offen, kommt das Fenster nach vorne, ohne die Werte neu zu laden. Laufende AIR-Timer (inkl. TOTH) bleiben dabei unverändert. Der Dialog enthält **mehrere Registerkarten** (vertikal links angeordnet):
 
 
 | Register              | Inhalt                                 |
@@ -551,7 +551,7 @@ Zusätzlich werden Schriftarten aus dem `fonts/`-Verzeichnis beim Start geladen.
 
 ### 5.8 Audio Meters
 
-Stereo-Pegelanzeige am linken Bildschirmrand: L/R (Sample-Peak, True Peak oder BBC PPM), ein einzelner Programme-LUFS-Balken (EBU R128) oder beides. L/R füllen mit RMS und legen den aktuellen Peak darüber. Programme-LUFS ist ein Balken (Momentary M, Short-term-S-Tick). Integrated I und LRA sind standardmäßig aus und starten mit `LUFSI:START` (Web-UI, MQTT-Home-Assistant-Schalter, Companion, OSC, UDP/HTTP oder Rechtsklick). `LUFSI:RESET` startet eine laufende Session neu; ist sie gestoppt, verschwinden I und LRA im Meter. Rechtsklick auf den Main Screen → **Start I+LRA**, **Stop I+LRA** oder **Reset I+LRA**. Konfiguration unter **Settings → Audio Meters**.
+Stereo-Pegelanzeige am linken Bildschirmrand: L/R (Sample-Peak, True Peak oder BBC PPM), ein einzelner Programme-LUFS-Balken (EBU R128) oder beides. L/R füllen mit RMS und legen den aktuellen Peak darüber. Programme-LUFS ist ein Balken (Momentary M, Short-term-S-Tick). Integrated I und LRA sind standardmäßig aus und starten mit `LUFSI:START` (Web-UI, MQTT-Home-Assistant-Schalter, Companion, OSC, UDP/HTTP oder Rechtsklick / Lang-Klick). `LUFSI:RESET` startet eine laufende Session neu; ist sie gestoppt, verschwinden I und LRA im Meter. Rechtsklick oder Lang-Klick auf den Main Screen → **Start I+LRA**, **Stop I+LRA** oder **Reset I+LRA**. Konfiguration unter **Settings → Audio Meters**.
 
 Bestehende Configs mit `Audio/unit=lufs` (ohne `layout`) werden auf Layout `lufs` und L/R-Unit `dbtp` gemappt.
 

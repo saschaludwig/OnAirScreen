@@ -122,6 +122,11 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.setupUi(self)
         self._make_children_click_through()
         self._install_toggle_clicks()
+        self._long_press_timer = QTimer(self)
+        self._long_press_timer.setSingleShot(True)
+        self._long_press_timer.timeout.connect(self._on_long_press_timeout)
+        self._long_press_global_pos = QPoint()
+        self._long_press_local_pos = QPoint()
 
         self.settings = Settings()
         self.restore_settings_from_config()
@@ -1765,8 +1770,52 @@ class MainScreen(QWidget, Ui_MainScreen):
         widget.mouseDoubleClickEvent = mouse_double_click
         widget.contextMenuEvent = context_menu
 
+    def _long_press_interval_ms(self) -> int:
+        """Return the platform hold interval for opening the context menu."""
+        app_instance = QApplication.instance()
+        if app_instance is None:
+            return 500
+        return app_instance.styleHints().mousePressAndHoldInterval()
+
+    def _cancel_long_press(self) -> None:
+        """Stop a pending long-press so a short click does not open the menu."""
+        self._long_press_timer.stop()
+
+    def _on_long_press_timeout(self) -> None:
+        """Open the main context menu after a left-button hold on empty area."""
+        self._show_main_context_menu(self._long_press_global_pos)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Start the long-press timer on left-click; right-click uses contextMenuEvent."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._long_press_global_pos = QPoint(event.globalPos())
+            self._long_press_local_pos = QPoint(event.pos())
+            self._long_press_timer.start(self._long_press_interval_ms())
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """Cancel a pending long-press when the left button is released early."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._cancel_long_press()
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Cancel a pending long-press if the pointer moves too far."""
+        if self._long_press_timer.isActive():
+            delta = event.pos() - self._long_press_local_pos
+            if delta.manhattanLength() > QApplication.startDragDistance():
+                self._cancel_long_press()
+                event.accept()
+                return
+        super().mouseMoveEvent(event)
+
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         """Toggle windowed/fullscreen mode on left double-click."""
+        self._cancel_long_press()
         if event.button() == Qt.MouseButton.LeftButton:
             self.toggle_full_screen()
             event.accept()
