@@ -6,7 +6,7 @@ Unit tests for start.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PySide6.QtCore import Qt, QByteArray, QPoint, QTimer
+from PySide6.QtCore import Qt, QByteArray, QPoint, QPointF, QTimer
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QMenu
 
 # Import after QApplication setup
@@ -3514,8 +3514,8 @@ class TestMainScreenMouseActions:
         screen = self._screen_with_long_press()
         event = Mock()
         event.button.return_value = Qt.MouseButton.LeftButton
-        event.globalPos.return_value = QPoint(10, 20)
-        event.pos.return_value = QPoint(3, 4)
+        event.globalPosition.return_value = QPointF(10, 20)
+        event.position.return_value = QPointF(3, 4)
 
         MainScreen.mousePressEvent(screen, event)
 
@@ -3530,8 +3530,8 @@ class TestMainScreenMouseActions:
         screen = self._screen_with_long_press()
         press = Mock()
         press.button.return_value = Qt.MouseButton.LeftButton
-        press.globalPos.return_value = QPoint(10, 20)
-        press.pos.return_value = QPoint(0, 0)
+        press.globalPosition.return_value = QPointF(10, 20)
+        press.position.return_value = QPointF(0, 0)
         MainScreen.mousePressEvent(screen, press)
         assert screen._long_press_timer.isActive()
 
@@ -3548,13 +3548,13 @@ class TestMainScreenMouseActions:
         screen = self._screen_with_long_press()
         press = Mock()
         press.button.return_value = Qt.MouseButton.LeftButton
-        press.globalPos.return_value = QPoint(10, 20)
-        press.pos.return_value = QPoint(0, 0)
+        press.globalPosition.return_value = QPointF(10, 20)
+        press.position.return_value = QPointF(0, 0)
         MainScreen.mousePressEvent(screen, press)
         assert screen._long_press_timer.isActive()
 
         move = Mock()
-        move.pos.return_value = QPoint(QApplication.startDragDistance() + 1, 0)
+        move.position.return_value = QPointF(QApplication.startDragDistance() + 1, 0)
         MainScreen.mouseMoveEvent(screen, move)
 
         assert not screen._long_press_timer.isActive()

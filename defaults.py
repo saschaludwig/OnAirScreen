@@ -313,7 +313,7 @@ DEFAULT_AUDIO_PEAK_HOLD_SECONDS: float = 1.5
 DEFAULT_AUDIO_DISPLAY_STYLE: str = "bargraph"  # solid | bargraph
 DEFAULT_AUDIO_METER_WIDTH: int = 115  # px; L/R bars share extra width
 AUDIO_METER_WIDTH_MIN: int = 53
-AUDIO_METER_WIDTH_MAX: int = 150
+AUDIO_METER_WIDTH_MAX: int = 201
 
 AUDIO_SOURCE_LABELS: Dict[str, str] = {
     "device": "Local Input",

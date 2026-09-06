@@ -1788,8 +1788,8 @@ class MainScreen(QWidget, Ui_MainScreen):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Start the long-press timer on left-click; right-click uses contextMenuEvent."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self._long_press_global_pos = QPoint(event.globalPos())
-            self._long_press_local_pos = QPoint(event.pos())
+            self._long_press_global_pos = event.globalPosition().toPoint()
+            self._long_press_local_pos = event.position().toPoint()
             self._long_press_timer.start(self._long_press_interval_ms())
             event.accept()
             return
@@ -1806,7 +1806,7 @@ class MainScreen(QWidget, Ui_MainScreen):
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         """Cancel a pending long-press if the pointer moves too far."""
         if self._long_press_timer.isActive():
-            delta = event.pos() - self._long_press_local_pos
+            delta = event.position().toPoint() - self._long_press_local_pos
             if delta.manhattanLength() > QApplication.startDragDistance():
                 self._cancel_long_press()
                 event.accept()

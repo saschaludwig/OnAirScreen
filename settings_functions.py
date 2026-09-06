@@ -141,6 +141,7 @@ AES67_SAP_POLL_MS = 2000
 AES67_SAP_FIRST_POLL_MS = 250
 LIVEWIRE_ADV_POLL_MS = 2000
 LIVEWIRE_ADV_FIRST_POLL_MS = 250
+UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 
 def _eye_icon(slashed: bool, color: QColor) -> QIcon:
@@ -408,8 +409,13 @@ class Settings(QWidget, Ui_Settings):
         self.logfolderLabel.setText(f"Log Folder: {get_log_directory()}")
         # set update check mode
         self.manual_update_check = False
+        self._notify_on_update = True
         self.sigCheckForUpdate.connect(self.check_for_updates)
-        
+        self._update_check_timer = QTimer(self)
+        self._update_check_timer.setInterval(UPDATE_CHECK_INTERVAL_MS)
+        self._update_check_timer.timeout.connect(self._periodic_check_for_updates)
+        self._update_check_timer.start()
+
         # Set tooltips for all settings widgets
         self._setup_tooltips()
 
@@ -1384,7 +1390,15 @@ class Settings(QWidget, Ui_Settings):
         self.manual_update_check = True
         self.check_for_updates()
 
-    def check_for_updates(self):
+    def _periodic_check_for_updates(self):
+        """Silent 24h check for update-server statistics; no user dialogs."""
+        self.check_for_updates(notify_on_update=False)
+
+    def _should_show_update_dialog(self) -> bool:
+        return self._notify_on_update or self.manual_update_check
+
+    def check_for_updates(self, notify_on_update=True):
+        self._notify_on_update = notify_on_update
         if self.checkBox_UpdateCheck.isChecked():
             logger.info("Starting update check")
             update_key = self.updateKey.text()
@@ -1406,9 +1420,10 @@ class Settings(QWidget, Ui_Settings):
                 logger.debug("Update check request sent successfully")
             else:
                 logger.error(f"Update check failed: update key has wrong format (length: {len(update_key)}, expected: 50)")
-                self.error_dialog = QErrorMessage()
-                self.error_dialog.setWindowTitle("Update Check Error")
-                self.error_dialog.showMessage('Update key is in the wrong format!', 'UpdateKeyError')
+                if self._should_show_update_dialog():
+                    self.error_dialog = QErrorMessage()
+                    self.error_dialog.setWindowTitle("Update Check Error")
+                    self.error_dialog.showMessage('Update key is in the wrong format!', 'UpdateKeyError')
         else:
             logger.debug("Update check skipped: update check is disabled in settings")
 
@@ -1426,8 +1441,9 @@ class Settings(QWidget, Ui_Settings):
 
                 if json_reply['Status'] == "UPDATE":
                     logger.info(f"Update available: {json_reply.get('Message', 'No message')}")
-                    self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
-                    self.timer_message_box.exec()
+                    if self._should_show_update_dialog():
+                        self.timer_message_box = TimerUpdateMessageBox(timeout=10, json_reply=json_reply)
+                        self.timer_message_box.exec()
 
                 if json_reply['Status'] == "OK" and self.manual_update_check:
                     message = json_reply.get('Message', 'No message')

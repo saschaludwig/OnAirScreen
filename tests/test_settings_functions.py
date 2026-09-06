@@ -21,6 +21,7 @@ from settings_functions import (
     FONT_ROW_PREFIXES,
     SETTINGS_WINDOW_INITIAL_HEIGHT,
     SETTINGS_WINDOW_INITIAL_WIDTH,
+    UPDATE_CHECK_INTERVAL_MS,
     composed_license_dialog_text,
     default_font_size_for_prefix,
     font_weight_from_bold,
@@ -1049,5 +1050,97 @@ class TestGpioSettings:
         assert row["mode"].currentData() == "rising"
         assert row["action"].currentData() == "LED2"
         assert row["command"].text() == "LED2:ON"
+
+
+def _update_reply(payload: dict) -> Mock:
+    """Build a successful QNetworkReply mock with a JSON update-check body."""
+    import PySide6.QtNetwork as QtNetwork
+
+    reply = Mock()
+    reply.error.return_value = QtNetwork.QNetworkReply.NetworkError.NoError
+    reply.readAll.return_value = json.dumps(payload).encode("utf-8")
+    return reply
+
+
+class TestUpdateCheck:
+    """Periodic and startup update-check dialog behavior."""
+
+    @pytest.fixture
+    def qapp(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        return app
+
+    @pytest.fixture
+    def settings_oac(self, qapp):
+        return Settings(oacmode=True)
+
+    def test_periodic_timer_interval(self, settings_oac):
+        assert UPDATE_CHECK_INTERVAL_MS == 24 * 60 * 60 * 1000
+        assert settings_oac._update_check_timer.interval() == UPDATE_CHECK_INTERVAL_MS
+        assert settings_oac._update_check_timer.isActive()
+
+    def test_silent_update_does_not_show_dialog(self, settings_oac):
+        settings_oac._notify_on_update = False
+        settings_oac.manual_update_check = False
+        reply = _update_reply({
+            "Status": "UPDATE",
+            "Message": "New version available",
+            "Version": "9.9.9",
+        })
+        with patch("settings_functions.TimerUpdateMessageBox") as mock_box:
+            settings_oac.handle_update_check_response(reply)
+            mock_box.assert_not_called()
+
+    def test_startup_update_shows_dialog(self, settings_oac):
+        settings_oac._notify_on_update = True
+        settings_oac.manual_update_check = False
+        reply = _update_reply({
+            "Status": "UPDATE",
+            "Message": "New version available",
+            "Version": "9.9.9",
+        })
+        with patch("settings_functions.TimerUpdateMessageBox") as mock_box:
+            settings_oac.handle_update_check_response(reply)
+            mock_box.assert_called_once()
+            mock_box.return_value.exec.assert_called_once()
+
+    def test_manual_update_shows_dialog(self, settings_oac):
+        settings_oac._notify_on_update = False
+        settings_oac.manual_update_check = True
+        reply = _update_reply({
+            "Status": "UPDATE",
+            "Message": "New version available",
+            "Version": "9.9.9",
+        })
+        with patch("settings_functions.TimerUpdateMessageBox") as mock_box:
+            settings_oac.handle_update_check_response(reply)
+            mock_box.assert_called_once()
+            mock_box.return_value.exec.assert_called_once()
+
+    def test_silent_check_skips_invalid_key_dialog(self, settings_oac):
+        settings_oac.checkBox_UpdateCheck.setChecked(True)
+        settings_oac.updateKey.setText("short")
+        with patch("settings_functions.QErrorMessage") as mock_err:
+            settings_oac.check_for_updates(notify_on_update=False)
+            mock_err.assert_not_called()
+
+    def test_startup_check_shows_invalid_key_dialog(self, settings_oac):
+        settings_oac.checkBox_UpdateCheck.setChecked(True)
+        settings_oac.updateKey.setText("short")
+        with patch("settings_functions.QErrorMessage") as mock_err:
+            settings_oac.check_for_updates()
+            mock_err.assert_called_once()
+            mock_err.return_value.showMessage.assert_called_once()
+
+    def test_periodic_check_sends_request(self, settings_oac):
+        settings_oac.checkBox_UpdateCheck.setChecked(True)
+        settings_oac.updateKey.setText("A" * 50)
+        with patch("settings_functions.QtNetwork.QNetworkAccessManager") as mock_nam:
+            settings_oac.check_for_updates(notify_on_update=False)
+            mock_nam.return_value.post.assert_called_once()
+            assert settings_oac._notify_on_update is False
+
 
 
