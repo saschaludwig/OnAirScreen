@@ -761,6 +761,16 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="checkBox_AlwaysStartFullscreen">
+             <property name="text">
+              <string>Always start in fullscreen mode</string>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_20">
@@ -5051,6 +5061,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>logoPath</tabstop>
   <tabstop>logoButton</tabstop>
   <tabstop>resetLogoButton</tabstop>
+  <tabstop>checkBox_AlwaysStartFullscreen</tabstop>
   <tabstop>DigitalHourColorButton</tabstop>
   <tabstop>DigitalSecondColorButton</tabstop>
   <tabstop>DigitalDigitColorButton</tabstop>

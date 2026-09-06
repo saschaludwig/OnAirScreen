@@ -6,7 +6,7 @@ Unit tests for start.py
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from PySide6.QtCore import Qt, QByteArray, QPoint, QPointF, QTimer
+from PySide6.QtCore import Qt, QByteArray, QPoint, QPointF, QTimer, QSettings
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QMenu
 
 # Import after QApplication setup
@@ -14,7 +14,7 @@ import sys
 if not QApplication.instance():
     app = QApplication(sys.argv)
 
-from start import MainScreen
+from start import MainScreen, should_start_fullscreen
 from defaults import DEFAULT_TOTH_TIMER_TEXT
 
 
@@ -3131,6 +3131,36 @@ class TestWindowGeometry:
         screen.showNormal.assert_called_once()
         screen._restore_window_geometry.assert_called_once()
         screen._save_window_geometry.assert_not_called()
+
+
+class TestShouldStartFullscreen:
+    """Startup fullscreen follows always_start_fullscreen, then last state."""
+
+    def _settings(self, tmp_path, *, always=None, fullscreen=None):
+        settings = QSettings(str(tmp_path / "oas.ini"), QSettings.Format.IniFormat)
+        settings.beginGroup("General")
+        if always is not None:
+            settings.setValue("always_start_fullscreen", always)
+        if fullscreen is not None:
+            settings.setValue("fullscreen", fullscreen)
+        settings.endGroup()
+        return settings
+
+    def test_override_on_starts_fullscreen_even_if_last_was_windowed(self, tmp_path):
+        settings = self._settings(tmp_path, always=True, fullscreen=False)
+        assert should_start_fullscreen(settings) is True
+
+    def test_override_off_uses_last_windowed_state(self, tmp_path):
+        settings = self._settings(tmp_path, always=False, fullscreen=False)
+        assert should_start_fullscreen(settings) is False
+
+    def test_override_off_uses_last_fullscreen_state(self, tmp_path):
+        settings = self._settings(tmp_path, always=False, fullscreen=True)
+        assert should_start_fullscreen(settings) is True
+
+    def test_missing_keys_default_to_fullscreen(self, tmp_path):
+        settings = self._settings(tmp_path)
+        assert should_start_fullscreen(settings) is True
 
 
 class TestMainScreenMouseActions:

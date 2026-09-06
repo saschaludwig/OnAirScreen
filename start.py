@@ -81,6 +81,21 @@ TOOLOUD_CLEAR_HOLD_MS = 750
 SILENCE_WARNING_PRIORITY = 2
 
 
+def should_start_fullscreen(settings: QSettings) -> bool:
+    """Return True if the window should open in fullscreen.
+
+    ``always_start_fullscreen`` overrides the last session's ``fullscreen``
+    flag. Without the override, the last stored fullscreen state is used
+    (default on).
+    """
+    with settings_group(settings, "General"):
+        if settings.value(
+            "always_start_fullscreen", DEFAULT_ALWAYS_START_FULLSCREEN, type=bool
+        ):
+            return True
+        return settings.value("fullscreen", DEFAULT_FULLSCREEN, type=bool)
+
+
 class CommandSignal(QObject):
     """Signal object for thread-safe command execution"""
     command_received = Signal(bytes, str)
@@ -155,10 +170,9 @@ class MainScreen(QWidget, Ui_MainScreen):
         self.status_exporter = StatusExporter(self)
 
         settings = QSettings(QSettings.Scope.UserScope, "astrastudio", "OnAirScreen")
-        with settings_group(settings, "General"):
-            if settings.value('fullscreen', True, type=bool):
-                self.showFullScreen()
-                app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
+        if should_start_fullscreen(settings):
+            self.showFullScreen()
+            app.setOverrideCursor(QCursor(Qt.CursorShape.BlankCursor))
         logger.info(f"Loaded settings from: {settings.fileName()}")
 
         # Keep NOW/NEXT and Warning at a stable shared height to avoid layout jumps

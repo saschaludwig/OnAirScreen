@@ -191,6 +191,7 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 - Umschalten: `F` oder `Ctrl+F` (macOS: `Cmd+F`), **Doppelklick** auf eine leere Fläche des Hauptbildschirms, oder Rechtsklick / Lang-Klick → **Toggle Fullscreen**
 - **Rechtsklick-/Lang-Klick-Menü:** Toggle Fullscreen, Settings, Quit OnAirScreen; bei aktiven Metern zusätzlich **Start I+LRA**, **Stop I+LRA** und **Reset I+LRA**
 - Der Vollbild-Zustand wird in den Einstellungen (`General/fullscreen`) gespeichert
+- Einstellungen → General → **Always start in fullscreen mode** (`General/always_start_fullscreen`, Standard aus) startet immer im Vollbild, auch wenn die letzte Session im Fenster war. Apply gilt erst beim nächsten Start.
 - Im Fenstermodus werden Position und Größe gespeichert (`Window/geometry`) und beim nächsten Start wiederhergestellt
 
 ---
@@ -272,7 +273,7 @@ Der Einstellungsdialog öffnet sich mit `Ctrl+S` oder `Ctrl+,` (oder Rechtsklick
 
 | Register              | Inhalt                                 |
 | --------------------- | -------------------------------------- |
-| **General**           | Instanzname, Station, LEDs, Uhr, Logo, Updates |
+| **General**           | Instanzname, Station, LEDs, Uhr, Logo, Vollbild-Start, Updates |
 | **Network**           | UDP, HTTP, Multicast, MQTT, OSC       |
 | **Time Source**       | Local / NTP / PTPv2 / LTC, NTP-Prüfung |
 | **Advanced**          | Formatierung, Wetter                   |
@@ -395,7 +396,15 @@ Schaltflächen: `...` (Dateiauswahl), `reset` (Standard-Logo wiederherstellen).
 | Replace with text     | `General/replacenowtext`     | *(leer)*         | Ersatztext für NOW-Zeile              |
 
 
+#### Anzeige
 
+
+| Einstellung                     | Schlüssel                         | Standard | Beschreibung                                                           |
+| ------------------------------- | --------------------------------- | -------- | ---------------------------------------------------------------------- |
+| Always start in fullscreen mode | `General/always_start_fullscreen` | `false`  | Immer im Vollbild starten, auch wenn die letzte Session im Fenster war |
+
+
+Apply wechselt das aktuelle Fenster nicht; die Option gilt beim nächsten Start. Ohne sie stellt OnAirScreen weiterhin den letzten Vollbild-Zustand wieder her (`General/fullscreen`, Standard an).
 
 #### Update-Prüfung (kompilierte Versionen)
 

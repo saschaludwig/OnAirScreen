@@ -33,6 +33,7 @@ DEFAULT_SLOGAN_COLOR: str = "#FFAA00"
 DEFAULT_REPLACE_NOW: bool = False
 DEFAULT_REPLACE_NOW_TEXT: str = ""
 DEFAULT_FULLSCREEN: bool = True
+DEFAULT_ALWAYS_START_FULLSCREEN: bool = False
 DEFAULT_INSTANCE_NAME: str = "Studio-1"
 MAX_INSTANCE_NAME_LENGTH: int = 32
 
@@ -375,6 +376,7 @@ def get_default(group: str, key: str, default: Any = None) -> Any:
             "replacenow": DEFAULT_REPLACE_NOW,
             "replacenowtext": DEFAULT_REPLACE_NOW_TEXT,
             "fullscreen": DEFAULT_FULLSCREEN,
+            "always_start_fullscreen": DEFAULT_ALWAYS_START_FULLSCREEN,
             "loglevel": DEFAULT_LOG_LEVEL,
             "instancename": DEFAULT_INSTANCE_NAME,
         }

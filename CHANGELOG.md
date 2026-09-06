@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [TBA]
 
+### Added
+
+- Settings option to always start in fullscreen mode, even if the last session was windowed (`General/always_start_fullscreen`, default off)
+
 ### Changed
 
+- GitHub README presents shop builds as the supported way to run OnAirScreen; the repository is documented as source-available for audit and contributors, not as an installer
 - Automatic update checks also run every 24 hours while OnAirScreen is running; the new-version dialog appears only at startup
 - Audio meter width can be set up to 201 px (L/R bars were previously capped around 117 px)
 - Installation chapter in the manuals covers Windows MSI, macOS Gatekeeper, Linux packages, and flashing the Raspberry Pi SD image

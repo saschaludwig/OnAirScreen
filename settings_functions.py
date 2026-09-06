@@ -916,6 +916,9 @@ class Settings(QWidget, Ui_Settings):
             self.Slogan.setText(settings.value('slogan', DEFAULT_SLOGAN))
             self.setStationNameColor(self.getColorFromName(settings.value('stationcolor', DEFAULT_STATION_COLOR)))
             self.setSloganColor(self.getColorFromName(settings.value('slogancolor', DEFAULT_SLOGAN_COLOR)))
+            self.checkBox_AlwaysStartFullscreen.setChecked(
+                settings.value('always_start_fullscreen', DEFAULT_ALWAYS_START_FULLSCREEN, type=bool)
+            )
             self.checkBox_UpdateCheck.setChecked(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
             self.updateKey.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
             self.label_28.setEnabled(settings.value('updatecheck', DEFAULT_UPDATE_CHECK, type=bool))
@@ -1122,6 +1125,7 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('slogan', self.Slogan.displayText())
             settings.setValue('stationcolor', self.getStationNameColor().name())
             settings.setValue('slogancolor', self.getSloganColor().name())
+            settings.setValue('always_start_fullscreen', self.checkBox_AlwaysStartFullscreen.isChecked())
             settings.setValue('updatecheck', self.checkBox_UpdateCheck.isChecked())
             settings.setValue('updatekey', self.updateKey.text())
             settings.setValue('updateincludebeta', self.checkBox_IncludeBetaVersions.isChecked())
@@ -2083,6 +2087,9 @@ class Settings(QWidget, Ui_Settings):
         self.Slogan.setToolTip("Enter your station's slogan or tagline")
         self.StationNameColor.setToolTip("Click to select the color for the station name")
         self.SloganColor.setToolTip("Click to select the color for the slogan")
+        self.checkBox_AlwaysStartFullscreen.setToolTip(
+            "Always open in fullscreen, even if the last session was windowed"
+        )
         self.checkBox_UpdateCheck.setToolTip("Enable automatic update checking on startup")
         self.updateKey.setToolTip(
             "Enter your update key for automatic updates (if applicable). "

@@ -1143,4 +1143,37 @@ class TestUpdateCheck:
             assert settings_oac._notify_on_update is False
 
 
+class TestAlwaysStartFullscreenSetting:
+    """General checkbox for always starting in fullscreen."""
+
+    @pytest.fixture
+    def qapp(self):
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        return app
+
+    @pytest.fixture
+    def settings_oac(self, qapp):
+        return Settings(oacmode=True)
+
+    def test_checkbox_default_unchecked(self, settings_oac):
+        assert settings_oac.checkBox_AlwaysStartFullscreen.isChecked() is False
+
+    def test_save_writes_always_start_fullscreen(self, settings_oac):
+        settings_oac.checkBox_AlwaysStartFullscreen.setChecked(True)
+        settings_oac.getSettingsFromDialog()
+        settings_oac.settings.beginGroup("General")
+        assert settings_oac.settings.value("always_start_fullscreen") is True
+        settings_oac.settings.endGroup()
+
+    def test_save_writes_unchecked_false(self, settings_oac):
+        settings_oac.checkBox_AlwaysStartFullscreen.setChecked(False)
+        settings_oac.getSettingsFromDialog()
+        settings_oac.settings.beginGroup("General")
+        assert settings_oac.settings.value("always_start_fullscreen") is False
+        settings_oac.settings.endGroup()
+
+
+
 

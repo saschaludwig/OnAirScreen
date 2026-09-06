@@ -202,6 +202,7 @@ class TestSchema:
         ]
         general_keys = {(field["group"], field["key"]) for field in schema["tabs"][0]["fields"]}
         assert ("General", "loglevel") in general_keys
+        assert ("General", "always_start_fullscreen") in general_keys
         network_keys = {(field["group"], field["key"]) for field in schema["tabs"][1]["fields"]}
         assert ("Network", "websettingspin") in network_keys
         assert ("MQTT", "mqttpassword") in network_keys

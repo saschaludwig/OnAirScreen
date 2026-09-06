@@ -184,6 +184,7 @@ The main screen is divided into the following areas:
 - Toggle: `F` or `Ctrl+F` (macOS: `Cmd+F`), **double-click** an empty area of the main screen, or right-click / long-click → **Toggle Fullscreen**
 - **Right-click / long-click menu:** Toggle Fullscreen, Settings, Quit OnAirScreen; when meters are enabled also **Start I+LRA**, **Stop I+LRA**, and **Reset I+LRA**
 - Fullscreen state is saved in settings (`General/fullscreen`)
+- Settings → General → **Always start in fullscreen mode** (`General/always_start_fullscreen`, default off) forces fullscreen on every start, even if the last session was windowed. Apply takes effect on the next start.
 - In windowed mode, position and size are saved (`Window/geometry`) and restored on the next start
 
 ---
@@ -253,7 +254,7 @@ The settings dialog opens with `Ctrl+S` or `Ctrl+,` (or right-click / long-click
 
 | Tab              | Content                                                         |
 | ---------------- | --------------------------------------------------------------- |
-| **General**      | Instance name, station, LEDs, clock, logo, updates              |
+| **General**      | Instance name, station, LEDs, clock, logo, fullscreen start, updates |
 | **Network**      | UDP, HTTP, multicast, MQTT, OSC                                 |
 | **Time Source**  | Local / NTP / PTPv2 / LTC clock, NTP check                      |
 | **Advanced**     | Formatting, weather                                             |
@@ -367,6 +368,16 @@ Buttons: `...` (file picker), `reset` (restore default logo).
 | Replace IPs after 10s | `General/replacenow`         | `false`          | Replace text after IP display      |
 | Replace with text     | `General/replacenowtext`     | *(empty)*        | Replacement text for NOW line      |
 
+
+#### Display
+
+
+| Setting                          | Key                               | Default | Description                                                                 |
+| -------------------------------- | --------------------------------- | ------- | --------------------------------------------------------------------------- |
+| Always start in fullscreen mode  | `General/always_start_fullscreen` | `false` | Always open in fullscreen, even if the last session was windowed            |
+
+
+Apply does not switch the current window; the option applies on the next start. Without it, OnAirScreen still restores the last fullscreen state (`General/fullscreen`, default on).
 
 #### Update Check (compiled versions)
 

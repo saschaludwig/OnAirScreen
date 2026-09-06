@@ -14,6 +14,7 @@ from defaults import (
     DEFAULT_REPLACE_NOW,
     DEFAULT_REPLACE_NOW_TEXT,
     DEFAULT_FULLSCREEN,
+    DEFAULT_ALWAYS_START_FULLSCREEN,
     DEFAULT_INSTANCE_NAME,
     MAX_INSTANCE_NAME_LENGTH,
     DEFAULT_LOG_LEVEL,
@@ -136,6 +137,8 @@ class TestGetDefault:
         assert get_default("General", "replacenow") == DEFAULT_REPLACE_NOW
         assert get_default("General", "replacenowtext") == DEFAULT_REPLACE_NOW_TEXT
         assert get_default("General", "fullscreen") == DEFAULT_FULLSCREEN
+        assert DEFAULT_ALWAYS_START_FULLSCREEN is False
+        assert get_default("General", "always_start_fullscreen") == DEFAULT_ALWAYS_START_FULLSCREEN
         assert get_default("General", "loglevel") == DEFAULT_LOG_LEVEL
         assert get_default("General", "instancename") == DEFAULT_INSTANCE_NAME
 
