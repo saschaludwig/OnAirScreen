@@ -54,9 +54,17 @@ Complete user manuals covering all settings, hotkeys, and remote control:
 
 #### Screenshots
 
-![](https://www.astrastudio.de/wp-content/uploads/2026/08/OAS_Screenshot_1.0.0_v2.png)![](https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_1.png)![](https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_2.png)![](https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_3.png)![](https://cdn.rawgit.com/saschaludwig/oasdocs/main/images/screenshot_5.png)
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/08/OAS_Screenshot_1.0.0_v2.png" alt="OnAirScreen main screen" />
 
-![](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_WebUI_v2.png)
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00001.png" width="49%" alt="Settings — General" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00002.png" width="49%" alt="Settings — Network" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00003.png" width="49%" alt="Settings — Advanced" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00004.png" width="49%" alt="Settings — Timers" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00005.png" width="49%" alt="Settings — Fonts" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00006.png" width="49%" alt="Settings — Time Source" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00007.png" width="49%" alt="Settings — Audio Meters" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_settings_00008.png" width="49%" alt="Settings — GPIO" />
+<img src="https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_WebUI_v2.png" width="49%" alt="OnAirScreen Web UI" />
 
 #### Pictures of OnAirScreen in use
 

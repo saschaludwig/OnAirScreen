@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [TBA]
+
+### Changed
+
+- GitHub README gallery leads with a large main-screen shot, then settings screenshots two per row, plus the Web UI
+
 ## [1.0.0beta12]
 
 ### Added
