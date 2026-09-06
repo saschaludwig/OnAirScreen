@@ -446,6 +446,7 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song
 
 `CONF:Audio:meter_width=79`  
 
+`CONF:CONF:APPLY=TRUE`  
 
 ## Error Handling
 
@@ -467,5 +468,3 @@ HTTP error responses are automatically mapped to appropriate status codes:
 - Unknown commands → 404 (Not Found)
 - Port/Permission errors → 503 (Service Unavailable)
 - Serialization errors → 500 (Internal Server Error)
-
-`CONF:CONF:APPLY=TRUE`  
