@@ -51,34 +51,101 @@ OnAirScreen passt sich automatisch an verschiedene Monitor-Seitenverhältnisse a
 
 ## 2. Installation und Start
 
+Fertige Builds für Windows, macOS, Linux und Raspberry Pi gibt es im [astrastudio-Shop](https://www.astrastudio.de/shop/).
 
+OnAirScreen startet im **Vollbild** mit ausgeblendetem Mauszeiger. Einstellungen: `Ctrl+S` (macOS: `Cmd+S`). Änderungen gelten erst nach **Apply**.
 
-### Voraussetzungen
+### Windows
 
-- **Python 3.11+** mit PySide6 (bei Installation aus dem Quellcode)
-- Abhängigkeiten: siehe `requirements.txt`
-- Netzwerkzugriff für UDP/HTTP/MQTT/OSC-Fernsteuerung (optional)
+1. `OnAirScreen_*_Win_x64.msi` herunterladen (in `OnAirScreen_Win_x64.zip`).
+2. Die MSI doppelklicken und dem Installer folgen. Die rechnerweite Installation braucht Administratorrechte.
+3. OnAirScreen liegt unter `C:\Program Files\OnAirScreen`.
+4. Start über das **Startmenü** oder das Desktop-Symbol.
 
+Im Startmenü-Ordner liegen außerdem **OAS Send** (Befehlssender) und **OAS Send (no console)**. Einstellungen stehen in der Windows-Registry, Logs unter `%LOCALAPPDATA%\astrastudio\OnAirScreen\logs\`.
 
+Eine ältere portable `.exe` wird vom MSI **nicht** entfernt. Die Datei nach der Installation selbst löschen.
 
-### Start aus dem Quellcode
+Windows gleicht die Internetzeit standardmäßig nur etwa einmal pro Woche ab. Bei Zeitquelle **Local** kann die Uhr falsch gehen. Sync-Intervall im Betriebssystem verkürzen oder in OnAirScreen NTP / PTP / LTC nutzen (siehe [5.3 Time Source](#53-time-source)).
+
+### macOS
+
+1. `OnAirScreen_*_macOS.dmg` herunterladen.
+2. Das DMG öffnen und **OnAirScreen.app** nach **Programme** (Applications) ziehen. Nicht direkt aus dem DMG starten.
+3. OnAirScreen aus Programme, Launchpad oder Spotlight starten.
+
+macOS versieht Downloads mit einem Quarantäne-Flag. OnAirScreen ist nicht mit einer Apple-Developer-ID signiert, daher blockiert Gatekeeper den ersten Start („Apple kann nicht prüfen, ob Schadsoftware enthalten ist“ / „der Entwickler kann nicht überprüft werden“).
+
+**Finder:** `OnAirScreen.app` mit Control-Klick (Rechtsklick) → **Öffnen** → nochmals **Öffnen**. macOS merkt sich das für spätere Starts.
+
+**Terminal** (wenn die App in Programme liegt):
 
 ```bash
-python start.py
+sudo xattr -d com.apple.quarantine /Applications/OnAirScreen.app
 ```
 
+Startet die App weiter nicht: **Systemeinstellungen → Datenschutz & Sicherheit** und **Trotzdem öffnen**. Für lokale Audio-Meter die **Mikrofon**-Berechtigung erteilen.
 
+### Linux (Debian / Ubuntu / Raspberry Pi OS)
 
-### Vorkompilierte Versionen
+Offizielle Builds sind ein `.deb`. Nach der Installation liegt die App in `/opt/onairscreen`, startet als `onairscreen` und erscheint im Anwendungsmenü.
 
-Fertige Binaries für Windows, Linux, macOS und Raspberry Pi sind über [astrastudio.de/shop](https://www.astrastudio.de/shop/) erhältlich.
+| Shop-ZIP                    | Paket darin                          | Architektur | Für                    |
+| --------------------------- | ------------------------------------ | ----------- | ---------------------- |
+| `OnAirScreen_Linux_x64.zip` | `OnAirScreen_*_Linux_x64.deb`        | `amd64`     | Debian/Ubuntu-PCs      |
+| `OnAirScreen_PiOS_x64.zip`  | `OnAirScreen_*_RaspberryPiOSx64.deb` | `arm64`     | Raspberry Pi OS 64-bit |
 
-Linux-Pakete ziehen Systembibliotheken (PortAudio, OpenGL, Xcb) über den Paketmanager nach:
+Prüfen mit `dpkg --print-architecture`. Die beiden Pakete sind nicht austauschbar.
 
-- Debian / Ubuntu: `sudo apt install ./OnAirScreen_*_Linux_x64.deb`
-- Fedora: `sudo dnf install ./OnAirScreen_*_Fedora_x64.rpm`
+Raspberry Pi: 64-bit-OS auf Zero 2 W, Pi 3 / 4 / 400, CM4, Pi 5 / 500, CM5. Nicht unterstützt: Pi 1 und klassisches Zero. Es braucht eine grafische Desktop-Sitzung, kein Lite ohne GUI.
 
-Das Fedora-RPM wird auf Fedora 44 gebaut. Ältere RHEL-, Rocky- oder Alma-Versionen können wegen glibc nicht starten.
+ZIP entpacken, danach mit **apt** installieren (nicht allein `dpkg -i`), damit PortAudio, OpenGL und Xcb nachgezogen werden. Das `./` vor der Datei ist Pflicht:
+
+```bash
+unzip OnAirScreen_Linux_x64.zip
+cd ~/Downloads
+sudo apt update
+sudo apt install ./OnAirScreen_*.deb
+```
+
+Start über das Anwendungsmenü oder `onairscreen`. Update: neues `.deb` ebenso installieren; Einstellungen bleiben. Deinstallieren: `sudo apt remove onairscreen` (Config unter `~/.config` bleibt).
+
+Falls `dpkg -i` Abhängigkeiten vermisst hat: `sudo apt -f install`.
+
+Pakete sind OpenPGP-signiert. Optionale Prüfung: [Paketsignatur (GPG)](https://www.astrastudio.de/wiki/gpg-de).
+
+### Fedora
+
+Das Fedora-RPM wird auf Fedora 44 gebaut (Fedora 44+). Ältere RHEL-, Rocky- oder Alma-Versionen können wegen glibc scheitern.
+
+```bash
+sudo rpm --import https://www.astrastudio.de/GPG-KEY-astrastudio
+sudo dnf install ./OnAirScreen_*_Fedora_x64.rpm
+```
+
+`dnf` zieht PortAudio und weitere Systembibliotheken nach. Signatur prüfen: `rpm -K OnAirScreen_*_Fedora_x64.rpm` (erwartet: `digests signatures OK`).
+
+### Raspberry-Pi-SD-Karten-Image
+
+Das [SD-Karten-Image](https://www.astrastudio.de/shop/onairscreen-raspberry-pi-sd-card-image/) ist ein startfertiges 64-bit-Raspberry-Pi-OS mit installiertem OnAirScreen (Desktop-Autologin, GPIO inklusive). ZIP entpacken; darin liegt `OnAirScreen_*_RaspberryPiOS_Image.img`.
+
+[Raspberry Pi Imager](https://www.raspberrypi.com/software/) verwenden:
+
+- [macOS](https://downloads.raspberrypi.org/imager/imager_latest.dmg)
+- [Windows](https://downloads.raspberrypi.org/imager/imager_latest.exe)
+- [Ubuntu x86](https://downloads.raspberrypi.org/imager/imager_latest_amd64.deb)
+
+1. microSD-Karte einlegen.
+2. Raspberry Pi Imager starten.
+3. **OS wählen** → **Eigenes Image verwenden** (`Use custom`) → die OnAirScreen-`.img` wählen (nicht die `.zip`).
+4. **Speicher wählen** (bzw. **SD-Karte wählen**) und die Karte auswählen.
+5. **Schreiben**.
+
+Standardbenutzer: `pi` / Passwort `OnAirScreen1!`. Hostname: `onairscreen`. Passwort nach dem ersten Start ändern. SSH ist eingeschaltet.
+
+Auf dem Desktop: **OnAirScreen**, **OAS Pi Settings** (optionaler Autostart), Bildschirmtastatur, Netzwerk-Symbol. Beim ersten Boot wächst das Root-Dateisystem auf die Kartengröße.
+
+Wer bereits Raspberry Pi OS 64-bit mit Desktop nutzt, installiert stattdessen das Pi-`.deb` (siehe Linux oben).
 
 ### Erster Start
 
@@ -92,7 +159,7 @@ Beim ersten Start werden Standardeinstellungen geladen. Der Einstellungsdialog �
 
 Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 
-![OnAirScreen Hauptbildschirm](https://www.astrastudio.de/wp-content/uploads/2026/08/OAS_Screenshot_1.0.0.png)
+![OnAirScreen Hauptbildschirm, beschriftet](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Screenshot_annotated_1_0_0beta8.png)
 
 
 ### Bereiche im Detail
@@ -107,9 +174,11 @@ Der Hauptbildschirm ist in folgende Bereiche gegliedert:
 | **Uhr**             | `clockWidget`             | Digital oder analog, mit Logo und optionalem Wetter-Widget |
 | **Lock-LED**        | Clock lock                | Unten rechts: `PTP/NTP/LTC LOCK` oder `LOCAL`              |
 | **AIR-Timer 1–4**   | `AirLED_1`–`AirLED_4`     | Stoppuhr-Timer mit Icon, Label, MM:SS; AIR3 mit ▲/▼       |
+| **Datum**           | `labelTextLeft`           | Unten links: Wochentag und Datum                          |
 | **NOW**             | `labelCurrentSong`        | Erste Fußzeile (z. B. aktueller Songtitel)                 |
 | **NEXT**            | `labelNews`               | Zweite Fußzeile (z. B. nächster Titel)                     |
 | **WARN**            | `labelWarning`            | Warnmeldung; blendet NOW/NEXT aus, wenn aktiv              |
+| **Textuhr**         | `labelTextRight`          | Unten rechts: Uhrzeit in Worten (Wordclock)                |
 
 
 > **Hinweis:** Status-LEDs und AIR-Timer lassen sich per **Linksklick**, **Tastatur** oder **Fernsteuerung** umschalten. Doppelklick auf LED/Timer ändert den Vollbildmodus nicht.
@@ -581,7 +650,7 @@ Bestehende Configs mit `Audio/unit=lufs` (ohne `layout`) werden auf Layout `lufs
 | Meter Layout          | `Audio/layout`               | `both`       | `lr`, `lufs` oder `both`                           |
 | Display Unit          | `Audio/unit`                 | `dbtp`       | L/R-Einheit: `dbfs`, `dbtp`, `bbc_ppm` (PPM nur bei `lr`) |
 | Display Style         | `Audio/display_style`        | `bargraph`   | `solid` oder `bargraph`                           |
-| Meter Width           | `Audio/meter_width`          | `115`        | Gesamtbreite in Pixel (53–150); extra Breite verdickt sichtbare Balken |
+| Meter Width           | `Audio/meter_width`          | `115`        | Gesamtbreite in Pixel (53–201); extra Breite verdickt sichtbare Balken |
 | LUFS Reference Preset | `Audio/lufs_reference_preset`| `ebu_r128`   | `ebu_r128`, `atsc_a85`, `aes_16`, `aes_18`, `custom` |
 | LUFS Reference        | `Audio/lufs_reference`       | `-23.0`      | Zielpegel in LUFS (Peg auf der Skala)             |
 | Peak Hold             | `Audio/peak_hold`            | `true`       | Peak-Marke halten                                 |

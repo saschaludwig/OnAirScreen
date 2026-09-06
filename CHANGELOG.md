@@ -4,14 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [TBA]
 
-### Added
-
-- Fedora Linux ships as an RPM (`sudo dnf install ./OnAirScreen_*_Fedora_x64.rpm`); PortAudio and other system libraries are pulled in as package dependencies
-
 ### Changed
 
-- Automatic update checks also run silently every 24 hours while OnAirScreen is running; the new-version dialog still appears only at startup
+- Automatic update checks also run every 24 hours while OnAirScreen is running; the new-version dialog appears only at startup
 - Audio meter width can be set up to 201 px (L/R bars were previously capped around 117 px)
+- Installation chapter in the manuals covers Windows MSI, macOS Gatekeeper, Linux packages, and flashing the Raspberry Pi SD image
+- Manuals use an annotated main-screen screenshot
 
 ### Fixed
 
