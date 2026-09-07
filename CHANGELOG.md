@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 - Analog clock faces Analog Numbers (1–12 on the classic analog face), Analog Studio (white face with 1–12), Analog Railway (station clock with a red ring second hand), Analog 24h ticking, and Analog 24h smooth (cream face with 1–12 and 13–24)
 - Clock face setting `Clock/face` and `CONF:Clock:face=` for digital and analog styles
+- README and manuals show screenshots of all clock faces
 
 ### Changed
 

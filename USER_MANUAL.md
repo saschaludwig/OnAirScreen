@@ -845,6 +845,18 @@ If **Replace IPs after 10s** is enabled, the NOW line is replaced with the confi
 - **Analog Railway:** White station face without numerals, pointed black hands, sweeping red second hand with a ring
 - **Analog 24h smooth:** Cream face, black 1–12 and red 13–24, sweeping second hand
 - **Analog 24h ticking:** Same cream 24h face with a ticking second hand
+
+![Digital clock face](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_digital.png)
+
+![Analog clock face](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog.png)
+
+![Analog Numbers clock face](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_numbers.png)
+
+![Analog Studio clock face](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_studio.png)
+
+![Analog Railway clock face](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_railway.png)
+
+![Analog 24h clock face (smooth or ticking second hand)](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_24h.png)
 - **Text clock:** Spoken time display (e.g. "it's a quarter past three")
 - **Time source:** Local, NTP, PTPv2, or LTC — see [5.3 Time Source](#53-time-source); the OS clock is never set
 - **Lock LED** bottom right: green = locked, red = not locked (`PTP LOCK` / `NTP LOCK` / `LTC LOCK`, or `LOCAL`)

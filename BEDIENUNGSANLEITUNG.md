@@ -891,6 +891,18 @@ Wenn **Replace IPs after 10s** aktiviert ist, wird die NOW-Zeile danach durch de
 - **Analog Railway:** Weißes Bahnhofszifferblatt ohne Zahlen, spitze schwarze Zeiger, kontinuierlicher roter Sekundenzeiger mit Ring
 - **Analog 24h smooth:** Cremefarbenes Zifferblatt, schwarze 1–12 und rote 13–24, kontinuierlicher Sekundenzeiger
 - **Analog 24h ticking:** Dasselbe 24h-Zifferblatt mit tickendem Sekundenzeiger
+
+![Digitales Zifferblatt](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_digital.png)
+
+![Analoges Zifferblatt](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog.png)
+
+![Analog Numbers](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_numbers.png)
+
+![Analog Studio](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_studio.png)
+
+![Analog Railway](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_railway.png)
+
+![Analog 24h (kontinuierlicher oder tickender Sekundenzeiger)](https://www.astrastudio.de/wp-content/uploads/2026/09/OAS_Clockfaces_analog_24h.png)
 - **Textuhr:** Sprachliche Zeitanzeige (z. B. „it's a quarter past three")
 - **Zeitquelle:** Local, NTP, PTPv2 oder LTC — siehe [5.3 Time Source](#53-time-source); die OS-Uhr wird nie gesetzt
 - **Lock-LED** unten rechts: grün = eingerastet, rot = nicht eingerastet (`PTP LOCK` / `NTP LOCK` / `LTC LOCK` oder `LOCAL`)
