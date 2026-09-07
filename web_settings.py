@@ -78,10 +78,11 @@ from defaults import (
     DEFAULT_AUDIO_TOOLOUD_THRESHOLD_DBTP,
     DEFAULT_AUDIO_UNIT,
     DEFAULT_ALWAYS_START_FULLSCREEN,
-    DEFAULT_CLOCK_DIGITAL,
+    CLOCK_FACE_LABELS,
     DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR,
     DEFAULT_CLOCK_DIGITAL_HOUR_COLOR,
     DEFAULT_CLOCK_DIGITAL_SECOND_COLOR,
+    DEFAULT_CLOCK_FACE,
     DEFAULT_CLOCK_LOGO_PATH,
     DEFAULT_CLOCK_LOGO_UPPER,
     DEFAULT_CLOCK_SECONDS_IN_ONE_LINE,
@@ -158,7 +159,9 @@ from defaults import (
     GPIO_SAFE_BCM_PINS,
     LTC_INPUT_LABELS,
     TIME_SOURCE_LABELS,
+    clock_face_is_digital,
     default_gpio_channel,
+    resolve_clock_face,
 )
 from utils import INSTANCE_NAME_PATTERN, normalize_instance_name, settings_group
 
@@ -445,10 +448,10 @@ def build_settings_schema() -> list[SettingsTab]:
             SettingsField(group, "timedflash", f"LED{led_num} 20s Flash", "bool", DEFAULT_LED_TIMEDFLASH,
                           enabled_when=led_on),
         ])
-    clock_digital = [_eq("Clock", "digital", True)]
+    clock_digital = [_eq("Clock", "face", "digital")]
     general_fields.extend([
-        SettingsField("Clock", "digital", "Digital Clock", "bool", DEFAULT_CLOCK_DIGITAL,
-                      hint="Off = analog clock"),
+        SettingsField("Clock", "face", "Clock Face", "enum", DEFAULT_CLOCK_FACE,
+                      options=_enum_options(CLOCK_FACE_LABELS)),
         SettingsField("Clock", "showSeconds", "Show Seconds", "bool", DEFAULT_CLOCK_SHOW_SECONDS),
         SettingsField("Clock", "showSecondsInOneLine", "Seconds In One Line", "bool",
                       DEFAULT_CLOCK_SECONDS_IN_ONE_LINE,
@@ -859,6 +862,9 @@ def get_web_config(settings: Optional[QSettings] = None) -> dict[str, dict[str, 
                 value = UNCHANGED_SENTINEL if raw not in (None, "") else ""
             else:
                 value = "" if raw in (None, "") else str(raw)
+        elif field_def.group == "Clock" and field_def.key == "face":
+            clock_group = exported.get("Clock", {})
+            value = resolve_clock_face(clock_group.get("face"), clock_group.get("digital"))
         else:
             value = _coerce_for_field(field_def, raw)
         result.setdefault(field_def.group, {})[field_def.key] = value
@@ -1035,6 +1041,9 @@ def apply_web_config(
     for group, key, value in writes:
         with settings_group(settings, group):
             settings.setValue(key, value)
+        if group == "Clock" and key == "face":
+            with settings_group(settings, "Clock"):
+                settings.setValue("digital", clock_face_is_digital(value))
     settings.sync()
 
     if main_screen is not None:

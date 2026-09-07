@@ -378,6 +378,8 @@ mosquitto_pub -h mqtt-broker -t onairscreen_a1b2c3/text/now/set -m "Current Song
 
 `CONF:LED[1-4]:timedflash=[False|True]`  
 
+`CONF:Clock:face=[digital|analog|analog_numbers|analog_studio|analog_24h_smooth|analog_24h_ticking]`  
+
 `CONF:Clock:digital=[True|False]`  
 
 `CONF:Clock:showseconds=[True|False]`  

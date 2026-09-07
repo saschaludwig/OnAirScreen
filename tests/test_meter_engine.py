@@ -338,6 +338,50 @@ class TestMeterEngineLufs:
         assert lra_low == LUFS_SILENCE
         assert lra_high == LUFS_SILENCE
 
+    def test_silence_does_not_grow_integrated_history(self):
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=2)
+        engine.start_integrated()
+        silence = np.zeros((int(2.0 * sr), 2), dtype=np.float64)
+        for i in range(0, len(silence), 2048):
+            engine.process(silence[i:i + 2048])
+        loudness = engine._integrated
+        assert loudness._block_count == 0
+        assert loudness._st_count == 0
+        assert loudness.integrated == LUFS_SILENCE
+        assert loudness.lra_low == LUFS_SILENCE
+
+    def test_history_is_numpy_and_gate_is_throttled(self, monkeypatch):
+        import meter_engine as meter_engine_mod
+
+        sr = 48000
+        engine = MeterEngine(sample_rate=sr, channels=2)
+        engine.start_integrated()
+        calls = {"n": 0}
+        original = meter_engine_mod._gated_integrated
+
+        def wrapped(block_ms):
+            calls["n"] += 1
+            return original(block_ms)
+
+        monkeypatch.setattr(meter_engine_mod, "_gated_integrated", wrapped)
+
+        t = np.arange(int(3.0 * sr)) / sr
+        amp = 10 ** (-18.0 / 20.0)
+        tone = (amp * np.sin(2 * np.pi * 1000 * t)).astype(np.float64)
+        frames = np.column_stack([tone, tone])
+        reading = None
+        for i in range(0, len(tone), 2048):
+            reading = engine.process(frames[i:i + 2048])
+
+        loudness = engine._integrated
+        assert isinstance(loudness._blocks, np.ndarray)
+        assert isinstance(loudness._st_blocks, np.ndarray)
+        assert loudness._block_count > 20
+        assert reading.lufs_i > LUFS_SILENCE + 10
+        assert calls["n"] < loudness._block_count
+        assert calls["n"] <= 6
+
 
 class TestDigitalPeakBallistics:
     def test_peak_attacks_instantly(self):

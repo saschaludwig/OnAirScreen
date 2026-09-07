@@ -14,58 +14,37 @@
 # Redistribution of compiled or executable versions requires prior
 # written permission from the copyright holder. See LICENSE.
 #
-# this file contains code from Riverbank Computing Limited
-# and Nokia Corporation for details: see copyright notice below
+# Classic analog ticks and hands live in analog_classic.py (BSD).
 #
-
-#############################################################################
-#
-# Copyright (C) 2010 Riverbank Computing Limited.
-# Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-# All rights reserved.
-#
-# This analog clock widget is based on the BSD-licensed analog clock
-# example from Qt / PyQt.
-#
-# $QT_BEGIN_LICENSE:BSD$
-# You may use this file under the terms of the BSD license as follows:
-#
-# "Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#   * Redistributions of source code must retain the above copyright
-#     notice, this list of conditions and the following disclaimer.
-#   * Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in
-#     the documentation and/or other materials provided with the
-#     distribution.
-#   * Neither the name of Nokia Corporation and its Subsidiary(-ies) nor
-#     the names of its contributors may be used to endorse or promote
-#     products derived from this software without specific prior written
-#     permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-# $QT_END_LICENSE$
-#
-#############################################################################
 
 import logging
+import math
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QRectF, QTime, Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QFont, QPainterPath
 
-from defaults import TIME_SOURCE_LTC, TIME_SOURCE_NTP, TIME_SOURCE_PTP
+from analog_classic import (
+    hour_hand_angle,
+    minute_hand_angle,
+    paint_classic_analog_marks_and_hands,
+    second_hand_angle,
+)
+from defaults import (
+    CLOCK_FACE_ANALOG,
+    CLOCK_FACE_ANALOG_NUMBERS,
+    CLOCK_FACE_ANALOG_STUDIO,
+    CLOCK_FACE_DIGITAL,
+    CLOCK_FACES,
+    DEFAULT_CLOCK_FACE,
+    TIME_SOURCE_LTC,
+    TIME_SOURCE_NTP,
+    TIME_SOURCE_PTP,
+    clock_face_is_analog_24h,
+    clock_face_is_digital,
+    clock_face_uses_second_sweep,
+    resolve_clock_face,
+)
 from time_source import KIND_TIMECODE, TimeSample, get_current_sample
 
 logger = logging.getLogger(__name__)
@@ -83,6 +62,8 @@ FRAME_LED_SCALE = 0.3
 FRAME_DIGIT_SPACING = 0.56
 # Frame 7-segment digits use fewer LEDs per bar than HH:MM:SS.
 FRAME_LEDS_PER_SEGMENT = 3
+# Analog 24h sweep second hand (~30 Hz); other faces stay on 500/1000 ms ticks.
+ANALOG_24H_SWEEP_INTERVAL_MS = 33
 
 
 class ClockWidget(QtWidgets.QWidget):
@@ -119,6 +100,7 @@ class ClockWidget(QtWidgets.QWidget):
 
         self.timeZoneOffset = 0
         self.clockMode = 1
+        self.clockFace = DEFAULT_CLOCK_FACE
         self.isAmPm = False
         self.showSeconds = False
         self.staticColon = False
@@ -205,6 +187,8 @@ class ClockWidget(QtWidgets.QWidget):
 
     def _milliseconds_until_next_clock_boundary(self) -> int:
         """Return milliseconds until the next required clock repaint boundary."""
+        if clock_face_uses_second_sweep(self.clockFace):
+            return ANALOG_24H_SWEEP_INTERVAL_MS
         msec = self._current_sample().milliseconds
         if self.staticColon:
             delay = 1000 - msec
@@ -282,18 +266,34 @@ class ClockWidget(QtWidgets.QWidget):
 
     @QtCore.Slot(int)
     def set_clock_mode(self, mode):
-        if mode == 1:
-            self.clockMode = 1
+        if mode == 1 or mode is True:
+            self.set_clock_face(CLOCK_FACE_DIGITAL)
         else:
-            self.clockMode = 0
+            self.set_clock_face(CLOCK_FACE_ANALOG)
 
     def reset_clock_code(self):
-        self.clockMode = 1
+        self.set_clock_face(DEFAULT_CLOCK_FACE)
 
     def get_clock_mode(self):
         return self.clockMode
 
     clockType = QtCore.Property("int", get_clock_mode, set_clock_mode, reset_clock_code)
+
+    @QtCore.Slot(str)
+    def set_clock_face(self, face=""):
+        if face in CLOCK_FACES:
+            self.clockFace = face
+        else:
+            self.clockFace = resolve_clock_face(face)
+        self.clockMode = 1 if clock_face_is_digital(self.clockFace) else 0
+        self.update()
+        self._schedule_next_clock_update()
+
+    def reset_clock_face(self):
+        self.set_clock_face(DEFAULT_CLOCK_FACE)
+
+    def get_clock_face(self):
+        return self.clockFace
 
     @QtCore.Slot(bool)
     def set_am_pm(self, mode):
@@ -392,97 +392,194 @@ class ClockWidget(QtWidgets.QWidget):
         painter.translate(self.width() / 2, self.height() / 2)
         painter.scale(side / 200.0, side / 200.0)
 
-        if self.clockMode == 0:
-            self.paint_analog(painter)
-        else:
+        if clock_face_is_digital(self.clockFace):
             self.paint_digital(painter)
+        elif self.clockFace == CLOCK_FACE_ANALOG_NUMBERS:
+            self.paint_analog_numbers(painter)
+        elif self.clockFace == CLOCK_FACE_ANALOG_STUDIO:
+            self.paint_analog_studio(painter)
+        elif clock_face_is_analog_24h(self.clockFace):
+            self.paint_analog_24h(
+                painter, smooth=clock_face_uses_second_sweep(self.clockFace)
+            )
+        else:
+            self.paint_analog(painter)
         painter.restore()
         self.paint_lock_led(painter)
 
-    def paint_analog(self, painter):
-        time = self.time
-        # analog clock mode
-
-        # add logo
-        image_max_h = 40
-        image_max_w = 100
+    def _paint_analog_logo(self, painter, max_h=40, max_w=100, y_upper=-50, y_lower=50):
+        """Draw the optional clock logo, scaled to fit the given box."""
         image = self.image
         image_w = image.width()
         image_h = image.height()
+        if image_w <= 0 or image_h <= 1:
+            return
 
-        if image_w > 0 and image_h > 1:
-            painter.save()
+        painter.save()
+        paint_y = y_upper if self.logo_upper else y_lower
+        if image_w > image_h:
+            paint_w = max_w
+            paint_h = (float(image_h) / float(image_w)) * paint_w
+        else:
+            paint_h = max_h
+            paint_w = (float(image_w) / float(image_h)) * paint_h
+        painter.drawImage(
+            QtCore.QRectF(0 - (paint_w / 2), paint_y - (paint_h / 2), paint_w, paint_h),
+            image,
+        )
+        painter.restore()
 
-            # logo position
-            paint_x = 0
-            if self.logo_upper:
-                paint_y = -50
-            else:
-                paint_y = 50
+    def _draw_trapezoid_hand(self, painter, tip_y, base_half, tip_half, tail_y=8):
+        """Draw a blunt-tipped hand that tapers from the hub to the tip.
 
-            if image_w > image_h:
-                # calculate height from aspect ratio
-                paint_w = image_max_w
-                paint_h = (float(image_h) / float(image_w)) * paint_w
-            else:
-                # calculate width from aspect ratio
-                paint_h = image_max_h
-                paint_w = (float(image_h) / float(image_w)) * paint_h
+        Coordinates are in the rotated hand frame: -Y is the tip, +Y is the tail.
+        """
+        path = QPainterPath()
+        path.moveTo(-base_half, tail_y)
+        path.lineTo(-base_half, 0)
+        path.lineTo(-tip_half, tip_y)
+        path.lineTo(tip_half, tip_y)
+        path.lineTo(base_half, 0)
+        path.lineTo(base_half, tail_y)
+        path.closeSubpath()
+        painter.drawPath(path)
 
-            painter.drawImage(QtCore.QRectF(paint_x - (paint_w / 2), paint_y - (paint_h / 2), paint_w, paint_h), image)
-            painter.restore()
+    def _draw_hour_numerals(self, painter, radius, color, pixel_size, inner=False):
+        """Draw 1–12, or 13–24 when inner is True, around the clock face."""
+        font = QFont("Roboto")
+        font.setBold(True)
+        font.setPixelSize(pixel_size)
+        painter.save()
+        painter.setFont(font)
+        painter.setPen(color)
+        half = pixel_size * 1.2
+        for hour in range(12):
+            value = hour if hour != 0 else 12
+            if inner:
+                value = 24 if hour == 0 else hour + 12
+            angle_rad = math.radians(hour * 30.0)
+            x = radius * math.sin(angle_rad)
+            y = -radius * math.cos(angle_rad)
+            painter.drawText(
+                QRectF(x - half, y - half, half * 2, half * 2),
+                QtCore.Qt.AlignmentFlag.AlignCenter,
+                str(value),
+            )
+        painter.restore()
+
+    def _paint_classic_analog_marks_and_hands(self, painter, draw_numbers=False):
+        """Shared ticks and hands for Analog and Analog Numbers."""
+        def after_hour_ticks(p):
+            self._draw_hour_numerals(p, 72, self.hourColor, 14)
+
+        paint_classic_analog_marks_and_hands(
+            painter,
+            self.time,
+            self.hourColor,
+            self.minuteColor,
+            self.secondColor,
+            self.circleColor,
+            after_hour_ticks=after_hour_ticks if draw_numbers else None,
+        )
+
+    def paint_analog(self, painter):
+        self._paint_analog_logo(painter)
+        self._paint_classic_analog_marks_and_hands(painter, draw_numbers=False)
+
+    def paint_analog_numbers(self, painter):
+        self._paint_analog_logo(painter, max_h=28, max_w=70, y_upper=-36, y_lower=36)
+        self._paint_classic_analog_marks_and_hands(painter, draw_numbers=True)
+
+    def paint_analog_studio(self, painter):
+        time = self.time
+        face_color = QtGui.QColor(255, 255, 255)
+        tick_color = QtGui.QColor(0, 0, 0)
+        hand_color = QtGui.QColor(20, 20, 20)
+        second_color = QtGui.QColor(40, 40, 40)
 
         painter.setPen(QtCore.Qt.PenStyle.NoPen)
-        painter.setBrush(self.hourColor)
-        # set hour hand length and minute hand length
-        hhl = -70  # -50
-        mhl = -80  # -75
-        shl = -85  # -75
+        painter.setBrush(face_color)
+        painter.drawEllipse(QRectF(-98, -98, 196, 196))
 
-        # draw hour hand
+        painter.setPen(tick_color)
+        painter.setBrush(tick_color)
         painter.save()
-        painter.rotate(30.0 * (time.hour() + time.minute() / 60.0))
-        painter.drawEllipse(-4, hhl, 8, 8)
-        painter.drawRect(-4, 4, 8, hhl)
-        painter.restore()
-
-        painter.setPen(self.hourColor)
-
-        for i in range(12):
-            painter.drawRoundedRect(88, -1, 8, 2, 1.0, 1.0)
-            painter.rotate(30.0)
-
-        painter.setPen(QtCore.Qt.PenStyle.NoPen)
-        painter.setBrush(self.minuteColor)
-
-        # draw minute hand
-        painter.save()
-        painter.rotate(6.0 * (time.minute() + time.second() / 60.0))
-        painter.drawEllipse(-3, mhl, 6, 6)
-        painter.drawRect(-3, 3, 6, mhl)
-        painter.restore()
-
-        # draw second hand
-        painter.setBrush(self.secondColor)
-        painter.save()
-        painter.rotate(6.0 * time.second())
-        painter.drawEllipse(-1, shl, 2, 2)
-        painter.drawRect(-1, 1, 2, shl)
-        painter.restore()
-
-        # draw center circle
-        painter.setBrush(self.circleColor)
-        painter.save()
-        painter.drawEllipse(-6, -6, 12, 12)
-        painter.restore()
-
-        painter.setPen(self.minuteColor)
-
-        for j in range(60):
-            if (j % 5) != 0:
-                painter.drawLine(92, 0, 96, 0)
+        for i in range(60):
+            if i % 5 == 0:
+                painter.drawRoundedRect(86, -1.5, 10, 3, 1.0, 1.0)
+            else:
+                painter.drawRect(92, -0.8, 5, 1.6)
             painter.rotate(6.0)
-        # end analog clock mode
+        painter.restore()
+
+        self._draw_hour_numerals(painter, 68, tick_color, 16)
+        self._paint_analog_logo(painter, max_h=22, max_w=56, y_upper=-32, y_lower=32)
+
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(hand_color)
+        painter.save()
+        painter.rotate(hour_hand_angle(time))
+        painter.drawRoundedRect(-4, -58, 8, 66, 2.0, 2.0)
+        painter.restore()
+
+        painter.save()
+        painter.rotate(minute_hand_angle(time))
+        painter.drawRoundedRect(-2.5, -82, 5, 90, 1.5, 1.5)
+        painter.restore()
+
+        painter.setBrush(second_color)
+        painter.save()
+        painter.rotate(second_hand_angle(time))
+        painter.drawRect(-1, -88, 2, 96)
+        painter.restore()
+
+        painter.setBrush(hand_color)
+        painter.drawEllipse(-6, -6, 12, 12)
+
+    def paint_analog_24h(self, painter, smooth=False):
+        time = self.time
+        face_color = QtGui.QColor(0xF3, 0xED, 0xE0)
+        black = QtGui.QColor(0, 0, 0)
+        red = QtGui.QColor(196, 18, 18)
+
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(face_color)
+        painter.drawEllipse(QRectF(-98, -98, 196, 196))
+
+        painter.setBrush(black)
+        painter.save()
+        for i in range(60):
+            if i % 5 == 0:
+                painter.drawRect(93, -2.3, 4.5, 4.6)
+            else:
+                painter.drawRect(93, -1.0, 4.5, 2.0)
+            painter.rotate(6.0)
+        painter.restore()
+
+        self._draw_hour_numerals(painter, 80, black, 16)
+        self._draw_hour_numerals(painter, 60, red, 9, inner=True)
+        self._paint_analog_logo(painter, max_h=20, max_w=50, y_upper=-30, y_lower=28)
+
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(black)
+        painter.save()
+        painter.rotate(hour_hand_angle(time))
+        self._draw_trapezoid_hand(painter, tip_y=-54, base_half=4.6, tip_half=1.8, tail_y=10)
+        painter.restore()
+
+        painter.save()
+        painter.rotate(minute_hand_angle(time, smooth=smooth))
+        self._draw_trapezoid_hand(painter, tip_y=-88, base_half=3.6, tip_half=1.15, tail_y=12)
+        painter.restore()
+
+        painter.setBrush(red)
+        painter.save()
+        painter.rotate(second_hand_angle(time, smooth=smooth))
+        self._draw_trapezoid_hand(painter, tip_y=-94, base_half=0.85, tip_half=0.35, tail_y=14)
+        painter.restore()
+
+        painter.setBrush(black)
+        painter.drawEllipse(-5, -5, 10, 10)
 
     @QtCore.Slot(str)
     def set_logo(self, logo_file=""):

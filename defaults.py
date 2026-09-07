@@ -53,6 +53,34 @@ DEFAULT_LED_AUTOFLASH: bool = False
 DEFAULT_LED_TIMEDFLASH: bool = False
 
 # Clock Settings
+CLOCK_FACE_DIGITAL: str = "digital"
+CLOCK_FACE_ANALOG: str = "analog"
+CLOCK_FACE_ANALOG_NUMBERS: str = "analog_numbers"
+CLOCK_FACE_ANALOG_STUDIO: str = "analog_studio"
+CLOCK_FACE_ANALOG_24H_SMOOTH: str = "analog_24h_smooth"
+CLOCK_FACE_ANALOG_24H_TICKING: str = "analog_24h_ticking"
+# Legacy Clock/face value; resolve_clock_face maps it to Analog 24h smooth.
+CLOCK_FACE_ANALOG_24H: str = "analog_24h"
+CLOCK_FACES: tuple[str, ...] = (
+    CLOCK_FACE_DIGITAL,
+    CLOCK_FACE_ANALOG,
+    CLOCK_FACE_ANALOG_NUMBERS,
+    CLOCK_FACE_ANALOG_STUDIO,
+    CLOCK_FACE_ANALOG_24H_SMOOTH,
+    CLOCK_FACE_ANALOG_24H_TICKING,
+)
+CLOCK_FACE_LABELS: Dict[str, str] = {
+    CLOCK_FACE_DIGITAL: "Digital",
+    CLOCK_FACE_ANALOG: "Analog",
+    CLOCK_FACE_ANALOG_NUMBERS: "Analog Numbers",
+    CLOCK_FACE_ANALOG_STUDIO: "Analog Studio",
+    CLOCK_FACE_ANALOG_24H_SMOOTH: "Analog 24h smooth",
+    CLOCK_FACE_ANALOG_24H_TICKING: "Analog 24h ticking",
+}
+CLOCK_FACE_ALIASES: Dict[str, str] = {
+    CLOCK_FACE_ANALOG_24H: CLOCK_FACE_ANALOG_24H_SMOOTH,
+}
+DEFAULT_CLOCK_FACE: str = CLOCK_FACE_DIGITAL
 DEFAULT_CLOCK_DIGITAL: bool = True
 DEFAULT_CLOCK_SHOW_SECONDS: bool = False
 DEFAULT_CLOCK_SECONDS_IN_ONE_LINE: bool = False
@@ -63,6 +91,54 @@ DEFAULT_CLOCK_DIGITAL_DIGIT_COLOR: str = "#3232FF"
 DEFAULT_CLOCK_LOGO_PATH: str = ":/astrastudio_logo/images/astrastudio_transparent.png"
 DEFAULT_CLOCK_LOGO_UPPER: bool = False
 DEFAULT_CLOCK_USE_TEXT_CLOCK: bool = True
+
+
+def _coerce_optional_bool(value: Any) -> Optional[bool]:
+    """Parse a stored bool-like value; return None if it is missing or unknown."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in ("true", "1", "yes", "on"):
+        return True
+    if text in ("false", "0", "no", "off", ""):
+        if text == "":
+            return None
+        return False
+    return None
+
+
+def resolve_clock_face(face: Any = None, digital: Any = None) -> str:
+    """Resolve Clock/face, falling back to the legacy Clock/digital bool."""
+    if isinstance(face, str):
+        canonical = CLOCK_FACE_ALIASES.get(face, face)
+        if canonical in CLOCK_FACE_LABELS:
+            return canonical
+    if _coerce_optional_bool(digital) is False:
+        return CLOCK_FACE_ANALOG
+    return CLOCK_FACE_DIGITAL
+
+
+def clock_face_is_digital(face: Any) -> bool:
+    """True when the selected clock face is the digital display."""
+    return resolve_clock_face(face) == CLOCK_FACE_DIGITAL
+
+
+def clock_face_is_analog_24h(face: Any) -> bool:
+    """True when the face is Analog 24h smooth or ticking."""
+    return resolve_clock_face(face) in (
+        CLOCK_FACE_ANALOG_24H_SMOOTH,
+        CLOCK_FACE_ANALOG_24H_TICKING,
+    )
+
+
+def clock_face_uses_second_sweep(face: Any) -> bool:
+    """True when the analog second hand should move continuously."""
+    return resolve_clock_face(face) == CLOCK_FACE_ANALOG_24H_SMOOTH
+
 
 # Timer/AIR Settings
 DEFAULT_TIMER_AIR_ENABLED: bool = True
@@ -406,6 +482,7 @@ def get_default(group: str, key: str, default: Any = None) -> Any:
     if group == "Clock":
         defaults = {
             "digital": DEFAULT_CLOCK_DIGITAL,
+            "face": DEFAULT_CLOCK_FACE,
             "showSeconds": DEFAULT_CLOCK_SHOW_SECONDS,
             "showSecondsInOneLine": DEFAULT_CLOCK_SECONDS_IN_ONE_LINE,
             "staticColon": DEFAULT_CLOCK_STATIC_COLON,

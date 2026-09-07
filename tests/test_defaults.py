@@ -27,6 +27,18 @@ from defaults import (
     DEFAULT_LED_AUTOFLASH,
     DEFAULT_LED_TIMEDFLASH,
     DEFAULT_CLOCK_DIGITAL,
+    DEFAULT_CLOCK_FACE,
+    CLOCK_FACE_ANALOG,
+    CLOCK_FACE_ANALOG_24H,
+    CLOCK_FACE_ANALOG_24H_SMOOTH,
+    CLOCK_FACE_ANALOG_24H_TICKING,
+    CLOCK_FACE_ANALOG_NUMBERS,
+    CLOCK_FACE_ANALOG_STUDIO,
+    CLOCK_FACE_DIGITAL,
+    resolve_clock_face,
+    clock_face_is_analog_24h,
+    clock_face_is_digital,
+    clock_face_uses_second_sweep,
     DEFAULT_CLOCK_SHOW_SECONDS,
     DEFAULT_CLOCK_SECONDS_IN_ONE_LINE,
     DEFAULT_CLOCK_STATIC_COLON,
@@ -176,6 +188,7 @@ class TestGetDefault:
     def test_clock_group(self):
         """Test Clock group defaults"""
         assert get_default("Clock", "digital") == DEFAULT_CLOCK_DIGITAL
+        assert get_default("Clock", "face") == DEFAULT_CLOCK_FACE
         assert get_default("Clock", "showSeconds") == DEFAULT_CLOCK_SHOW_SECONDS
         assert get_default("Clock", "showSecondsInOneLine") == DEFAULT_CLOCK_SECONDS_IN_ONE_LINE
         assert get_default("Clock", "staticColon") == DEFAULT_CLOCK_STATIC_COLON
@@ -398,4 +411,46 @@ class TestGetDefault:
         assert get_default("", "key") is None
         assert get_default("General", "") is None
         assert get_default("", "") is None
+
+
+class TestResolveClockFace:
+    """Test Clock/face resolution and the legacy digital bool."""
+
+    def test_explicit_faces(self):
+        assert resolve_clock_face(CLOCK_FACE_DIGITAL) == CLOCK_FACE_DIGITAL
+        assert resolve_clock_face(CLOCK_FACE_ANALOG) == CLOCK_FACE_ANALOG
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_NUMBERS) == CLOCK_FACE_ANALOG_NUMBERS
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_STUDIO) == CLOCK_FACE_ANALOG_STUDIO
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_24H_SMOOTH) == CLOCK_FACE_ANALOG_24H_SMOOTH
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_24H_TICKING) == CLOCK_FACE_ANALOG_24H_TICKING
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_24H) == CLOCK_FACE_ANALOG_24H_SMOOTH
+
+    def test_legacy_digital_bool(self):
+        assert resolve_clock_face(None, True) == CLOCK_FACE_DIGITAL
+        assert resolve_clock_face(None, False) == CLOCK_FACE_ANALOG
+        assert resolve_clock_face("", "False") == CLOCK_FACE_ANALOG
+        assert resolve_clock_face(None, None) == CLOCK_FACE_DIGITAL
+
+    def test_face_overrides_digital(self):
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_24H_SMOOTH, True) == CLOCK_FACE_ANALOG_24H_SMOOTH
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_24H, True) == CLOCK_FACE_ANALOG_24H_SMOOTH
+
+    def test_clock_face_is_digital(self):
+        assert clock_face_is_digital(CLOCK_FACE_DIGITAL) is True
+        assert clock_face_is_digital(CLOCK_FACE_ANALOG) is False
+        assert clock_face_is_digital(CLOCK_FACE_ANALOG_STUDIO) is False
+        assert clock_face_is_digital(CLOCK_FACE_ANALOG_24H_SMOOTH) is False
+        assert clock_face_is_digital(CLOCK_FACE_ANALOG_24H) is False
+
+    def test_clock_face_is_analog_24h(self):
+        assert clock_face_is_analog_24h(CLOCK_FACE_ANALOG_24H_SMOOTH) is True
+        assert clock_face_is_analog_24h(CLOCK_FACE_ANALOG_24H_TICKING) is True
+        assert clock_face_is_analog_24h(CLOCK_FACE_ANALOG_24H) is True
+        assert clock_face_is_analog_24h(CLOCK_FACE_ANALOG) is False
+
+    def test_clock_face_uses_second_sweep(self):
+        assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_24H_SMOOTH) is True
+        assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_24H) is True
+        assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_24H_TICKING) is False
+        assert clock_face_uses_second_sweep(CLOCK_FACE_DIGITAL) is False
 

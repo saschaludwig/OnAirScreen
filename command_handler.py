@@ -31,7 +31,7 @@ from exceptions import (
     InvalidCommandFormatError, EncodingError, TextValidationError,
     log_exception
 )
-from defaults import AUDIO_DISPLAY_STYLE_LABELS
+from defaults import AUDIO_DISPLAY_STYLE_LABELS, CLOCK_FACE_ANALOG, CLOCK_FACE_DIGITAL
 from utils import is_valid_instance_name
 
 if TYPE_CHECKING:
@@ -741,17 +741,17 @@ class CommandHandler:
         Handle CONF Clock group configuration
         
         Args:
-            param: Parameter name (digital, showseconds, secondsinoneline, staticcolon,
+            param: Parameter name (digital, face, showseconds, secondsinoneline, staticcolon,
                    digitalhourcolor, digitalsecondcolor, digitaldigitcolor, logopath, logoupper)
             content: Parameter value
         """
         if param == "digital":
             if content == "True":
-                self.main_screen.settings.clockDigital.setChecked(True)
-                self.main_screen.settings.clockAnalog.setChecked(False)
+                self.main_screen.settings.setClockFace(CLOCK_FACE_DIGITAL)
             elif content == "False":
-                self.main_screen.settings.clockAnalog.setChecked(False)
-                self.main_screen.settings.clockDigital.setChecked(True)
+                self.main_screen.settings.setClockFace(CLOCK_FACE_ANALOG)
+        elif param == "face":
+            self.main_screen.settings.setClockFace(content)
         elif param == "showseconds":
             if content == "True":
                 self.main_screen.settings.showSeconds.setChecked(True)

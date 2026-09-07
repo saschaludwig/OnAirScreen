@@ -70,7 +70,7 @@ from utils import settings_group, host_address_is_ipv4, host_address_is_ipv6
 from defaults import *  # noqa: F403, F405
 from exceptions import WidgetAccessError, log_exception
 from audio_capture import AudioCaptureController
-from meter_engine import MeterReadings, MeterUnit, migrate_audio_layout_and_unit
+from meter_engine import LUFS_SILENCE, MeterReadings, MeterUnit, migrate_audio_layout_and_unit
 from silence_detector import SILENCE_FLOOR_DBFS, SilenceDetector
 
 # Logging will be configured after QApplication initialization and settings loading
@@ -1841,6 +1841,19 @@ class MainScreen(QWidget, Ui_MainScreen):
         self._show_main_context_menu(event.globalPos())
         event.accept()
 
+    def _ilra_context_actions_enabled(self) -> tuple[bool, bool, bool]:
+        """Return (start, stop, reset) enabled flags for the I+LRA context menu."""
+        capture = getattr(self, "audio_capture", None)
+        running = bool(capture is not None and capture.integrated_running)
+        has_frozen = False
+        if capture is not None and not running:
+            snapshot = getattr(capture, "integrated_snapshot", None)
+            if callable(snapshot):
+                _running, i_value, lra_low, lra_high = snapshot()
+                floor = LUFS_SILENCE + 1.0
+                has_frozen = i_value > floor or (lra_high > floor and lra_low > floor)
+        return (not running, running, running or has_frozen)
+
     def _show_main_context_menu(self, global_pos: QPoint) -> None:
         """Show context menu with fullscreen toggle, settings, and quit."""
         global app
@@ -1852,9 +1865,13 @@ class MainScreen(QWidget, Ui_MainScreen):
         reset_lufs_action = None
         if getattr(self, "_audio_meters_enabled", False):
             menu.addSeparator()
+            start_enabled, stop_enabled, reset_enabled = self._ilra_context_actions_enabled()
             start_lufs_action = menu.addAction("Start I+LRA")
+            start_lufs_action.setEnabled(start_enabled)
             stop_lufs_action = menu.addAction("Stop I+LRA")
+            stop_lufs_action.setEnabled(stop_enabled)
             reset_lufs_action = menu.addAction("Reset I+LRA")
+            reset_lufs_action.setEnabled(reset_enabled)
         menu.addSeparator()
         quit_action = menu.addAction("Quit OnAirScreen")
 

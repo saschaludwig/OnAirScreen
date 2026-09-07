@@ -15,7 +15,12 @@ import sys
 if not QApplication.instance():
     app = QApplication(sys.argv)
 
-from clockwidget import FRAME_DIGIT_SCALE, FRAME_LED_SCALE, ClockWidget
+from clockwidget import (
+    ANALOG_24H_SWEEP_INTERVAL_MS,
+    FRAME_DIGIT_SCALE,
+    FRAME_LED_SCALE,
+    ClockWidget,
+)
 from time_source import KIND_TIMECODE, TimeSample
 
 
@@ -47,6 +52,70 @@ class TestClockWidgetClockMode:
         clock_widget.set_clock_mode(0)
         clock_widget.reset_clock_code()
         assert clock_widget.clockMode == 1
+        assert clock_widget.get_clock_face() == "digital"
+
+
+class TestClockWidgetClockFace:
+    """Test analog clock face variants."""
+
+    def test_set_clock_face_analog_numbers(self, clock_widget):
+        clock_widget.set_clock_face("analog_numbers")
+        assert clock_widget.get_clock_face() == "analog_numbers"
+        assert clock_widget.clockMode == 0
+
+    def test_set_clock_face_analog_studio(self, clock_widget):
+        clock_widget.set_clock_face("analog_studio")
+        assert clock_widget.get_clock_face() == "analog_studio"
+        assert clock_widget.clockMode == 0
+
+    def test_set_clock_face_analog_24h_smooth(self, clock_widget):
+        clock_widget.set_clock_face("analog_24h_smooth")
+        assert clock_widget.get_clock_face() == "analog_24h_smooth"
+        assert clock_widget.clockMode == 0
+
+    def test_set_clock_face_analog_24h_ticking(self, clock_widget):
+        clock_widget.set_clock_face("analog_24h_ticking")
+        assert clock_widget.get_clock_face() == "analog_24h_ticking"
+        assert clock_widget.clockMode == 0
+
+    def test_set_clock_face_analog_24h_alias_maps_to_smooth(self, clock_widget):
+        clock_widget.set_clock_face("analog_24h")
+        assert clock_widget.get_clock_face() == "analog_24h_smooth"
+        assert clock_widget.clockMode == 0
+
+    def test_set_clock_face_invalid_falls_back_to_digital(self, clock_widget):
+        clock_widget.set_clock_face("not-a-face")
+        assert clock_widget.get_clock_face() == "digital"
+        assert clock_widget.clockMode == 1
+
+    def test_set_clock_mode_analog_sets_classic_face(self, clock_widget):
+        clock_widget.set_clock_face("analog_24h")
+        clock_widget.set_clock_mode(0)
+        assert clock_widget.get_clock_face() == "analog"
+
+    @pytest.mark.parametrize(
+        "face",
+        ["digital", "analog", "analog_numbers", "analog_studio",
+         "analog_24h_smooth", "analog_24h_ticking", "analog_24h"],
+    )
+    def test_paint_event_does_not_crash(self, clock_widget, face):
+        clock_widget.resize(200, 200)
+        clock_widget.set_clock_face(face)
+        clock_widget.repaint()
+
+    def test_paint_analog_studio_with_logo(self, clock_widget):
+        clock_widget.resize(200, 200)
+        clock_widget.set_clock_face("analog_studio")
+        clock_widget.set_logo_upper(False)
+        clock_widget.repaint()
+
+    def test_paint_analog_24h_with_logo(self, clock_widget):
+        clock_widget.resize(200, 200)
+        clock_widget.set_clock_face("analog_24h_smooth")
+        clock_widget.set_logo_upper(True)
+        clock_widget.repaint()
+        clock_widget.set_clock_face("analog_24h_ticking")
+        clock_widget.repaint()
 
 
 class TestClockWidgetAmPm:
@@ -481,6 +550,35 @@ class TestClockWidgetResyncTime:
         with patch('clockwidget.get_current_sample', return_value=sample):
             clock_widget.staticColon = False
             assert clock_widget._milliseconds_until_next_clock_boundary() == 180
+
+    def test_milliseconds_until_next_clock_boundary_analog_24h_sweep(self, clock_widget):
+        """Analog 24h smooth uses a short interval for a continuous second hand."""
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=320, running=True)
+        with patch('clockwidget.get_current_sample', return_value=sample):
+            clock_widget.set_clock_face("analog_24h_smooth")
+            assert clock_widget._milliseconds_until_next_clock_boundary() == (
+                ANALOG_24H_SWEEP_INTERVAL_MS
+            )
+
+    def test_milliseconds_until_next_clock_boundary_analog_24h_ticking(self, clock_widget):
+        """Analog 24h ticking stays on the colon-aligned 500 ms cadence."""
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=320, running=True)
+        with patch('clockwidget.get_current_sample', return_value=sample):
+            clock_widget.staticColon = False
+            clock_widget.set_clock_face("analog_24h_ticking")
+            assert clock_widget._milliseconds_until_next_clock_boundary() == 180
+
+    def test_set_clock_face_reschedules_clock_update(self, clock_widget):
+        """Switching faces must retarget the repaint timer (sweep vs tick)."""
+        with patch.object(clock_widget, '_schedule_next_clock_update') as mock_schedule:
+            clock_widget.set_clock_face("analog_24h_smooth")
+            mock_schedule.assert_called()
+            mock_schedule.reset_mock()
+            clock_widget.set_clock_face("analog_24h_ticking")
+            mock_schedule.assert_called()
+            mock_schedule.reset_mock()
+            clock_widget.set_clock_face("digital")
+            mock_schedule.assert_called()
 
 
 class TestClockWidgetLogo:

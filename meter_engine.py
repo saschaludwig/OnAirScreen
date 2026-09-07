@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional, Tuple
 
 import numpy as np
 
@@ -67,6 +67,10 @@ LRA_HOP_SECONDS = 1.0
 GATE_ABS_LUFS = -70.0
 GATE_REL_INTEGRATED_LU = 10.0
 GATE_REL_LRA_LU = 20.0
+# Refresh gated I about once per second (10 hops of 100 ms). Block collection
+# still runs every hop; only the O(n) gate over the session is throttled.
+INTEGRATED_REFRESH_HOPS = max(1, int(round(1.0 / INTEGRATED_HOP_SECONDS)))
+_HISTORY_GROW = 1024
 
 # EBU digital alignment: PPM mark 4 == -18 dBFS
 BBC_PPM_ALIGNMENT_DBFS = -18.0
@@ -362,6 +366,15 @@ class ChannelMeterState:
     ms_filled: int = 0
 
 
+def _grow_history(buf: np.ndarray, count: int) -> np.ndarray:
+    """Return a longer float64 buffer, copying the live prefix."""
+    new_size = _HISTORY_GROW if buf.size == 0 else buf.size * 2
+    grown = np.empty(new_size, dtype=np.float64)
+    if count:
+        grown[:count] = buf[:count]
+    return grown
+
+
 class _IntegratedLoudness:
     """Running gated I and LRA from already K-weighted stereo power."""
 
@@ -381,12 +394,15 @@ class _IntegratedLoudness:
         self._ring_write = 0
         self._ring_filled = 0
         self._hop_fill = 0
-        self._blocks: List[float] = []
+        self._blocks = np.empty(0, dtype=np.float64)
+        self._block_count = 0
+        self._hops_since_i_refresh = 0
         self._st_ring = np.zeros(self._st_samples, dtype=np.float64)
         self._st_write = 0
         self._st_filled = 0
         self._st_hop_fill = 0
-        self._st_blocks: List[float] = []
+        self._st_blocks = np.empty(0, dtype=np.float64)
+        self._st_count = 0
         self.integrated = LUFS_SILENCE
         self.lra_low = LUFS_SILENCE
         self.lra_high = LUFS_SILENCE
@@ -413,24 +429,51 @@ class _IntegratedLoudness:
             if self._hop_fill >= self._hop_samples:
                 self._hop_fill = 0
                 if self._ring_filled >= self._block_samples:
-                    self._blocks.append(float(np.mean(self._ring)))
-                    self.integrated = _gated_integrated(
-                        np.asarray(self._blocks, dtype=np.float64)
+                    mean_sq = float(np.mean(self._ring))
+                    stored = self._append_if_above_abs_gate(
+                        mean_sq, is_short_term=False
                     )
+                    self._hops_since_i_refresh += 1
+                    if stored and self._block_count == 1:
+                        self._refresh_integrated()
+                    elif self._hops_since_i_refresh >= INTEGRATED_REFRESH_HOPS:
+                        self._refresh_integrated()
             if self._st_hop_fill >= self._st_hop_samples:
                 self._st_hop_fill = 0
                 if self._st_filled >= self._st_samples:
-                    self._st_blocks.append(float(np.mean(self._st_ring)))
-                    self._refresh_lra()
+                    mean_sq = float(np.mean(self._st_ring))
+                    if self._append_if_above_abs_gate(mean_sq, is_short_term=True):
+                        self._refresh_lra()
+
+    def _append_if_above_abs_gate(self, mean_sq: float, *, is_short_term: bool) -> bool:
+        """Store a 400 ms or 3 s mean-square if it passes the -70 LUFS abs gate."""
+        if mean_square_to_lufs(mean_sq) <= GATE_ABS_LUFS:
+            return False
+        if is_short_term:
+            if self._st_count >= self._st_blocks.size:
+                self._st_blocks = _grow_history(self._st_blocks, self._st_count)
+            self._st_blocks[self._st_count] = mean_sq
+            self._st_count += 1
+        else:
+            if self._block_count >= self._blocks.size:
+                self._blocks = _grow_history(self._blocks, self._block_count)
+            self._blocks[self._block_count] = mean_sq
+            self._block_count += 1
+        return True
+
+    def _refresh_integrated(self) -> None:
+        self._hops_since_i_refresh = 0
+        if self._block_count <= 0:
+            self.integrated = LUFS_SILENCE
+            return
+        self.integrated = _gated_integrated(self._blocks[:self._block_count])
 
     def _refresh_lra(self) -> None:
-        if len(self._st_blocks) < 2:
+        if self._st_count < 2:
             self.lra_low = LUFS_SILENCE
             self.lra_high = LUFS_SILENCE
             return
-        low, high, _lra = _loudness_range_span(
-            np.asarray(self._st_blocks, dtype=np.float64)
-        )
+        low, high, _lra = _loudness_range_span(self._st_blocks[:self._st_count])
         self.lra_low = low
         self.lra_high = high
 

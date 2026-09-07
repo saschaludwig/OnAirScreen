@@ -83,8 +83,7 @@ def mock_main_screen():
     main_screen.settings.setDigitalDigitColor = Mock()
     main_screen.settings.setLogoPath = Mock()
     main_screen.settings.setLogoUpper = Mock()
-    main_screen.settings.clockDigital = MagicMock()
-    main_screen.settings.clockAnalog = MagicMock()
+    main_screen.settings.setClockFace = Mock()
     main_screen.settings.showSeconds = MagicMock()
     main_screen.settings.seconds_in_one_line = MagicMock()
     main_screen.settings.seconds_separate = MagicMock()
@@ -572,7 +571,27 @@ class TestConfClock:
     def test_conf_clock_digital_true(self, command_handler, mock_main_screen):
         """Test CONF Clock digital=True"""
         command_handler.parse_cmd(b"CONF:Clock:digital=True")
-        mock_main_screen.settings.clockDigital.setChecked.assert_called_with(True)
+        mock_main_screen.settings.setClockFace.assert_called_with("digital")
+
+    def test_conf_clock_digital_false(self, command_handler, mock_main_screen):
+        """Test CONF Clock digital=False selects classic analog"""
+        command_handler.parse_cmd(b"CONF:Clock:digital=False")
+        mock_main_screen.settings.setClockFace.assert_called_with("analog")
+
+    def test_conf_clock_face_analog_24h(self, command_handler, mock_main_screen):
+        """Test CONF Clock face=analog_24h (legacy alias)"""
+        command_handler.parse_cmd(b"CONF:Clock:face=analog_24h")
+        mock_main_screen.settings.setClockFace.assert_called_with("analog_24h")
+
+    def test_conf_clock_face_analog_24h_smooth(self, command_handler, mock_main_screen):
+        """Test CONF Clock face=analog_24h_smooth"""
+        command_handler.parse_cmd(b"CONF:Clock:face=analog_24h_smooth")
+        mock_main_screen.settings.setClockFace.assert_called_with("analog_24h_smooth")
+
+    def test_conf_clock_face_analog_24h_ticking(self, command_handler, mock_main_screen):
+        """Test CONF Clock face=analog_24h_ticking"""
+        command_handler.parse_cmd(b"CONF:Clock:face=analog_24h_ticking")
+        mock_main_screen.settings.setClockFace.assert_called_with("analog_24h_ticking")
     
     def test_conf_clock_showseconds_true(self, command_handler, mock_main_screen):
         """Test CONF Clock showseconds=True"""

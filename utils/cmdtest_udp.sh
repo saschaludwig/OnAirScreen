@@ -87,6 +87,7 @@ echo "CONF:CONF:APPLY=TRUE" | nc -w 1 -u 127.0.0.1 3310
 
 echo "[TEST] Clock Configuration"
 echo "  -> Digital Mode, Colors"
+echo "CONF:Clock:face=digital" | nc -w 1 -u 127.0.0.1 3310
 echo "CONF:Clock:digital=True" | nc -w 1 -u 127.0.0.1 3310
 echo "CONF:Clock:digitalhourcolor=#FFFFFF" | nc -w 1 -u 127.0.0.1 3310
 echo "CONF:Clock:digitalsecondcolor=#FFFF00" | nc -w 1 -u 127.0.0.1 3310

@@ -357,7 +357,8 @@ Buttons: `...` (file picker), `reset` (restore default logo).
 
 | Setting               | Key                          | Default          | Description                        |
 | --------------------- | ---------------------------- | ---------------- | ---------------------------------- |
-| Digital / Analog      | `Clock/digital`              | `true` (Digital) | Clock mode                         |
+| Clock Face            | `Clock/face`                 | `digital`        | `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` aliases smooth) |
+| Digital (legacy)      | `Clock/digital`              | `true`           | Kept in sync with `Clock/face` (`true` = digital) |
 | Hours LEDs            | `Clock/digitalhourcolor`     | `#3232FF`        | Hour digit color                   |
 | Seconds LEDs          | `Clock/digitalsecondcolor`   | `#FF9900`        | Seconds color                      |
 | Digits LEDs           | `Clock/digitaldigitcolor`    | `#3232FF`        | All digit color                    |
@@ -838,7 +839,11 @@ If **Replace IPs after 10s** is enabled, the NOW line is replaced with the confi
 ### 6.5 Clock
 
 - **Digital:** LED-style digit display with configurable colors
-- **Analog:** Classic clock face
+- **Analog:** Classic ticks and hands without numerals
+- **Analog Numbers:** Classic analog face with 1–12
+- **Analog Studio:** White face, black ticks, numerals 1–12
+- **Analog 24h smooth:** Cream face, black 1–12 and red 13–24, sweeping second hand
+- **Analog 24h ticking:** Same cream 24h face with a ticking second hand
 - **Text clock:** Spoken time display (e.g. "it's a quarter past three")
 - **Time source:** Local, NTP, PTPv2, or LTC — see [5.3 Time Source](#53-time-source); the OS clock is never set
 - **Lock LED** bottom right: green = locked, red = not locked (`PTP LOCK` / `NTP LOCK` / `LTC LOCK`, or `LOCAL`)
@@ -1132,7 +1137,8 @@ Changes are only applied and saved after `CONF:CONF:APPLY=TRUE`.
 | `CONF:LED[1-4]:activetextcolor=COLOR`           | LED active text           |
 | `CONF:LED[1-4]:autoflash=[True/False]`          | Autoflash                 |
 | `CONF:LED[1-4]:timedflash=[True/False]`         | 20-second flash           |
-| `CONF:Clock:digital=[True/False]`               | Digital/Analog            |
+| `CONF:Clock:face=FACE`                          | Clock face: `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` aliases smooth) |
+| `CONF:Clock:digital=[True/False]`               | Digital / classic analog (legacy) |
 | `CONF:Clock:showseconds=[True/False]`           | Show seconds              |
 | `CONF:Clock:secondsinoneline=[True/False]`      | Seconds on one line       |
 | `CONF:Clock:staticcolon=[True/False]`           | Static colon              |

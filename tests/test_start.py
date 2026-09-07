@@ -16,6 +16,7 @@ if not QApplication.instance():
 
 from start import MainScreen, should_start_fullscreen
 from defaults import DEFAULT_TOTH_TIMER_TEXT
+from meter_engine import LUFS_SILENCE
 
 
 @pytest.fixture
@@ -116,8 +117,7 @@ def mock_main_screen():
             screen.settings.setAIR3IconPath = Mock()
             screen.settings.setAIR4IconPath = Mock()
             screen.settings.AIRMinWidth = MagicMock()
-            screen.settings.clockDigital = MagicMock()
-            screen.settings.clockAnalog = MagicMock()
+            screen.settings.setClockFace = Mock()
             screen.settings.showSeconds = MagicMock()
             screen.settings.seconds_in_one_line = MagicMock()
             screen.settings.seconds_separate = MagicMock()
@@ -288,11 +288,11 @@ def mock_main_screen():
                     elif group == "Clock":
                         if param == "digital":
                             if content == "True":
-                                screen.settings.clockDigital.setChecked(True)
-                                screen.settings.clockAnalog.setChecked(False)
+                                screen.settings.setClockFace("digital")
                             elif content == "False":
-                                screen.settings.clockAnalog.setChecked(False)
-                                screen.settings.clockDigital.setChecked(True)
+                                screen.settings.setClockFace("analog")
+                        elif param == "face":
+                            screen.settings.setClockFace(content)
                         elif param == "showseconds":
                             if content == "True":
                                 screen.settings.showSeconds.setChecked(True)
@@ -548,8 +548,7 @@ class TestParseCmd:
     def test_parse_cmd_conf_clock_digital_true(self, mock_main_screen):
         """Test CONF command for Clock.digital=True"""
         mock_main_screen.parse_cmd(b"CONF:Clock:digital=True")
-        mock_main_screen.settings.clockDigital.setChecked.assert_called_with(True)
-        mock_main_screen.settings.clockAnalog.setChecked.assert_called_with(False)
+        mock_main_screen.settings.setClockFace.assert_called_with("digital")
     
     def test_parse_cmd_conf_clock_showseconds_true(self, mock_main_screen):
         """Test CONF command for Clock.showseconds=True"""
@@ -2053,8 +2052,12 @@ class TestParseCmdConfMore:
     def test_parse_cmd_conf_clock_digital_false(self, mock_main_screen):
         """Test CONF command for Clock.digital=False"""
         mock_main_screen.parse_cmd(b"CONF:Clock:digital=False")
-        mock_main_screen.settings.clockAnalog.setChecked.assert_called_with(False)
-        mock_main_screen.settings.clockDigital.setChecked.assert_called_with(True)
+        mock_main_screen.settings.setClockFace.assert_called_with("analog")
+
+    def test_parse_cmd_conf_clock_face(self, mock_main_screen):
+        """Test CONF command for Clock.face"""
+        mock_main_screen.parse_cmd(b"CONF:Clock:face=analog_numbers")
+        mock_main_screen.settings.setClockFace.assert_called_with("analog_numbers")
     
     def test_parse_cmd_conf_clock_logopath(self, mock_main_screen):
         """Test CONF command for Clock.logopath"""
@@ -3178,6 +3181,27 @@ class TestMainScreenMouseActions:
         screen.toggle_full_screen = Mock()
         return screen
 
+    def _lufs_context_screen(self, *, running=False, snapshot=None):
+        """Bare MainScreen with I+LRA context-menu handlers and capture state."""
+        screen = MainScreen.__new__(MainScreen)
+        screen.toggle_full_screen = Mock()
+        screen.show_settings = Mock()
+        screen.quit_oas = Mock()
+        screen.start_integrated_loudness = Mock()
+        screen.stop_integrated_loudness = Mock()
+        screen.reset_integrated_loudness = Mock()
+        screen._audio_meters_enabled = True
+        if snapshot is None and not running:
+            screen.audio_capture = None
+        else:
+            capture = Mock()
+            capture.integrated_running = running
+            if snapshot is None:
+                snapshot = (True, -23.0, -25.0, -21.0)
+            capture.integrated_snapshot.return_value = snapshot
+            screen.audio_capture = capture
+        return screen
+
     def test_left_double_click_toggles_fullscreen(self):
         """Left double-click on the main screen toggles fullscreen."""
         screen = self._screen_with_long_press()
@@ -3413,20 +3437,15 @@ class TestMainScreenMouseActions:
     @patch("start.QMenu")
     def test_context_menu_reset_lufs(self, mock_qmenu_cls):
         """Choosing Reset I+LRA from the context menu resets the session."""
-        screen = MainScreen.__new__(MainScreen)
-        screen.toggle_full_screen = Mock()
-        screen.show_settings = Mock()
-        screen.quit_oas = Mock()
-        screen.start_integrated_loudness = Mock()
-        screen.stop_integrated_loudness = Mock()
-        screen.reset_integrated_loudness = Mock()
-        screen._audio_meters_enabled = True
-        toggle_action = object()
-        settings_action = object()
-        start_action = object()
-        stop_action = object()
-        reset_action = object()
-        quit_action = object()
+        screen = self._lufs_context_screen(
+            snapshot=(False, -23.0, -25.0, -21.0),
+        )
+        toggle_action = Mock()
+        settings_action = Mock()
+        start_action = Mock()
+        stop_action = Mock()
+        reset_action = Mock()
+        quit_action = Mock()
         mock_menu = MagicMock()
         mock_menu.addAction.side_effect = [
             toggle_action,
@@ -3452,20 +3471,13 @@ class TestMainScreenMouseActions:
     @patch("start.QMenu")
     def test_context_menu_start_lufs(self, mock_qmenu_cls):
         """Choosing Start I+LRA from the context menu starts the session."""
-        screen = MainScreen.__new__(MainScreen)
-        screen.toggle_full_screen = Mock()
-        screen.show_settings = Mock()
-        screen.quit_oas = Mock()
-        screen.start_integrated_loudness = Mock()
-        screen.stop_integrated_loudness = Mock()
-        screen.reset_integrated_loudness = Mock()
-        screen._audio_meters_enabled = True
-        toggle_action = object()
-        settings_action = object()
-        start_action = object()
-        stop_action = object()
-        reset_action = object()
-        quit_action = object()
+        screen = self._lufs_context_screen()
+        toggle_action = Mock()
+        settings_action = Mock()
+        start_action = Mock()
+        stop_action = Mock()
+        reset_action = Mock()
+        quit_action = Mock()
         mock_menu = MagicMock()
         mock_menu.addAction.side_effect = [
             toggle_action,
@@ -3491,20 +3503,13 @@ class TestMainScreenMouseActions:
     @patch("start.QMenu")
     def test_context_menu_stop_lufs(self, mock_qmenu_cls):
         """Choosing Stop I+LRA from the context menu stops the session."""
-        screen = MainScreen.__new__(MainScreen)
-        screen.toggle_full_screen = Mock()
-        screen.show_settings = Mock()
-        screen.quit_oas = Mock()
-        screen.start_integrated_loudness = Mock()
-        screen.stop_integrated_loudness = Mock()
-        screen.reset_integrated_loudness = Mock()
-        screen._audio_meters_enabled = True
-        toggle_action = object()
-        settings_action = object()
-        start_action = object()
-        stop_action = object()
-        reset_action = object()
-        quit_action = object()
+        screen = self._lufs_context_screen(running=True)
+        toggle_action = Mock()
+        settings_action = Mock()
+        start_action = Mock()
+        stop_action = Mock()
+        reset_action = Mock()
+        quit_action = Mock()
         mock_menu = MagicMock()
         mock_menu.addAction.side_effect = [
             toggle_action,
@@ -3526,6 +3531,110 @@ class TestMainScreenMouseActions:
         screen.toggle_full_screen.assert_not_called()
         screen.show_settings.assert_not_called()
         screen.quit_oas.assert_not_called()
+
+    def test_ilra_context_actions_enabled_idle(self):
+        """Idle I+LRA: only Start is enabled."""
+        screen = self._lufs_context_screen()
+        assert MainScreen._ilra_context_actions_enabled(screen) == (True, False, False)
+
+    def test_ilra_context_actions_enabled_running(self):
+        """Running I+LRA: Stop and Reset are enabled, Start is not."""
+        screen = self._lufs_context_screen(running=True)
+        assert MainScreen._ilra_context_actions_enabled(screen) == (False, True, True)
+
+    def test_ilra_context_actions_enabled_frozen(self):
+        """Stopped I+LRA with frozen values: Start and Reset are enabled."""
+        screen = self._lufs_context_screen(
+            snapshot=(False, -23.0, -25.0, -21.0),
+        )
+        assert MainScreen._ilra_context_actions_enabled(screen) == (True, False, True)
+
+    def test_ilra_context_actions_enabled_idle_silence_snapshot(self):
+        """Stopped I+LRA at silence floor: only Start is enabled."""
+        screen = self._lufs_context_screen(
+            snapshot=(False, LUFS_SILENCE, LUFS_SILENCE, LUFS_SILENCE),
+        )
+        assert MainScreen._ilra_context_actions_enabled(screen) == (True, False, False)
+
+    @patch("start.QMenu")
+    def test_context_menu_ilra_idle_enables_only_start(self, mock_qmenu_cls):
+        """Idle session greys out Stop and Reset in the context menu."""
+        screen = self._lufs_context_screen()
+        start_action = Mock()
+        stop_action = Mock()
+        reset_action = Mock()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [
+            Mock(),
+            Mock(),
+            start_action,
+            stop_action,
+            reset_action,
+            Mock(),
+        ]
+        mock_menu.exec.return_value = None
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        start_action.setEnabled.assert_called_once_with(True)
+        stop_action.setEnabled.assert_called_once_with(False)
+        reset_action.setEnabled.assert_called_once_with(False)
+
+    @patch("start.QMenu")
+    def test_context_menu_ilra_running_enables_stop_and_reset(self, mock_qmenu_cls):
+        """A running session greys out Start in the context menu."""
+        screen = self._lufs_context_screen(running=True)
+        start_action = Mock()
+        stop_action = Mock()
+        reset_action = Mock()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [
+            Mock(),
+            Mock(),
+            start_action,
+            stop_action,
+            reset_action,
+            Mock(),
+        ]
+        mock_menu.exec.return_value = None
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        start_action.setEnabled.assert_called_once_with(False)
+        stop_action.setEnabled.assert_called_once_with(True)
+        reset_action.setEnabled.assert_called_once_with(True)
+
+    @patch("start.QMenu")
+    def test_context_menu_ilra_frozen_enables_start_and_reset(self, mock_qmenu_cls):
+        """Frozen I+LRA greys out Stop in the context menu."""
+        screen = self._lufs_context_screen(
+            snapshot=(False, -23.0, -25.0, -21.0),
+        )
+        start_action = Mock()
+        stop_action = Mock()
+        reset_action = Mock()
+        mock_menu = MagicMock()
+        mock_menu.addAction.side_effect = [
+            Mock(),
+            Mock(),
+            start_action,
+            stop_action,
+            reset_action,
+            Mock(),
+        ]
+        mock_menu.exec.return_value = None
+        mock_qmenu_cls.return_value = mock_menu
+
+        with patch("start.app", create=True):
+            MainScreen._show_main_context_menu(screen, QPoint(10, 20))
+
+        start_action.setEnabled.assert_called_once_with(True)
+        stop_action.setEnabled.assert_called_once_with(False)
+        reset_action.setEnabled.assert_called_once_with(True)
 
     def test_context_menu_event_shows_menu(self):
         """Right-click on the main screen opens the context menu."""

@@ -144,6 +144,20 @@ class TestConfigRoundtrip:
         assert exported["MQTT"]["mqttpassword"] == "keep-me"
         assert get_web_config(ini_settings)["General"]["slogan"] == "New slogan"
 
+    def test_clock_face_writes_legacy_digital(self, ini_settings):
+        apply_web_config({"Clock": {"face": "analog_studio"}}, settings=ini_settings)
+        snapshot = get_web_config(ini_settings)
+        assert snapshot["Clock"]["face"] == "analog_studio"
+        exported = export_config_dict(settings=ini_settings)
+        assert exported["Clock"]["digital"] in (False, "false")
+
+    def test_clock_face_falls_back_from_legacy_digital(self, ini_settings):
+        ini_settings.beginGroup("Clock")
+        ini_settings.setValue("digital", False)
+        ini_settings.endGroup()
+        snapshot = get_web_config(ini_settings)
+        assert snapshot["Clock"]["face"] == "analog"
+
     def test_unknown_key_is_rejected(self, ini_settings):
         with pytest.raises(SettingsApiError, match="Unknown setting"):
             apply_web_config({"General": {"not_a_real_key": "x"}}, settings=ini_settings)
@@ -203,6 +217,8 @@ class TestSchema:
         general_keys = {(field["group"], field["key"]) for field in schema["tabs"][0]["fields"]}
         assert ("General", "loglevel") in general_keys
         assert ("General", "always_start_fullscreen") in general_keys
+        assert ("Clock", "face") in general_keys
+        assert ("Clock", "digital") not in general_keys
         network_keys = {(field["group"], field["key"]) for field in schema["tabs"][1]["fields"]}
         assert ("Network", "websettingspin") in network_keys
         assert ("MQTT", "mqttpassword") in network_keys

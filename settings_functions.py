@@ -78,6 +78,11 @@ def composed_license_dialog_text() -> str:
     return "\n\n".join(parts) + "\n"
 
 
+def clock_face_from_settings(settings: QSettings) -> str:
+    """Read Clock/face while already inside the Clock group, with digital fallback."""
+    return resolve_clock_face(settings.value("face", None), settings.value("digital", DEFAULT_CLOCK_DIGITAL))
+
+
 FONT_ROW_PREFIXES: tuple[str, ...] = (
     "AIR1", "AIR2", "AIR3", "AIR4",
     "LED1", "LED2", "LED3", "LED4",
@@ -538,6 +543,8 @@ class Settings(QWidget, Ui_Settings):
         self.DigitalHourColorButton.clicked.connect(self.setDigitalHourColor)
         self.DigitalSecondColorButton.clicked.connect(self.setDigitalSecondColor)
         self.DigitalDigitColorButton.clicked.connect(self.setDigitalDigitColor)
+        self._populate_clock_face_combo()
+        self.clockFace.currentIndexChanged.connect(self._update_digital_clock_controls_enabled)
         self.logoButton.clicked.connect(self.openLogoPathSelector)
         self.resetLogoButton.clicked.connect(self.resetLogo)
 
@@ -979,8 +986,8 @@ class Settings(QWidget, Ui_Settings):
                 getattr(self, f'LED{led_num}Timedflash').setChecked(settings.value('timedflash', DEFAULT_LED_TIMEDFLASH, type=bool))
 
         with settings_group(settings, "Clock"):
-            self.clockDigital.setChecked(settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
-            self.clockAnalog.setChecked(not settings.value('digital', DEFAULT_CLOCK_DIGITAL, type=bool))
+            self._populate_clock_face_combo()
+            self.setClockFace(clock_face_from_settings(settings))
             self.showSeconds.setChecked(settings.value('showSeconds', DEFAULT_CLOCK_SHOW_SECONDS, type=bool))
             self.seconds_in_one_line.setChecked(settings.value('showSecondsInOneLine', DEFAULT_CLOCK_SECONDS_IN_ONE_LINE, type=bool))
             if not settings.value('showSeconds', DEFAULT_CLOCK_SHOW_SECONDS, type=bool):
@@ -1202,7 +1209,9 @@ class Settings(QWidget, Ui_Settings):
             settings.setValue('timedflash', self.LED4Timedflash.isChecked())
 
         with settings_group(settings, "Clock"):
-            settings.setValue('digital', self.clockDigital.isChecked())
+            face = self.current_clock_face()
+            settings.setValue('face', face)
+            settings.setValue('digital', clock_face_is_digital(face))
             settings.setValue('showSeconds', self.showSeconds.isChecked())
             settings.setValue('showSecondsInOneLine', self.seconds_in_one_line.isChecked())
             settings.setValue('staticColon', self.staticColon.isChecked())
@@ -1989,6 +1998,42 @@ class Settings(QWidget, Ui_Settings):
         self.radioButton_logo_upper.setChecked(state)
         self.radioButton_logo_lower.setChecked(not state)
 
+    def _populate_clock_face_combo(self) -> None:
+        """Fill the clock-face dropdown once with stable item data."""
+        if self.clockFace.count() == 0:
+            for key, label in CLOCK_FACE_LABELS.items():
+                self.clockFace.addItem(label, key)
+
+    def current_clock_face(self) -> str:
+        """Selected Clock/face value, defaulting to digital."""
+        data = self.clockFace.currentData()
+        if isinstance(data, str) and data in CLOCK_FACE_LABELS:
+            return data
+        return DEFAULT_CLOCK_FACE
+
+    def setClockFace(self, face) -> None:
+        """Select a clock face in the dropdown (CONF / web apply)."""
+        self._populate_clock_face_combo()
+        resolved = face if face in CLOCK_FACE_LABELS else resolve_clock_face(face)
+        index = self.clockFace.findData(resolved)
+        if index < 0:
+            index = self.clockFace.findData(DEFAULT_CLOCK_FACE)
+        self.clockFace.setCurrentIndex(max(0, index))
+        self._update_digital_clock_controls_enabled()
+
+    def _update_digital_clock_controls_enabled(self, *_args) -> None:
+        """Enable digital LED color controls only for the digital face."""
+        enabled = clock_face_is_digital(self.current_clock_face())
+        for widget_name in (
+            "secondsLEDsLabel",
+            "hoursLEDsLabel",
+            "digitsLEDsLabel",
+            "DigitalSecondColorButton",
+            "DigitalHourColorButton",
+            "DigitalDigitColorButton",
+        ):
+            getattr(self, widget_name).setEnabled(enabled)
+
     def _connect_font_controls(self) -> None:
         """Connect Fonts-tab combo, size, bold, and reset widgets."""
         for prefix in FONT_ROW_PREFIXES:
@@ -2148,8 +2193,7 @@ class Settings(QWidget, Ui_Settings):
             getattr(self, f'LED{led_num}Timedflash').setToolTip(f"Enable timed flash for LED{led_num} (flashes for 20 seconds then turns off)")
         
         # Clock settings
-        self.clockDigital.setToolTip("Display digital clock (HH:MM format)")
-        self.clockAnalog.setToolTip("Display analog clock (traditional clock face)")
+        self.clockFace.setToolTip("Clock display: digital or analog face")
         self.showSeconds.setToolTip("Show seconds in the clock display")
         self.seconds_in_one_line.setToolTip("Display seconds on the same line as hours and minutes")
         self.seconds_separate.setToolTip("Display seconds separately below the main time")
@@ -3692,7 +3736,7 @@ class SettingsRestorer:
             settings: QSettings object to read from
         """
         with settings_group(settings, "Clock"):
-            self.main_screen.clockWidget.set_clock_mode(settings.value('digital', True, type=bool))
+            self.main_screen.clockWidget.set_clock_face(clock_face_from_settings(settings))
             self.main_screen.clockWidget.set_digi_hour_color(
                 self.settings.getColorFromName(settings.value('digitalhourcolor', DEFAULT_CLOCK_DIGITAL_HOUR_COLOR)))
             self.main_screen.clockWidget.set_digi_second_color(

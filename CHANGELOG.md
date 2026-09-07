@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 
 
+## [TBA]
+
+### Added
+
+- Analog clock faces Analog Numbers (1–12 on the classic analog face), Analog Studio (white face with 1–12), Analog 24h ticking, and Analog 24h smooth (cream face with 1–12 and 13–24)
+- Clock face setting `Clock/face` and `CONF:Clock:face=` for digital and analog styles
+
+### Changed
+
+- Clock mode in Settings and the Web UI is a dropdown instead of Digital/Analog radio buttons
+- Context menu Start/Stop/Reset I+LRA are enabled only when they apply to the current session
+- Analog 24h hour and minute hands taper from the hub to a blunt, narrower tip
+- Analog 24h is two faces: Analog 24h smooth (continuous second hand) and Analog 24h ticking; `analog_24h` still selects smooth
+- `CONF:Clock:digital=False` selects the classic analog face
+
+### Fixed
+
+- I/LRA no longer burns a CPU core on long sessions: history stays in a NumPy buffer, blocks below −70 LUFS are not stored, and gated I is refreshed about once per second
+
 ## [1.0.0beta12]
 
 ### Added

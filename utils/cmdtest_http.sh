@@ -82,6 +82,7 @@ curl "http://127.0.0.1:8010/" --get --data-urlencode "cmd=CONF:CONF:APPLY=TRUE"
 sleep 1
 
 # Test Clock Configuration
+curl "http://127.0.0.1:8010/" --get --data-urlencode "cmd=CONF:Clock:face=digital"
 curl "http://127.0.0.1:8010/" --get --data-urlencode "cmd=CONF:Clock:digital=True"
 curl "http://127.0.0.1:8010/" --get --data-urlencode "cmd=CONF:Clock:digitalhourcolor=#FFFFFF"
 curl "http://127.0.0.1:8010/" --get --data-urlencode "cmd=CONF:Clock:digitalsecondcolor=#FFFF00"

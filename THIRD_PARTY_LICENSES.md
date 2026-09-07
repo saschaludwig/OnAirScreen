@@ -874,7 +874,7 @@ It is licensed under the Creative Commons Attribution 3.0 Unported License
 
 ## Analog clock widget
 
-Parts of the analog clock in `clockwidget.py` are based on the BSD-licensed
+Parts of the analog clock in `analog_classic.py` are based on the BSD-licensed
 analog clock example from Riverbank Computing Limited and Nokia Corporation.
 
 Copyright (C) 2010 Riverbank Computing Limited.
