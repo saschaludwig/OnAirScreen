@@ -33,6 +33,7 @@ from analog_classic import (
 from defaults import (
     CLOCK_FACE_ANALOG,
     CLOCK_FACE_ANALOG_NUMBERS,
+    CLOCK_FACE_ANALOG_RAILWAY,
     CLOCK_FACE_ANALOG_STUDIO,
     CLOCK_FACE_DIGITAL,
     CLOCK_FACES,
@@ -62,7 +63,7 @@ FRAME_LED_SCALE = 0.3
 FRAME_DIGIT_SPACING = 0.56
 # Frame 7-segment digits use fewer LEDs per bar than HH:MM:SS.
 FRAME_LEDS_PER_SEGMENT = 3
-# Analog 24h sweep second hand (~30 Hz); other faces stay on 500/1000 ms ticks.
+# Analog sweep second hand (~30 Hz); other faces stay on 500/1000 ms ticks.
 ANALOG_24H_SWEEP_INTERVAL_MS = 33
 
 
@@ -398,6 +399,8 @@ class ClockWidget(QtWidgets.QWidget):
             self.paint_analog_numbers(painter)
         elif self.clockFace == CLOCK_FACE_ANALOG_STUDIO:
             self.paint_analog_studio(painter)
+        elif self.clockFace == CLOCK_FACE_ANALOG_RAILWAY:
+            self.paint_analog_railway(painter)
         elif clock_face_is_analog_24h(self.clockFace):
             self.paint_analog_24h(
                 painter, smooth=clock_face_uses_second_sweep(self.clockFace)
@@ -441,6 +444,26 @@ class ClockWidget(QtWidgets.QWidget):
         path.lineTo(tip_half, tip_y)
         path.lineTo(base_half, 0)
         path.lineTo(base_half, tail_y)
+        path.closeSubpath()
+        painter.drawPath(path)
+
+    def _draw_pointed_hand(self, painter, tip_y, half_width, tail_y=8, chevron=None, tip_half=None):
+        """Draw a hand with a shallow 45-degree roof tip.
+
+        Coordinates are in the rotated hand frame: -Y is the tip, +Y is the tail.
+        Parallel-sided when tip_half is omitted; otherwise the bar tapers.
+        """
+        if tip_half is None:
+            tip_half = half_width
+        if chevron is None:
+            chevron = tip_half
+        shoulder_y = tip_y + chevron
+        path = QPainterPath()
+        path.moveTo(-half_width, tail_y)
+        path.lineTo(-tip_half, shoulder_y)
+        path.lineTo(0, tip_y)
+        path.lineTo(tip_half, shoulder_y)
+        path.lineTo(half_width, tail_y)
         path.closeSubpath()
         painter.drawPath(path)
 
@@ -536,6 +559,75 @@ class ClockWidget(QtWidgets.QWidget):
         painter.setBrush(hand_color)
         painter.drawEllipse(-6, -6, 12, 12)
 
+    def paint_analog_railway(self, painter):
+        """White station-clock face: pointed black hands and a red ring second hand."""
+        time = self.time
+        face_color = QtGui.QColor(255, 255, 255)
+        black = QtGui.QColor(0, 0, 0)
+        red = QtGui.QColor(0xE2, 0x23, 0x1A)
+
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(face_color)
+        painter.drawEllipse(QRectF(-98, -98, 196, 196))
+
+        # Tick sizes (width × radial length in px), scaled so every bar's
+        # outer edge sits on the same radius.
+        tick_outer = 98.0
+        tick_scale = tick_outer / 212.0
+        painter.setBrush(black)
+        painter.save()
+        for i in range(60):
+            if i % 15 == 0:
+                width, length = 17 * tick_scale, 67 * tick_scale
+            elif i % 5 == 0:
+                width, length = 18 * tick_scale, 54 * tick_scale
+            else:
+                width, length = 8 * tick_scale, 18 * tick_scale
+            painter.drawRect(tick_outer - length, -width / 2.0, length, width)
+            painter.rotate(6.0)
+        painter.restore()
+
+        self._paint_analog_logo(painter, max_h=16, max_w=40, y_upper=-26, y_lower=36)
+
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(black)
+        painter.save()
+        painter.rotate(hour_hand_angle(time))
+        self._draw_pointed_hand(painter, tip_y=-50, half_width=5.2, tail_y=16)
+        painter.restore()
+
+        painter.save()
+        painter.rotate(minute_hand_angle(time, smooth=True))
+        self._draw_pointed_hand(painter, tip_y=-93, half_width=4.0, tail_y=20)
+        painter.restore()
+
+        painter.save()
+        painter.rotate(second_hand_angle(time, smooth=True))
+        ring_cy = -53.5
+        ring_outer = 12.4
+        ring_inner = 5.6
+        overlap = 2.2
+        ring_near = ring_cy + ring_outer - overlap
+        ring_far = ring_cy - ring_outer + overlap
+        ring = QPainterPath()
+        ring.setFillRule(QtCore.Qt.FillRule.OddEvenFill)
+        ring.addEllipse(QRectF(-ring_outer, ring_cy - ring_outer, ring_outer * 2, ring_outer * 2))
+        ring.addEllipse(QRectF(-ring_inner, ring_cy - ring_inner, ring_inner * 2, ring_inner * 2))
+        painter.setBrush(red)
+        painter.drawPath(ring)
+        # Shaft overlaps the ring slightly so no gap shows; the hole stays empty.
+        inner = QPainterPath()
+        inner.moveTo(-2.2, 14)
+        inner.lineTo(-1.9, ring_near)
+        inner.lineTo(1.9, ring_near)
+        inner.lineTo(2.2, 14)
+        inner.closeSubpath()
+        painter.drawPath(inner)
+        self._draw_pointed_hand(
+            painter, tip_y=-96, half_width=1.7, tail_y=ring_far, chevron=1.7, tip_half=1.5
+        )
+        painter.restore()
+
     def paint_analog_24h(self, painter, smooth=False):
         time = self.time
         face_color = QtGui.QColor(0xF3, 0xED, 0xE0)
@@ -575,11 +667,11 @@ class ClockWidget(QtWidgets.QWidget):
         painter.setBrush(red)
         painter.save()
         painter.rotate(second_hand_angle(time, smooth=smooth))
-        self._draw_trapezoid_hand(painter, tip_y=-94, base_half=0.85, tip_half=0.35, tail_y=14)
+        self._draw_trapezoid_hand(painter, tip_y=-94, base_half=3.2, tip_half=0.8, tail_y=14)
         painter.restore()
 
         painter.setBrush(black)
-        painter.drawEllipse(-5, -5, 10, 10)
+        painter.drawEllipse(-1, -1, 2, 2)
 
     @QtCore.Slot(str)
     def set_logo(self, logo_file=""):

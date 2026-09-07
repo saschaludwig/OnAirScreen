@@ -357,7 +357,7 @@ Buttons: `...` (file picker), `reset` (restore default logo).
 
 | Setting               | Key                          | Default          | Description                        |
 | --------------------- | ---------------------------- | ---------------- | ---------------------------------- |
-| Clock Face            | `Clock/face`                 | `digital`        | `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` aliases smooth) |
+| Clock Face            | `Clock/face`                 | `digital`        | `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_railway`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` aliases smooth) |
 | Digital (legacy)      | `Clock/digital`              | `true`           | Kept in sync with `Clock/face` (`true` = digital) |
 | Hours LEDs            | `Clock/digitalhourcolor`     | `#3232FF`        | Hour digit color                   |
 | Seconds LEDs          | `Clock/digitalsecondcolor`   | `#FF9900`        | Seconds color                      |
@@ -842,6 +842,7 @@ If **Replace IPs after 10s** is enabled, the NOW line is replaced with the confi
 - **Analog:** Classic ticks and hands without numerals
 - **Analog Numbers:** Classic analog face with 1–12
 - **Analog Studio:** White face, black ticks, numerals 1–12
+- **Analog Railway:** White station face without numerals, pointed black hands, sweeping red second hand with a ring
 - **Analog 24h smooth:** Cream face, black 1–12 and red 13–24, sweeping second hand
 - **Analog 24h ticking:** Same cream 24h face with a ticking second hand
 - **Text clock:** Spoken time display (e.g. "it's a quarter past three")
@@ -1137,7 +1138,7 @@ Changes are only applied and saved after `CONF:CONF:APPLY=TRUE`.
 | `CONF:LED[1-4]:activetextcolor=COLOR`           | LED active text           |
 | `CONF:LED[1-4]:autoflash=[True/False]`          | Autoflash                 |
 | `CONF:LED[1-4]:timedflash=[True/False]`         | 20-second flash           |
-| `CONF:Clock:face=FACE`                          | Clock face: `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` aliases smooth) |
+| `CONF:Clock:face=FACE`                          | Clock face: `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_railway`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` aliases smooth) |
 | `CONF:Clock:digital=[True/False]`               | Digital / classic analog (legacy) |
 | `CONF:Clock:showseconds=[True/False]`           | Show seconds              |
 | `CONF:Clock:secondsinoneline=[True/False]`      | Seconds on one line       |

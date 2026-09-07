@@ -68,6 +68,11 @@ class TestClockWidgetClockFace:
         assert clock_widget.get_clock_face() == "analog_studio"
         assert clock_widget.clockMode == 0
 
+    def test_set_clock_face_analog_railway(self, clock_widget):
+        clock_widget.set_clock_face("analog_railway")
+        assert clock_widget.get_clock_face() == "analog_railway"
+        assert clock_widget.clockMode == 0
+
     def test_set_clock_face_analog_24h_smooth(self, clock_widget):
         clock_widget.set_clock_face("analog_24h_smooth")
         assert clock_widget.get_clock_face() == "analog_24h_smooth"
@@ -95,7 +100,7 @@ class TestClockWidgetClockFace:
 
     @pytest.mark.parametrize(
         "face",
-        ["digital", "analog", "analog_numbers", "analog_studio",
+        ["digital", "analog", "analog_numbers", "analog_studio", "analog_railway",
          "analog_24h_smooth", "analog_24h_ticking", "analog_24h"],
     )
     def test_paint_event_does_not_crash(self, clock_widget, face):
@@ -106,6 +111,12 @@ class TestClockWidgetClockFace:
     def test_paint_analog_studio_with_logo(self, clock_widget):
         clock_widget.resize(200, 200)
         clock_widget.set_clock_face("analog_studio")
+        clock_widget.set_logo_upper(False)
+        clock_widget.repaint()
+
+    def test_paint_analog_railway_with_logo(self, clock_widget):
+        clock_widget.resize(200, 200)
+        clock_widget.set_clock_face("analog_railway")
         clock_widget.set_logo_upper(False)
         clock_widget.repaint()
 
@@ -556,6 +567,15 @@ class TestClockWidgetResyncTime:
         sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=320, running=True)
         with patch('clockwidget.get_current_sample', return_value=sample):
             clock_widget.set_clock_face("analog_24h_smooth")
+            assert clock_widget._milliseconds_until_next_clock_boundary() == (
+                ANALOG_24H_SWEEP_INTERVAL_MS
+            )
+
+    def test_milliseconds_until_next_clock_boundary_analog_railway_sweep(self, clock_widget):
+        """Analog Railway uses the same short interval as Analog 24h smooth."""
+        sample = TimeSample(hours=12, minutes=0, seconds=0, milliseconds=320, running=True)
+        with patch('clockwidget.get_current_sample', return_value=sample):
+            clock_widget.set_clock_face("analog_railway")
             assert clock_widget._milliseconds_until_next_clock_boundary() == (
                 ANALOG_24H_SWEEP_INTERVAL_MS
             )

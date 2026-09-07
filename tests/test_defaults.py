@@ -33,6 +33,7 @@ from defaults import (
     CLOCK_FACE_ANALOG_24H_SMOOTH,
     CLOCK_FACE_ANALOG_24H_TICKING,
     CLOCK_FACE_ANALOG_NUMBERS,
+    CLOCK_FACE_ANALOG_RAILWAY,
     CLOCK_FACE_ANALOG_STUDIO,
     CLOCK_FACE_DIGITAL,
     resolve_clock_face,
@@ -421,6 +422,7 @@ class TestResolveClockFace:
         assert resolve_clock_face(CLOCK_FACE_ANALOG) == CLOCK_FACE_ANALOG
         assert resolve_clock_face(CLOCK_FACE_ANALOG_NUMBERS) == CLOCK_FACE_ANALOG_NUMBERS
         assert resolve_clock_face(CLOCK_FACE_ANALOG_STUDIO) == CLOCK_FACE_ANALOG_STUDIO
+        assert resolve_clock_face(CLOCK_FACE_ANALOG_RAILWAY) == CLOCK_FACE_ANALOG_RAILWAY
         assert resolve_clock_face(CLOCK_FACE_ANALOG_24H_SMOOTH) == CLOCK_FACE_ANALOG_24H_SMOOTH
         assert resolve_clock_face(CLOCK_FACE_ANALOG_24H_TICKING) == CLOCK_FACE_ANALOG_24H_TICKING
         assert resolve_clock_face(CLOCK_FACE_ANALOG_24H) == CLOCK_FACE_ANALOG_24H_SMOOTH
@@ -439,6 +441,7 @@ class TestResolveClockFace:
         assert clock_face_is_digital(CLOCK_FACE_DIGITAL) is True
         assert clock_face_is_digital(CLOCK_FACE_ANALOG) is False
         assert clock_face_is_digital(CLOCK_FACE_ANALOG_STUDIO) is False
+        assert clock_face_is_digital(CLOCK_FACE_ANALOG_RAILWAY) is False
         assert clock_face_is_digital(CLOCK_FACE_ANALOG_24H_SMOOTH) is False
         assert clock_face_is_digital(CLOCK_FACE_ANALOG_24H) is False
 
@@ -450,6 +453,7 @@ class TestResolveClockFace:
 
     def test_clock_face_uses_second_sweep(self):
         assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_24H_SMOOTH) is True
+        assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_RAILWAY) is True
         assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_24H) is True
         assert clock_face_uses_second_sweep(CLOCK_FACE_ANALOG_24H_TICKING) is False
         assert clock_face_uses_second_sweep(CLOCK_FACE_DIGITAL) is False

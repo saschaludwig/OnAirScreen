@@ -384,7 +384,7 @@ Schaltflächen: `...` (Dateiauswahl), `reset` (Standard-Logo wiederherstellen).
 
 | Einstellung           | Schlüssel                    | Standard         | Beschreibung                          |
 | --------------------- | ---------------------------- | ---------------- | ------------------------------------- |
-| Clock Face            | `Clock/face`                 | `digital`        | `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` ist Alias für Smooth) |
+| Clock Face            | `Clock/face`                 | `digital`        | `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_railway`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` ist Alias für Smooth) |
 | Digital (Legacy)      | `Clock/digital`              | `true`           | Wird mit `Clock/face` mitgeschrieben (`true` = Digital) |
 | Hours LEDs            | `Clock/digitalhourcolor`     | `#3232FF`        | Farbe Stunden-LEDs                    |
 | Seconds LEDs          | `Clock/digitalsecondcolor`   | `#FF9900`        | Farbe Sekunden-LEDs                   |
@@ -888,6 +888,7 @@ Wenn **Replace IPs after 10s** aktiviert ist, wird die NOW-Zeile danach durch de
 - **Analog:** Klassisches Zifferblatt ohne Zahlen
 - **Analog Numbers:** Klassisches Analog-Face mit 1–12
 - **Analog Studio:** Weißes Zifferblatt, schwarze Ticks, Zahlen 1–12
+- **Analog Railway:** Weißes Bahnhofszifferblatt ohne Zahlen, spitze schwarze Zeiger, kontinuierlicher roter Sekundenzeiger mit Ring
 - **Analog 24h smooth:** Cremefarbenes Zifferblatt, schwarze 1–12 und rote 13–24, kontinuierlicher Sekundenzeiger
 - **Analog 24h ticking:** Dasselbe 24h-Zifferblatt mit tickendem Sekundenzeiger
 - **Textuhr:** Sprachliche Zeitanzeige (z. B. „it's a quarter past three")
@@ -1197,7 +1198,7 @@ Format: `CONF:GRUPPE:PARAMETER=WERT`
 | `CONF:LED[1-4]:activetextcolor=COLOR`           | LED-Text aktiv          |
 | `CONF:LED[1-4]:autoflash=[True/False]`          | Autoflash               |
 | `CONF:LED[1-4]:timedflash=[True/False]`         | 20-Sekunden-Flash       |
-| `CONF:Clock:face=FACE`                          | Zifferblatt: `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` ist Alias für Smooth) |
+| `CONF:Clock:face=FACE`                          | Zifferblatt: `digital`, `analog`, `analog_numbers`, `analog_studio`, `analog_railway`, `analog_24h_smooth`, `analog_24h_ticking` (`analog_24h` ist Alias für Smooth) |
 | `CONF:Clock:digital=[True/False]`               | Digital / klassisch analog (Legacy) |
 | `CONF:Clock:showseconds=[True/False]`           | Sekunden anzeigen       |
 | `CONF:Clock:secondsinoneline=[True/False]`      | Sekunden in einer Zeile |

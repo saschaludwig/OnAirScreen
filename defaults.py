@@ -57,6 +57,7 @@ CLOCK_FACE_DIGITAL: str = "digital"
 CLOCK_FACE_ANALOG: str = "analog"
 CLOCK_FACE_ANALOG_NUMBERS: str = "analog_numbers"
 CLOCK_FACE_ANALOG_STUDIO: str = "analog_studio"
+CLOCK_FACE_ANALOG_RAILWAY: str = "analog_railway"
 CLOCK_FACE_ANALOG_24H_SMOOTH: str = "analog_24h_smooth"
 CLOCK_FACE_ANALOG_24H_TICKING: str = "analog_24h_ticking"
 # Legacy Clock/face value; resolve_clock_face maps it to Analog 24h smooth.
@@ -66,6 +67,7 @@ CLOCK_FACES: tuple[str, ...] = (
     CLOCK_FACE_ANALOG,
     CLOCK_FACE_ANALOG_NUMBERS,
     CLOCK_FACE_ANALOG_STUDIO,
+    CLOCK_FACE_ANALOG_RAILWAY,
     CLOCK_FACE_ANALOG_24H_SMOOTH,
     CLOCK_FACE_ANALOG_24H_TICKING,
 )
@@ -74,6 +76,7 @@ CLOCK_FACE_LABELS: Dict[str, str] = {
     CLOCK_FACE_ANALOG: "Analog",
     CLOCK_FACE_ANALOG_NUMBERS: "Analog Numbers",
     CLOCK_FACE_ANALOG_STUDIO: "Analog Studio",
+    CLOCK_FACE_ANALOG_RAILWAY: "Analog Railway",
     CLOCK_FACE_ANALOG_24H_SMOOTH: "Analog 24h smooth",
     CLOCK_FACE_ANALOG_24H_TICKING: "Analog 24h ticking",
 }
@@ -137,7 +140,10 @@ def clock_face_is_analog_24h(face: Any) -> bool:
 
 def clock_face_uses_second_sweep(face: Any) -> bool:
     """True when the analog second hand should move continuously."""
-    return resolve_clock_face(face) == CLOCK_FACE_ANALOG_24H_SMOOTH
+    return resolve_clock_face(face) in (
+        CLOCK_FACE_ANALOG_24H_SMOOTH,
+        CLOCK_FACE_ANALOG_RAILWAY,
+    )
 
 
 # Timer/AIR Settings

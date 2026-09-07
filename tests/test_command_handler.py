@@ -592,6 +592,11 @@ class TestConfClock:
         """Test CONF Clock face=analog_24h_ticking"""
         command_handler.parse_cmd(b"CONF:Clock:face=analog_24h_ticking")
         mock_main_screen.settings.setClockFace.assert_called_with("analog_24h_ticking")
+
+    def test_conf_clock_face_analog_railway(self, command_handler, mock_main_screen):
+        """Test CONF Clock face=analog_railway"""
+        command_handler.parse_cmd(b"CONF:Clock:face=analog_railway")
+        mock_main_screen.settings.setClockFace.assert_called_with("analog_railway")
     
     def test_conf_clock_showseconds_true(self, command_handler, mock_main_screen):
         """Test CONF Clock showseconds=True"""
