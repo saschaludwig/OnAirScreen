@@ -593,7 +593,7 @@ class ClockWidget(QtWidgets.QWidget):
         painter.setBrush(black)
         painter.save()
         painter.rotate(hour_hand_angle(time))
-        self._draw_pointed_hand(painter, tip_y=-50, half_width=5.2, tail_y=16)
+        self._draw_pointed_hand(painter, tip_y=-55, half_width=5.2, tail_y=16)
         painter.restore()
 
         painter.save()
