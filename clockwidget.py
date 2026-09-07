@@ -587,7 +587,7 @@ class ClockWidget(QtWidgets.QWidget):
             painter.rotate(6.0)
         painter.restore()
 
-        self._paint_analog_logo(painter, max_h=16, max_w=40, y_upper=-26, y_lower=36)
+        self._paint_analog_logo(painter, max_h=50, max_w=70, y_upper=-26, y_lower=36)
 
         painter.setPen(QtCore.Qt.PenStyle.NoPen)
         painter.setBrush(black)
@@ -624,7 +624,7 @@ class ClockWidget(QtWidgets.QWidget):
         inner.closeSubpath()
         painter.drawPath(inner)
         self._draw_pointed_hand(
-            painter, tip_y=-96, half_width=1.7, tail_y=ring_far, chevron=1.7, tip_half=1.5
+            painter, tip_y=-94, half_width=1.7, tail_y=ring_far, chevron=1.7, tip_half=1.5
         )
         painter.restore()
 

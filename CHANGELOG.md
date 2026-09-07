@@ -14,9 +14,6 @@ All notable changes to this project will be documented in this file.
 
 - Clock mode in Settings and the Web UI is a dropdown instead of Digital/Analog radio buttons
 - Context menu Start/Stop/Reset I+LRA are enabled only when they apply to the current session
-- Analog 24h hour and minute hands taper from the hub to a blunt, narrower tip
-- Analog 24h second hand is thicker at the hub
-- Analog 24h is two faces: Analog 24h smooth (continuous second hand) and Analog 24h ticking; `analog_24h` still selects smooth
 - `CONF:Clock:digital=False` selects the classic analog face
 
 ### Fixed
