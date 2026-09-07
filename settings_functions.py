@@ -3717,8 +3717,11 @@ class SettingsRestorer:
     
     def restore_led(self, settings: QSettings) -> None:
         """
-        Restore LED settings (text, visibility)
-        
+        Restore LED settings (text, visibility, and current colors)
+
+        Re-applies on/off colors for the current visual state without
+        toggling led_logic (no flash timers, MQTT, or event log).
+
         Args:
             settings: QSettings object to read from
         """
@@ -3727,6 +3730,8 @@ class SettingsRestorer:
                 default_text = DEFAULT_LED_TEXTS.get(led_num, f'LED{led_num}')
                 getattr(self.main_screen, f'set_led{led_num}_text')(settings.value('text', default_text))
                 getattr(self.main_screen, f'buttonLED{led_num}').setVisible(settings.value('used', True, type=bool))
+            current_on = bool(getattr(self.main_screen, f'statusLED{led_num}', False))
+            getattr(self.main_screen, f'set_led{led_num}')(current_on)
     
     def restore_clock(self, settings: QSettings) -> None:
         """
@@ -3779,10 +3784,22 @@ class SettingsRestorer:
     def restore_timer(self, settings: QSettings) -> None:
         """
         Restore timer/AIR settings
-        
+
+        Inactive AIR colors are the shared LED off colors (LEDS group),
+        matching _set_air_state. They must be read outside the Timers group
+        so beginGroup does not nest them under Timers/.
+
         Args:
             settings: QSettings object to read from
         """
+        with settings_group(settings, "LEDS"):
+            inactive_text_color = settings.value(
+                'inactivetextcolor', DEFAULT_LED_INACTIVE_TEXT_COLOR
+            )
+            inactive_bg_color = settings.value(
+                'inactivebgcolor', DEFAULT_LED_INACTIVE_BG_COLOR
+            )
+
         with settings_group(settings, "Timers"):
             # Configuration for each AIR timer
             air_timer_configs = [
@@ -3833,12 +3850,8 @@ class SettingsRestorer:
                             f'AIR{air_num}activebgcolor', DEFAULT_TIMER_AIR_ACTIVE_BG_COLOR
                         )
                     else:
-                        text_color = settings.value(
-                            'inactivetextcolor', DEFAULT_TIMER_AIR_INACTIVE_TEXT_COLOR
-                        )
-                        bg_color = settings.value(
-                            'inactivebgcolor', DEFAULT_TIMER_AIR_INACTIVE_BG_COLOR
-                        )
+                        text_color = inactive_text_color
+                        bg_color = inactive_bg_color
 
                     # Save icon before setStyleSheet to prevent flickering
                     with settings_group(settings, "AIR"):

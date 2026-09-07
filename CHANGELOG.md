@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+## [TBA]
+
+### Fixed
+
+- LED and AIR timer on and off color changes take effect immediately after Apply
+
 ## [1.0.0beta14]
 
 ### Added

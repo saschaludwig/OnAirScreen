@@ -34,6 +34,7 @@ from defaults import (
     DEFAULT_FONT_SIZE_STATION,
     DEFAULT_FONT_SIZE_TIMER,
     DEFAULT_FONT_WEIGHT_BOLD,
+    DEFAULT_LED_TEXTS,
     DEFAULT_TOTH_TIMER_TEXT,
 )
 
@@ -876,6 +877,10 @@ class TestRestoreTimer:
             "AIR3activebgcolor": "#FF0000",
             "inactivetextcolor": "#555555",
             "inactivebgcolor": "#222222",
+            "air1iconpath": "",
+            "air2iconpath": "",
+            "air3iconpath": "",
+            "air4iconpath": "",
             "TimerAIRMinWidth": 200,
             "TimerTOTHText": DEFAULT_TOTH_TIMER_TEXT,
         }
@@ -950,6 +955,130 @@ class TestRestoreTimer:
         stylesheet = main_screen.AirLabel_3.setStyleSheet.call_args[0][0]
         assert "#555555" in stylesheet
         assert "#222222" in stylesheet
+
+    def _grouped_timer_settings(self, extra=None):
+        values = {
+            "LEDS/inactivetextcolor": "#ABCDEF",
+            "LEDS/inactivebgcolor": "#123456",
+            "Timers/inactivetextcolor": "#000000",
+            "Timers/inactivebgcolor": "#111111",
+            "Timers/TimerAIR1Enabled": True,
+            "Timers/TimerAIR2Enabled": True,
+            "Timers/TimerAIR3Enabled": True,
+            "Timers/TimerAIR4Enabled": True,
+            "Timers/TimerAIR1Text": "Mic",
+            "Timers/TimerAIR2Text": "Phone",
+            "Timers/TimerAIR3Text": "Radio",
+            "Timers/TimerAIR4Text": "Stream",
+            "Timers/AIR1activetextcolor": "#00FFAA",
+            "Timers/AIR1activebgcolor": "#FF00AA",
+            "Timers/AIR3activetextcolor": "#FFFFFF",
+            "Timers/AIR3activebgcolor": "#FF0000",
+            "Timers/TimerAIRMinWidth": 200,
+            "Timers/TimerTOTHText": DEFAULT_TOTH_TIMER_TEXT,
+        }
+        if extra:
+            values.update(extra)
+        settings = Mock()
+        group_stack = []
+
+        def begin_group(name):
+            group_stack.append(name)
+
+        def end_group():
+            group_stack.pop()
+
+        def grouped_value(key, default=None, **kwargs):
+            if "iconpath" in key:
+                return ""
+            path = "/".join(group_stack + [key])
+            return values.get(path, default)
+
+        settings.beginGroup.side_effect = begin_group
+        settings.endGroup.side_effect = end_group
+        settings.value.side_effect = grouped_value
+        return settings
+
+    @patch("settings_functions.QPixmap")
+    def test_inactive_air_uses_shared_led_off_colors(self, mock_pixmap):
+        from settings_functions import SettingsRestorer
+
+        mock_pixmap.return_value.isNull.return_value = True
+        main_screen = self._main_screen_with_airs()
+        restorer = SettingsRestorer(main_screen, Mock())
+
+        restorer.restore_timer(self._grouped_timer_settings())
+
+        stylesheet = main_screen.AirLabel_1.setStyleSheet.call_args[0][0]
+        assert "#123456" in stylesheet
+        assert "#ABCDEF" in stylesheet
+        assert "#111111" not in stylesheet
+        assert "#000000" not in stylesheet
+
+    @patch("settings_functions.QPixmap")
+    def test_active_air_uses_timers_on_colors(self, mock_pixmap):
+        from settings_functions import SettingsRestorer
+
+        mock_pixmap.return_value.isNull.return_value = True
+        main_screen = self._main_screen_with_airs()
+        main_screen.statusAIR1 = True
+        restorer = SettingsRestorer(main_screen, Mock())
+
+        restorer.restore_timer(self._grouped_timer_settings())
+
+        stylesheet = main_screen.AirLabel_1.setStyleSheet.call_args[0][0]
+        assert "#FF00AA" in stylesheet
+        assert "#00FFAA" in stylesheet
+        assert "#123456" not in stylesheet
+
+
+class TestRestoreLed:
+    """Apply must re-paint LED colors for the current on/off state."""
+
+    def _led_settings_value(self, key, default=None, **kwargs):
+        values = {
+            "used": True,
+        }
+        return values.get(key, default)
+
+    def _main_screen_with_leds(self):
+        main_screen = Mock()
+        for led_num in range(1, 5):
+            setattr(main_screen, f"statusLED{led_num}", False)
+            setattr(main_screen, f"set_led{led_num}_text", Mock())
+            setattr(main_screen, f"set_led{led_num}", Mock())
+            setattr(main_screen, f"buttonLED{led_num}", Mock())
+        return main_screen
+
+    def test_applies_off_colors_when_led_is_off(self):
+        from settings_functions import SettingsRestorer
+
+        main_screen = self._main_screen_with_leds()
+        settings = Mock()
+        settings.value.side_effect = self._led_settings_value
+        restorer = SettingsRestorer(main_screen, Mock())
+
+        restorer.restore_led(settings)
+
+        main_screen.set_led1.assert_called_once_with(False)
+        main_screen.set_led1_text.assert_called_once_with(DEFAULT_LED_TEXTS[1])
+        main_screen.buttonLED1.setVisible.assert_called_once_with(True)
+
+    def test_applies_on_colors_when_led_is_on(self):
+        from settings_functions import SettingsRestorer
+
+        main_screen = self._main_screen_with_leds()
+        main_screen.statusLED2 = True
+        settings = Mock()
+        settings.value.side_effect = self._led_settings_value
+        restorer = SettingsRestorer(main_screen, Mock())
+
+        restorer.restore_led(settings)
+
+        main_screen.set_led2.assert_called_once_with(True)
+        main_screen.set_led1.assert_called_once_with(False)
+        main_screen.set_led3.assert_called_once_with(False)
+        main_screen.set_led4.assert_called_once_with(False)
 
 
 class TestLicenseDialog:
