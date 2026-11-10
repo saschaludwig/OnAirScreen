@@ -5,7 +5,7 @@ PyInstaller
 pytest
 pytest-asyncio
 websockets>=17.4
-paho-mqtt>=2.1.0
+paho-mqtt>=2.2.0
 python-osc>=1.10.2
 sounddevice
 numpy
